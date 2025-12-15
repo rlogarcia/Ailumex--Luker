@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+===============================================================================
+ARCHIVO: survey_calificacion_average_views.xml (Odoo 18)
+PROPÓSITO: Mostrar métricas de participación y calificación en formulario/lista.
+NOTAS:
+- Usa invisible en lugar de modifiers para compatibilidad con Odoo 18.
+- XPaths apuntan a <list> solamente (no <tree>).
+- Requiere que previamente exista la pestaña page[@name='survey_extension_results'].
+===============================================================================
+-->
+<odoo>
+
+  <!-- =========================
+       FORMULARIO (Resultados)
+       ========================= -->
+  <record id="survey_form_inherit_metrics" model="ir.ui.view">
+    <field name="name">survey.survey.form.inherit.metrics</field>
+    <field name="model">survey.survey</field>
+    <field name="inherit_id" ref="survey.survey_survey_view_form"/>
+    <field name="arch" type="xml">
+
+      <!-- Fuerza 2 columnas en el contenedor de la pestaña "Resultados" -->
+      <xpath expr="//form/sheet/notebook/page[@name='survey_extension_results']/group" position="attributes">
+        <attribute name="col">2</attribute>
+      </xpath>
+
+      <!-- Grupo IZQUIERDA: Participación -->
+      <xpath expr="//form/sheet/notebook/page[@name='survey_extension_results']/group/group[1]" position="replace">
+        <group string="Participación" col="2">
+          <field name="invited_count" readonly="1" string="Invitados"/>
+          <field name="responses_count" readonly="1" string="Respuestas"/>
+          <field name="participation_rate" readonly="1" string="% Participación"/>
+        </group>
+      </xpath>
+
+      <!-- Grupo DERECHA: Calificación -->
+      <xpath expr="//form/sheet/notebook/page[@name='survey_extension_results']/group/group[2]" position="replace">
+        <group string="Calificación" col="2">
+          <field name="average_score" readonly="1"
+                 string="Promedio (%)"
+                 invisible="is_gradable == False"/>
+          <field name="evaluation_state" readonly="1" string="Estado"/>
+        </group>
+      </xpath>
+
+    </field>
+  </record>
+
+  <!-- =========================
+       LISTA (list) + compat tree
+       ========================= -->
+  <record id="survey_list_inherit_metrics" model="ir.ui.view">
+    <field name="name">survey.survey.list.inherit.metrics</field>
+    <field name="model">survey.survey</field>
+    <field name="inherit_id" ref="survey.survey_survey_view_tree"/>
+    <field name="arch" type="xml">
+
+      <!-- Insertar columnas después de 'title' para <list> (Odoo 18) -->
+      <xpath expr="//list/field[@name='title']" position="after">
+        <field name="participation_rate" string="% Participación"/>
+        <field name="average_score" string="Promedio (%)"/>
+      </xpath>
+
+    </field>
+  </record>
+
+</odoo>

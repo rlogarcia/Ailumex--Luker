@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Propósito: Define la vista y la acción del wizard que permite editar el
+  título de una pregunta de una encuesta de forma modal. Proporciona un
+  formulario simple con el título actual, un campo para el nuevo título y
+  botones para guardar, restaurar el original o cancelar, facilitando la
+  corrección rápida de títulos sin navegar al editor completo de la pregunta.
+-->
+<odoo>
+
+  <!-- Vista de formulario para editar título de pregunta -->
+  <record id="survey_edit_question_title_wizard_view_form" model="ir.ui.view">
+    <field name="name">survey.edit.question.title.wizard.form</field>
+    <field name="model">survey.edit.question.title.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Editar título de pregunta">
+        <sheet>
+          <group>
+            <field name="line_id" invisible="1"/>
+            <field name="page_title" readonly="1" invisible="page_title == False"/>
+            <field name="question_title" readonly="1"/>
+            <field name="new_title" placeholder="Escribe el nuevo título aquí (o deja vacío para mantener el original)"/>
+          </group>
+          <group>
+            <div class="alert alert-info" role="alert">
+              <strong>💡 Consejo:</strong> Si dejas el campo vacío, se usará el título original.
+            </div>
+          </group>
+        </sheet>
+        <footer>
+          <button string="Restaurar original" 
+                  name="action_clear" 
+                  type="object" 
+                  class="btn-link text-danger"
+                  help="Elimina el título personalizado y vuelve al original"/>
+          <button string="Cancelar" 
+                  special="cancel" 
+                  class="btn-secondary"/>
+          <button string="Guardar" 
+                  name="action_save" 
+                  type="object" 
+                  class="btn-primary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <!-- Acción para abrir el wizard de edición -->
+  <record id="action_edit_question_title_wizard" model="ir.actions.act_window">
+    <field name="name">Editar título de pregunta</field>
+    <field name="res_model">survey.edit.question.title.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+    <field name="binding_model_id" eval="False"/>
+  </record>
+
+</odoo>

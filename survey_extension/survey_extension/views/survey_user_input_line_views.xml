@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    
+    <!-- ================================================================== -->
+    <!-- VISTAS: Integrar métricas WPM en participaciones y líneas          -->
+    <!-- ================================================================== -->
+
+    <!-- Mostrar columnas WPM en la pestaña "Answers" de la participación -->
+    <record id="survey_user_input_view_form_inherit_wpm" model="ir.ui.view">
+        <field name="name">survey.user_input.view.form.wpm</field>
+        <field name="model">survey.user_input</field>
+        <field name="inherit_id" ref="survey.survey_user_input_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='user_input_line_ids']/list/field[@name='display_name']" position="after">
+                <field name="wpm_word_count" string="Palabras" optional="show"/>
+                <field name="wpm_time_seconds" string="Tiempo (s)" optional="show"/>
+                <field name="wpm_score" string="WPM" optional="show"
+                       decoration-danger="wpm_score &lt; 150"
+                       decoration-warning="wpm_score &gt;= 150 and wpm_score &lt; 250"
+                       decoration-success="wpm_score &gt;= 250"/>
+                <field name="wpm_classification" string="Clasificación" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Detalle WPM dentro de la vista de línea de respuesta -->
+    <record id="survey_user_input_line_view_form_inherit_wpm" model="ir.ui.view">
+        <field name="name">survey.user_input.line.form.inherit.wpm</field>
+        <field name="model">survey.user_input.line</field>
+        <field name="inherit_id" ref="survey.survey_user_input_line_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group[@col='4']" position="after">
+                <group string="Resultados WPM"
+                       invisible="question_id.question_type not in ['wpm_reading', 'wpm_typing']">
+                    <group>
+                        <field name="wpm_word_count" readonly="1" string="Palabras"/>
+                        <field name="wpm_time_seconds" readonly="1" string="Tiempo (s)"/>
+                        <field name="wpm_score" readonly="1" string="WPM"/>
+                        <field name="wpm_classification" readonly="1" string="Clasificación"/>
+                    </group>
+                    <group>
+                        <field name="wpm_start_time" readonly="1" string="Inicio"/>
+                        <field name="wpm_end_time" readonly="1" string="Fin"/>
+                        <field name="wpm_typed_text" readonly="1" string="Texto escrito"
+                               invisible="question_id.question_type != 'wpm_typing'"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

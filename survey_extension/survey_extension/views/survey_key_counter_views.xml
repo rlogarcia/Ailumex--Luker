@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+===============================================================================
+ARCHIVO: survey_key_counter_views.xml (Odoo 18)
+PROPÓSITO: Mostrar el contador de preguntas clave en lista y formulario.
+NOTAS:
+- Odoo 18 usa <list> en vez de <tree>; XPaths apuntan solo a <list>.
+- Requiere el campo survey.survey.key_question_count (compute, store=True opcional).
+===============================================================================
+-->
+<odoo>
+
+  <!-- LISTA: agrega la columna "Preguntas clave" después del título -->
+  <record id="survey_list_inherit_key_count" model="ir.ui.view">
+    <field name="name">survey.survey.list.inherit.key.count</field>
+    <field name="model">survey.survey</field>
+    <field name="inherit_id" ref="survey.survey_survey_view_tree"/>
+    <field name="arch" type="xml">
+      <!-- Para <list> (Odoo 18) -->
+      <xpath expr="//list/field[@name='title']" position="after">
+  <field name="code" string="ID"/>
+        <field name="key_question_count" string="Preguntas clave"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- FORMULARIO: muestra el contador en el primer grupo -->
+  <record id="survey_form_inherit_key_count" model="ir.ui.view">
+    <field name="name">survey.survey.form.inherit.key.count</field>
+    <field name="model">survey.survey</field>
+    <field name="inherit_id" ref="survey.survey_survey_view_form"/>
+    <field name="arch" type="xml">
+      <!-- Inserta en el primer group del sheet -->
+      <xpath expr="//form/sheet//group[1]" position="inside">
+  <field name="code" readonly="1" string="ID"/>
+        <field name="key_question_count" readonly="1" string="Preguntas clave"/>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

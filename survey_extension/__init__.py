@@ -21,5 +21,7 @@ la lógica de negocio del módulo (modelos, campos, métodos, etc.)
 from . import models
 from . import controllers
 from . import wizard
-from .hooks import assign_survey_codes  # post-init: completa códigos faltantes
+
+# Importar hooks necesarios para instalación/actualización
+from .hooks import migrate_version_year_to_char, post_init_hook, assign_survey_codes
 

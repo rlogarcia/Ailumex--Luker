@@ -14,28 +14,52 @@ def assign_survey_codes(cr, registry):
     env["survey.survey"]._assign_missing_codes()
 
 
-def migrate_version_year_to_char(cr, registry):
+def migrate_version_year_to_char(cr, registry=None):
     """Migra el campo version_year de Integer a Char para evitar formato con separadores."""
     
-    # Verificar si la columna existe y tiene tipo numérico
-    cr.execute("""
-        SELECT column_name, data_type 
-        FROM information_schema.columns 
-        WHERE table_name = 'survey_survey' 
-        AND column_name = 'version_year'
-    """)
+    _logger.info("Ejecutando migración de version_year...")
     
-    result = cr.fetchone()
-    if result and result[1] in ('integer', 'numeric', 'bigint'):
-        # Convertir valores existentes a string
+    try:
+        # Verificar si la tabla existe
         cr.execute("""
-            ALTER TABLE survey_survey 
-            ALTER COLUMN version_year TYPE varchar(4) 
-            USING CASE 
-                WHEN version_year IS NULL THEN NULL 
-                ELSE version_year::varchar 
-            END
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'survey_survey'
+            )
         """)
+        
+        if not cr.fetchone()[0]:
+            _logger.info("Tabla survey_survey no existe aún, saltando migración")
+            return
+        
+        # Verificar si la columna existe y tiene tipo numérico
+        cr.execute("""
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'survey_survey' 
+            AND column_name = 'version_year'
+        """)
+        
+        result = cr.fetchone()
+        if result and result[1] in ('integer', 'numeric', 'bigint'):
+            _logger.info(f"Convirtiendo version_year de {result[1]} a varchar(4)...")
+            # Convertir valores existentes a string
+            cr.execute("""
+                ALTER TABLE survey_survey 
+                ALTER COLUMN version_year TYPE varchar(4) 
+                USING CASE 
+                    WHEN version_year IS NULL THEN NULL 
+                    ELSE version_year::varchar 
+                END
+            """)
+            cr.commit()
+            _logger.info("✅ Migración de version_year completada")
+        else:
+            _logger.info("Campo version_year ya es varchar o no existe, saltando migración")
+            
+    except Exception as e:
+        _logger.warning(f"Error en migración de version_year (puede ser normal en instalación nueva): {e}")
+        # No fallar si hay error, puede ser instalación nueva
 
 
 def post_init_hook(env):

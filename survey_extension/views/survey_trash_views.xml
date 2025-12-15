@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Propósito: Proveer las vistas y acciones relacionadas con la "papelera"
+  del módulo de encuestas. Este archivo define la interfaz para listar y
+  revisar encuestas eliminadas (`survey.survey.trash`), facilitar su
+  restauración, y gestionar el pool de códigos de encuesta liberados para
+  su reutilización. Incluye vistas de lista y formulario para elementos en
+  la papelera, la vista de IDs disponibles y los menús asociados para que
+  los administradores puedan revisar y recuperar encuestas borradas de
+  forma segura durante el periodo de retención.
+-->
+<odoo>
+
+  <!-- Vista de la papelera de encuestas -->
+  <record id="survey_survey_trash_view_list" model="ir.ui.view">
+    <field name="name">survey.survey.trash.list</field>
+    <field name="model">survey.survey.trash</field>
+    <field name="arch" type="xml">
+      <list string="Encuestas eliminadas" create="0" delete="1">
+        <button name="action_restore" string="Restaurar" type="object" class="btn-secondary"/>
+        <field name="title"/>
+        <field name="code"/>
+        <field name="original_survey_id"/>
+        <field name="deleted_by_id"/>
+        <field name="deleted_at"/>
+        <field name="retention_until"/>
+        <field name="delete_reason"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="survey_survey_trash_view_form" model="ir.ui.view">
+    <field name="name">survey.survey.trash.form</field>
+    <field name="model">survey.survey.trash</field>
+    <field name="arch" type="xml">
+      <form string="Encuesta en papelera">
+        <header>
+          <button name="action_restore" string="Restaurar" type="object" class="btn-secondary"/>
+        </header>
+        <group>
+          <field name="title" readonly="1"/>
+          <field name="code" readonly="1"/>
+          <field name="original_survey_id" readonly="1"/>
+          <field name="deleted_by_id" readonly="1"/>
+          <field name="deleted_at" readonly="1"/>
+          <field name="retention_until" readonly="1"/>
+          <field name="delete_reason" readonly="1"/>
+        </group>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_survey_survey_trash" model="ir.actions.act_window">
+    <field name="name">Papelera de encuestas</field>
+    <field name="res_model">survey.survey.trash</field>
+    <field name="view_mode">list,form</field>
+    <field name="help">Encuestas eliminadas que serán depuradas automáticamente tras el periodo de retención.</field>
+  </record>
+
+  <!-- Menús -->
+  <menuitem id="survey_extension_menu_trash"
+            name="Papelera"
+            parent="survey_extension_menu_root"
+            action="action_survey_survey_trash"
+            sequence="20"
+            groups="survey.group_survey_manager"/>
+
+</odoo>

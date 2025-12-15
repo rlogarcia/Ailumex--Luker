@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ARCHIVO: survey_user_input_inherit_views.xml
+PROPÓSITO: Mostrar resultados de calificación en participaciones (Odoo 18 compatible).
+-->
+<odoo>
+
+  <!-- FORM: bloque de resultados calculados (visible solo si la encuesta es calificable) -->
+  <record id="survey_user_input_form_inherit_scores" model="ir.ui.view">
+    <field name="name">survey.user_input.form.inherit.scores</field>
+    <field name="model">survey.user_input</field>
+    <field name="inherit_id" ref="survey.survey_user_input_view_form"/>
+    <field name="arch" type="xml">
+      
+      <!-- Campo auxiliar: related a survey_id.is_gradable (oculto) -->
+      <xpath expr="//field[@name='test_entry' and @invisible='1']" position="after">
+        <field name="is_gradable_rel" invisible="1"/>
+      </xpath>
+
+      <!-- Mostrar el tiempo de respuesta junto a los datos principales -->
+      <xpath expr="//group/field[@name='test_entry' and @groups='base.group_no_one']" position="after">
+        <field name="x_survey_duration_display" readonly="1"/>
+      </xpath>
+
+      <!-- Insertar resultados calculados después del group col="2" -->
+      <xpath expr="//sheet/group[@col='2']" position="after">
+        
+        <!-- Grupo de resultados (usa invisible, no 'attrs') -->
+        <group string="Resultados (calculados)" invisible="is_gradable_rel == False">
+          <field name="x_score_obtained" readonly="1"/>
+          <field name="x_score_total" readonly="1"/>
+          <field name="x_score_percent" readonly="1"/>
+          <field name="x_min_required" readonly="1"/>
+          <field name="x_passed" readonly="1" widget="boolean_toggle"/>
+        </group>
+
+      </xpath>
+      
+      <xpath expr="//form/sheet/notebook" position="inside">
+        <page name="survey_extension_attachments" string="Adjuntos">
+          <field name="attachment_link_ids" context="{'default_user_input_id': id}"/>
+        </page>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Nota: evitamos heredar vistas core con xpath //tree que pueden no existir en Odoo 18.
+       Añadimos el campo de duración a la vista list personalizada definida más abajo. -->
+
+  <!-- LIST: vista compacta para la pestaña Resultados en survey.survey -->
+  <record id="survey_user_input_tree_results" model="ir.ui.view">
+    <field name="name">survey.user_input.tree.results</field>
+    <field name="model">survey.user_input</field>
+    <field name="arch" type="xml">
+      <list string="Participaciones" create="false" edit="false">
+        <field name="partner_id" optional="show"/>
+        <field name="email" optional="show"/>
+        <field name="state"/>
+        <field name="x_survey_duration_display"/>
+        <field name="end_datetime" optional="hide"/>
+        <field name="x_score_percent" string="Porcentaje" optional="show"/>
+      </list>
+    </field>
+  </record>
+
+</odoo>

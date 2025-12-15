@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Propósito: Define la vista y la acción del wizard que permite seleccionar o
+    generar un identificador (código) para una encuesta. Presenta opciones para
+    elegir un código disponible o crear uno nuevo y muestra campos condicionales
+    según la opción seleccionada. Esta vista se usa como ventana modal cuando se
+    necesita asegurar o asignar un ID de encuesta en procesos de creación o
+    configuración de encuestas.
+-->
+<odoo>
+    <record id="view_survey_code_selection_wizard" model="ir.ui.view">
+        <field name="name">survey.code.selection.wizard.form</field>
+        <field name="model">survey.code.selection.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Seleccionar ID de encuesta" create="0" edit="0">
+                <group>
+                    <field name="code_source" widget="radio"/>
+                </group>
+                <group invisible="code_source != 'available'" name="available_group">
+                    <field name="available_code_id" options="{'no_open': True, 'no_create': True}"/>
+                </group>
+                <group invisible="code_source != 'new'" name="new_group">
+                    <field name="new_code_label" readonly="1"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Continuar" type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_survey_code_selection_wizard" model="ir.actions.act_window">
+        <field name="name">Seleccionar ID</field>
+        <field name="res_model">survey.code.selection.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="survey_extension.view_survey_code_selection_wizard"/>
+        <field name="target">new</field>
+    </record>
+</odoo>

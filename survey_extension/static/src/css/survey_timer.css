@@ -1,0 +1,439 @@
+/**
+ * ============================================================================
+ * Archivo: survey_timer.css
+ * Propósito: Estilos modernos y profesionales para el cronómetro de encuestas
+ * Versión: 1.0
+ * ============================================================================
+ */
+
+/* ============================================================================
+   CONTENEDOR GENERAL DEL CRONÓMETRO
+   ============================================================================ */
+
+.o_survey_timer_container {
+    position: relative;
+    margin-bottom: 1.5rem;
+    animation: fadeInDown 0.5s ease-in-out;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Cronómetro General (pegado arriba) */
+.o_survey_timer_general {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    margin-bottom: 2rem;
+}
+
+/* Cronómetro de Pregunta */
+.o_survey_timer_question {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* ============================================================================
+   TARJETA DEL CRONÓMETRO
+   ============================================================================ */
+
+.o_timer_card {
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    transition: all 0.3s ease;
+}
+
+.o_timer_card:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+    transform: translateY(-2px);
+}
+
+/* Estados del cronómetro */
+.o_timer_card.timer-normal {
+    border-left: 4px solid #28a745;
+}
+
+.o_timer_card.timer-warning {
+    border-left: 4px solid #ffc107;
+    background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+    animation: pulseWarning 2s ease-in-out infinite;
+}
+
+.o_timer_card.timer-danger {
+    border-left: 4px solid #dc3545;
+    background: linear-gradient(135deg, #ffe6e6 0%, #ffffff 100%);
+    animation: pulseDanger 1s ease-in-out infinite;
+}
+
+@keyframes pulseWarning {
+    0%, 100% {
+        box-shadow: 0 4px 8px rgba(255, 193, 7, 0.2);
+    }
+    50% {
+        box-shadow: 0 8px 16px rgba(255, 193, 7, 0.4);
+    }
+}
+
+@keyframes pulseDanger {
+    0%, 100% {
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+    }
+    50% {
+        box-shadow: 0 8px 16px rgba(220, 53, 69, 0.6);
+    }
+}
+
+/* ============================================================================
+   ICONO DEL CRONÓMETRO
+   ============================================================================ */
+
+.o_timer_icon {
+    transition: all 0.3s ease;
+}
+
+.timer-normal .o_timer_icon {
+    color: #28a745 !important;
+}
+
+.timer-warning .o_timer_icon {
+    color: #ffc107 !important;
+    animation: iconRotate 2s ease-in-out infinite;
+}
+
+.timer-danger .o_timer_icon {
+    color: #dc3545 !important;
+    animation: iconShake 0.5s ease-in-out infinite;
+}
+
+@keyframes iconRotate {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-10deg);
+    }
+    75% {
+        transform: rotate(10deg);
+    }
+}
+
+@keyframes iconShake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+/* ============================================================================
+   DISPLAY DEL TIEMPO
+   ============================================================================ */
+
+.o_timer_display {
+    font-family: 'Courier New', 'Consolas', monospace;
+    font-weight: 700;
+    line-height: 1;
+    transition: all 0.3s ease;
+}
+
+/* Estados del display */
+.timer-normal .o_timer_display {
+    color: #28a745;
+}
+
+.timer-warning .o_timer_display {
+    color: #ff9800;
+}
+
+.timer-danger .o_timer_display {
+    color: #dc3545;
+    animation: numberPulse 0.5s ease-in-out infinite;
+}
+
+@keyframes numberPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.o_timer_minutes,
+.o_timer_seconds {
+    display: inline-block;
+    min-width: 1.5em;
+    text-align: center;
+}
+
+/* ============================================================================
+   BARRA DE PROGRESO
+   ============================================================================ */
+
+.o_timer_progress {
+    transition: width 0.5s ease, background-color 0.3s ease;
+    border-radius: 4px;
+}
+
+/* Estados de la barra de progreso */
+.timer-normal .o_timer_progress {
+    background: linear-gradient(90deg, #28a745 0%, #5cb85c 100%);
+}
+
+.timer-warning .o_timer_progress {
+    background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%);
+}
+
+.timer-danger .o_timer_progress {
+    background: linear-gradient(90deg, #dc3545 0%, #c82333 100%);
+}
+
+/* ============================================================================
+   ETIQUETAS Y TEXTO
+   ============================================================================ */
+
+.o_timer_label {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    transition: color 0.3s ease;
+}
+
+.timer-warning .o_timer_label {
+    color: #ff9800;
+}
+
+.timer-danger .o_timer_label {
+    color: #dc3545;
+}
+
+.o_timer_status {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+/* ============================================================================
+   MENSAJES DE ALERTA
+   ============================================================================ */
+
+.o_timer_warning,
+.o_timer_expired {
+    animation: slideDown 0.4s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        padding: 0;
+        margin: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 100px;
+    }
+}
+
+/* ============================================================================
+   ESTADOS ESPECIALES
+   ============================================================================ */
+
+/* Cronómetro pausado */
+.o_timer_card.timer-paused {
+    opacity: 0.7;
+}
+
+.timer-paused .o_timer_display {
+    color: #6c757d;
+}
+
+.timer-paused .o_timer_icon {
+    animation: none;
+}
+
+/* Cronómetro completado */
+.o_timer_card.timer-completed {
+    border-left-color: #17a2b8;
+    background: linear-gradient(135deg, #e6f7ff 0%, #ffffff 100%);
+}
+
+.timer-completed .o_timer_display {
+    color: #17a2b8;
+}
+
+.timer-completed .o_timer_icon {
+    color: #17a2b8 !important;
+}
+
+/* ============================================================================
+   TIEMPO EXTRA (OVERTIME)
+   ============================================================================ */
+
+.o_timer_card.timer-overtime {
+    border-left-color: #6f42c1;
+    background: linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%);
+}
+
+.timer-overtime .o_timer_display {
+    color: #6f42c1;
+}
+
+.timer-overtime .o_timer_display::before {
+    content: "+ ";
+    opacity: 0.8;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    .o_timer_display {
+        font-size: 1.8rem !important;
+    }
+    
+    .o_survey_timer_general .o_timer_display {
+        font-size: 2rem !important;
+    }
+    
+    .o_timer_card .card-body {
+        padding: 1rem !important;
+    }
+    
+    .progress {
+        width: 120px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .o_timer_display {
+        font-size: 1.5rem !important;
+    }
+    
+    .o_survey_timer_general .o_timer_display {
+        font-size: 1.8rem !important;
+    }
+    
+    .d-flex.align-items-center.justify-content-between {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    
+    .text-end {
+        margin-top: 1rem;
+        text-align: left !important;
+    }
+    
+    .progress {
+        width: 100% !important;
+    }
+}
+
+/* ============================================================================
+   MODO OSCURO (opcional)
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+    .o_timer_card {
+        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        color: #e2e8f0;
+    }
+    
+    .o_timer_card.timer-warning {
+        background: linear-gradient(135deg, #3d3520 0%, #2d3748 100%);
+    }
+    
+    .o_timer_card.timer-danger {
+        background: linear-gradient(135deg, #3d2020 0%, #2d3748 100%);
+    }
+}
+
+/* ============================================================================
+   EFECTOS DE SONIDO (indicador visual)
+   ============================================================================ */
+
+.o_timer_sound_indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #28a745;
+    animation: soundPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes soundPulse {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.5);
+    }
+}
+
+/* ============================================================================
+   BOTÓN DE PAUSA (si se implementa)
+   ============================================================================ */
+
+.o_timer_pause_btn {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+}
+
+.o_timer_pause_btn:hover {
+    opacity: 1;
+}
+
+/* ============================================================================
+   TRANSICIONES SUAVES
+   ============================================================================ */
+
+.o_timer_card,
+.o_timer_display,
+.o_timer_progress,
+.o_timer_icon,
+.o_timer_label {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================================
+   ACCESIBILIDAD
+   ============================================================================ */
+
+.o_timer_card:focus-within {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Reducir animaciones para usuarios que lo prefieran */
+@media (prefers-reduced-motion: reduce) {
+    .o_timer_card,
+    .o_timer_display,
+    .o_timer_progress,
+    .o_timer_icon,
+    .o_timer_label,
+    .o_timer_warning,
+    .o_timer_expired {
+        animation: none !important;
+        transition: none !important;
+    }
+}

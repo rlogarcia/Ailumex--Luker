@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_survey_question_category_user,survey.question.category user,model_survey_question_category,base.group_user,1,1,1,1
+access_survey_version_wizard,survey.version.wizard user,model_survey_version_wizard,base.group_user,1,1,1,1
+access_survey_version_wizard_line,survey.version.wizard.line user,model_survey_version_wizard_line,base.group_user,1,1,1,1
+access_survey_edit_question_title_wizard,survey.edit.question.title.wizard user,model_survey_edit_question_title_wizard,base.group_user,1,1,1,1
+access_survey_code_selection_wizard,survey.code.selection.wizard user,model_survey_code_selection_wizard,base.group_user,1,1,1,1
+access_survey_survey_trash_user,survey.survey.trash user,model_survey_survey_trash,base.group_user,1,0,0,1
+access_survey_code_available_user,survey.code.available user,model_survey_code_available,base.group_user,1,1,1,1
+access_survey_user_input_attachment,survey.user_input.attachment user,model_survey_user_input_attachment,base.group_user,1,1,1,1
+access_survey_question_stats_user,survey.question.stats user,model_survey_question_stats,base.group_user,1,0,0,0
+access_survey_dashboard_user,survey.dashboard user,model_survey_dashboard,base.group_user,1,0,0,0
+access_survey_question_stats_public,survey.question.stats public,model_survey_question_stats,base.group_public,1,0,0,0
+access_survey_dashboard_public,survey.dashboard public,model_survey_dashboard,base.group_public,1,0,0,0
+access_survey_device_user,survey.device user,model_survey_device,base.group_user,1,1,1,1
+access_survey_assign_device_wizard,survey.assign.device.wizard user,model_survey_assign_device_wizard,base.group_user,1,1,1,1
+access_survey_region_user,survey.region user,model_survey_region,base.group_user,1,1,1,1
+access_survey_region_public,survey.region public,model_survey_region,base.group_public,1,0,0,0

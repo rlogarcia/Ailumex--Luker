@@ -1,0 +1,1757 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<template id="session_detail" name="Session Detail">
+    <t t-call="portal.portal_layout">
+        <t t-set="page_name" t-value="'session_detail'"/>
+        <t t-call="portal_coach.portal_coach_header"/>
+        
+        <div class="pc-shell">
+            <!-- NAVEGACIÓN Y BOTONES -->
+            <div style="margin-bottom: 24px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <a href="/my/coach/agenda" class="pc-button" style="padding: 10px 20px;">
+                        <i class="fa fa-arrow-left"></i> Volver a Agenda
+                    </a>
+                    
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                        <!-- BOTÓN MEET/ZOOM (solo para presencial e híbrida) -->
+                        <t t-if="session.delivery_mode in ['presential', 'hybrid'] and coach.meeting_link and session.state in ['started']">
+                            <a t-att-href="coach.meeting_link" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; text-decoration: none;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                                <i class="fa fa-video-camera"></i> Unirse a Meet
+                            </a>
+                        </t>
+                        
+                        <!-- BOTÓN INICIAR (con validación de tiempo) -->
+                        <t t-if="session.state in ['draft', 'active', 'with_enrollment']">
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <button id="btnStartSession" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa fa-play"></i> Iniciar Clase
+                                </button>
+                                <span id="startSessionMessage" style="font-size: 11px; color: #dc2626; display: none;"></span>
+                            </div>
+                        </t>
+                        
+                        <!-- BOTÓN FINALIZAR (con validación de tiempo) -->
+                        <t t-if="session.state == 'started'">
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <button id="btnFinishSession" t-att-disabled="'disabled' if not attendance_complete else None" t-attf-style="background: #{not attendance_complete and '#cbd5e1' or '#3b82f6'}; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: #{not attendance_complete and 'not-allowed' or 'pointer'}; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa fa-check"></i> Terminar Clase
+                                </button>
+                                <span id="finishSessionMessage" style="font-size: 11px; color: #dc2626; display: none;"></span>
+                            </div>
+                            
+                            <div id="pendingWarning" style="display: none; background: #fef3c7; color: #92400e; padding: 8px 16px; border-radius: 6px; font-weight: 600;">
+                                <i class="fa fa-exclamation-triangle"></i>
+                                <span id="pendingText">Faltan por marcar</span>
+                            </div>
+                        </t>
+                        
+                        <!-- BADGE FINALIZADA -->
+                        <t t-if="session.state == 'done'">
+                            <div style="background: #3b82f6; color: white; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa fa-check-circle"></i> Clase Terminada
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Encabezado -->
+            <div class="pc-card" style="margin-bottom: 20px;">
+                <div style="padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <h2 style="margin: 0 0 8px 0; font-size: 22px; line-height: 1.2; font-weight: 700;">
+                                <span class="pc-session-code" style="font-size: 22px;">
+                                    <t t-esc="session.subject_id.code"/>
+                                </span>
+                                <t t-esc="session.subject_id.name"/>
+                            </h2>
+                            <p style="margin: 0; color: #64748b; font-size: 14px;">
+                                <strong t-esc="session.program_id.name"/> | 
+                                <t t-esc="session.date.strftime('%d/%m/%Y')"/> | 
+                                <t t-esc="'{:02d}:{:02d}'.format(int(session.time_start), int((session.time_start % 1) * 60))"/> - 
+                                <t t-esc="'{:02d}:{:02d}'.format(int(session.time_end), int((session.time_end % 1) * 60))"/> |
+                                <i class="fa fa-map-marker"></i> <t t-esc="session.campus_id.name"/> - <t t-esc="session.subcampus_id.name or 'N/A'"/>
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <!-- BADGE MODALIDAD PRESENCIAL (CON LINK DEL DOCENTE) -->
+                            <t t-if="session.delivery_mode == 'on_site'">
+                                <t t-if="teacher.meeting_link">
+                                    <a t-att-href="teacher.meeting_link or '#'" target="_blank" style="padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.2s; background: #dcfce7; color: #166534;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <i class="fa fa-users"></i> Presencial <i class="fa fa-external-link" style="font-size: 11px; margin-left: 4px;"></i>
+                                    </a>
+                                </t>
+                                <t t-else="">
+                                    <span style="padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; background: #dcfce7; color: #166534;">
+                                        <i class="fa fa-users"></i> Presencial
+                                    </span>
+                                </t>
+                            </t>
+                            
+                            <!-- BADGE MODALIDAD HÍBRIDA (CON LINK DEL DOCENTE) -->
+                            <t t-elif="session.delivery_mode == 'hybrid'">
+                                <t t-if="teacher.meeting_link">
+                                    <a t-att-href="teacher.meeting_link or '#'" target="_blank" style="padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.2s; background: #fef3c7; color: #92400e;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <i class="fa fa-exchange"></i> Híbrida <i class="fa fa-external-link" style="font-size: 11px; margin-left: 4px;"></i>
+                                    </a>
+                                </t>
+                                <t t-else="">
+                                    <span style="padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; background: #fef3c7; color: #92400e;">
+                                        <i class="fa fa-exchange"></i> Híbrida
+                                    </span>
+                                </t>
+                            </t>
+                            
+                            <!-- BADGE MODALIDAD VIRTUAL (CON LINK DEL DOCENTE) -->
+                            <t t-elif="session.delivery_mode == 'virtual'">
+                                <t t-if="teacher.meeting_link">
+                                    <a t-att-href="teacher.meeting_link or '#'" target="_blank" style="padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.2s; background: #ddd6fe; color: #5b21b6;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <i class="fa fa-video-camera"></i> Virtual <i class="fa fa-external-link" style="font-size: 11px; margin-left: 4px;"></i>
+                                    </a>
+                                </t>
+                                <t t-else="">
+                                    <span style="padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; background: #ddd6fe; color: #5b21b6;">
+                                        <i class="fa fa-video-camera"></i> Virtual
+                                    </span>
+                                </t>
+                            </t>
+                            
+                            <!-- Badge Estado -->
+                            <span id="sessionStateBadge" t-attf-class="pc-badge #{
+                                session.state == 'done' and 'pc-badge-success' or
+                                session.state == 'started' and 'pc-badge-warning' or
+                                'pc-badge-secondary'
+                            }" style="padding: 8px 16px; font-size: 14px;">
+                                <t t-if="session.state in ['draft', 'active']">📝 Activa</t>
+                                <t t-elif="session.state == 'started'">▶️ Iniciada</t>
+                                <t t-elif="session.state == 'done'">✅ Dictada</t>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabla de Estudiantes -->
+            <div class="pc-card">
+                <div class="pc-card-head" style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">
+                        <i class="fa fa-users"></i> 
+                        Estudiantes Inscritos (<t t-esc="len(enrollments)"/>/<t t-esc="session.max_capacity"/>)
+                    </h3>
+                    <span id="attendanceProgress" t-attf-class="pc-badge #{attendance_complete and 'pc-badge-success' or 'pc-badge-secondary'}" style="padding: 8px 16px; font-size: 14px;">
+                        <i t-attf-class="fa #{attendance_complete and 'fa-check-circle' or 'fa-clock-o'}"></i>
+                        <t t-if="attendance_complete">✅ Completo</t>
+                        <t t-else="">⏰ Pendiente</t>
+                    </span>
+                </div>
+                
+                <t t-if="enrollments">
+                    <div style="overflow-x: auto;">
+                        <table class="table table-hover" style="margin: 0;">
+                            <thead style="background: #f8fafc; font-size: 11px; text-transform: uppercase; color: #64748b;">
+                                <tr>
+                                    <th style="padding: 10px 12px; width: 40px; text-align: center;">#</th>
+                                    <th style="padding: 10px 12px; width: 150px;">Estudiante</th>
+                                    <th style="padding: 10px 12px; width: 100px;">Código</th>
+                                    <th style="padding: 10px 12px; width: 100px; text-align: center;">Modalidad</th>
+                                    <th style="padding: 10px 12px; width: 120px; text-align: center;">Estado</th>
+                                    <th style="padding: 10px 12px; width: 110px; text-align: center;">Asistencia</th>
+                                    <th t-if="session.subject_id.evaluable and session.subject_id.subject_category not in ['bcheck', 'bskills']" style="padding: 10px 12px; width: 80px; text-align: center;">Nota</th>
+                                    <th style="padding: 10px 12px; width: 200px;">Observación</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsList">
+                                <t t-foreach="enrollments" t-as="enrollment">
+                                    <tr t-att-data-enrollment-id="enrollment.id" t-attf-style="border-left: 4px solid #{enrollment.state == 'attended' and '#10b981' or enrollment.state == 'absent' and '#ef4444' or '#94a3b8'};">
+                                        <td style="padding: 10px 12px; text-align: center; font-weight: 600; color: #64748b; font-size: 12px;">
+                                            <t t-esc="enrollment_index + 1"/>
+                                        </td>
+                                        <td style="padding: 10px 12px;">
+                                            <div style="font-weight: 600; font-size: 13px; color: #1e293b;">
+                                                <t t-esc="enrollment.student_id.name"/>
+                                            </div>
+                                        </td>
+                                        <td style="padding: 10px 12px;">
+                                            <span style="font-family: monospace; background: #f1f5f9; padding: 3px 6px; border-radius: 3px; font-size: 11px;">
+                                                <t t-esc="enrollment.student_id.code or 'N/A'"/>
+                                            </span>
+                                        </td>
+                                        <td style="padding: 10px 12px; text-align: center;">
+                                            <span t-attf-style="display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; white-space: nowrap; #{session.delivery_mode == 'virtual' and 'background: #ddd6fe; color: #5b21b6;' or session.delivery_mode == 'presential' and 'background: #dcfce7; color: #166534;' or 'background: #fef3c7; color: #92400e;'}">
+                                                <t t-if="session.delivery_mode == 'virtual'"><i class="fa fa-video-camera"></i> Virtual</t>
+                                                <t t-elif="session.delivery_mode == 'presential'"><i class="fa fa-users"></i> Presencial</t>
+                                                <t t-else=""><i class="fa fa-exchange"></i> Híbrida</t>
+                                            </span>
+                                        </td>
+                                        <td style="padding: 10px 12px; text-align: center;">
+                                            <span t-att-id="'status-' + str(enrollment.id)" t-attf-class="pc-badge #{enrollment.state == 'attended' and 'pc-badge-success' or enrollment.state == 'absent' and 'pc-badge-danger' or 'pc-badge-secondary'}" style="padding: 3px 8px; font-size: 11px;">
+                                                <t t-if="enrollment.state == 'attended'">✓ Asistió</t>
+                                                <t t-elif="enrollment.state == 'absent'">✗ Ausente</t>
+                                                <t t-else="">⏰ Confirmada</t>
+                                            </span>
+                                        </td>
+                                        <td style="padding: 10px 12px; text-align: center;">
+                                            <t t-if="session.state in ['started', 'done']">
+                                                <t t-if="session.state == 'done'">
+                                                    <!-- Sesión finalizada - mostrar estado sin botones -->
+                                                    <div style="font-size: 12px; font-weight: 600;">
+                                                        <span t-if="enrollment.state == 'attended'" style="color: #10b981;">
+                                                            <i class="fa fa-check-circle"></i> Asistió
+                                                        </span>
+                                                        <span t-elif="enrollment.state == 'absent'" style="color: #ef4444;">
+                                                            <i class="fa fa-times-circle"></i> Faltó
+                                                        </span>
+                                                        <span t-else="" style="color: #94a3b8;">
+                                                            <i class="fa fa-minus-circle"></i> Sin marcar
+                                                        </span>
+                                                    </div>
+                                                </t>
+                                                <t t-else="">
+                                                    <!-- Sesión iniciada - botones activos -->
+                                                    <div style="display: flex; gap: 4px; justify-content: center;">
+                                                        <button t-att-class="'btn btn-sm ' + ('btn-success' if enrollment.state == 'attended' else 'btn-outline-success')" t-att-data-enrollment-id="enrollment.id" t-att-data-student-name="enrollment.student_id.name" t-att-data-current-status="enrollment.state" onclick="markAttendance(this, 'attended')" style="padding: 6px 10px; font-weight: 600; font-size: 12px;">
+                                                            <i class="fa fa-check"></i>
+                                                        </button>
+                                                        <button t-att-class="'btn btn-sm ' + ('btn-danger' if enrollment.state == 'absent' else 'btn-outline-danger')" t-att-data-enrollment-id="enrollment.id" t-att-data-student-name="enrollment.student_id.name" t-att-data-current-status="enrollment.state" onclick="markAttendance(this, 'absent')" style="padding: 6px 10px; font-weight: 600; font-size: 12px;">
+                                                            <i class="fa fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">
+                                                    <i class="fa fa-lock"></i> Bloqueado
+                                                </div>
+                                            </t>
+                                        </td>
+                                        <td t-if="session.subject_id.evaluable and session.subject_id.subject_category not in ['bcheck', 'bskills']" style="padding: 10px 12px; text-align: center;">
+                                            <t t-if="session.state in ['started', 'done']">
+                                                <input type="number" t-att-id="'grade-' + str(enrollment.id)" class="form-control grade-input" min="0" max="100" step="0.01" placeholder="0-100" t-att-disabled="'disabled' if enrollment.state != 'attended' or session.state == 'done' else None" t-attf-style="width: 80px; text-align: center; padding: 4px 8px; font-size: 13px; font-weight: 600; border: 2px solid #d1d5db; border-radius: 4px; #{enrollment.state != 'attended' or session.state == 'done' and 'background: #f3f4f6; cursor: not-allowed;' or ''}" onchange="validateGrade(this)" onkeyup="validateGrade(this)"/>
+                                            </t>
+                                            <t t-else="">
+                                                <div style="font-size: 11px; color: #cbd5e1;">
+                                                    <i class="fa fa-lock"></i> Bloqueado
+                                                </div>
+                                            </t>
+                                        </td>
+                                        <!-- COLUMNA OBSERVACIÓN -->
+                                        <td style="padding: 10px 12px;">
+                                            <t t-if="session.state in ['started', 'done']">
+                                                <t t-if="session.state == 'done'">
+                                                    <input type="text" t-att-id="'observation-' + str(enrollment.id)" class="form-control observation-input" placeholder="Sin observación" disabled="disabled" style="width: 100%; padding: 4px 8px; font-size: 12px; border: 2px solid #d1d5db; border-radius: 4px; background: #f3f4f6; cursor: not-allowed;"/>
+                                                </t>
+                                                <t t-else="">
+                                                    <input type="text" t-att-id="'observation-' + str(enrollment.id)" class="form-control observation-input" placeholder="Observación (opcional)" style="width: 100%; padding: 4px 8px; font-size: 12px; border: 2px solid #d1d5db; border-radius: 4px;"/>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <div style="font-size: 11px; color: #cbd5e1;">
+                                                    <i class="fa fa-minus"></i>
+                                                </div>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="pc-empty-state" style="padding: 48px;">
+                        <i class="fa fa-users" style="font-size: 48px; color: #cbd5e1; margin-bottom: 16px;"></i>
+                        <h4 style="margin: 0 0 8px 0;">Sin estudiantes inscritos</h4>
+                        <p style="margin: 0; color: #64748b;">No hay estudiantes inscritos en esta sesión</p>
+                    </div>
+                </t>
+            </div>
+
+            <!-- SECCIÓN UNIFICADA: OBSERVACIONES, NOVEDADES Y ARCHIVOS ADJUNTOS -->
+            <div id="unifiedSectionCard" class="pc-card" style="margin-top: 24px;">
+                <div class="pc-card-head" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleUnifiedSection()">
+                    <h3><i class="fa fa-file-text-o"></i> Documentación de la Sesión</h3>
+                    <i id="unifiedToggleIcon" class="fa fa-chevron-down" style="font-size: 14px; color: #64748b;"></i>
+                </div>
+                <div id="unifiedContent" style="padding: 20px; display: none;">
+                    
+                  
+                    
+                    <!-- SEPARADOR -->
+                    <div style="height: 2px; background: #e5e7eb; margin: 24px 0;"></div>
+                    
+                    <!-- NOVEDADES DE LA SESIÓN -->
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #1e293b;">
+                            <i class="fa fa-exclamation-circle"></i> Novedades de la Sesión
+                        </h4>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <!-- APLAZADA -->
+                            <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 2px solid #d1d5db; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="updateNovedadBorder(this)">
+                                <input type="checkbox" id="novedad_aplazada" name="novedades" value="aplazada" onchange="handleNovedadChange(this)" style="width: 18px; height: 18px; cursor: pointer;"/>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; font-size: 14px; color: #1e293b;">
+                                        <i class="fa fa-clock-o" style="color: #f59e0b;"></i> Aplazada
+                                    </div>
+                                    <div style="font-size: 12px; color: #64748b;">
+                                        La sesión fue aplazada para otra fecha
+                                    </div>
+                                </div>
+                            </label>
+                            
+                            <!-- MATERIALES - CON ARCHIVOS OBLIGATORIOS -->
+                            <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 2px solid #d1d5db; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="updateNovedadBorder(this)">
+                                <input type="checkbox" id="novedad_materiales" name="novedades" value="materials" onchange="handleNovedadChange(this)" style="width: 18px; height: 18px; cursor: pointer;"/>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; font-size: 14px; color: #1e293b;">
+                                        <i class="fa fa-file-text-o" style="color: #3b82f6;"></i> Materiales
+                                    </div>
+                                    <div style="font-size: 12px; color: #64748b;">
+                                        Subir materiales o recursos de la sesión 
+                                        <span style="color: #ef4444; font-weight: 600;">(Archivos obligatorios)</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- OBSERVACIONES ESPECÍFICAS PARA NOVEDAD -->
+                        <div id="novedadObservationsSection" style="display: none; margin-top: 20px; padding: 16px; background: #f9fafb; border-radius: 6px; border: 2px solid #e5e7eb;">
+                            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #1e293b;">
+                                <i class="fa fa-sticky-note-o"></i> Observaciones de la Novedad
+                                <span style="font-size: 12px; color: #64748b; font-weight: 400;">(Opcional)</span>
+                            </h4>
+                            
+                            <textarea id="novedadObservations" class="form-control" rows="3" placeholder="Agrega observaciones específicas sobre la novedad..." style="width: 100%; padding: 12px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px; resize: vertical; margin-bottom: 12px;"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- SEPARADOR -->
+                    <div style="height: 2px; background: #e5e7eb; margin: 24px 0;"></div>
+                    
+                    <!-- ARCHIVOS ADJUNTOS -->
+                    <div>
+                        <h4 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #1e293b;">
+                            <i class="fa fa-paperclip"></i> Archivos Adjuntos de la Sesión
+                            <span id="attachmentsRequiredLabel" style="font-size: 12px; color: #64748b; font-weight: 400;">(Opcional)</span>
+                        </h4>
+                        
+                        <!-- CONTROLES PARA SUBIR ARCHIVOS -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                <button onclick="openFileDialog()" type="button" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa fa-plus"></i> Agregar Archivos
+                                </button>
+                                <input type="file" id="sessionFilesInput" multiple="true" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip" style="display: none;" onchange="handleSessionFilesSelect(this)"/>
+                                
+                                <button onclick="saveAndCloseSection()" id="saveFilesBtn" disabled="disabled" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; opacity: 0.5;">
+                                    <i class="fa fa-save"></i> Guardar y Cerrar
+                                </button>
+                                
+                                <span id="selectedFilesCount" style="font-size: 14px; color: #64748b; font-weight: 500;"></span>
+                            </div>
+                            
+                            <div style="margin-top: 12px; font-size: 12px; color: #64748b;">
+                                <i class="fa fa-info-circle"></i> Formatos permitidos: imágenes, PDF, Word, Excel, PowerPoint, texto, ZIP (máx. 10MB por archivo)
+                            </div>
+                        </div>
+                        
+                        <!-- LISTA DE ARCHIVOS SELECCIONADOS -->
+                        <div id="selectedFilesList" style="display: none; margin-bottom: 20px;">
+                            <h5 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #1e293b;">
+                                Archivos seleccionados (<span id="filesCount">0</span>):
+                            </h5>
+                            <div id="filesPreview" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                        
+                        <!-- LISTA DE ARCHIVOS SUBIDOS -->
+                        <div id="uploadedFilesSection" style="display: none;">
+                            <h5 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #1e293b;">
+                                <i class="fa fa-check-circle" style="color: #10b981;"></i> Archivos subidos:
+                            </h5>
+                            <div id="uploadedFilesList" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px;"></div>
+                        </div>
+                        
+                        <!-- MENSAJE DE ERROR SI NO HAY ARCHIVOS CUANDO ES MATERIALES -->
+                        <div id="filesRequiredError" style="display: none; margin-top: 12px; padding: 10px 14px; background: #fee2e2; border: 2px solid #ef4444; border-radius: 6px; color: #991b1b; font-size: 13px; font-weight: 600;">
+                            <i class="fa fa-exclamation-circle"></i> DEBES adjuntar al menos un archivo para la opción "Materiales"
+                        </div>
+                        
+                        <!-- MENSAJES DE ESTADO -->
+                        <div id="uploadStatus" style="margin-top: 12px; display: none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+                <div class="pc-card">
+                    <div class="pc-card-head">
+                        <h3><i class="fa fa-map-marker"></i> Ubicación</h3>
+                    </div>
+                    <div style="padding: 20px;">
+                        <table class="table table-sm" style="margin: 0;">
+                            <tr>
+                                <td style="width: 100px; font-weight: 600;">Sede:</td>
+                                <td><t t-esc="session.campus_id.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">Ciudad:</td>
+                                <td><t t-esc="session.campus_id.city_name or 'No especificada'"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">Dirección:</td>
+                                <td><t t-esc="session.campus_id.street or 'No especificada'"/></td>
+                            </tr>
+                            <t t-if="session.subcampus_id">
+                                <tr>
+                                    <td style="font-weight: 600;">Salón:</td>
+                                    <td><t t-esc="session.subcampus_id.name"/></td>
+                                </tr>
+                            </t>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="pc-card">
+                    <div class="pc-card-head">
+                        <h3><i class="fa fa-list-alt"></i> Agenda Académica</h3>
+                    </div>
+                    <div style="padding: 20px;">
+                        <table class="table table-sm" style="margin: 0;">
+                            <tr>
+                                <td style="width: 100px; font-weight: 600;">Agenda:</td>
+                                <td><t t-esc="session.agenda_id.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">Código:</td>
+                                <td><t t-esc="session.agenda_id.code"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">Estado:</td>
+                                <td>
+                                    <span t-attf-class="pc-badge pc-badge-#{session.agenda_id.state == 'published' and 'success' or session.agenda_id.state == 'active' and 'info' or 'secondary'}">
+                                        <t t-if="session.agenda_id.state == 'draft'">Borrador</t>
+                                        <t t-elif="session.agenda_id.state == 'active'">Activa</t>
+                                        <t t-elif="session.agenda_id.state == 'published'">Publicada</t>
+                                        <t t-elif="session.agenda_id.state == 'closed'">Cerrada</t>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">Período:</td>
+                                <td>
+                                    <t t-esc="session.agenda_id.date_start"/> a <t t-esc="session.agenda_id.date_end"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script type="text/javascript">
+            <![CDATA[
+            var sessionId = ]]><t t-esc="session.id"/><![CDATA[;
+            var sessionFiles = [];
+            var currentNovedadType = null;
+            var hasUploadedFiles = false;
+            
+            // DATOS DE TIEMPO DE LA SESIÓN
+            var sessionDate = ']]><t t-esc="session.date.strftime('%Y-%m-%d')"/><![CDATA[';
+            var sessionStartTime = ]]><t t-esc="session.time_start"/><![CDATA[;
+            var sessionEndTime = ]]><t t-esc="session.time_end"/><![CDATA[;
+            
+            // Convertir tiempo flotante a minutos
+            function floatToMinutes(floatTime) {
+                var hours = Math.floor(floatTime);
+                var minutes = Math.round((floatTime - hours) * 60);
+                return hours * 60 + minutes;
+            }
+            
+            // Crear Date objects para inicio y fin
+            var startMinutes = floatToMinutes(sessionStartTime);
+            var endMinutes = floatToMinutes(sessionEndTime);
+            
+            var sessionStartDateTime = new Date(sessionDate + 'T' + 
+                String(Math.floor(startMinutes / 60)).padStart(2, '0') + ':' + 
+                String(startMinutes % 60).padStart(2, '0') + ':00');
+                
+            var sessionEndDateTime = new Date(sessionDate + 'T' + 
+                String(Math.floor(endMinutes / 60)).padStart(2, '0') + ':' + 
+                String(endMinutes % 60).padStart(2, '0') + ':00');
+            
+            // VALIDACIÓN DE INICIO - 5 MINUTOS ANTES DE LA HORA PROGRAMADA
+            function canStartSession() {
+                var now = new Date();
+                var fiveMinutesBefore = new Date(sessionStartDateTime.getTime() - 5 * 60000);
+                return now >= fiveMinutesBefore;
+            }
+            
+            function formatTimeRemaining(milliseconds) {
+                if (milliseconds <= 0) return null;
+                
+                var seconds = Math.floor(milliseconds / 1000);
+                var minutes = Math.floor(seconds / 60);
+                var hours = Math.floor(minutes / 60);
+                var days = Math.floor(hours / 24);
+                
+                seconds = seconds % 60;
+                minutes = minutes % 60;
+                hours = hours % 24;
+                
+                var parts = [];
+                if (days > 0) parts.push(days + ' día' + (days > 1 ? 's' : ''));
+                if (hours > 0) parts.push(hours + ' hora' + (hours > 1 ? 's' : ''));
+                if (minutes > 0) parts.push(minutes + ' minuto' + (minutes > 1 ? 's' : ''));
+                if (seconds > 0 || parts.length === 0) parts.push(seconds + ' segundo' + (seconds !== 1 ? 's' : ''));
+                
+                return parts.join(', ');
+            }
+            
+            function getRemainingTimeToStart() {
+                var now = new Date();
+                var fiveMinutesBefore = new Date(sessionStartDateTime.getTime() - 5 * 60000);
+                var diff = fiveMinutesBefore - now;
+                
+                if (diff <= 0) return null;
+                
+                var timeStr = formatTimeRemaining(diff);
+                return 'Podrás iniciar en ' + timeStr;
+            }
+            
+            // VALIDACIÓN DE FINALIZACIÓN (DESHABILITADA - PUEDE FINALIZAR EN CUALQUIER MOMENTO)
+            function canFinishSession() {
+                return true;
+            }
+            
+            function getRemainingTimeToFinish() {
+                var now = new Date();
+                var tenSecondsAfter = new Date(sessionEndDateTime.getTime() + 10000);
+                var diff = tenSecondsAfter - now;
+                
+                if (diff <= 0) return null;
+                
+                var timeStr = formatTimeRemaining(diff);
+                return 'Podrás finalizar en ' + timeStr;
+            }
+            
+            // ACTUALIZAR ESTADO DE BOTONES
+            function updateButtonStates() {
+                var btnStart = document.getElementById('btnStartSession');
+                var msgStart = document.getElementById('startSessionMessage');
+                
+                // NOTA: El onclick de btnFinish se define en DOMContentLoaded para evitar duplicación
+                // No se redefine aquí para mantener una sola fuente de verdad
+
+            }
+            
+            // Actualizar cada segundo
+            setInterval(updateButtonStates, 1000);
+            
+            function markAttendance(button, status) {
+                var enrollmentId = parseInt(button.getAttribute('data-enrollment-id'));
+                var studentName = button.getAttribute('data-student-name');
+                var currentStatus = button.getAttribute('data-current-status');
+                if (currentStatus === status) return;
+                button.disabled = true;
+                
+                fetch('/my/coach/session/' + sessionId + '/mark_attendance', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                    body: JSON.stringify({jsonrpc: '2.0', method: 'call', params: {enrollment_id: enrollmentId, status: status}})
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(result => {
+    var data = result.result ? result.result : result;
+
+    if (data && data.success) {
+
+                        var statusBadge = document.getElementById('status-' + enrollmentId);
+                        statusBadge.className = 'pc-badge ' + (status === 'attended' ? 'pc-badge-success' : 'pc-badge-danger');
+                        statusBadge.innerHTML = status === 'attended' ? '✓ Asistió' : '✗ Ausente';
+                        var row = button.closest('tr');
+                        row.style.borderLeftColor = status === 'attended' ? '#10b981' : '#ef4444';
+                        var parentDiv = button.parentElement;
+                        var buttons = parentDiv.querySelectorAll('button');
+                        buttons.forEach(function(btn) {
+                            btn.setAttribute('data-current-status', status);
+                            if (btn === button) {
+                                btn.className = 'btn btn-sm ' + (status === 'attended' ? 'btn-success' : 'btn-danger');
+                            } else {
+                                btn.className = 'btn btn-sm ' + (status === 'attended' ? 'btn-outline-danger' : 'btn-outline-success');
+                            }
+                            btn.disabled = false;
+                        });
+                        toggleGradeInput(enrollmentId, status === 'attended');
+                        checkAttendanceComplete();
+                        validateFinishButton();  // Validar el botón después de marcar asistencia
+                        var successMsg = data.message || ('Asistencia de ' + studentName + ' actualizada');
+                        showNotification('✓ ' + successMsg, 'success');
+                    } else {
+                        button.disabled = false;
+                        var errorMsg = (data && (data.error || data.message)) || 'Error desconocido al marcar asistencia';
+                        console.error('Error al marcar asistencia:', data);
+                        showNotification('✗ ' + errorMsg, 'error');
+                    }
+                })
+                .catch(error => {
+                    button.disabled = false;
+                    console.error('Error de red al marcar asistencia:', error);
+                    var errorDetail = error.message || 'Error de conexión';
+                    showNotification('✗ ' + errorDetail, 'error');
+                });
+            }
+            
+            function validateGrade(input) {
+                var value = parseFloat(input.value);
+                if (input.value === '') {
+                    input.style.borderColor = '#d1d5db';
+                    input.style.background = 'white';
+                    return;
+                }
+                if (isNaN(value) || value < 0 || value > 100) {
+                    input.style.borderColor = '#ef4444';
+                    input.style.background = '#fef2f2';
+                } else {
+                    input.style.borderColor = '#10b981';
+                    input.style.background = '#f0fdf4';
+                }
+                if (value && !isNaN(value)) {
+                    var rounded = Math.round(value * 100) / 100;
+                    if (rounded !== value) {
+                        setTimeout(function() { input.value = rounded; }, 500);
+                    }
+                }
+            }
+            
+            function toggleGradeInput(enrollmentId, attended) {
+                var gradeInput = document.getElementById('grade-' + enrollmentId);
+                if (gradeInput) {
+                    if (attended) {
+                        gradeInput.disabled = false;
+                        gradeInput.removeAttribute('disabled');
+                        gradeInput.style.background = 'white';
+                        gradeInput.style.borderColor = '#d1d5db';
+                        gradeInput.style.cursor = 'text';
+                        setTimeout(function() { 
+                            gradeInput.focus(); 
+                            validateGrade(gradeInput);
+                        }, 100);
+                    } else {
+                        gradeInput.disabled = true;
+                        gradeInput.setAttribute('disabled', 'disabled');
+                        gradeInput.value = '';
+                        gradeInput.style.background = '#f3f4f6';
+                        gradeInput.style.borderColor = '#d1d5db';
+                        gradeInput.style.cursor = 'not-allowed';
+                    }
+                }
+            }
+            
+            function checkAttendanceComplete() {
+                var allStudents = document.querySelectorAll('#studentsList tr[data-enrollment-id]');
+                var pending = 0;
+                allStudents.forEach(function(row) {
+                    var button = row.querySelector('button');
+                    if (button) {
+                        var status = button.getAttribute('data-current-status');
+                        if (status !== 'attended' && status !== 'absent') pending++;
+                    }
+                });
+                
+                var progressBadge = document.getElementById('attendanceProgress');
+                var finishButton = document.getElementById('btnFinishSession');
+                var pendingWarning = document.getElementById('pendingWarning');
+                var pendingText = document.getElementById('pendingText');
+                
+                if (pending === 0) {
+                    progressBadge.className = 'pc-badge pc-badge-success';
+                    progressBadge.innerHTML = '<i class="fa fa-check-circle"></i> ✅ Completo';
+                    
+                    if (pendingWarning) {
+                        pendingWarning.style.display = 'none';
+                    }
+                    
+                    if (finishButton) {
+                        updateButtonStates();
+                    }
+                } else {
+                    progressBadge.className = 'pc-badge pc-badge-secondary';
+                    progressBadge.innerHTML = '<i class="fa fa-clock-o"></i> ⏰ Pendiente';
+                    
+                    if (pendingWarning) {
+                        pendingWarning.style.display = 'block';
+                        pendingText.textContent = 'Faltan ' + pending + ' por marcar';
+                    }
+                    
+                    if (finishButton) finishButton.disabled = true;
+                }
+            }
+            
+            function checkAllStudentsAbsent() {
+                var allStudents = document.querySelectorAll('#studentsList tr[data-enrollment-id]');
+                var totalStudents = allStudents.length;
+                var absentCount = 0;
+                
+                allStudents.forEach(function(row) {
+                    var button = row.querySelector('button');
+                    if (button) {
+                        var status = button.getAttribute('data-current-status');
+                        if (status === 'absent') {
+                            absentCount++;
+                        }
+                    }
+                });
+                
+                return totalStudents > 0 && absentCount === totalStudents;
+            }
+            
+            function checkAtLeastOneAttended() {
+                var allStudents = document.querySelectorAll('#studentsList tr[data-enrollment-id]');
+                var attendedCount = 0;
+                
+                allStudents.forEach(function(row) {
+                    var button = row.querySelector('button');
+                    if (button) {
+                        var status = button.getAttribute('data-current-status');
+                        if (status === 'attended') {
+                            attendedCount++;
+                        }
+                    }
+                });
+                
+                return attendedCount > 0;
+            }
+            
+            // FUNCIONES PARA LA SECCIÓN UNIFICADA
+            function toggleUnifiedSection() {
+                var content = document.getElementById('unifiedContent');
+                var icon = document.getElementById('unifiedToggleIcon');
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    icon.className = 'fa fa-chevron-up';
+                    loadGeneralObservations();
+                    loadSessionFiles();
+                } else {
+                    content.style.display = 'none';
+                    icon.className = 'fa fa-chevron-down';
+                }
+            }
+            
+            function updateNovedadBorder(label) {
+                var checkbox = label.querySelector('input[type="checkbox"]');
+                if (checkbox.checked) {
+                    label.style.borderColor = '#3b82f6';
+                    label.style.background = '#eff6ff';
+                } else {
+                    label.style.borderColor = '#d1d5db';
+                    label.style.background = 'white';
+                }
+            }
+            
+            function handleNovedadChange(checkbox) {
+                // Solo permitir una opción seleccionada
+                var allCheckboxes = document.querySelectorAll('input[name="novedades"]');
+                allCheckboxes.forEach(function(cb) {
+                    if (cb !== checkbox) {
+                        cb.checked = false;
+                        updateNovedadBorder(cb.closest('label'));
+                    }
+                });
+                
+                var novedadObservationsSection = document.getElementById('novedadObservationsSection');
+                var attachmentsRequiredLabel = document.getElementById('attachmentsRequiredLabel');
+                var filesRequiredError = document.getElementById('filesRequiredError');
+                var saveFilesBtn = document.getElementById('saveFilesBtn');
+                
+                if (checkbox.checked) {
+                    currentNovedadType = checkbox.value;
+                    novedadObservationsSection.style.display = 'block';
+                    
+                    // Si es "Materiales", marcar archivos como obligatorios
+                    if (checkbox.value === 'materiales') {
+                        attachmentsRequiredLabel.innerHTML = '<span style="color: #ef4444; font-weight: 600;">(OBLIGATORIO - para Materiales)</span>';
+                        filesRequiredError.style.display = 'block';
+                        checkMaterialesFilesRequirement();
+                        
+                        // Habilitar botón Guardar si ya hay archivos seleccionados
+                        if (sessionFiles.length > 0 || hasUploadedFiles) {
+                            saveFilesBtn.disabled = false;
+                            saveFilesBtn.style.opacity = '1';
+                        }
+                    } else {
+                        attachmentsRequiredLabel.innerHTML = '(Opcional)';
+                        filesRequiredError.style.display = 'none';
+                        
+                        // Para Aplazada, habilitar botón Guardar inmediatamente
+                        saveFilesBtn.disabled = false;
+                        saveFilesBtn.style.opacity = '1';
+                        saveFilesBtn.innerHTML = '<i class="fa fa-save"></i> Guardar y Cerrar';
+                    }
+                } else {
+                    currentNovedadType = null;
+                    novedadObservationsSection.style.display = 'none';
+                    attachmentsRequiredLabel.innerHTML = '(Opcional)';
+                    filesRequiredError.style.display = 'none';
+                    
+                    // Deshabilitar botón Guardar si no hay archivos seleccionados
+                    if (sessionFiles.length === 0 && !hasUploadedFiles) {
+                        saveFilesBtn.disabled = true;
+                        saveFilesBtn.style.opacity = '0.5';
+                    }
+                }
+                
+                updateNovedadBorder(checkbox.closest('label'));
+                validateFinishButton();
+            }
+            
+            function checkMaterialesFilesRequirement() {
+                var materialesSelected = document.getElementById('novedad_materiales').checked;
+                var filesRequiredError = document.getElementById('filesRequiredError');
+                var saveFilesBtn = document.getElementById('saveFilesBtn');
+                
+                if (materialesSelected && !hasUploadedFiles && sessionFiles.length === 0) {
+                    filesRequiredError.style.display = 'block';
+                    if (saveFilesBtn) {
+                        saveFilesBtn.disabled = true;
+                        saveFilesBtn.style.opacity = '0.5';
+                    }
+                    return false;
+                } else {
+                    filesRequiredError.style.display = 'none';
+                    if (saveFilesBtn && (hasUploadedFiles || sessionFiles.length > 0)) {
+                        saveFilesBtn.disabled = false;
+                        saveFilesBtn.style.opacity = '1';
+                    }
+                    return true;
+                }
+            }
+            
+            function saveAndCloseSection() {
+                // Primero subir archivos si hay seleccionados
+                if (sessionFiles.length > 0) {
+                    uploadSessionFiles(function() {
+                        // Después de subir archivos, guardar observaciones y cerrar
+                        saveAllAndClose();
+                    });
+                } else {
+                    // Si no hay archivos para subir, solo guardar y cerrar
+                    saveAllAndClose();
+                }
+            }
+            
+            function saveAllAndClose() {
+                // Obtener observaciones si existen
+                var generalObservations = '';
+                var generalObsElement = document.getElementById('generalObservations');
+                if (generalObsElement) {
+                    generalObservations = generalObsElement.value || '';
+                }
+                
+                var novedadObservations = '';
+                var novedadObsElement = document.getElementById('novedadObservations');
+                if (novedadObsElement) {
+                    novedadObservations = novedadObsElement.value || '';
+                }
+                var saveFilesBtn = document.getElementById('saveFilesBtn');
+                
+                saveFilesBtn.disabled = true;
+                saveFilesBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Guardando...';
+                
+                // Guardar observaciones
+                fetch('/my/coach/session/' + sessionId + '/save_session_observations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'call',
+                        params: {
+                            general_observations: generalObservations,
+                            novedad_observations: novedadObservations,
+                            novedad_type: currentNovedadType
+                        }
+                    })
+                })
+                .then(response => response.json())
+                .then(result => {
+    var data = result.result ? result.result : result;
+
+    if (data.success) {
+
+                        showNotification('✅ Documentación guardada correctamente', 'success');
+                        
+                        // Cerrar la sección unificada
+                        toggleUnifiedSection();
+                        
+                        // Habilitar botón de finalizar sesión
+                        validateFinishButton();
+                        
+                        // Restaurar botón
+                        setTimeout(function() {
+                            saveFilesBtn.innerHTML = '<i class="fa fa-save"></i> Guardar y Cerrar';
+                            saveFilesBtn.disabled = false;
+                        }, 2000);
+                    } else {
+                        showNotification('❌ Error al guardar documentación', 'error');
+                        saveFilesBtn.innerHTML = '<i class="fa fa-save"></i> Guardar y Cerrar';
+                        saveFilesBtn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al guardar observaciones:', error);
+                    var errorDetail = error.message || 'Error de conexión';
+                    showNotification('❌ ' + errorDetail, 'error');
+                    saveFilesBtn.innerHTML = '<i class="fa fa-save"></i> Guardar y Cerrar';
+                    saveFilesBtn.disabled = false;
+                });
+            }
+            
+            function saveGeneralObservations() {
+                var observations = document.getElementById('generalObservations').value;
+                var novedadObservations = document.getElementById('novedadObservations').value;
+                var saveBtn = document.getElementById('saveGeneralObservations');
+                
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Guardando...';
+                
+                fetch('/my/coach/session/' + sessionId + '/save_session_observations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'call',
+                        params: {
+                            general_observations: observations,
+                            novedad_observations: novedadObservations,
+                            novedad_type: currentNovedadType
+                        }
+                    })
+                })
+                .then(response => response.json())
+                .then(result => {
+    var data = result.result ? result.result : result;
+
+    if (data.success) {
+
+                        showNotification('✅ Observaciones guardadas correctamente', 'success');
+                        saveBtn.innerHTML = '<i class="fa fa-check"></i> Guardado';
+                        setTimeout(function() {
+                            saveBtn.innerHTML = '<i class="fa fa-save"></i> Guardar Observaciones';
+                            saveBtn.disabled = false;
+                        }, 2000);
+                    } else {
+                        showNotification('❌ Error al guardar observaciones', 'error');
+                        saveBtn.innerHTML = '<i class="fa fa-save"></i> Guardar Observaciones';
+                        saveBtn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    showNotification('❌ Error de conexión', 'error');
+                    saveBtn.innerHTML = '<i class="fa fa-save"></i> Guardar Observaciones';
+                    saveBtn.disabled = false;
+                });
+            }
+            
+function loadGeneralObservations() {
+    fetch('/my/coach/session/' + sessionId + '/get_session_observations', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'call',
+            params: {}
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        // Soporta tanto JSON plano como JSON-RPC
+        var data = result.result ? result.result : result;
+
+        if (data.success) {
+
+            if (data.general_observations) {
+                document.getElementById('generalObservations').value = data.general_observations;
+            }
+
+            if (data.novedad_observations) {
+                document.getElementById('novedadObservations').value = data.novedad_observations;
+            }
+
+            if (data.novedad_type) {
+                currentNovedadType = data.novedad_type;
+                var checkbox = document.getElementById('novedad_' + data.novedad_type);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    handleNovedadChange(checkbox);
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error al cargar observaciones:', error);
+    });
+}
+
+            
+            function openFileDialog() {
+                document.getElementById('sessionFilesInput').click();
+            }
+            
+            function handleSessionFilesSelect(input) {
+                var files = Array.from(input.files);
+                var totalSize = files.reduce((sum, file) => sum + file.size, 0);
+                var maxSize = 10 * 1024 * 1024;
+                
+                if (totalSize > maxSize) {
+                    showNotification('❌ El tamaño total de los archivos supera los 10MB', 'error');
+                    input.value = '';
+                    return;
+                }
+                
+                for (var i = 0; i < files.length; i++) {
+                    if (files[i].size > maxSize) {
+                        showNotification('❌ El archivo "' + files[i].name + '" supera los 10MB', 'error');
+                        input.value = '';
+                        return;
+                    }
+                }
+                
+                sessionFiles = files;
+                updateSelectedFilesList();
+                checkMaterialesFilesRequirement();
+                validateFinishButton();
+                
+                // Habilitar botón Guardar si hay archivos seleccionados
+                var saveFilesBtn = document.getElementById('saveFilesBtn');
+                if (sessionFiles.length > 0) {
+                    saveFilesBtn.disabled = false;
+                    saveFilesBtn.style.opacity = '1';
+                    saveFilesBtn.innerHTML = '<i class="fa fa-save"></i> Guardar y Cerrar';
+                }
+            }
+            
+            function updateSelectedFilesList() {
+                var selectedFilesList = document.getElementById('selectedFilesList');
+                var filesPreview = document.getElementById('filesPreview');
+                var filesCount = document.getElementById('filesCount');
+                var selectedFilesCount = document.getElementById('selectedFilesCount');
+                var saveFilesBtn = document.getElementById('saveFilesBtn');
+                
+                if (sessionFiles.length > 0) {
+                    selectedFilesList.style.display = 'block';
+                    filesCount.textContent = sessionFiles.length;
+                    selectedFilesCount.textContent = sessionFiles.length + ' archivo(s) seleccionado(s)';
+                    selectedFilesCount.style.color = '#10b981';
+                    
+                    filesPreview.innerHTML = '';
+                    sessionFiles.forEach(function(file, index) {
+                        var fileItem = document.createElement('div');
+                        fileItem.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; margin-bottom: 6px;';
+                        fileItem.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fa ${getFileIcon(file.name)}" style="color: #3b82f6;"></i>
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 500; color: #1e293b;">${file.name}</div>
+                                    <div style="font-size: 11px; color: #64748b;">${formatFileSize(file.size)}</div>
+                                </div>
+                            </div>
+                            <button onclick="removeSessionFile(${index})" type="button" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px 8px;">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        `;
+                        filesPreview.appendChild(fileItem);
+                    });
+                    
+                    saveFilesBtn.disabled = false;
+                    saveFilesBtn.style.opacity = '1';
+                    saveFilesBtn.innerHTML = '<i class="fa fa-save"></i> Guardar y Cerrar';
+                } else {
+                    selectedFilesList.style.display = 'none';
+                    selectedFilesCount.textContent = '';
+                    
+                    // Solo deshabilitar si es Materiales y no hay archivos subidos
+                    var materialesSelected = document.getElementById('novedad_materiales').checked;
+                    if (materialesSelected && !hasUploadedFiles) {
+                        saveFilesBtn.disabled = true;
+                        saveFilesBtn.style.opacity = '0.5';
+                    }
+                }
+            }
+            
+            function removeSessionFile(index) {
+                sessionFiles.splice(index, 1);
+                document.getElementById('sessionFilesInput').value = '';
+                updateSelectedFilesList();
+                checkMaterialesFilesRequirement();
+                validateFinishButton();
+            }
+            
+            function uploadSessionFiles(callback) {
+    if (sessionFiles.length === 0) {
+        if (callback) callback();
+        return;
+    }
+
+    var saveFilesBtn = document.getElementById('saveFilesBtn');
+    var uploadStatus = document.getElementById('uploadStatus');
+
+    saveFilesBtn.disabled = true;
+    saveFilesBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Subiendo...';
+    uploadStatus.style.display = 'block';
+    uploadStatus.innerHTML = `
+        <div style="background: #fef3c7; color: #92400e; padding: 8px 12px; border-radius: 6px; font-size: 13px;">
+            <i class="fa fa-spinner fa-spin"></i> Subiendo archivos, por favor espera...
+        </div>
+    `;
+
+    var formData = new FormData();
+    formData.append('session_id', sessionId);
+    formData.append('jsonrpc', '2.0');
+    formData.append('method', 'call');
+
+    sessionFiles.forEach(function (file) {
+        formData.append('files', file);
+    });
+
+    fetch('/my/coach/session/' + sessionId + '/upload_session_files', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(result => {
+        // Soporta tanto JSON plano como JSON-RPC
+        var data = result.result ? result.result : result;
+
+        if (data.success) {
+            showNotification('✅ ' + (data.message || 'Archivos subidos correctamente'), 'success');
+            uploadStatus.innerHTML = `
+                <div style="background: #dcfce7; color: #166534; padding: 8px 12px; border-radius: 6px; font-size: 13px;">
+                    <i class="fa fa-check-circle"></i> ${data.message || 'Archivos subidos exitosamente'}
+                </div>
+            `;
+
+            sessionFiles = [];
+            document.getElementById('sessionFilesInput').value = '';
+            updateSelectedFilesList();
+
+            hasUploadedFiles = true;
+            loadSessionFiles();
+
+            // Validar botón de finalizar después de subir archivos
+            validateFinishButton();
+            checkMaterialesFilesRequirement();
+
+            if (callback) callback();
+        } else {
+            var errorMsg = data.error || data.message || 'Error desconocido al subir archivos';
+            console.error('Error al subir archivos:', data);
+            showNotification('❌ ' + errorMsg, 'error');
+            uploadStatus.innerHTML = `
+                <div style="background: #fee2e2; color: #991b1b; padding: 8px 12px; border-radius: 6px; font-size: 13px;">
+                    <i class="fa fa-exclamation-circle"></i> ${errorMsg}
+                </div>
+            `;
+            saveFilesBtn.innerHTML = '<i class="fa fa-save"></i> Guardar y Cerrar';
+            saveFilesBtn.disabled = false;
+        }
+
+        setTimeout(function () {
+            uploadStatus.style.display = 'none';
+        }, 5000);
+    })
+    .catch(error => {
+        console.error('Error de red al subir archivos:', error);
+        var errorDetail = error.message || 'Error de conexión';
+        showNotification('❌ ' + errorDetail, 'error');
+        uploadStatus.innerHTML = `
+            <div style="background: #fee2e2; color: #991b1b; padding: 8px 12px; border-radius: 6px; font-size: 13px;">
+                <i class="fa fa-exclamation-circle"></i> ${errorDetail}
+            </div>
+        `;
+        saveFilesBtn.innerHTML = '<i class="fa fa-save"></i> Guardar y Cerrar';
+        saveFilesBtn.disabled = false;
+    });
+}       
+            function formatOdooDate(dateStr) {
+    if (!dateStr) return 'Fecha no disponible';
+
+    // Convertir "2026-01-12 18:15:41" → "2026-01-12T18:15:41"
+    var iso = dateStr.replace(' ', 'T');
+    var d = new Date(iso);
+
+    if (isNaN(d.getTime())) {
+        return 'Fecha inválida';
+    }
+
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+}
+
+
+                    function loadSessionFiles() {
+            fetch('/my/coach/session/' + sessionId + '/get_session_files', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'call',
+                    params: {}
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                // Soporta tanto JSON plano como JSON-RPC
+                var data = result.result ? result.result : result;
+
+                if (data.success && data.files && data.files.length > 0) {
+                    var uploadedFilesSection = document.getElementById('uploadedFilesSection');
+                    var uploadedFilesList = document.getElementById('uploadedFilesList');
+
+                    uploadedFilesSection.style.display = 'block';
+                    uploadedFilesList.innerHTML = '';
+
+                    hasUploadedFiles = true;
+
+                    data.files.forEach(function(file) {
+                        var fileItem = document.createElement('div');
+                        fileItem.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: white; border: 1px solid #bbf7d0; border-radius: 4px; margin-bottom: 6px;';
+                        fileItem.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fa ${getFileIcon(file.name)}" style="color: #10b981;"></i>
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 500; color: #1e293b;">${file.name}</div>
+                                    <div style="font-size: 11px; color: #64748b;">
+                                        Subido: ${formatOdooDate(file.create_date)}
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <a href="${file.url}" target="_blank" style="color: #3b82f6; text-decoration: none; padding: 4px 8px;">
+                                    <i class="fa fa-download"></i>
+                                </a>
+                                <button onclick="deleteSessionFile(${file.id})" type="button" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px 8px;">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        uploadedFilesList.appendChild(fileItem);
+                    });
+
+                    validateFinishButton();
+                    checkMaterialesFilesRequirement();
+                } else {
+                    document.getElementById('uploadedFilesSection').style.display = 'none';
+                    hasUploadedFiles = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar archivos:', error);
+            });
+        }
+
+            function deleteSessionFile(fileId) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este archivo?')) {
+        return;
+    }
+
+    fetch('/my/coach/session/' + sessionId + '/delete_session_file', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'call',
+            params: {
+                file_id: fileId
+            }
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        // Soporta respuesta directa o JSON-RPC
+        var data = result.result ? result.result : result;
+
+        if (data.success) {
+            showNotification('✅ ' + (data.message || 'Archivo eliminado correctamente'), 'success');
+            loadSessionFiles();
+        } else {
+            showNotification('❌ ' + (data.message || 'Error al eliminar archivo'), 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('❌ Error de conexión', 'error');
+    });
+}
+
+            function validateFinishButton() {
+                var btnFinish = document.getElementById('btnFinishSession');
+                var materialesSelected = document.getElementById('novedad_materiales').checked;
+                var atLeastOneAttended = checkAtLeastOneAttended();
+                var attendanceComplete = document.getElementById('attendanceProgress').textContent.includes('Completo');
+                
+                if (btnFinish) {
+                    // Si seleccionó Materiales y no hay archivos, bloquear
+                    if (materialesSelected && !hasUploadedFiles && sessionFiles.length === 0) {
+                        btnFinish.disabled = true;
+                        btnFinish.style.opacity = '0.5';
+                        btnFinish.style.cursor = 'not-allowed';
+                        btnFinish.title = 'Debes adjuntar archivos para la opción Materiales';
+                    } 
+                    // Si al menos un estudiante asistió O la asistencia está completa, habilitar
+                    else if (atLeastOneAttended || attendanceComplete) {
+                        btnFinish.disabled = false;
+                        btnFinish.style.opacity = '1';
+                        btnFinish.style.cursor = 'pointer';
+                        btnFinish.title = '';
+                        updateButtonStates();
+                    }
+                    // Si nadie asistió y no está completa, deshabilitar
+                    else {
+                        btnFinish.disabled = true;
+                        btnFinish.style.opacity = '0.5';
+                        btnFinish.style.cursor = 'not-allowed';
+                        btnFinish.title = 'Debes marcar la asistencia de los estudiantes';
+                    }
+                }
+            }
+            
+            // VALIDACIÓN ANTES DE TERMINAR SESIÓN
+            function validateBeforeFinish() {
+                var atLeastOneAttended = checkAtLeastOneAttended();
+                
+                // Si al menos un estudiante asistió, la documentación es OPCIONAL
+                if (atLeastOneAttended) {
+                    return true;  // Puede terminar sin problemas
+                }
+                
+                // Si NADIE asistió, la documentación es OBLIGATORIA
+                var novedadAplazada = document.getElementById('novedad_aplazada');
+                var novedadMateriales = document.getElementById('novedad_materiales');
+                
+                var hasNovedadSelected = (novedadAplazada && novedadAplazada.checked) || 
+                                        (novedadMateriales && novedadMateriales.checked);
+                
+                if (!hasNovedadSelected) {
+                    // No hay novedad seleccionada y nadie asistió
+                    var alertMsg = '⚠️ NINGÚN ESTUDIANTE ASISTIÓ A LA SESIÓN\n\n';
+                    alertMsg += '❌ NO puedes finalizar sin documentar esta situación.\n\n';
+                    alertMsg += 'DEBES:\n';
+                    alertMsg += '1. Abrir "Documentación de la Sesión" abajo\n';
+                    alertMsg += '2. Seleccionar una opción en "Novedades de la Sesión"\n';
+                    alertMsg += '3. Si seleccionas "Materiales", adjuntar archivos\n';
+                    alertMsg += '4. Hacer clic en "Guardar y Cerrar"\n\n';
+                    alertMsg += 'Después podrás finalizar la sesión.';
+                    
+                    alert(alertMsg);
+                    
+                    var unifiedContent = document.getElementById('unifiedContent');
+                    var unifiedToggleIcon = document.getElementById('unifiedToggleIcon');
+                    if (unifiedContent && unifiedContent.style.display === 'none') {
+                        unifiedContent.style.display = 'block';
+                        unifiedToggleIcon.className = 'fa fa-chevron-up';
+                    }
+                    
+                    var unifiedSectionCard = document.getElementById('unifiedSectionCard');
+                    if (unifiedSectionCard) {
+                        unifiedSectionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    showNotification('📝 OBLIGATORIO: Documenta la novedad antes de finalizar', 'error');
+                    return false;
+                }
+                
+                // Si seleccionó "Materiales", debe tener archivos
+                if (novedadMateriales && novedadMateriales.checked) {
+                    if (!hasUploadedFiles && sessionFiles.length === 0) {
+                        var alertMsg = '⚠️ VALIDACIÓN REQUERIDA\n\n';
+                        alertMsg += 'Has seleccionado la opción "Materiales".\n\n';
+                        alertMsg += '❌ NO puedes terminar la sesión sin adjuntar archivos.\n\n';
+                        alertMsg += 'DEBES:\n';
+                        alertMsg += '1. Agregar archivos en la sección "Archivos Adjuntos"\n';
+                        alertMsg += '2. Hacer clic en "Guardar y Cerrar"\n';
+                        alertMsg += '3. Esperar confirmación de guardado\n\n';
+                        alertMsg += 'Solo después podrás terminar la sesión.';
+                        
+                        alert(alertMsg);
+                        
+                        // Abrir automáticamente la sección unificada
+                        var unifiedContent = document.getElementById('unifiedContent');
+                        var unifiedToggleIcon = document.getElementById('unifiedToggleIcon');
+                        if (unifiedContent && unifiedContent.style.display === 'none') {
+                            unifiedContent.style.display = 'block';
+                            unifiedToggleIcon.className = 'fa fa-chevron-up';
+                        }
+                        
+                        showNotification('📎 OBLIGATORIO: Guarda los archivos para Materiales', 'error');
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                updateButtonStates();
+                
+                var btnStart = document.getElementById('btnStartSession');
+                if (btnStart) {
+                    btnStart.addEventListener('click', function() {
+                        if (!canStartSession()) {
+                            showNotification('⏰ ' + getRemainingTimeToStart(), 'error');
+                            return;
+                        }
+                        
+                        if (!confirm('¿Iniciar esta clase?')) return;
+                        this.disabled = true;
+                        this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Iniciando...';
+                        fetch('/my/coach/session/' + sessionId + '/start', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                            body: JSON.stringify({jsonrpc: '2.0', method: 'call', params: {}})
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+    var data = result.result ? result.result : result;
+
+    if (data.success) {
+
+                                showNotification('✓ ' + data.message
+, 'success');
+                                setTimeout(function() { window.location.reload(); }, 1000);
+                            } else {
+                                btnStart.disabled = false;
+                                btnStart.innerHTML = '<i class="fa fa-play"></i> Iniciar Clase';
+                                showNotification('✗ Error al iniciar clase', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            btnStart.disabled = false;
+                            btnStart.innerHTML = '<i class="fa fa-play"></i> Iniciar Clase';
+                            showNotification('✗ Error de conexión', 'error');
+                        });
+                    });
+                }
+                
+                var btnFinish = document.getElementById('btnFinishSession');
+                if (btnFinish) {
+                    // Reemplazar el evento click original
+                    btnFinish.onclick = function() {
+                        if (!canFinishSession()) {
+                            showNotification('⏰ ' + getRemainingTimeToFinish(), 'error');
+                            return;
+                        }
+                        
+                        // VALIDAR SI AL MENOS UN ESTUDIANTE ASISTIÓ
+                        var atLeastOneAttended = checkAtLeastOneAttended();
+                        
+                        if (!atLeastOneAttended) {
+                            // NADIE ASISTIÓ: Documentación es OBLIGATORIA
+                            if (!validateBeforeFinish()) {
+                                // La función validateBeforeFinish() ya muestra la alerta y notificación
+                                return;
+                            }
+                        }
+                        // SI AL MENOS UNO ASISTIÓ: No se requiere documentación (es opcional)
+                        
+                        if (!confirm('¿Terminar esta clase? No se puede deshacer.')) return;
+                        
+                        // ================================================
+                        // RECOPILAR INFORMACIÓN DE NOVEDADES Y OBSERVACIONES
+                        // ================================================
+                        var novedadType = null;
+                        var observaciones = null;
+                        
+                        // Verificar qué novedad está seleccionada
+                        var novedadAplazada = document.getElementById('novedad_aplazada');
+                        var novedadMateriales = document.getElementById('novedad_materiales');
+                        
+                        if (novedadAplazada && novedadAplazada.checked) {
+                            novedadType = 'postponed';
+                        } else if (novedadMateriales && novedadMateriales.checked) {
+                            novedadType = 'material';
+                        }
+                        // Si no hay ninguna seleccionada, novedadType queda null (sin novedad = normal)
+                        
+                        // Obtener observaciones si existen
+                        var novedadObservations = document.getElementById('novedadObservations');
+                        if (novedadObservations && novedadObservations.value.trim()) {
+                            observaciones = novedadObservations.value.trim();
+                        }
+                        
+                        // ================================================
+                        // ENVIAR DATOS AL BACKEND
+                        // ================================================
+                        this.disabled = true;
+                        this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Terminando...';
+                        fetch('/my/coach/session/' + sessionId + '/finish', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                            body: JSON.stringify({
+                                jsonrpc: '2.0', 
+                                method: 'call', 
+                                params: {
+                                    novedad_type: novedadType,
+                                    observaciones: observaciones
+                                }
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+    var data = result.result ? result.result : result;
+
+    if (data.success) {
+
+                                showNotification('✓ ' + data.message
+, 'success');
+                                setTimeout(function() { window.location.href = '/my/coach/agenda'; }, 1000);
+                            } else {
+                                btnFinish.disabled = false;
+                                btnFinish.innerHTML = '<i class="fa fa-check"></i> Terminar Clase';
+                                showNotification('✗ Error al terminar clase', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            btnFinish.disabled = false;
+                            btnFinish.innerHTML = '<i class="fa fa-check"></i> Terminar Clase';
+                            showNotification('✗ Error de conexión', 'error');
+                        });
+                    };
+                }
+                
+                checkAttendanceComplete();
+                setupGradeAutoSave();
+                setupObservationAutoSave();
+                loadSavedStudentData();
+                
+                // Cargar datos si la sección está abierta
+                if (document.getElementById('unifiedContent').style.display === 'block') {
+                    loadGeneralObservations();
+                    loadSessionFiles();
+                }
+            });
+            
+            // FUNCIONES DE GUARDADO AUTOMÁTICO
+            function saveGrade(enrollmentId, gradeValue) {
+                if (gradeValue < 0 || gradeValue > 100) {
+                    showNotification('❌ La nota debe estar entre 0 y 100', 'error');
+                    return;
+                }
+                
+                fetch('/my/coach/session/' + sessionId + '/save_grade', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'call',
+                        params: {
+                            enrollment_id: parseInt(enrollmentId),
+                            grade: gradeValue
+                        }
+                    })
+                })
+                .then(response => response.json())
+                .then(result => {
+    var data = result.result ? result.result : result;
+
+    if (data.success) {
+
+                        console.log('✅ Nota guardada:', result.result.grade);
+                    } else {
+                        console.error('❌ Error al guardar nota:', data.message
+);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error de conexión:', error);
+                });
+            }
+            
+            function saveObservation(enrollmentId, observationText) {
+                fetch('/my/coach/session/' + sessionId + '/save_observation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'call',
+                        params: {
+                            enrollment_id: parseInt(enrollmentId),
+                            observation: observationText
+                        }
+                    })
+                })
+                .then(response => response.json())
+                .then(result => {
+    var data = result.result ? result.result : result;
+
+    if (data.success) {
+
+                        console.log('✅ Observación guardada en historial');
+                    } else {
+                        console.error('❌ Error al guardar observación:', data.message
+);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error de conexión:', error);
+                });
+            }
+            
+            function setupGradeAutoSave() {
+                var gradeInputs = document.querySelectorAll('.grade-input');
+                gradeInputs.forEach(function(input) {
+                    input.addEventListener('blur', function() {
+                        var enrollmentId = parseInt(this.id.replace('grade-', ''));
+                        var gradeValue = parseFloat(this.value);
+                        
+                        if (!isNaN(gradeValue) && this.value.trim() !== '') {
+                            saveGrade(enrollmentId, gradeValue);
+                        }
+                    });
+                    
+                    input.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            this.blur();
+                        }
+                    });
+                });
+            }
+            
+            function setupObservationAutoSave() {
+                var observationInputs = document.querySelectorAll('.observation-input');
+                observationInputs.forEach(function(input) {
+                    var saveTimeout;
+                    
+                    input.addEventListener('input', function() {
+                        var enrollmentId = parseInt(this.id.replace('observation-', ''));
+                        var observationText = this.value;
+                        
+                        clearTimeout(saveTimeout);
+                        
+                        saveTimeout = setTimeout(function() {
+                            saveObservation(enrollmentId, observationText);
+                        }, 2000);
+                    });
+                    
+                    input.addEventListener('blur', function() {
+                        clearTimeout(saveTimeout);
+                        var enrollmentId = parseInt(this.id.replace('observation-', ''));
+                        var observationText = this.value;
+                        saveObservation(enrollmentId, observationText);
+                    });
+                });
+            }
+            
+            function loadSavedStudentData() {
+    fetch('/my/coach/session/' + sessionId + '/get_student_data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'call',
+            params: {}
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        // Soporta tanto JSON plano como JSON-RPC
+        var data = result.result ? result.result : result;
+
+        if (data.success) {
+
+            // OJO: aquí ya NO usamos "data" otra vez, usamos otra variable
+            var studentsData = data.data;
+
+            Object.keys(studentsData).forEach(function(enrollmentId) {
+                var studentData = studentsData[enrollmentId];
+
+                var gradeInput = document.getElementById('grade-' + enrollmentId);
+                if (gradeInput && studentData.grade !== null && studentData.grade !== undefined) {
+                    gradeInput.value = studentData.grade;
+                    validateGrade(gradeInput);
+                }
+
+                var observationInput = document.getElementById('observation-' + enrollmentId);
+                if (observationInput && studentData.observation) {
+                    observationInput.value = studentData.observation;
+                }
+            });
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error al cargar datos:', error);
+    });
+}
+
+            function showNotification(message, type) {
+                // Convertir a string por si acaso se pasa un objeto
+                var messageText = typeof message === 'string' ? message : JSON.stringify(message);
+                
+                var notification = document.createElement('div');
+                notification.className = 'alert alert-' + (type === 'success' ? 'success' : 'danger');
+                notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-weight: 600;';
+                notification.innerHTML = messageText;
+                document.body.appendChild(notification);
+                setTimeout(function() { notification.remove(); }, 3000);
+            }
+            
+            function getFileIcon(filename) {
+                var ext = filename.split('.').pop().toLowerCase();
+                if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].indexOf(ext) !== -1) return 'fa-file-image-o';
+                if (['pdf'].indexOf(ext) !== -1) return 'fa-file-pdf-o';
+                if (['doc', 'docx'].indexOf(ext) !== -1) return 'fa-file-word-o';
+                if (['xls', 'xlsx'].indexOf(ext) !== -1) return 'fa-file-excel-o';
+                if (['ppt', 'pptx'].indexOf(ext) !== -1) return 'fa-file-powerpoint-o';
+                if (['txt', 'rtf'].indexOf(ext) !== -1) return 'fa-file-text-o';
+                if (['zip', 'rar', '7z'].indexOf(ext) !== -1) return 'fa-file-archive-o';
+                return 'fa-file-o';
+            }
+            
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                var k = 1024;
+                var sizes = ['Bytes', 'KB', 'MB'];
+                var i = Math.floor(Math.log(bytes) / Math.log(k));
+                return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+            }
+            ]]>
+        </script>
+    </t>
+</template>
+
+</odoo>

@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================
+         VIEWS: Academic History
+    ======================================================== -->
+
+    <!-- Tree View -->
+    <record id="view_benglish_academic_history_tree" model="ir.ui.view">
+        <field name="name">benglish.academic.history.tree</field>
+        <field name="model">benglish.academic.history</field>
+        <field name="arch" type="xml">
+            <list string="Bitácora Académica"
+                create="false"
+                default_order="session_date desc, session_time_start desc"
+                decoration-success="attendance_status=='attended' or attended==True"
+                decoration-danger="attendance_status=='absent'"
+                decoration-muted="attendance_status=='pending'">
+                <field name="session_date" string="Fecha" />
+                <field name="session_code" string="Código Horario" optional="show"/>
+                <field name="subject_id" string="Clase" widget="many2one_tags" options="{'no_open': True}"/>
+                <field name="attended" string="Asistió" widget="boolean" />
+                <field name="grade" string="Nota" optional="show" />
+                <field name="teacher_id" string="Docente" />
+                <field name="novedad" string="Novedad" widget="badge" optional="hide" />
+                <field name="notes" string="Observación" optional="hide" />
+                <field name="attachment_count" string="Archivos" widget="badge" decoration-info="attachment_count > 0" optional="show"/>
+                <field name="attendance_status" column_invisible="1" />
+                <field name="program_id" optional="hide" />
+                <field name="level_id" optional="hide" />
+                <field name="campus_id" optional="hide" />
+                <field name="delivery_mode" optional="hide" />
+                <field name="attendance_status" optional="hide" />
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_benglish_academic_history_form" model="ir.ui.view">
+        <field name="name">benglish.academic.history.form</field>
+        <field name="model">benglish.academic.history</field>
+        <field name="arch" type="xml">
+            <form string="Bitácora Académica" create="false" delete="false">
+                <header>
+                    <button name="action_mark_attended" string="Marcar Asistió"
+                        type="object" class="btn-primary"
+                        invisible="attendance_status == 'attended'"
+                        groups="benglish_academy.group_benglish_manager" />
+                    <button name="action_mark_absent" string="Marcar Ausente"
+                        type="object" class="btn-warning"
+                        invisible="attendance_status == 'absent'"
+                        groups="benglish_academy.group_benglish_manager" />
+                    <field name="attendance_status" widget="statusbar"
+                        statusbar_visible="pending,attended,absent" />
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(action_student)d"
+                            type="action"
+                            class="oe_stat_button"
+                            icon="fa-user"
+                            context="{'search_default_id': student_id}">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Ver Estudiante</span>
+                            </div>
+                        </button>
+                        <button name="%(action_academic_session)d"
+                            type="action"
+                            class="oe_stat_button"
+                            icon="fa-calendar"
+                            context="{'search_default_id': session_id}"
+                            invisible="not session_id">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Ver Sesión</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="subject_id" readonly="1" class="oe_inline"/>
+                        </h1>
+                        <h3>
+                            <field name="session_date" readonly="1" class="oe_inline"/> - 
+                            <field name="session_time_start" widget="float_time" readonly="1" class="oe_inline"/>
+                        </h3>
+                    </div>
+
+                    <group>
+                        <group name="class_info" string="Información de la Clase">
+                            <field name="session_code" readonly="1" />
+                            <field name="teacher_id" readonly="1" />
+                            <field name="delivery_mode" readonly="1" />
+                            <field name="campus_id" readonly="1" />
+                            <field name="session_time_end" widget="float_time" readonly="1" />
+                        </group>
+                        <group name="student_info" string="Estudiante">
+                            <field name="student_id" readonly="1" />
+                            <field name="program_id" readonly="1" />
+                            <field name="level_id" readonly="1" />
+                            <field name="phase_id" readonly="1" optional="hide" />
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Asistencia y Novedad" name="attendance">
+                            <group>
+                                <group name="attendance_info" string="Asistencia del Estudiante">
+                                    <field name="attendance_status" widget="radio" />
+                                    <field name="attendance_registered_at" readonly="1" />
+                                    <field name="attendance_registered_by_id" readonly="1" />
+                                </group>
+                                <group name="novelty_info" string="Novedad Reportada">
+                                    <field name="novedad" widget="radio" />
+                                </group>
+                            </group>
+                            <group>
+                                <field name="notes" string="Observaciones de la Clase" placeholder="Escriba aquí cualquier observación sobre la asistencia o comportamiento del estudiante en esta clase..."/>
+                            </group>
+                        </page>
+                        <page string="Archivos Adjuntos" name="attachments">
+                            <group>
+                                <field name="attachment_count" invisible="1"/>
+                                <field name="attachment_ids" widget="many2many_binary" string="Materiales y Documentos"/>
+                            </group>
+                        </page>
+                        <page string="Información Adicional" name="additional_info">
+                            <group>
+                                <group name="plan_info" string="Plan de Estudios">
+                                    <field name="plan_id" readonly="1" />
+                                    <field name="enrollment_id" readonly="1" />
+                                </group>
+                                <group name="audit_info" string="Auditoría">
+                                    <field name="created_at" readonly="1" />
+                                    <field name="created_by_id" readonly="1" />
+                                    <field name="session_id" readonly="1" />
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_benglish_academic_history_search" model="ir.ui.view">
+        <field name="name">benglish.academic.history.search</field>
+        <field name="model">benglish.academic.history</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Bitácora Académica">
+                <field name="student_id" />
+                <field name="subject_id" />
+                <field name="program_id" />
+                <field name="level_id" />
+                <field name="campus_id" />
+                <field name="teacher_id" />
+                <field name="session_date" />
+                <separator />
+                <filter name="attended" string="Asistió"
+                    domain="[('attendance_status', '=', 'attended')]" />
+                <filter name="absent" string="Ausente"
+                    domain="[('attendance_status', '=', 'absent')]" />
+                <filter name="pending" string="Pendiente"
+                    domain="[('attendance_status', '=', 'pending')]" />
+                <separator />
+                <filter name="this_month" string="Este Mes"
+                    domain="[('session_date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d')), 
+                                 ('session_date', '&lt;=', (context_today() + relativedelta(day=31)).strftime('%Y-%m-%d'))]" />
+                <filter name="last_month" string="Mes Pasado"
+                    domain="[('session_date', '&gt;=', (context_today() - relativedelta(months=1, day=1)).strftime('%Y-%m-%d')), 
+                                 ('session_date', '&lt;=', (context_today() - relativedelta(months=1, day=31)).strftime('%Y-%m-%d'))]" />
+                <separator />
+                <group expand="0" string="Agrupar Por">
+                    <filter name="group_student" string="Estudiante"
+                        context="{'group_by': 'student_id'}" />
+                    <filter name="group_subject" string="Asignatura"
+                        context="{'group_by': 'subject_id'}" />
+                    <filter name="group_program" string="Programa"
+                        context="{'group_by': 'program_id'}" />
+                    <filter name="group_level" string="Nivel" context="{'group_by': 'level_id'}" />
+                    <filter name="group_campus" string="Sede" context="{'group_by': 'campus_id'}" />
+                    <filter name="group_date" string="Fecha" context="{'group_by': 'session_date'}" />
+                    <filter name="group_attendance" string="Asistencia"
+                        context="{'group_by': 'attendance_status'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Server Action: Descarga Masiva -->
+    <record id="action_server_download_bitacora" model="ir.actions.server">
+        <field name="name">Descargar Bitácora</field>
+        <field name="model_id" ref="model_benglish_academic_history" />
+        <field name="binding_model_id" ref="model_benglish_academic_history" />
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+            action = records.action_download_bitacora()
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_benglish_academic_history" model="ir.actions.act_window">
+        <field name="name">Bitácora Académica</field>
+        <field name="res_model">benglish.academic.history</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bitácora Académica de Clases Terminadas
+            </p>
+            <p>
+                La bitácora académica muestra SOLO las clases que ya terminaron (sesiones completadas).
+                Cada registro contiene la información de la clase dictada: asistencia, novedad y observaciones.
+            </p>
+        </field>
+    </record>
+
+</odoo>

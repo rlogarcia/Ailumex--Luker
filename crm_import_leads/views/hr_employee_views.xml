@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- 
+        HU-CRM-01 + HU-CRM-03: Vistas para Roles Comerciales en HR
+        ===========================================================
+        
+        Vista mínima para configurar roles comerciales en empleados.
+        Solo agrega campos necesarios, sin sobrescribir vistas completas.
+    -->
+
+    <!-- Herencia del formulario de empleado para agregar roles comerciales -->
+    <record id="view_employee_form_commercial_roles" model="ir.ui.view">
+        <field name="name">hr.employee.form.commercial.roles</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <!-- Agregar grupo de campos "Roles Comerciales" en la página HR Settings -->
+            <xpath expr="//page[@name='hr_settings']" position="inside">
+                <group string="Roles Comerciales CRM" name="commercial_roles">
+                    <field name="es_asesor_comercial"/>
+                    <field name="es_supervisor_comercial"/>
+                    <field name="es_director_comercial"/>
+                    <field name="is_commercial_team" readonly="1" 
+                           invisible="not is_commercial_team"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Filtro de búsqueda para empleados comerciales -->
+    <record id="view_employee_search_commercial" model="ir.ui.view">
+        <field name="name">hr.employee.search.commercial</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='inactive']" position="after">
+                <separator/>
+                <filter string="Equipo Comercial" name="commercial_team" 
+                        domain="[('is_commercial_team', '=', True)]"
+                        help="Empleados con al menos un rol comercial activo"/>
+                <filter string="Asesores Comerciales" name="commercial_advisors" 
+                        domain="[('es_asesor_comercial', '=', True)]"/>
+                <filter string="Supervisores Comerciales" name="commercial_supervisors" 
+                        domain="[('es_supervisor_comercial', '=', True)]"/>
+                <filter string="Directores Comerciales" name="commercial_directors" 
+                        domain="[('es_director_comercial', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista tree opcional: mostrar indicador visual de roles comerciales -->
+    <record id="view_employee_tree_commercial" model="ir.ui.view">
+        <field name="name">hr.employee.tree.commercial</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='department_id']" position="after">
+                <field name="is_commercial_team" string="Com." 
+                       widget="boolean_toggle" 
+                       optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

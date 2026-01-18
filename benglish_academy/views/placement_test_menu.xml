@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- MENÚ DESACTIVADO TEMPORALMENTE -->
+        <!-- <menuitem id="menu_academic_placement_test_root" name="Placement Test"
+            parent="menu_benglish_root"
+            action="action_placement_tests" sequence="35" /> -->
+    </data>
+</odoo>

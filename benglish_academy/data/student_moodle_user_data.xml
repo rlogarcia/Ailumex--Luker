@@ -1,0 +1,10 @@
+<odoo>
+    <record id="academy_moodle_user_demo_1" model="student.moodle">
+        <field name="name">Juan Pérez</field>
+        <field name="email">juan.perez@gmail.com</field>
+        <field name="mobile">3001234567</field>
+        <field name="code">USR202501</field>
+        <field name="moodle_username">prueba2</field>
+        <field name="moodle_password">Prueba2</field>
+    </record>
+</odoo>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- ========================================================
+         SECURITY: Access Rights for Academic History
+    ======================================================== -->
+    
+    <!-- Usuarios básicos: solo lectura -->
+    <record id="access_benglish_academic_history_user" model="ir.model.access">
+        <field name="name">benglish.academic.history.user</field>
+        <field name="model_id" ref="model_benglish_academic_history"/>
+        <field name="group_id" ref="benglish_academy.group_academic_user"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    
+    <!-- Docentes: lectura, escritura y creación (para marcar asistencia desde Portal Coach) -->
+    <record id="access_benglish_academic_history_teacher" model="ir.model.access">
+        <field name="name">benglish.academic.history.teacher</field>
+        <field name="model_id" ref="model_benglish_academic_history"/>
+        <field name="group_id" ref="benglish_academy.group_academic_teacher"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    
+    <!-- Asistentes: lectura, escritura y creación -->
+    <record id="access_benglish_academic_history_assistant" model="ir.model.access">
+        <field name="name">benglish.academic.history.assistant</field>
+        <field name="model_id" ref="model_benglish_academic_history"/>
+        <field name="group_id" ref="benglish_academy.group_academic_assistant"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    
+    <!-- Coordinadores: lectura, escritura y creación -->
+    <record id="access_benglish_academic_history_coordinator" model="ir.model.access">
+        <field name="name">benglish.academic.history.coordinator</field>
+        <field name="model_id" ref="model_benglish_academic_history"/>
+        <field name="group_id" ref="benglish_academy.group_academic_coordinator"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    
+    <!-- Managers: lectura, escritura y creación -->
+    <record id="access_benglish_academic_history_manager" model="ir.model.access">
+        <field name="name">benglish.academic.history.manager</field>
+        <field name="model_id" ref="model_benglish_academic_history"/>
+        <field name="group_id" ref="benglish_academy.group_academic_manager"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    
+    <!-- Administradores: control total -->
+    <record id="access_benglish_academic_history_admin" model="ir.model.access">
+        <field name="name">benglish.academic.history.admin</field>
+        <field name="model_id" ref="model_benglish_academic_history"/>
+        <field name="group_id" ref="base.group_system"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    
+    <!-- ========================================================
+         RECORD RULES: Row-level security
+    ======================================================== -->
+    
+    <!-- Estudiantes portal: solo ven su propio historial -->
+    <record id="academic_history_rule_portal" model="ir.rule">
+        <field name="name">Academic History: Portal users see only their own</field>
+        <field name="model_id" ref="model_benglish_academic_history"/>
+        <field name="domain_force">[('student_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+</odoo>

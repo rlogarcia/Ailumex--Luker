@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Vista list (Lista) de Planes -->
+        <record id="view_benglish_plan_list" model="ir.ui.view">
+            <field name="name">benglish.plan.list</field>
+            <field name="model">benglish.plan</field>
+            <field name="arch" type="xml">
+                <list string="Planes de Estudio" default_order="program_id, sequence, name"
+                    decoration-muted="not active">
+                    <field name="sequence" widget="handle" />
+                    <field name="code" />
+                    <field name="name" />
+                    <field name="version" optional="show" />
+                    <field name="is_current_version" optional="hide" />
+                    <field name="program_id" />
+                    <field name="modality" />
+                    <field name="duration_months" string="Duración (meses)" />
+                    <field name="progress_calculation_method" optional="show" />
+                    <field name="phase_count" string="Fases" />
+                    <field name="active" invisible="1" />
+                    <button name="action_view_phases" type="object" string="Ver Fases"
+                        class="btn-info" icon="fa-layer-group"
+                        invisible="phase_count == 0" />
+                </list>
+            </field>
+        </record>
+
+        <!-- Vista Form (Formulario) de Planes -->
+        <record id="view_benglish_plan_form_v2" model="ir.ui.view">
+            <field name="name">benglish.plan.form.v2</field>
+            <field name="model">benglish.plan</field>
+            <field name="arch" type="xml">
+                <form string="Plan de Estudio">
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_phases" type="object"
+                                class="oe_stat_button" icon="fa-layer-group"
+                                style="background-color: #6c757d; color: white;">
+                                <field name="phase_count" widget="statinfo" string="Fases" />
+                            </button>
+                            <button name="action_call_from_plan_levels" type="object"
+                                class="oe_stat_button" icon="fa-layer-group"
+                                style="background-color: #6c757d; color: white;">
+                                <field name="level_count" widget="statinfo" string="Niveles" />
+                            </button>
+                            <button name="action_call_from_plan_subjects" type="object"
+                                class="oe_stat_button" icon="fa-layer-group"
+                                style="background-color: #6c757d; color: white;">
+                                <field name="subject_count" widget="statinfo" string="Asignaturas" />
+                            </button>
+                        </div>
+                        <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger"
+                            invisible="active" />
+                        <div class="oe_title">
+                            <group>
+                                <group>
+                                    <div class="badge text-bg-primary"
+                                        style="display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fa fa-tag" />
+                                        <field name="code" placeholder="Código" />
+                                    </div>
+                                </group>
+                                <group>
+                                    <field name="active" widget="boolean_toggle" />
+                                </group>
+                            </group>
+                        </div>
+                        <group>
+                            <group>
+                                <div>
+                                    <label for="name" class="oe_edit_only" />
+                                    <h2>
+                                        <field name="name" placeholder="Ej: Plan 2025" />
+                                    </h2>
+                                </div>
+                            </group>
+                            <group>
+                                <div>
+                                    <label for="modality" />
+                                    <field name="modality" widget="radio"
+                                        options="{'horizontal': true}" />
+                                </div>
+                            </group>
+                        </group>
+                        <group>
+                            <group>
+                                <div>
+                                    <label for="program_id" />
+                                    <field name="program_id" options="{'no_create': True}"
+                                        placeholder="Seleccione Programa" />
+                                </div>
+                            </group>
+                            <group>
+                                <div>
+                                    <label for="credits_value" />
+                                    <field name="credits_value" placeholder="Creditos" />
+                                </div>
+                            </group>
+                        </group>
+                        <group string="📋 Control de Versiones">
+                            <group>
+                                <field name="version" />
+                                <field name="is_current_version" widget="boolean_toggle" />
+                            </group>
+                            <group>
+                                <field name="effective_date_start" />
+                                <field name="effective_date_end" />
+                            </group>
+                        </group>
+                        <group string="📊 Método de Cálculo de Progreso">
+                            <field name="progress_calculation_method" widget="radio"
+                                options="{'horizontal': true}" />
+                        </group>
+                        <field name="description" placeholder="Descripción del plan de estudio..." />
+                        <group string="Periodicidad  Académica 📅">
+                            <field name="periodicity" />
+                            <field name="periodicity_value"
+                                invisible="show_periodicity_value == False"
+                                placeholder="Cantidad" />
+                        </group>
+                        <group string="📚 Fases Académicas (Compartidas por el Programa)">
+                            <field name="active_phase" widget="boolean_toggle" />
+                            <field name="phase_ids" invisible="active_phase == False"
+                                context="{'default_program_id': program_id, 'tree_view_ref': 'benglish_academy.view_benglish_phase_list_inline'}">
+                                <list editable="bottom" create="true">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="code" />
+                                    <field name="name" />
+                                    <field name="program_id" invisible="1" />
+                                    <field name="duration_months" />
+                                    <field name="level_count" readonly="1" />
+                                    <field name="active" widget="boolean_toggle" />
+                                </list>
+                            </field>
+                        </group>
+
+                        <group string="Niveles Académicos (30 niveles compartidos)">
+                            <field name="active_level" widget="boolean_toggle" />
+                            <field name="level_ids" invisible="active_level == False"
+                                context="{'default_program_id': program_id, 'tree_view_ref': 'benglish_academy.view_benglish_level_list_inline'}">
+                                <list editable="bottom" create="true">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="code" />
+                                    <field name="name" />
+                                    <field name="phase_id"
+                                        domain="[('program_id', '=', parent.program_id)]"
+                                        options="{'no_create': False}" />
+                                    <field name="duration_weeks" />
+                                    <field name="total_hours" />
+                                    <field name="subject_count" readonly="1" />
+                                    <field name="active" widget="boolean_toggle" />
+                                </list>
+                            </field>
+                        </group>
+
+                        <group string="Asignaturas Académicas (126 asignaturas compartidas)">
+                            <field name="active_subject" widget="boolean_toggle" />
+                            <field name="subject_ids" invisible="active_subject == False"
+                                context="{'default_program_id': program_id, 'tree_view_ref': 'benglish_academy.view_benglish_subject_list_inline'}">
+                                <list editable="bottom" create="true">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="code" />
+                                    <field name="name" />
+                                    <field name="level_id"
+                                        domain="[('program_id', '=', parent.program_id)]"
+                                        options="{'no_create': False}" />
+                                    <field name="hours" />
+                                    <field name="active" widget="boolean_toggle" />
+                                </list>
+                            </field>
+                        </group>
+
+                    </sheet>
+                    <chatter />
+                </form>
+            </field>
+        </record>
+
+        <!-- Vista Kanban de Planes -->
+        <record id="view_benglish_plan_kanban" model="ir.ui.view">
+            <field name="name">benglish.plan.kanban</field>
+            <field name="model">benglish.plan</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_mobile">
+                    <field name="name" />
+                    <field name="code" />
+                    <field name="program_id" />
+                    <field name="modality" />
+                    <field name="duration_months" />
+                    <field name="phase_count" />
+                    <field name="active" />
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_global_click">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title" style="display:block;">
+                                            <field name="name" />
+                                        </strong>
+                                        <div style="margin-top: 2px;">
+                                            <span class="badge text-bg-secondary"
+                                                style="font-size:13px; color:#888; display:inline-block;">
+                                                <field name="code" />
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <field name="program_id" />
+                                    <div class="mt-2">
+                                        <span class="badge text-bg-primary me-1">
+                                            <i class="fa fa-graduation-cap" />
+                                            <field name="modality" />
+                                        </span>
+                                        <span class="badge text-bg-success me-1">
+                                            <i class="fa fa-clock-o" /> <field name="duration_months" />
+                                            meses </span>
+                                        <span class="badge text-bg-info">
+                                            <i class="fa fa-layer-group" /> <field name="phase_count" />
+                                            fases </span>
+                                        <span class="badge text-bg-info">
+                                            <i class="fa fa-layer-group" /> <field name="level_count" />
+                                            Niveles </span>
+                                        <span class="badge text-bg-info">
+                                            <i class="fa fa-layer-group" /> <field
+                                                name="subject_count" /> Asiganturas </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Vista de Búsqueda de Planes -->
+        <record id="view_benglish_plan_search" model="ir.ui.view">
+            <field name="name">benglish.plan.search</field>
+            <field name="model">benglish.plan</field>
+            <field name="arch" type="xml">
+                <search string="Buscar Planes">
+                    <field name="name" string="Plan"
+                        filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]" />
+                    <field name="code" />
+                    <field name="program_id" />
+                    <field name="modality" />
+                    <separator />
+                    <filter string="Activos" name="active" domain="[('active', '=', True)]" />
+                    <filter string="Archivados" name="inactive" domain="[('active', '=', False)]" />
+                    <separator />
+                    <filter string="Presencial" name="modality_presencial"
+                        domain="[('modality', '=', 'presencial')]" />
+                    <filter string="Virtual" name="modality_virtual"
+                        domain="[('modality', '=', 'virtual')]" />
+                    <filter string="Híbrida" name="modality_hibrida"
+                        domain="[('modality', '=', 'hibrida')]" />
+                    <group expand="0" string="Agrupar por">
+                        <filter string="Programa" name="group_by_program"
+                            context="{'group_by': 'program_id'}" />
+                        <filter string="Modalidad" name="group_by_modality"
+                            context="{'group_by': 'modality'}" />
+                        <filter string="Estado" name="group_by_active"
+                            context="{'group_by': 'active'}" />
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Acción de Ventana para Planes -->
+        <record id="action_benglish_plan" model="ir.actions.act_window">
+            <field name="name">Planes de Estudio</field>
+            <field name="res_model">benglish.plan</field>
+            <field name="view_mode">kanban,list,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    📚 Crear tu primer Plan de Estudio
+                </p>
+                <p>
+                    <strong>Un plan de estudio</strong> pertenece a un programa y define la
+                    estructura curricular organizada en fases y niveles.<br />
+                    <em>Define la
+                        duración, horas totales y organización de las fases del programa.</em>
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

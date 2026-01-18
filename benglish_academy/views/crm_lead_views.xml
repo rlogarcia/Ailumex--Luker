@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista de formulario de crm.lead extendida con campos académicos -->
+    <record id="view_crm_lead_form_benglish_inherit" model="ir.ui.view">
+        <field name="name">crm.lead.form.benglish.inherit</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form" />
+        <field name="arch" type="xml">
+
+            <!-- Añadir campos en la página de información adicional -->
+            <xpath expr="//page[@name='extra']" position="inside">
+
+                <group string="Información Académica" name="academic_info">
+                    <group>
+                        <field name="english_level" />
+                        <field name="learning_objective" />
+                        <field name="preferred_schedule" />
+                    </group>
+                    <group>
+                        <field name="delivery_mode_preference" />
+                        <field name="preferred_contact_time" />
+                        <field name="referral_source" />
+                    </group>
+                </group>
+
+                <group string="Evaluación" name="evaluation_info">
+                    <group>
+                        <field name="evaluation_date" />
+                        <field name="evaluation_completed" />
+                    </group>
+                    <group>
+                        <field name="evaluation_result" colspan="2" />
+                    </group>
+                </group>
+
+                <group string="Conversión" name="conversion_info"
+                    invisible="not converted_student_id">
+                    <field name="converted_student_id" readonly="1" />
+                </group>
+
+            </xpath>
+
+            <!-- Añadir campo de ID externo en la pestaña adicional -->
+            <xpath expr="//page[@name='extra']" position="before">
+                <group invisible="1">
+                    <field name="external_id" />
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- Botón de acción para convertir a estudiante -->
+    <record id="view_crm_lead_form_convert_student" model="ir.ui.view">
+        <field name="name">crm.lead.form.convert.student</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form" />
+        <field name="arch" type="xml">
+
+            <xpath expr="//header" position="inside">
+                <button name="action_convert_to_student"
+                    type="object"
+                    string="Convertir a Estudiante"
+                    class="btn-primary"
+                    invisible="converted_student_id or type != 'opportunity'"
+                    groups="benglish_academy.group_academic_manager,benglish_academy.group_academic_coordinator" />
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,94 @@
+# benglish - Gestión Académica
+
+## Descripción
+
+Módulo completo de gestión académica para benglish Academy, diseñado para administrar la estructura curricular, sedes, programación de clases, matrícula y operación académica de una academia de inglés.
+
+## Características Principales
+
+### ✅ HU1: Estructura Académica Completa
+- **Programas Académicos**: Organización del nivel más alto (ej: Inglés General, Inglés de Negocios)
+- **Planes de Estudio**: Definición de currículos con duración y horas totales
+- **Fases**: Agrupación de niveles en bloques temáticos (Básico, Intermedio, Avanzado)
+- **Niveles**: Unidades curriculares secuenciales dentro de cada fase
+- **Asignaturas**: Materias específicas con información detallada
+
+### ✅ HU2: Sistema de Prerrequisitos
+- Definición de prerrequisitos entre asignaturas
+- Validación automática de ciclos en cadenas de prerrequisitos
+- Verificación de que prerrequisitos pertenezcan al mismo programa
+- Control de niveles: prerrequisitos solo de niveles anteriores o iguales
+- Vista de asignaturas dependientes (que requieren esta como prerrequisito)
+
+### ✅ HU3: Gestión de Sedes y Multisedes
+- **Sedes Principales**: Gestión de ubicaciones físicas y virtuales
+- **Sub-sedes/Aulas**: Espacios específicos con capacidad y equipamiento
+- Información de contacto completa (dirección, teléfono, email)
+- Tipos de sede: Principal, Sucursal, Virtual
+- Tipos de aula: Física, Laboratorio, Virtual, Auditorio
+- Control de capacidad y equipamiento (proyector, computador, tablero, internet)
+- Coordinadores de sede
+
+## Seguridad y Permisos
+
+El módulo incluye 5 roles con diferentes niveles de acceso:
+
+1. **Usuario Académico**: Solo lectura
+2. **Docente**: Consulta de horarios y grupos
+3. **Asistente Académico**: Gestión operativa (matrículas, horarios)
+4. **Coordinador Académico**: Gestión completa (crear, editar)
+5. **Administrador Académico**: Control total (incluyendo eliminación y configuración)
+
+## Estructura de Menús
+
+- **Diseño Curricular**
+  - Programas
+  - Planes de Estudio
+  - Fases
+  - Niveles
+  - Asignaturas
+
+- **Institucional**
+  - Sedes
+  - Aulas
+
+- **Planeación Académica** (preparado para futuras funcionalidades)
+- **Matrícula** (preparado para futuras funcionalidades)
+- **Informes** (preparado para futuras funcionalidades)
+- **Configuración** (solo administradores)
+
+## Datos de Demostración
+
+El módulo incluye datos de ejemplo completos:
+- 2 Programas (Inglés General, Inglés de Negocios)
+- 2 Planes de estudio
+- 3 Fases (Básica, Intermedia, Avanzada)
+- 6 Niveles
+- 11 Asignaturas con cadenas de prerrequisitos
+- 3 Sedes (Norte, Sur, Virtual)
+- 7 Aulas/Sub-sedes
+
+## Instalación
+
+1. Copiar la carpeta `benglish_academy` a la carpeta de addons de Odoo
+2. Actualizar la lista de aplicaciones en Odoo
+3. Buscar "benglish - Gestión Académica" e instalar
+4. Los datos de demostración se cargarán automáticamente
+
+## Requisitos
+
+- Odoo 18.0 o superior
+- Módulo `base`
+- Módulo `contacts`
+
+## Versión
+
+1.0.0 - Versión inicial con HU1, HU2 y HU3 completadas
+
+## Autor
+
+benglish Academy
+
+## Licencia
+
+LGPL-3

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vista del wizard para actualizar códigos académicos -->
+        <record id="view_update_academic_codes_form" model="ir.ui.view">
+            <field name="name">benglish.update.academic.codes.form</field>
+            <field name="model">benglish.update.academic.codes</field>
+            <field name="arch" type="xml">
+                <form string="Actualizar Códigos Académicos">
+                    <group>
+                        <group>
+                            <field name="model_to_update" widget="radio" />
+                        </group>
+                        <group>
+                            <field name="only_invalid_codes" />
+                            <field name="preview_mode" />
+                        </group>
+                    </group>
+
+                    <notebook invisible="not preview_results">
+                        <page string="Vista Previa de Cambios">
+                            <field name="preview_results" nolabel="1" widget="text" />
+                        </page>
+                    </notebook>
+
+                    <footer>
+                        <button string="Ejecutar" name="action_update_codes" type="object"
+                            class="btn-primary" />
+                        <button string="Cancelar" class="btn-secondary" special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Acción del wizard -->
+        <record id="action_update_academic_codes" model="ir.actions.act_window">
+            <field name="name">Actualizar Códigos Académicos</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">benglish.update.academic.codes</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- Agregar al menú de Configuración -->
+        <menuitem
+            id="menu_update_academic_codes"
+            name="Actualizar Códigos Académicos"
+            parent="menu_benglish_configuration"
+            action="action_update_academic_codes"
+            sequence="100" />
+
+    </data>
+</odoo>

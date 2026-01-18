@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- ========================================= -->
+        <!-- VISTA FORMULARIO: PLACEMENT TEST         -->
+        <!-- ========================================= -->
+        
+        <record id="view_academic_history_placement_test_form" model="ir.ui.view">
+            <field name="name">benglish.placement.test.prospect.form</field>
+            <field name="model">benglish.placement.test.prospect</field>
+            <field name="priority">20</field>
+            <field name="arch" type="xml">
+                <form string="Placement Test">
+                    <header>
+                        <field name="placement_status" widget="statusbar" 
+                               statusbar_visible="pending_oral,pending_lms,pending_decision,completed"/>
+                        
+                        <button name="action_complete_test" type="object" 
+                                string="Completar Test"
+                                class="btn-primary"
+                                invisible="placement_status == 'completed'"
+                                confirm="¿Confirmar la finalización del Placement Test?"/>
+                        
+                        <button name="action_create_enrollment" type="object" 
+                                string="Crear Matrícula"
+                                class="btn-success"
+                                invisible="placement_status != 'completed' or enrollment_id"/>
+                    </header>
+                    
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Nombre completo del prospecto..."/>
+                            </h1>
+                        </div>
+                        
+                        <group>
+                            <group name="prospect_info" string="Información del Prospecto">
+                                <field name="email"/>
+                                <field name="phone"/>
+                                <field name="identification"/>
+                                <field name="program_id"/>
+                            </group>
+                            
+                            <group name="test_info" string="Información del Test">
+                                <field name="test_date"/>
+                                <field name="coach_id"/>
+                                <field name="final_score" widget="percentage" readonly="1"/>
+                            </group>
+                        </group>
+                        
+                        <group>
+                            <group name="assigned_level" string="Nivel Recomendado">
+                                <field name="phase_assigned_id"/>
+                                <field name="level_assigned_id" domain="[('phase_id', '=', phase_assigned_id)]"/>
+                            </group>
+                            
+                            <group name="enrollment_link" string="Matrícula" invisible="not enrollment_id">
+                                <field name="enrollment_id"/>
+                            </group>
+                        </group>
+                        
+                        <notebook>
+                            <!-- TAB 1: EVALUACIÓN ORAL -->
+                            <page name="oral_evaluation" string="Evaluación Oral">
+                                <group>
+                                    <group string="Calificación Oral">
+                                        <field name="oral_evaluation_score" widget="percentage"/>
+                                    </group>
+                                </group>
+                                
+                                <group>
+                                    <field name="oral_comments" 
+                                           placeholder="Observaciones sobre fluidez, pronunciación, gramática, vocabulario..."/>
+                                </group>
+                            </page>
+                            
+                            <!-- TAB 2: EVALUACIÓN LMS (CAMPUS VIRTUAL) -->
+                            <page name="lms_evaluation" string="Campus Virtual (LMS)">
+                                <group>
+                                    <group string="Calificaciones LMS">
+                                        <field name="lms_score" widget="percentage" readonly="1"/>
+                                        <field name="lms_grammar_score" widget="percentage"/>
+                                        <field name="lms_listening_score" widget="percentage"/>
+                                        <field name="lms_reading_score" widget="percentage"/>
+                                    </group>
+                                    
+                                    <group string="Información de Recepción">
+                                        <field name="lms_received_date" readonly="1"/>
+                                        <field name="lms_manual_override" readonly="1"/>
+                                    </group>
+                                </group>
+                                
+                                <div class="alert alert-info" role="alert" 
+                                     invisible="lms_score &gt; 0">
+                                    <strong>⏳ Esperando resultado del Campus Virtual</strong>
+                                    <p>El sistema recibirá automáticamente las calificaciones cuando el prospecto complete el examen en línea.</p>
+                                </div>
+                            </page>
+                            
+                            <!-- TAB 3: RÚBRICA Y DECISIÓN -->
+                            <page name="rubric" string="Rúbrica y Decisión">
+                                <group>
+                                    <group string="Consolidación">
+                                        <label for="rubric_detail" string="Desglose de Rúbrica"/>
+                                        <field name="rubric_detail" widget="ace" 
+                                               options="{'mode': 'json'}"
+                                               readonly="1"
+                                               nolabel="1"/>
+                                    </group>
+                                    
+                                    <group string="Asignación de Nivel">
+                                        <field name="phase_assigned_id"/>
+                                        <field name="level_assigned_id" 
+                                               domain="[('phase_id', '=', phase_assigned_id)]"/>
+                                    </group>
+                                </group>
+                                
+                                <group>
+                                    <field name="placement_comments" 
+                                           placeholder="Comentarios finales sobre el nivel asignado y recomendaciones..."/>
+                                </group>
+                                
+                                <div class="alert alert-success" role="alert" 
+                                     invisible="placement_status != 'completed'">
+                                    <strong>✓ Placement Test Completado</strong>
+                                    <p>El prospecto ha sido evaluado exitosamente. Puede proceder a crear la matrícula.</p>
+                                </div>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+        
+        <!-- ========================================= -->
+        <!-- VISTA LISTA: PLACEMENT TESTS             -->
+        <!-- ========================================= -->
+        
+        <record id="view_academic_history_placement_test_tree" model="ir.ui.view">
+            <field name="name">benglish.placement.test.prospect.list</field>
+            <field name="model">benglish.placement.test.prospect</field>
+            <field name="priority">20</field>
+            <field name="arch" type="xml">
+                <list string="Placement Tests">
+                    <field name="test_date"/>
+                    <field name="name"/>
+                    <field name="program_id"/>
+                    <field name="oral_evaluation_score" widget="percentage"/>
+                    <field name="lms_score" widget="percentage"/>
+                    <field name="final_score" widget="percentage"/>
+                    <field name="phase_assigned_id"/>
+                    <field name="level_assigned_id"/>
+                    <field name="placement_status" 
+                           decoration-info="placement_status in ('pending_oral', 'pending_lms')"
+                           decoration-warning="placement_status == 'pending_decision'"
+                           decoration-success="placement_status == 'completed'"
+                           widget="badge"/>
+                </list>
+            </field>
+        </record>
+        
+        <!-- ========================================= -->
+        <!-- BÚSQUEDA Y FILTROS                       -->
+        <!-- ========================================= -->
+        
+        <record id="view_academic_history_placement_test_search" model="ir.ui.view">
+            <field name="name">benglish.placement.test.prospect.search</field>
+            <field name="model">benglish.placement.test.prospect</field>
+            <field name="priority">20</field>
+            <field name="arch" type="xml">
+                <search string="Placement Tests">
+                    <field name="name"/>
+                    <field name="email"/>
+                    <field name="identification"/>
+                    <field name="program_id"/>
+                    <field name="phase_assigned_id"/>
+                    
+                    <filter name="pending_oral" string="Pendiente Oral"
+                            domain="[('placement_status', '=', 'pending_oral')]"/>
+                    <filter name="pending_lms" string="Pendiente LMS"
+                            domain="[('placement_status', '=', 'pending_lms')]"/>
+                    <filter name="pending_decision" string="Pendiente Asignación"
+                            domain="[('placement_status', '=', 'pending_decision')]"/>
+                    <filter name="completed" string="Completados"
+                            domain="[('placement_status', '=', 'completed')]"/>
+                    
+                    <separator/>
+                    <filter name="this_month" string="Este Mes"
+                            domain="[('test_date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+                    
+                    <group expand="0" string="Agrupar por">
+                        <filter name="group_status" string="Estado" context="{'group_by': 'placement_status'}"/>
+                        <filter name="group_program" string="Programa" context="{'group_by': 'program_id'}"/>
+                        <filter name="group_phase" string="Fase Asignada" context="{'group_by': 'phase_assigned_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        
+        <!-- ========================================= -->
+        <!-- ACCIÓN: PLACEMENT TESTS                  -->
+        <!-- ========================================= -->
+        
+        <record id="action_placement_tests" model="ir.actions.act_window">
+            <field name="name">Placement Tests</field>
+            <field name="res_model">benglish.placement.test.prospect</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[]</field>
+            <field name="context">{
+                'search_default_pending_decision': 1
+            }</field>
+            <field name="view_ids" eval="[(5, 0, 0),                           (0, 0, {'view_mode': 'list', 'view_id': ref('view_academic_history_placement_test_tree')}),                           (0, 0, {'view_mode': 'form', 'view_id': ref('view_academic_history_placement_test_form')})]"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No hay Placement Tests registrados
+                </p>
+                <p>
+                    Los Placement Tests son evaluaciones iniciales para <strong>prospectos</strong> que desean inscribirse.
+                    Permiten determinar el nivel de inglés antes de la matrícula.
+                </p>
+            </field>
+        </record>
+        
+        <!-- ========================================= -->
+        <!-- WIZARD: INGRESO MANUAL LMS               -->
+        <!-- ========================================= -->
+        
+        <record id="view_placement_lms_wizard_form" model="ir.ui.view">
+            <field name="name">benglish.placement.lms.wizard.form</field>
+            <field name="model">benglish.placement.lms.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Ingresar Resultado LMS Manualmente">
+                    <group>
+                        <group>
+                            <field name="history_id" invisible="1"/>
+                            <field name="student_id" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="Calificaciones del Campus Virtual">
+                            <field name="lms_score" required="1"/>
+                            <field name="lms_grammar_score"/>
+                            <field name="lms_listening_score"/>
+                            <field name="lms_reading_score"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <field name="comments" 
+                               placeholder="Explique la razón del ingreso manual (ej: timeout del LMS, problema técnico, etc.)"/>
+                    </group>
+                    
+                    <footer>
+                        <button name="action_confirm" type="object" string="Guardar" class="btn-primary"/>
+                        <button special="cancel" string="Cancelar"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        
+        <!-- ========================================= -->
+        <!-- WIZARD: ASIGNAR NIVEL                    -->
+        <!-- ========================================= -->
+        
+        <record id="view_placement_assign_wizard_form" model="ir.ui.view">
+            <field name="name">benglish.placement.assign.wizard.form</field>
+            <field name="model">benglish.placement.assign.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Asignar Nivel Inicial">
+                    <group>
+                        <group>
+                            <field name="history_id" invisible="1"/>
+                            <field name="student_id" readonly="1"/>
+                            <field name="program_id" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="Resultados del Placement Test" class="bg-info">
+                            <field name="oral_score" widget="percentage" readonly="1"/>
+                            <field name="lms_score" widget="percentage" readonly="1"/>
+                            <field name="final_score" widget="percentage" readonly="1" 
+                                   class="o_text_bold"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="Asignación de Nivel">
+                            <field name="phase_id" required="1"/>
+                            <field name="level_id" required="1" 
+                                   domain="[('phase_id', '=', phase_id)]"/>
+                            <field name="initial_unit"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <field name="comments" 
+                               placeholder="Comentarios sobre el nivel del estudiante y recomendaciones..."/>
+                    </group>
+                    
+                    <footer>
+                        <button name="action_confirm" type="object" 
+                                string="Confirmar Asignación" class="btn-primary"/>
+                        <button special="cancel" string="Cancelar"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        
+    </data>
+</odoo>

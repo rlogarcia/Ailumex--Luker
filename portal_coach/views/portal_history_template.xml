@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!-- TEMPLATE DE HISTORIAL DE CLASES DICTADAS -->
+<template id="coach_history" name="Coach History">
+    <t t-call="portal.portal_layout">
+        <t t-set="page_name" t-value="'coach_history'"/>
+        <t t-call="portal_coach.portal_coach_header"/>
+        
+        <div class="pc-shell">
+            <!-- Encabezado con estadísticas -->
+            <div class="pc-card" style="margin-bottom: 24px;">
+                <div style="padding: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700;">
+                                <i class="fa fa-history"></i> Historial de Clases Dictadas
+                            </h2>
+                            <p style="margin: 0; color: #64748b; font-size: 14px;">
+                                Registro completo de todas las sesiones que has finalizado
+                            </p>
+                        </div>
+                        
+                        <!-- Botón limpiar historial -->
+                        <t t-if="total_sessions &gt; 0">
+                            <button type="button" class="pc-button" onclick="confirmClearHistory()" style="background: #ef4444; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                                <i class="fa fa-trash"></i> Limpiar Historial
+                            </button>
+                        </t>
+                    </div>
+                    
+                    <!-- Estadísticas generales -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div class="pc-status-card">
+                            <div class="pc-status-icon pc-status-icon-blue">
+                                <i class="fa fa-check-circle"></i>
+                            </div>
+                            <div>
+                                <p class="pc-status-label">CLASES DICTADAS</p>
+                                <h3 class="pc-status-value"><t t-esc="total_sessions"/></h3>
+                                <p class="pc-session-meta">Total finalizadas</p>
+                            </div>
+                        </div>
+                        
+                        <div class="pc-status-card">
+                            <div class="pc-status-icon pc-status-icon-green">
+                                <i class="fa fa-book"></i>
+                            </div>
+                            <div>
+                                <p class="pc-status-label">ASIGNATURAS</p>
+                                <h3 class="pc-status-value"><t t-esc="unique_subjects"/></h3>
+                                <p class="pc-session-meta">Diferentes</p>
+                            </div>
+                        </div>
+                        
+                        <div class="pc-status-card">
+                            <div class="pc-status-icon pc-status-icon-purple">
+                                <i class="fa fa-graduation-cap"></i>
+                            </div>
+                            <div>
+                                <p class="pc-status-label">PROGRAMAS</p>
+                                <h3 class="pc-status-value"><t t-esc="unique_programs"/></h3>
+                                <p class="pc-session-meta">Impartidos</p>
+                            </div>
+                        </div>
+                        
+                        <div class="pc-status-card">
+                            <div class="pc-status-icon pc-status-icon-orange">
+                                <i class="fa fa-users"></i>
+                            </div>
+                            <div>
+                                <p class="pc-status-label">ESTUDIANTES</p>
+                                <h3 class="pc-status-value"><t t-esc="total_students_taught"/></h3>
+                                <p class="pc-session-meta">Total enseñados</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Barra de búsqueda -->
+            <div class="pc-card" style="margin-bottom: 20px;">
+                <div style="padding: 16px;">
+                    <form method="get" action="/my/coach/history" style="display: flex; gap: 12px; align-items: center;">
+                        <div style="flex: 1; position: relative;">
+                            <i class="fa fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px;"></i>
+                            <input type="text" name="search" t-att-value="search" placeholder="Buscar por asignatura, programa o agenda..." style="width: 100%; padding: 10px 14px 10px 40px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: all 0.2s;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"/>
+                        </div>
+                        <button type="submit" class="pc-button pc-button-primary" style="padding: 10px 24px;">
+                            <i class="fa fa-search"></i> Buscar
+                        </button>
+                        <t t-if="search">
+                            <a href="/my/coach/history" class="pc-button" style="padding: 10px 24px;">
+                                <i class="fa fa-times"></i> Limpiar
+                            </a>
+                        </t>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Lista de sesiones -->
+            <t t-if="total_sessions &gt; 0">
+                <div class="pc-card" style="margin-bottom: 20px;">
+                    <div style="padding: 20px;">
+                        <t t-foreach="sessions" t-as="session">
+                            <a t-attf-href="/my/coach/session/{{session.id}}" style="text-decoration: none; color: inherit; display: block;">
+                                <div class="pc-list-item" style="margin-bottom: 16px; padding: 20px; background: white; border: 2px solid #e2e8f0; border-radius: 12px; transition: all 0.2s; cursor: pointer;" onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.15)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                                    <div style="display: flex; justify-content: space-between; gap: 20px;">
+                                    <!-- Información principal -->
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                            <div style="background: #10b981; color: white; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                                                <i class="fa fa-check-circle"></i> DICTADA
+                                            </div>
+                                            <div style="background: #f1f5f9; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #475569;">
+                                                <i class="fa fa-calendar"></i> <t t-esc="session.date.strftime('%d/%m/%Y')"/>
+                                            </div>
+                                            <div style="background: #f1f5f9; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #475569;">
+                                                <i class="fa fa-clock-o"></i> 
+                                                <t t-esc="'{:02d}:{:02d}'.format(int(session.time_start), int((session.time_start % 1) * 60))"/> - 
+                                                <t t-esc="'{:02d}:{:02d}'.format(int(session.time_end), int((session.time_end % 1) * 60))"/>
+                                            </div>
+                                        </div>
+                                        
+                                        <h4 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #1e293b;">
+                                            <span style="color: #3b82f6;"><t t-esc="session.subject_id.code"/></span> - 
+                                            <t t-esc="session.subject_id.name"/>
+                                        </h4>
+                                        
+                                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                                            <span style="display: inline-flex; align-items: center; gap: 4px; background: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                                                <i class="fa fa-graduation-cap"></i> <t t-esc="session.program_id.name"/>
+                                            </span>
+                                            
+                                            <span t-attf-style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; #{
+                                                session.delivery_mode == 'virtual' and 'background: #ddd6fe; color: #5b21b6;' or
+                                                session.delivery_mode == 'on_site' and 'background: #dcfce7; color: #166534;' or
+                                                'background: #fef3c7; color: #92400e;'
+                                            }">
+                                                <t t-if="session.delivery_mode == 'virtual'">
+                                                    <i class="fa fa-video-camera"></i> Virtual
+                                                </t>
+                                                <t t-elif="session.delivery_mode == 'on_site'">
+                                                    <i class="fa fa-users"></i> Presencial
+                                                </t>
+                                                <t t-else="">
+                                                    <i class="fa fa-exchange"></i> Híbrida
+                                                </t>
+                                            </span>
+                                            
+                                            <span style="display: inline-flex; align-items: center; gap: 4px; background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                                                <i class="fa fa-map-marker"></i> <t t-esc="session.campus_id.name"/>
+                                            </span>
+                                        </div>
+                                        
+                                        <div style="display: flex; gap: 16px; font-size: 13px; color: #64748b;">
+                                            <span>
+                                                <i class="fa fa-list-alt"></i> <strong>Agenda:</strong> <t t-esc="session.agenda_id.name"/>
+                                            </span>
+                                            <span>
+                                                <i class="fa fa-users"></i> <strong>Estudiantes:</strong> <t t-esc="session.enrolled_count"/>/<t t-esc="session.max_capacity"/>
+                                            </span>
+                                            <t t-set="attended_count" t-value="len(session.enrollment_ids.filtered(lambda e: e.state == 'attended'))"/>
+                                            <t t-if="attended_count > 0">
+                                                <span style="color: #10b981; font-weight: 600;">
+                                                    <i class="fa fa-check"></i> <t t-esc="attended_count"/> asistieron
+                                                </span>
+                                            </t>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Flecha indicador -->
+                                    <div style="display: flex; align-items: center;">
+                                        <i class="fa fa-chevron-right" style="color: #cbd5e1; font-size: 20px;"></i>
+                                    </div>
+                                </div>
+                                </div>
+                            </a>
+                        </t>
+                    </div>
+                </div>
+                
+                <!-- Paginación -->
+                <t t-if="total_pages &gt; 1">
+                    <div class="pc-card" style="margin-bottom: 20px;">
+                        <div style="padding: 16px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                            <!-- Botón anterior -->
+                            <t t-if="page &gt; 1">
+                                <a t-att-href="'/my/coach/history?page=' + str(page - 1) + (search and '&amp;search=' + search or '')" class="pc-button" style="padding: 8px 16px;">
+                                    <i class="fa fa-chevron-left"></i> Anterior
+                                </a>
+                            </t>
+                            <t t-else="">
+                                <button disabled="disabled" class="pc-button" style="padding: 8px 16px; opacity: 0.5; cursor: not-allowed;">
+                                    <i class="fa fa-chevron-left"></i> Anterior
+                                </button>
+                            </t>
+                            
+                            <!-- Números de página -->
+                            <div style="display: flex; gap: 4px;">
+                                <t t-foreach="range(1, total_pages + 1)" t-as="p">
+                                    <t t-if="p == page">
+                                        <span style="background: #3b82f6; color: white; padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                                            <t t-esc="p"/>
+                                        </span>
+                                    </t>
+                                    <t t-else="">
+                                        <a t-att-href="'/my/coach/history?page=' + str(p) + (search and '&amp;search=' + search or '')" style="background: #f1f5f9; color: #475569; padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                            <t t-esc="p"/>
+                                        </a>
+                                    </t>
+                                </t>
+                            </div>
+                            
+                            <!-- Botón siguiente -->
+                            <t t-if="page &lt; total_pages">
+                                <a t-att-href="'/my/coach/history?page=' + str(page + 1) + (search and '&amp;search=' + search or '')" class="pc-button" style="padding: 8px 16px;">
+                                    Siguiente <i class="fa fa-chevron-right"></i>
+                                </a>
+                            </t>
+                            <t t-else="">
+                                <button disabled="disabled" class="pc-button" style="padding: 8px 16px; opacity: 0.5; cursor: not-allowed;">
+                                    Siguiente <i class="fa fa-chevron-right"></i>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </t>
+            
+            <!-- Mensaje cuando no hay historial -->
+            <t t-else="">
+                <div class="pc-card">
+                    <div style="padding: 60px 20px; text-align: center;">
+                        <i class="fa fa-history" style="font-size: 64px; color: #cbd5e1; margin-bottom: 20px;"></i>
+                        <h3 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600; color: #475569;">
+                            <t t-if="search">No se encontraron resultados</t>
+                            <t t-else="">No hay clases en el historial</t>
+                        </h3>
+                        <p style="margin: 0 0 24px 0; color: #94a3b8; font-size: 14px;">
+                            <t t-if="search">
+                                No se encontraron clases que coincidan con "<strong><t t-esc="search"/></strong>"
+                            </t>
+                            <t t-else="">
+                                Las clases que finalices aparecerán aquí para tu consulta
+                            </t>
+                        </p>
+                        <t t-if="search">
+                            <a href="/my/coach/history" class="pc-button pc-button-primary">
+                                <i class="fa fa-times"></i> Limpiar búsqueda
+                            </a>
+                        </t>
+                        <t t-else="">
+                            <a href="/my/coach/agenda" class="pc-button pc-button-primary">
+                                <i class="fa fa-calendar"></i> Ir a Agenda
+                            </a>
+                        </t>
+                    </div>
+                </div>
+            </t>
+        </div>
+        
+        <!-- JavaScript para funcionalidades -->
+        <script type="text/javascript">
+            var totalSessions = <t t-esc="total_sessions"/>;
+        </script>
+        <script type="text/javascript">
+        //<![CDATA[
+        function confirmClearHistory() {
+            var message = '⚠️ ADVERTENCIA: BORRAR HISTORIAL\n\n';
+            message += 'Estás a punto de eliminar ' + totalSessions + ' clase(s) de tu historial.\n\n';
+            message += '❗ IMPORTANTE:\n';
+            message += '• Las clases NO se eliminarán del sistema\n';
+            message += '• Solo desaparecerán de tu vista de historial\n';
+            message += '• Los registros académicos se mantienen intactos\n';
+            message += '• Esta acción NO se puede deshacer\n\n';
+            message += '¿Estás seguro de que deseas continuar?';
+            
+            if (confirm(message)) {
+                clearHistory();
+            }
+        }
+        
+        function clearHistory() {
+            // Mostrar indicador de carga
+            var btn = event.target;
+            var originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Eliminando...';
+            
+            fetch('/my/coach/history/clear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'call',
+                    params: {}
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.result && result.result.success) {
+                    showNotification('✓ ' + result.result.message, 'success');
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    showNotification('✗ Error al limpiar historial', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                showNotification('✗ Error de conexión', 'error');
+            });
+        }
+        
+        function showNotification(message, type) {
+            // Convertir a string por si acaso se pasa un objeto
+            var messageText = typeof message === 'string' ? message : JSON.stringify(message);
+            
+            var notification = document.createElement('div');
+            notification.textContent = messageText;
+            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; padding: 16px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out;';
+            
+            if (type === 'success') {
+                notification.style.background = '#10b981';
+                notification.style.color = 'white';
+            } else {
+                notification.style.background = '#ef4444';
+                notification.style.color = 'white';
+            }
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(function() {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(function() {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+        
+        // Animaciones CSS
+        var style = document.createElement('style');
+        style.textContent = '@keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } } @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(400px); opacity: 0; } }';
+        document.head.appendChild(style);
+        //]]>
+        </script>
+    </t>
+</template>
+
+</odoo>

@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Vista de árbol (lista) -->
+    <record id="view_freeze_reason_tree" model="ir.ui.view">
+        <field name="name">benglish.freeze.reason.tree</field>
+        <field name="model">benglish.freeze.reason</field>
+        <field name="arch" type="xml">
+            <list string="Motivos de Congelamiento" 
+                decoration-warning="es_especial"
+                decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code" optional="show"/>
+                <field name="requiere_documentacion" widget="boolean_toggle"/>
+                <field name="dias_maximos_sugeridos" optional="show"/>
+                <field name="es_especial" widget="boolean_toggle" optional="show"/>
+                <field name="freeze_count" optional="show"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Vista de formulario -->
+    <record id="view_freeze_reason_form" model="ir.ui.view">
+        <field name="name">benglish.freeze.reason.form</field>
+        <field name="model">benglish.freeze.reason</field>
+        <field name="arch" type="xml">
+            <form string="Motivo de Congelamiento">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object"
+                            class="oe_stat_button" icon="fa-archive">
+                            <field name="active" widget="boolean_button"
+                                options='{"terminology": "archive"}'/>
+                        </button>
+                        <button name="action_view_freeze_periods" type="object"
+                            class="oe_stat_button" icon="fa-list">
+                            <field name="freeze_count" widget="statinfo" 
+                                string="Solicitudes"/>
+                        </button>
+                    </div>
+                    
+                    <widget name="web_ribbon" title="Solo Coordinación"
+                        invisible="not es_especial" bg_color="text-bg-warning"/>
+                    
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="ej: Motivo Médico"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Información Básica">
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="icon" placeholder="fa-icon-name"/>
+                        </group>
+                        <group string="Configuración">
+                            <field name="requiere_documentacion"/>
+                            <field name="dias_maximos_sugeridos"/>
+                            <field name="es_especial"/>
+                            <field name="color" widget="color_picker" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Descripción">
+                        <field name="description" nolabel="1" 
+                            placeholder="Descripción del motivo y cuándo aplicarlo..."/>
+                    </group>
+                    
+                    <group string="Documentación Requerida" 
+                        invisible="not requiere_documentacion">
+                        <field name="tipos_documentos" nolabel="1"
+                            placeholder="Ejemplo: Certificado médico, Historia clínica, Incapacidad laboral..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Vista kanban -->
+    <record id="view_freeze_reason_kanban" model="ir.ui.view">
+        <field name="name">benglish.freeze.reason.kanban</field>
+        <field name="model">benglish.freeze.reason</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="icon"/>
+                <field name="color"/>
+                <field name="requiere_documentacion"/>
+                <field name="es_especial"/>
+                <field name="freeze_count"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click #{record.es_especial.raw_value ? 'border-warning' : ''}">
+                            <div class="o_kanban_card_header">
+                                <div class="o_kanban_card_header_title">
+                                    <div class="o_primary">
+                                        <i t-att-class="record.icon.value" style="margin-right: 5px;"/>
+                                        <strong><field name="name"/></strong>
+                                    </div>
+                                    <div class="o_secondary">
+                                        <field name="code"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="container o_kanban_card_content">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <span t-if="record.requiere_documentacion.raw_value">
+                                            <i class="fa fa-paperclip text-info"/> Requiere documentos
+                                        </span>
+                                        <span t-if="record.es_especial.raw_value">
+                                            <i class="fa fa-exclamation-triangle text-warning"/> Solo coordinación
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_kanban_card_footer">
+                                <span><field name="freeze_count"/> solicitudes</span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    
+    <!-- Vista de búsqueda -->
+    <record id="view_freeze_reason_search" model="ir.ui.view">
+        <field name="name">benglish.freeze.reason.search</field>
+        <field name="model">benglish.freeze.reason</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Motivos">
+                <field name="name"/>
+                <field name="code"/>
+                <filter name="requiere_docs" string="Requiere Documentos" 
+                    domain="[('requiere_documentacion', '=', True)]"/>
+                <filter name="especial" string="Solo Coordinación" 
+                    domain="[('es_especial', '=', True)]"/>
+                <filter name="activo" string="Activos" 
+                    domain="[('active', '=', True)]"/>
+                <filter name="inactivo" string="Inactivos" 
+                    domain="[('active', '=', False)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_by_especial" string="Tipo" 
+                        context="{'group_by': 'es_especial'}"/>
+                    <filter name="group_by_docs" string="Requiere Docs" 
+                        context="{'group_by': 'requiere_documentacion'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Acción de ventana -->
+    <record id="action_freeze_reason" model="ir.actions.act_window">
+        <field name="name">Motivos de Congelamiento</field>
+        <field name="res_model">benglish.freeze.reason</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_freeze_reason_search"/>
+        <field name="context">{'search_default_activo': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear un nuevo motivo de congelamiento
+            </p>
+            <p>
+                Los motivos de congelamiento son las razones predefinidas que los
+                estudiantes pueden seleccionar al solicitar un congelamiento de su matrícula.
+            </p>
+            <p>
+                Configure si cada motivo requiere documentación de soporte, días máximos
+                sugeridos, y si es un motivo especial solo para uso administrativo.
+            </p>
+        </field>
+    </record>
+    
+</odoo>

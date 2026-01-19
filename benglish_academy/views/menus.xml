@@ -226,6 +226,13 @@
                   sequence="35"
                   groups="group_academic_manager,base.group_system" />
 
+            <menuitem id="menu_teacher_password_manager"
+                  name="🔑 Contraseñas de Docentes"
+                  parent="menu_benglish_configuration"
+                  action="action_teacher_password_manager"
+                  sequence="36"
+                  groups="group_academic_manager,base.group_system" />
+
             <!-- Menú para Bitácora Académica -->
             <menuitem id="menu_benglish_academic_history"
                   name="Bitácora Académica"

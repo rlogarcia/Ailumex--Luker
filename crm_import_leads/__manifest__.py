@@ -71,6 +71,9 @@
         "views/whatsapp_template_views.xml",
         "views/whatsapp_gateway_views.xml",
         "views/whatsapp_composer_views.xml",
+        # Reportes - HU-CRM-11
+        "views/crm_lead_reports_views.xml",
+        "views/crm_reports_menu.xml",
     ],
     "installable": True,
     "application": False,

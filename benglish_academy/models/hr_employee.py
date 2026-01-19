@@ -293,29 +293,55 @@ class HrEmployeeInherit(models.Model):
         """
         Sobrescribe write para crear usuario portal cuando se activa is_teacher.
         CRÍTICO: Este es el flujo principal para dar acceso al portal de coaches.
+        
+        MIGRACIÓN: Al desactivar y reactivar is_teacher, se elimina el usuario anterior
+        y se crea uno nuevo con número de identificación (permite migrar usuarios antiguos).
         """
         result = super(HrEmployeeInherit, self).write(vals)
 
         # Si se está activando is_teacher, crear usuario portal automáticamente
         if vals.get("is_teacher"):
             for employee in self:
-                if employee.is_teacher and not employee.user_id:
+                if employee.is_teacher:
+                    # SIEMPRE crear usuario nuevo (incluso si ya existe uno)
+                    # Esto permite re-crear usuarios con el nuevo formato (número de identificación)
                     employee._create_portal_user_for_teacher()
         
-        # Si se está desactivando is_teacher, desvincular usuario
+        # Si se está desactivando is_teacher, ELIMINAR el usuario completamente
         if vals.get("is_teacher") == False:
             for employee in self:
                 if employee.user_id:
+                    old_user = employee.user_id
+                    old_login = old_user.login
+                    
                     # Desvincular del coach si existe
                     coach = self.env["benglish.coach"].sudo().search(
-                        [("user_id", "=", employee.user_id.id)], limit=1
+                        [("user_id", "=", old_user.id)], limit=1
                     )
                     if coach:
                         coach.sudo().write({"user_id": False})
                         _logger.info(f"✅ Usuario desvinculado del coach {coach.name}")
+                    
+                    # Desvincular del empleado
+                    employee.sudo().write({"user_id": False})
+                    
+                    # ELIMINAR el usuario completamente (para permitir re-creación)
+                    try:
+                        old_user.sudo().unlink()
+                        _logger.info(f"✅ Usuario {old_login} eliminado para {employee.name}")
                         
-                        # Opcional: desactivar el coach (comentado por seguridad)
-                        # coach.sudo().write({"active": False})
+                        # Notificar al empleado
+                        employee.message_post(
+                            body=f"""<p>⚠️ <strong>Acceso al Portal Docente Desactivado</strong></p>
+                            <p>El usuario <strong>{old_login}</strong> fue eliminado.</p>
+                            <p><em>Active nuevamente el checkbox para crear un nuevo usuario con número de identificación.</em></p>""",
+                            subject="Acceso al Portal Desactivado",
+                        )
+                    except Exception as e:
+                        _logger.warning(f"⚠️ No se pudo eliminar usuario {old_login}: {str(e)}")
+                        # Si no se puede eliminar, al menos desactivarlo
+                        old_user.sudo().write({"active": False})
+                        _logger.info(f"✅ Usuario {old_login} desactivado para {employee.name}")
 
         return result
 
@@ -324,14 +350,38 @@ class HrEmployeeInherit(models.Model):
         Crea un usuario de portal para el docente/coach.
         Se ejecuta automáticamente al activar is_teacher.
 
-        - Usuario (login): work_email del empleado
-        - Contraseña por defecto: 'admin'
+        - Usuario (login): número de identificación del contacto (partner.vat)
+        - Contraseña: número de identificación del contacto (partner.vat)
+        
+        MIGRACIÓN: Si ya existe un usuario con email como login, lo elimina y crea uno nuevo.
         """
         self.ensure_one()
 
+        # Si ya tiene usuario asignado, eliminarlo primero (permite migración)
         if self.user_id:
-            _logger.info(f"Empleado {self.name} ya tiene usuario asignado")
-            return
+            old_user = self.user_id
+            old_login = old_user.login
+            _logger.info(f"⚠️ Empleado {self.name} ya tiene usuario {old_login} - Eliminando para recrear...")
+            
+            # Desvincular del empleado antes de eliminar
+            self.sudo().write({"user_id": False})
+            
+            # Desvincular de coach si existe
+            coach = self.env["benglish.coach"].sudo().search(
+                [("user_id", "=", old_user.id)], limit=1
+            )
+            if coach:
+                coach.sudo().write({"user_id": False})
+            
+            # Eliminar el usuario anterior
+            try:
+                old_user.sudo().unlink()
+                _logger.info(f"✅ Usuario anterior {old_login} eliminado")
+            except Exception as e:
+                _logger.warning(f"⚠️ No se pudo eliminar usuario {old_login}: {str(e)}")
+                # Si no se puede eliminar, desactivarlo
+                old_user.sudo().write({"active": False})
+                _logger.info(f"✅ Usuario anterior {old_login} desactivado")
 
         if not self.work_email:
             raise ValidationError(
@@ -342,15 +392,103 @@ class HrEmployeeInherit(models.Model):
                 % self.name
             )
 
-        # Verificar si ya existe usuario con ese email
+        # Obtener número de identificación directamente del empleado
+        # Puede estar en varios campos según la versión de Odoo
+        identification_number = None
+        
+        # Opción 1: Campo identification_id (más común)
+        if hasattr(self, 'identification_id') and self.identification_id:
+            identification_number = self.identification_id
+            _logger.info(f"✅ Número de identificación encontrado en campo 'identification_id': {identification_number}")
+        
+        # Opción 2: Campo ssnid (Social Security Number ID - usado en algunas localizaciones)
+        elif hasattr(self, 'ssnid') and self.ssnid:
+            identification_number = self.ssnid
+            _logger.info(f"✅ Número de identificación encontrado en campo 'ssnid': {identification_number}")
+        
+        # Opción 3: Buscar en el partner de dirección privada si existe
+        elif hasattr(self, 'address_home_id') and self.address_home_id and self.address_home_id.vat:
+            identification_number = self.address_home_id.vat
+            _logger.info(f"✅ Número de identificación encontrado en contacto privado (VAT): {identification_number}")
+        
+        # Si no se encuentra el número de identificación
+        if not identification_number:
+            raise ValidationError(
+                _(
+                    "El empleado '%s' no tiene número de identificación configurado.\n\n"
+                    "Para dar acceso al portal:\n"
+                    "1. Vaya a la pestaña 'Información privada' del empleado\n"
+                    "2. En la sección 'Ciudadanía', configure el campo 'Número de identificación'\n"
+                    "3. Guarde e intente nuevamente activar el acceso al portal"
+                )
+                % self.name
+            )
+
+        # Normalizar el número de identificación (remover espacios, guiones, etc.)
+        normalized_document = re.sub(r"[^0-9a-zA-Z]", "", identification_number or "")
+        if not normalized_document:
+            raise ValidationError(
+                _(
+                    "El número de identificación del empleado '%s' no es válido.\n"
+                    "Debe contener al menos caracteres alfanuméricos.\n"
+                    "Número encontrado: %s"
+                )
+                % (self.name, identification_number)
+            )
+        
+        _logger.info(f"📋 Usando número de identificación: {normalized_document}")
+
+        # Buscar o crear partner para el empleado
+        partner = None
+        if hasattr(self, 'address_home_id') and self.address_home_id:
+            partner = self.address_home_id
+            _logger.info(f"✅ Partner encontrado en Dirección Privada: {partner.name}")
+        else:
+            # Buscar partner por email o nombre
+            partner = (
+                self.env["res.partner"]
+                .sudo()
+                .search(
+                    [
+                        "|", 
+                        ("email", "=", self.work_email),
+                        ("name", "=", self.name)
+                    ],
+                    limit=1,
+                )
+            )
+            if partner:
+                _logger.info(f"✅ Partner encontrado por email/nombre: {partner.name}")
+            else:
+                # Crear partner nuevo
+                partner = (
+                    self.env["res.partner"]
+                    .sudo()
+                    .create(
+                        {
+                            "name": self.name,
+                            "email": self.work_email,
+                            "phone": self.work_phone,
+                            "vat": normalized_document,
+                            "company_id": self.company_id.id,
+                            "is_company": False,
+                            "comment": f"Docente/Coach - Empleado ID: {self.id}",
+                        }
+                    )
+                )
+                _logger.info(f"✅ Partner creado con VAT: {partner.name}")
+
+        # Validar que el número de identificación sea válido
+
+        # Verificar si ya existe usuario con ese número de identificación
         existing = (
             self.env["res.users"]
             .sudo()
-            .search([("login", "=", self.work_email)], limit=1)
+            .search([("login", "=", normalized_document)], limit=1)
         )
         if existing:
             _logger.warning(
-                f"Ya existe usuario con email {self.work_email} - vinculando al empleado"
+                f"Ya existe usuario con número de identificación {normalized_document} - vinculando al empleado"
             )
             self.sudo().write({"user_id": existing.id})
             return
@@ -370,48 +508,21 @@ class HrEmployeeInherit(models.Model):
                 )
                 group_ids = [portal_group.id]
 
-            # Buscar o crear partner asociado al empleado
-            partner = (
-                self.env["res.partner"]
-                .sudo()
-                .search(
-                    ["|", ("email", "=", self.work_email), ("name", "=", self.name)],
-                    limit=1,
-                )
-            )
-
-            if not partner:
-                partner = (
-                    self.env["res.partner"]
-                    .sudo()
-                    .create(
-                        {
-                            "name": self.name,
-                            "email": self.work_email,
-                            "phone": self.work_phone,
-                            "company_id": self.company_id.id,
-                            "is_company": False,
-                            "comment": f"Docente/Coach - Empleado ID: {self.id}",
-                        }
-                    )
-                )
-                _logger.info(f"✅ Partner creado: {partner.name} (ID: {partner.id})")
-
-            # Crear usuario portal con contraseña 'admin'
+            # Crear usuario portal con número de identificación como login y password
             user_vals = {
                 "name": self.name,
-                "login": self.work_email,
+                "login": normalized_document,  # Login es el número de identificación
                 "email": self.work_email,
                 "partner_id": partner.id,
                 "groups_id": [(6, 0, group_ids)],
-                "password": "admin",  # Contraseña por defecto
+                "password": normalized_document,  # Password es el número de identificación
             }
 
-            new_user = self.env["res.users"].sudo().create(user_vals)
+            new_user = self.env["res.users"].with_context(no_reset_password=True).sudo().create(user_vals)
             self.sudo().write({"user_id": new_user.id})
 
             _logger.info(
-                f"✅ Usuario portal creado para docente {self.name} - Login: {self.work_email} - Password: admin"
+                f"✅ Usuario portal creado para docente {self.name} - Login: {normalized_document} - Password: {normalized_document}"
             )
             
             # Buscar o crear coach asociado
@@ -460,9 +571,10 @@ class HrEmployeeInherit(models.Model):
                     <ul>
                         <li><strong>Código Coach:</strong> {coach.code}</li>
                         <li><strong>Email:</strong> {coach.email}</li>
-                        <li><strong>Usuario Portal:</strong> {self.work_email}</li>
-                        <li><strong>Contraseña:</strong> admin</li>
-                    </ul>""",
+                        <li><strong>Usuario Portal:</strong> {normalized_document}</li>
+                        <li><strong>Contraseña:</strong> {normalized_document}</li>
+                    </ul>
+                    <p><em>Usuario y contraseña basados en el número de identificación.</em></p>""",
                     subject="Perfil de Coach y Acceso Portal Creado",
                 )
 
@@ -470,10 +582,11 @@ class HrEmployeeInherit(models.Model):
             self.message_post(
                 body=f"""<p>✅ <strong>Acceso al Portal Docente Creado</strong></p>
                 <ul>
-                    <li><strong>Usuario:</strong> {self.work_email}</li>
-                    <li><strong>Contraseña:</strong> admin</li>
+                    <li><strong>Usuario:</strong> {normalized_document}</li>
+                    <li><strong>Contraseña:</strong> {normalized_document}</li>
+                    <li><strong>Email:</strong> {self.work_email}</li>
                 </ul>
-                <p><em>Puede cambiar su contraseña desde el portal.</em></p>""",
+                <p><em>Usuario y contraseña basados en el número de identificación. Puede cambiar su contraseña desde el portal.</em></p>""",
                 subject="Acceso al Portal Docente Creado",
             )
 

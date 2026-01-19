@@ -24,12 +24,12 @@ class ResUsers(models.Model):
             employees = user.employee_ids.filtered(lambda e: e.active)
             user.is_commercial_user = any(emp.is_commercial_team for emp in employees)
 
-    @api.depends("employee_ids.es_director_comercial", "employee_ids.active")
+    @api.depends("employee_ids.rol_comercial", "employee_ids.active")
     def _compute_is_commercial_director(self):
         for user in self:
             employees = user.employee_ids.filtered(lambda e: e.active)
             user.is_commercial_director = any(
-                emp.es_director_comercial for emp in employees
+                emp.rol_comercial == "director" for emp in employees
             )
 
     def _search_is_commercial_user(self, operator, value):
@@ -52,7 +52,7 @@ class ResUsers(models.Model):
 
     def _search_is_commercial_director(self, operator, value):
         director_employees = self.env["hr.employee"].search(
-            [("es_director_comercial", "=", True), ("active", "=", True)]
+            [("rol_comercial", "=", "director"), ("active", "=", True)]
         )
         director_user_ids = director_employees.mapped("user_id").ids
 

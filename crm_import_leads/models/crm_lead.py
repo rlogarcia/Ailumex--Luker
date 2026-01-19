@@ -422,11 +422,7 @@ class CrmLead(models.Model):
         )
 
         # Si es asesor (sin ser supervisor ni director), bloquear
-        if (
-            employee
-            and employee.es_asesor_comercial
-            and not (employee.es_supervisor_comercial or employee.es_director_comercial)
-        ):
+        if employee and employee.rol_comercial == "asesor":
             raise UserError(
                 _(
                     "Eliminación no permitida - HU-CRM-09\n\n"
@@ -448,11 +444,7 @@ class CrmLead(models.Model):
         )
 
         # Si es asesor (sin ser supervisor ni director)
-        if (
-            employee
-            and employee.es_asesor_comercial
-            and not (employee.es_supervisor_comercial or employee.es_director_comercial)
-        ):
+        if employee and employee.rol_comercial == "asesor":
             # Limitar cantidad de registros exportables
             if len(self) > 50:
                 raise UserError(

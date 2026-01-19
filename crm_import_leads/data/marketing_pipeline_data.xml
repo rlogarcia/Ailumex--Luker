@@ -20,14 +20,14 @@
             <field name="sequence">5</field>
             <field name="use_leads">True</field>
             <field name="use_opportunities">True</field>
-            <field name="company_id" eval="False"/>  <!-- Multi-company: disponible para todas -->
+            <field name="company_id" eval="False" />  <!-- Multi-company: disponible para todas -->
         </record>
 
         <!-- ETAPA 1: Nuevo -->
         <record id="crm_stage_marketing_new" model="crm.stage">
             <field name="name">Nuevo</field>
             <field name="sequence">1</field>
-            <field name="team_id" ref="crm_team_marketing"/>
+            <field name="team_id" ref="crm_team_marketing" />
             <field name="fold">False</field>
             <field name="is_won">False</field>
         </record>
@@ -36,7 +36,7 @@
         <record id="crm_stage_marketing_unreachable" model="crm.stage">
             <field name="name">Incontactable</field>
             <field name="sequence">2</field>
-            <field name="team_id" ref="crm_team_marketing"/>
+            <field name="team_id" ref="crm_team_marketing" />
             <field name="fold">False</field>
             <field name="is_won">False</field>
         </record>
@@ -45,7 +45,7 @@
         <record id="crm_stage_marketing_pending" model="crm.stage">
             <field name="name">Pendiente / Volver a llamar</field>
             <field name="sequence">3</field>
-            <field name="team_id" ref="crm_team_marketing"/>
+            <field name="team_id" ref="crm_team_marketing" />
             <field name="fold">False</field>
             <field name="is_won">False</field>
         </record>
@@ -54,7 +54,7 @@
         <record id="crm_stage_marketing_rejected" model="crm.stage">
             <field name="name">Reprobado (No perfil)</field>
             <field name="sequence">4</field>
-            <field name="team_id" ref="crm_team_marketing"/>
+            <field name="team_id" ref="crm_team_marketing" />
             <field name="fold">True</field>
             <field name="is_won">False</field>
         </record>
@@ -63,7 +63,7 @@
         <record id="crm_stage_marketing_approved" model="crm.stage">
             <field name="name">Aprobado → En evaluación</field>
             <field name="sequence">5</field>
-            <field name="team_id" ref="crm_team_marketing"/>
+            <field name="team_id" ref="crm_team_marketing" />
             <field name="fold">False</field>
             <field name="is_won">False</field>
         </record>
@@ -77,7 +77,7 @@
             - models/crm_lead.py: método _check_marketing_commercial_assignment()
             
             Los roles comerciales se gestionan desde HR:
-            - models/hr_employee.py: campos es_asesor_comercial, es_supervisor_comercial, es_director_comercial
+            - models/hr_employee.py: campo rol_comercial (Selection con opciones: asesor, supervisor, director)
             - models/res_users.py: campo computed is_commercial_user
             
             Para configurar:

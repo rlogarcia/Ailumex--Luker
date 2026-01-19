@@ -5,22 +5,14 @@ from odoo import models, fields, api
 class HrEmployee(models.Model):
     _inherit = "hr.employee"
 
-    es_asesor_comercial = fields.Boolean(
-        string="Es Asesor Comercial",
-        help="Marca este empleado como parte del equipo comercial (puede recibir leads)",
-        default=False,
-        tracking=True,
-    )
-    es_supervisor_comercial = fields.Boolean(
-        string="Es Supervisor Comercial",
-        help="Este empleado puede supervisar y recibir reasignaciones de leads",
-        default=False,
-        tracking=True,
-    )
-    es_director_comercial = fields.Boolean(
-        string="Es Director Comercial",
-        help="Este empleado puede gestionar todas las operaciones comerciales",
-        default=False,
+    rol_comercial = fields.Selection(
+        selection=[
+            ("asesor", "Asesor Comercial"),
+            ("supervisor", "Supervisor Comercial"),
+            ("director", "Director Comercial"),
+        ],
+        string="Rol Comercial",
+        help="Define el rol y permisos del empleado en el CRM",
         tracking=True,
     )
 
@@ -31,17 +23,11 @@ class HrEmployee(models.Model):
         help="Indica si este empleado tiene algún rol comercial activo",
     )
 
-    @api.depends(
-        "es_asesor_comercial", "es_supervisor_comercial", "es_director_comercial"
-    )
+    @api.depends("rol_comercial")
     def _compute_is_commercial_team(self):
         """Determina si el empleado es parte del equipo comercial"""
         for employee in self:
-            employee.is_commercial_team = (
-                employee.es_asesor_comercial
-                or employee.es_supervisor_comercial
-                or employee.es_director_comercial
-            )
+            employee.is_commercial_team = bool(employee.rol_comercial)
 
     @api.model
     def _reassign_leads_on_role_change(self, employee_ids):
@@ -80,15 +66,7 @@ class HrEmployee(models.Model):
         También sincroniza automáticamente los grupos de seguridad del usuario.
         """
         # Detectar empleados que actualmente tienen rol comercial ANTES del write
-        roles_changed = any(
-            key in vals
-            for key in [
-                "es_asesor_comercial",
-                "es_supervisor_comercial",
-                "es_director_comercial",
-                "active",
-            ]
-        )
+        roles_changed = "rol_comercial" in vals or "active" in vals
 
         if roles_changed:
             # Guardar estado actual: empleados que tienen rol comercial ahora
@@ -110,14 +88,7 @@ class HrEmployee(models.Model):
                 self._reassign_leads_on_role_change(lost_role.ids)
 
         # HU-CRM-09: Sincronizar grupos de seguridad automáticamente
-        if any(
-            key in vals
-            for key in [
-                "es_asesor_comercial",
-                "es_supervisor_comercial",
-                "es_director_comercial",
-            ]
-        ):
+        if "rol_comercial" in vals:
             self._sync_security_groups()
 
         return res
@@ -148,14 +119,14 @@ class HrEmployee(models.Model):
             groups_to_remove = []
 
             # Lógica de asignación de grupos (jerarquía)
-            if employee.es_director_comercial:
+            if employee.rol_comercial == "director":
                 # Director tiene todos los grupos (implied)
                 groups_to_add.append(director_group.id)
-            elif employee.es_supervisor_comercial:
+            elif employee.rol_comercial == "supervisor":
                 # Supervisor tiene asesor + supervisor
                 groups_to_add.append(supervisor_group.id)
                 groups_to_remove.append(director_group.id)
-            elif employee.es_asesor_comercial:
+            elif employee.rol_comercial == "asesor":
                 # Solo asesor
                 groups_to_add.append(asesor_group.id)
                 groups_to_remove.extend([supervisor_group.id, director_group.id])

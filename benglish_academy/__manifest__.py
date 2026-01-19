@@ -108,6 +108,7 @@
         # Vistas - Configuración
         "views/class_booking_settings_views.xml",
         "views/student_password_manager_views.xml",  # Gestión de contraseñas de estudiantes
+        "views/teacher_password_manager_views.xml",  # Gestión de contraseñas de docentes
         "views/portal_password_reset_template.xml",  # Modal de recuperación de contraseña en login
         # MENÚS (DEBEN CARGARSE AL FINAL - dependen de todas las acciones)
         "views/menus.xml",

@@ -18,6 +18,7 @@ from . import class_session
 from . import teacher_replacement_log
 from . import student
 from . import student_password_manager
+from . import teacher_password_manager
 from . import benglish_password_reset
 from . import enrollment
 from . import enrollment_progress

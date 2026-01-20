@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de lista: Cola de reintentos WhatsApp -->
+    <record id="view_whatsapp_message_queue_list" model="ir.ui.view">
+        <field name="name">whatsapp.message.queue.list</field>
+        <field name="model">whatsapp.message.queue</field>
+        <field name="arch" type="xml">
+            <list string="Cola de reintentos WhatsApp"
+                decoration-success="state == 'success'"
+                decoration-danger="state == 'failed'"
+                decoration-warning="state == 'pending'"
+                decoration-muted="state == 'processing'">
+                <field name="create_date" string="Fecha" />
+                <field name="channel_id" string="Conversación" />
+                <field name="lead_id" />
+                <field name="retry_count" string="Intentos" />
+                <field name="max_retries" string="Máx" />
+                <field name="next_retry" string="Próximo intento" />
+                <field name="state" widget="badge"
+                    decoration-success="state == 'success'"
+                    decoration-danger="state == 'failed'"
+                    decoration-warning="state == 'pending'" />
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista formulario: Detalle de mensaje en cola -->
+    <record id="view_whatsapp_message_queue_form" model="ir.ui.view">
+        <field name="name">whatsapp.message.queue.form</field>
+        <field name="model">whatsapp.message.queue</field>
+        <field name="arch" type="xml">
+            <form string="Mensaje en cola">
+                <header>
+                    <button name="action_retry_now"
+                        string="Reintentar ahora"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state == 'success'" />
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="pending,processing,success" />
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="notification_id" readonly="1" />
+                            <field name="message_id" readonly="1" />
+                            <field name="channel_id" readonly="1" />
+                            <field name="lead_id" readonly="1" />
+                        </group>
+                        <group>
+                            <field name="retry_count" readonly="1" />
+                            <field name="max_retries" />
+                            <field name="next_retry" />
+                            <field name="create_date" readonly="1" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Log de errores">
+                            <field name="error_log" widget="text" readonly="1" />
+                        </page>
+                        <page string="Contenido del mensaje">
+                            <group>
+                                <field name="message_id" invisible="1" />
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción de ventana -->
+    <record id="action_whatsapp_message_queue" model="ir.actions.act_window">
+        <field name="name">Cola de reintentos WhatsApp</field>
+        <field name="res_model">whatsapp.message.queue</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{
+            'search_default_pending': 1,
+            }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay mensajes en cola
+            </p>
+            <p>
+                Los mensajes de WhatsApp que fallen se añadirán automáticamente
+                a esta cola para reintentos posteriores.
+            </p>
+        </field>
+    </record>
+
+    <!-- Filtros de búsqueda -->
+    <record id="view_whatsapp_message_queue_search" model="ir.ui.view">
+        <field name="name">whatsapp.message.queue.search</field>
+        <field name="model">whatsapp.message.queue</field>
+        <field name="arch" type="xml">
+            <search string="Buscar en cola">
+                <field name="channel_id" />
+                <field name="lead_id" />
+
+                <filter string="Pendientes"
+                    name="pending"
+                    domain="[('state', '=', 'pending')]" />
+
+                <filter string="Fallidos"
+                    name="failed"
+                    domain="[('state', '=', 'failed')]" />
+
+                <filter string="Exitosos"
+                    name="success"
+                    domain="[('state', '=', 'success')]" />
+
+                <separator />
+
+                <filter string="Próximos 5 minutos"
+                    name="next_5min"
+                    domain="[
+                            ('next_retry', '&lt;=', (datetime.datetime.now() + datetime.timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S')),
+                            ('state', '=', 'pending')
+                        ]" />
+
+                <group expand="0" string="Agrupar por">
+                    <filter string="Estado" name="group_by_state" context="{'group_by': 'state'}" />
+                    <filter string="Lead" name="group_by_lead" context="{'group_by': 'lead_id'}" />
+                    <filter string="Fecha" name="group_by_date"
+                        context="{'group_by': 'create_date'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

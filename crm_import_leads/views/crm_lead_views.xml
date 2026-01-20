@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- HU-CRM-03: Dominio dinámico para user_id en Marketing -->
+    <record id="view_crm_lead_form_marketing_domain" model="ir.ui.view">
+        <field name="name">crm.lead.form.marketing.domain</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form" />
+        <field name="arch" type="xml">
+            <!-- Campo invisible para dominio dinámico -->
+            <xpath expr="//field[@name='user_id']" position="before">
+                <field name="user_id_domain" invisible="1" />
+                <field name="can_edit_campaign_fields" invisible="1" />
+            </xpath>
+
+            <!-- Aplicar dominio dinámico a user_id -->
+            <xpath expr="//field[@name='user_id']" position="attributes">
+                <attribute name="domain">user_id_domain</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- HU-CRM-05 + HU-CRM-06: Campos de campaña y datos adicionales del lead -->
+    <record id="view_crm_lead_form_campaign_fields" model="ir.ui.view">
+        <field name="name">crm.lead.form.campaign.fields</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form" />
+        <field name="arch" type="xml">
+            <!-- Etiquetas y bloqueo por rol en campos de campaña -->
+            <xpath expr="//field[@name='campaign_id']" position="attributes">
+                <attribute name="string">Nombre campaña</attribute>
+                <attribute name="readonly">not can_edit_campaign_fields</attribute>
+            </xpath>
+            <xpath expr="//field[@name='medium_id']" position="attributes">
+                <attribute name="string">Marca campaña</attribute>
+                <attribute name="readonly">not can_edit_campaign_fields</attribute>
+            </xpath>
+            <xpath expr="//field[@name='source_id']" position="attributes">
+                <attribute name="string">Fuente / Origen</attribute>
+                <attribute name="readonly">not can_edit_campaign_fields</attribute>
+            </xpath>
+
+            <!-- Campos adicionales del lead -->
+            <xpath expr="//field[@name='source_id']" position="after">
+                <field name="program_interest" />
+                <field name="profile" />
+            </xpath>
+
+            <!-- Agregar phone2 y city_id en pestaña extra -->
+            <xpath expr="//page[@name='extra']" position="inside">
+                <group string="Información Adicional del Prospecto" name="additional_info_group">
+                    <group>
+                        <field name="phone2" placeholder="+57 300 123 4567" />
+                        <field name="city_id" />
+                    </group>
+                    <group>
+                        <field name="observations" placeholder="Observaciones generales del lead" />
+                    </group>
+                </group>
+            </xpath>
+
+            <!-- Ajustes de etiquetas para equivalencia con Excel -->
+            <xpath expr="//field[@name='mobile']" position="attributes">
+                <attribute name="string">Teléfono</attribute>
+            </xpath>
+            <xpath expr="//page[@name='internal_notes']" position="attributes">
+                <attribute name="string">Observaciones</attribute>
+            </xpath>
+            <xpath expr="//field[@name='description']" position="attributes">
+                <attribute name="string">Observaciones</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista de formulario del Lead con Score -->
+    <record id="view_crm_lead_form_score" model="ir.ui.view">
+        <field name="name">crm.lead.form.score</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form" />
+        <field name="arch" type="xml">
+            <!-- Agregar el botón de ver detalles del score en el button_box -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button"
+                    type="object"
+                    name="action_view_lead_score_details"
+                    icon="fa-trophy"
+                    help="Ver detalles del cálculo del score">
+                    <div class="o_stat_info">
+                        <field name="lead_score" widget="statinfo" string="Score" />
+                    </div>
+                </button>
+
+                <!-- WhatsApp Button -->
+                <button class="oe_stat_button"
+                    type="object"
+                    name="action_view_whatsapp_messages"
+                    icon="fa-whatsapp"
+                    help="Ver mensajes de WhatsApp">
+                    <field name="whatsapp_count" widget="statinfo" string="WhatsApp" />
+                </button>
+            </xpath>
+
+            <!-- Agregar campo de score visible en el formulario -->
+            <xpath expr="//field[@name='priority']" position="after">
+                <field name="lead_score_display" readonly="1" widget="badge"
+                    decoration-danger="lead_score &lt; 30"
+                    decoration-warning="lead_score &gt;= 30 and lead_score &lt; 60"
+                    decoration-success="lead_score &gt;= 60" />
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Automatizaciones" name="automation_rules">
+                    <group>
+                        <group string="Seguimiento automático">
+                            <field name="last_activity_datetime" readonly="1" />
+                            <field name="inactivity_notification_sent" readonly="1" />
+                        </group>
+                        <group string="Cierres automáticos">
+                            <field name="auto_close_date" readonly="1" />
+                            <field name="auto_close_reason" readonly="1" />
+                        </group>
+                    </group>
+                </page>
+
+                <page string="Interacciones" name="interactions" groups="base.group_user">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <button name="%(action_lead_interactions)d" type="action"
+                                class="btn btn-primary" string="✉️ Nueva Interacción" />
+                        </div>
+                        <div class="col-md-6">
+                            <button name="action_send_whatsapp" type="object"
+                                class="btn btn-success" string="📱 Enviar WhatsApp" />
+                        </div>
+                    </div>
+                    <field name="interaction_ids" nolabel="1" readonly="1" mode="list"
+                        context="{'default_lead_id': id}">
+                        <list string="Interacciones">
+                            <field name="date" />
+                            <field name="type" />
+                            <field name="result" />
+                            <field name="notes" />
+                            <field name="user_id" />
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista de lista del Lead con Score -->
+    <record id="view_crm_lead_list_score" model="ir.ui.view">
+        <field name="name">crm.lead.list.score</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_leads" />
+        <field name="arch" type="xml">
+            <!-- Agregar columna de score después de la prioridad -->
+            <xpath expr="//field[@name='priority']" position="after">
+                <field name="lead_score"
+                    string="Score"
+                    widget="badge"
+                    decoration-danger="lead_score &lt; 30"
+                    decoration-warning="lead_score &gt;= 30 and lead_score &lt; 60"
+                    decoration-success="lead_score &gt;= 60" />
+            </xpath>
+
+            <xpath expr="//field[@name='probability']" position="after">
+                <field name="auto_close_date" string="Cierre automático" />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista de búsqueda del Lead con filtros de Score -->
+    <record id="view_crm_lead_search_score" model="ir.ui.view">
+        <field name="name">crm.lead.search.score</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_leads_filter" />
+        <field name="arch" type="xml">
+            <!-- Agregar filtros de score -->
+            <xpath expr="//filter[@name='inactive']" position="after">
+                <!-- Only keep the required custom columns for the pipeline -->
+            </xpath>
+            <!-- FIX: Usar un selector válido para agregar el filtro de agrupación -->
+            <xpath expr="//filter[@name='salesperson']" position="after">
+                <filter string="Cierre automático" name="groupby_auto_close"
+                    context="{'group_by': 'auto_close_date'}" />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista kanban del Lead con Score - MEJORADA CON MÁS INFORMACIÓN -->
+    <record id="view_crm_lead_kanban_score" model="ir.ui.view">
+        <field name="name">crm.lead.kanban.score</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_kanban_view_leads" />
+        <field name="arch" type="xml">
+            <!-- Agregar campos necesarios -->
+            <xpath expr="//field[@name='priority']" position="after">
+                <field name="lead_score" />
+                <field name="auto_close_date" />
+                <field name="last_activity_datetime" />
+                <field name="phone" />
+                <field name="email_from" />
+                <field name="country_id" />
+                <field name="company_id" />
+            </xpath>
+
+            <!-- Ensure the kanban has these fields available at the root so QWeb rendering won't
+            fail -->
+            <xpath expr="//kanban" position="inside">
+                <field name="lead_score" />
+                <field name="auto_close_date" />
+                <field name="last_activity_datetime" />
+                <field name="phone" />
+                <field name="email_from" />
+                <field name="country_id" />
+                <field name="company_id" />
+                <field name="expected_revenue" />
+            </xpath>
+
+            <!-- Reemplazar el contenido de la tarjeta para mostrar más información -->
+            <xpath expr="//t[@t-name='card']" position="replace">
+                <t t-name="card">
+                    <div class="oe_kanban_content">
+                        <div class="o_kanban_record_top">
+                            <div class="o_kanban_record_headings">
+                                <strong class="o_kanban_record_title">
+                                    <field name="partner_id" />
+                                </strong>
+                                <br />
+                                <span class="o_kanban_record_subtitle text-muted">
+                                    <field name="name" />
+                                </span>
+                            </div>
+                            <div class="o_kanban_record_top_right">
+                                <field name="priority" widget="priority" />
+                                <field name="activity_ids" widget="kanban_activity" />
+                            </div>
+                        </div>
+
+                        <div class="o_kanban_record_body">
+                            <!-- Información de contacto -->
+                            <div class="text-muted small mb-1">
+                                <t t-if="record.email_from">
+                                    <i class="fa fa-envelope" />
+                                    <field name="email_from" />
+                                </t>
+                            </div>
+                            <div class="text-muted small mb-1">
+                                <t t-if="record.phone">
+                                    <i class="fa fa-phone" />
+                                    <field name="phone" />
+                                </t>
+                            </div>
+
+                            <!-- Información de negocio -->
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <strong class="text-success">
+                                        <field name="expected_revenue" widget="monetary"
+                                            options="{'currency_field': 'company_currency'}" />
+                                    </strong>
+                                    <div class="text-muted small">Ingreso esperado</div>
+                                </div>
+                                <div class="col-6">
+                                    <span class="badge badge-pill"
+                                        t-att-class="record.lead_score.raw_value >= 60 ? 'badge-success' : (record.lead_score.raw_value >= 30 ? 'badge-warning' : 'badge-danger')">
+                                        Score: <field name="lead_score" />
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- País y empresa -->
+                            <div class="text-muted small mt-2">
+                                <t t-if="record.country_id">
+                                    <i class="fa fa-globe" />
+                                    <field name="country_id" />
+                                </t>
+                                <t t-if="record.company_id"> | <field name="company_id" />
+                                </t>
+                            </div>
+                        </div>
+
+                        <div class="o_kanban_record_bottom mt-2">
+                            <div class="oe_kanban_bottom_left">
+                                <field name="tag_ids" widget="many2many_tags"
+                                    options="{'color_field': 'color'}" />
+                            </div>
+                            <div class="oe_kanban_bottom_right">
+                                <field name="user_id" widget="many2one_avatar_user" />
+                            </div>
+                        </div>
+
+                        <!-- Información de automatización -->
+                        <div class="d-flex flex-wrap gap-2 small text-muted mt-2 pt-2 border-top">
+                            <t t-if="record.auto_close_date">
+                                <span title="Fecha de cierre automático">⚙️ <t
+                                        t-esc="record.auto_close_date.value" /></span>
+                            </t>
+                            <t t-if="record.last_activity_datetime">
+                                <span title="Última actividad">⏱️ <t
+                                        t-esc="record.last_activity_datetime.value" /></span>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- HU-CRM-06: Bloqueo por rol en vistas de lista -->
+    <record id="view_crm_lead_tree_campaign_lock" model="ir.ui.view">
+        <field name="name">crm.lead.tree.campaign.lock</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_leads" />
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="can_edit_campaign_fields" invisible="1" />
+            </xpath>
+            <xpath expr="//field[@name='campaign_id']" position="attributes">
+                <attribute name="string">Nombre campaña</attribute>
+                <attribute name="readonly">not can_edit_campaign_fields</attribute>
+            </xpath>
+            <xpath expr="//field[@name='medium_id']" position="attributes">
+                <attribute name="string">Marca campaña</attribute>
+                <attribute name="readonly">not can_edit_campaign_fields</attribute>
+            </xpath>
+            <xpath expr="//field[@name='source_id']" position="attributes">
+                <attribute name="string">Fuente / Origen</attribute>
+                <attribute name="readonly">not can_edit_campaign_fields</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_crm_oppor_tree_campaign_lock" model="ir.ui.view">
+        <field name="name">crm.lead.tree.oppor.campaign.lock</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor" />
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="can_edit_campaign_fields" invisible="1" />
+            </xpath>
+            <xpath expr="//field[@name='campaign_id']" position="attributes">
+                <attribute name="string">Nombre campaña</attribute>
+                <attribute name="readonly">not can_edit_campaign_fields</attribute>
+            </xpath>
+            <xpath expr="//field[@name='medium_id']" position="attributes">
+                <attribute name="string">Marca campaña</attribute>
+                <attribute name="readonly">not can_edit_campaign_fields</attribute>
+            </xpath>
+            <xpath expr="//field[@name='source_id']" position="attributes">
+                <attribute name="string">Fuente / Origen</attribute>
+                <attribute name="readonly">not can_edit_campaign_fields</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_crm_automation_pipeline" model="ir.actions.act_window">
+        <field name="name">Automatizaciones CRM</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('type', '=', 'opportunity')]</field>
+        <field name="context">{"default_type": "opportunity"}</field>
+    </record>
+
+    <menuitem id="menu_crm_import_leads_automation" name="Automatizaciones"
+        parent="menu_crm_import_leads" action="action_crm_automation_pipeline" sequence="30"
+        groups="base.group_user" />
+</odoo>

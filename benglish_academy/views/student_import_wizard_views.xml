@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_student_import_wizard_form" model="ir.ui.view">
+        <field name="name">benglish.student.import.wizard.form</field>
+        <field name="model">benglish.student.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Importar estudiantes">
+                <group>
+                    <field name="file_data" filename="file_name" />
+                    <field name="file_name" />
+                </group>
+                <group>
+                    <field name="extra_column_policy" />
+                    <field name="enforce_column_order" />
+                    <field name="identity_field" />
+                </group>
+                <footer>
+                    <button
+                        name="action_create_batch"
+                        type="object"
+                        string="Validar y cargar"
+                        class="btn-primary"
+                    />
+                    <button string="Cancelar" special="cancel" class="btn-secondary" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_student_import_confirm_wizard_form" model="ir.ui.view">
+        <field name="name">benglish.student.import.confirm.wizard.form</field>
+        <field name="model">benglish.student.import.confirm.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Confirmar importación">
+                <group>
+                    <field name="batch_id" readonly="1" />
+                    <field name="line_count" readonly="1" />
+                    <field name="create_count" readonly="1" />
+                    <field name="update_count" readonly="1" />
+                    <field name="ignore_count" readonly="1" />
+                    <field name="pending_count" readonly="1" />
+                    <field name="error_count" readonly="1" />
+                </group>
+                <group>
+                    <field name="confirm" />
+                </group>
+                <footer>
+                    <button
+                        name="action_confirm_import"
+                        type="object"
+                        string="Importar"
+                        class="btn-primary"
+                    />
+                    <button string="Cancelar" special="cancel" class="btn-secondary" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_student_import_bulk_decision_wizard_form" model="ir.ui.view">
+        <field name="name">benglish.student.import.bulk.decision.wizard.form</field>
+        <field name="model">benglish.student.import.bulk.decision.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cambiar decisiones">
+                <group>
+                    <field name="batch_id" readonly="1" />
+                    <field name="apply_to" />
+                    <field name="decision" />
+                    <field name="use_existing_student" invisible="decision != 'update'" />
+                </group>
+                <footer>
+                    <button
+                        name="action_apply"
+                        type="object"
+                        string="Aplicar"
+                        class="btn-primary"
+                    />
+                    <button string="Cancelar" special="cancel" class="btn-secondary" />
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

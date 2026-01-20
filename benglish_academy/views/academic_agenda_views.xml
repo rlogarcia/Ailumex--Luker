@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ========================================== -->
+        <!-- VISTAS PARA ACADEMIC AGENDA -->
+        <!-- ========================================== -->
+
+        <!-- Vista Form Simplificada para Quick Create de Sesiones -->
+        <record id="view_academic_session_quick_create_form" model="ir.ui.view">
+            <field name="name">benglish.academic.session.quick.create.form</field>
+            <field name="model">benglish.academic.session</field>
+            <field name="arch" type="xml">
+                <form string="Nueva Sesión">
+                    <group>
+                        <group>
+                            <field name="agenda_id" invisible="1" />
+                            <field name="location_city" invisible="1" />
+                            <field name="campus_id" invisible="1" />
+                            <field name="program_id" required="1" options="{'no_create': True}" />
+                            <field name="template_id"
+                                domain="['|', ('program_id', '=', False), ('program_id', '=', program_id)]"
+                                options="{'no_create': True}" />
+                            <field name="audience_phase_id"
+                                domain="[('program_id', '=', program_id)]"
+                                options="{'no_create': True}"
+                                invisible="not template_id" />
+                            <field name="audience_unit_from"
+                                invisible="not template_id" />
+                            <field name="audience_unit_to"
+                                invisible="not template_id" />
+                            <field name="delivery_mode" widget="radio" required="1" />
+                            <field name="subcampus_id"
+                                invisible="delivery_mode == 'virtual'"
+                                context="{'show_only_name': True}"
+                                options="{'no_create': True}" />
+                        </group>
+                        <group>
+                            <field name="date" required="1" />
+                            <field name="weekday" invisible="1" />
+                            <field name="time_start" widget="time_picker" required="1" />
+                            <field name="time_end" widget="time_picker" required="1" />
+                            <field name="duration_hours" invisible="1" />
+                            <field name="max_capacity" required="1" invisible="delivery_mode == 'hybrid'" />
+                            <field name="max_capacity_presential" 
+                                invisible="delivery_mode != 'hybrid'"
+                                required="delivery_mode == 'hybrid'" />
+                            <field name="max_capacity_virtual" 
+                                invisible="delivery_mode != 'hybrid'"
+                                required="delivery_mode == 'hybrid'" />
+                        </group>
+                    </group>
+                    <group string="Docente Asignado">
+                        <group>
+                            <field name="teacher_id" required="1"
+                                options="{'no_create': True, 'no_open': True}"
+                                placeholder="Selecciona un docente disponible..." />
+                        </group>
+                        <group invisible="not teacher_id or delivery_mode == 'presential'">
+                            <label for="teacher_meeting_link" string="📋 Enlace del Docente" />
+                            <div class="alert alert-info" role="alert" style="padding: 8px; margin: 0;">
+                                <field name="teacher_meeting_link" widget="url" readonly="1"
+                                    nolabel="1" class="d-block" 
+                                    style="font-size: 13px; word-break: break-all;" />
+                                <small class="text-muted">
+                                    <field name="teacher_meeting_id" nolabel="1" readonly="1"/>
+                                </small>
+                            </div>
+                        </group>
+                    </group>
+                </form>
+            </field>
+        </record>
+
+        <!-- Vista List -->
+        <record id="view_academic_agenda_list" model="ir.ui.view">
+            <field name="name">benglish.academic.agenda.list</field>
+            <field name="model">benglish.academic.agenda</field>
+            <field name="arch" type="xml">
+                <list string="Horarios Académicos"
+                    decoration-info="state == 'draft'"
+                    decoration-warning="state == 'active'"
+                    decoration-success="state == 'published'"
+                    decoration-muted="state == 'closed'">
+                    <field name="code" />
+                    <field name="name" />
+                    <field name="location_city" />
+                    <field name="campus_id" />
+                    <field name="date_start" />
+                    <field name="date_end" />
+                    <field name="schedule_summary" />
+                    <field name="session_count" />
+                    <field name="session_published_count" />
+                    <field name="state"
+                        decoration-info="state == 'draft'"
+                        decoration-warning="state == 'active'"
+                        decoration-success="state == 'published'"
+                        decoration-muted="state == 'closed'" />
+                </list>
+            </field>
+        </record>
+
+        <!-- Vista Form -->
+        <record id="view_academic_agenda_form" model="ir.ui.view">
+            <field name="name">benglish.academic.agenda.form</field>
+            <field name="model">benglish.academic.agenda</field>
+            <field name="arch" type="xml">
+                <form string="Horario Académico">
+                    <header>
+                        <button name="action_activate" string="Activar Horario" type="object"
+                            invisible="state != 'draft'" class="btn-primary"
+                            groups="benglish_academy.group_academic_coordinator,benglish_academy.group_academic_manager" />
+                        <button name="action_publish" string="Publicar Horario" type="object"
+                            invisible="state != 'active'" class="btn-success"
+                            groups="benglish_academy.group_academic_coordinator,benglish_academy.group_academic_manager" />
+                        <button name="action_unpublish" string="Despublicar" type="object"
+                            invisible="state != 'published'" class="btn-warning"
+                            groups="benglish_academy.group_academic_manager" />
+                        <button name="action_close" string="Cerrar Horario" type="object"
+                            invisible="state != 'published'" class="btn-secondary"
+                            groups="benglish_academy.group_academic_coordinator,benglish_academy.group_academic_manager" />
+                        <button name="action_reopen" string="Reabrir" type="object"
+                            invisible="state != 'closed'"
+                            groups="benglish_academy.group_academic_manager" />
+                        <button name="action_duplicate_agenda_wizard" string="🔄 Duplicar Horario"
+                            type="object"
+                            class="btn-info"
+                            groups="benglish_academy.group_academic_coordinator,benglish_academy.group_academic_manager"
+                            help="Duplica este horario con recálculo inteligente de fechas" />
+                        <field name="state" widget="statusbar"
+                            statusbar_visible="draft,active,published,closed" />
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_open_session_matrix" type="object"
+                                class="oe_stat_button" icon="fa-th" string="Matriz de Programación"
+                                invisible="state not in ('active', 'published')">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Abrir Matriz</span>
+                                </div>
+                            </button>
+                            <button name="action_view_sessions" type="object" class="oe_stat_button"
+                                icon="fa-calendar">
+                                <field name="session_count" widget="statinfo" string="Clases" />
+                            </button>
+                            <button name="action_create_session" type="object"
+                                class="oe_stat_button" icon="fa-plus-circle"
+                                invisible="state not in ('active', 'published')">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Crear Clase</span>
+                                </div>
+                            </button>
+                            <button name="%(action_publish_session_wizard)d" type="action"
+                                class="oe_stat_button" icon="fa-bullhorn"
+                                invisible="state not in ('active', 'published')"
+                                context="{'default_agenda_id': id}">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Publicar por Tipo</span>
+                                </div>
+                            </button>
+                            <button name="action_view_logs" type="object" class="oe_stat_button"
+                                icon="fa-history">
+                                <field name="log_count" widget="statinfo" string="Historial Matriz" />
+                            </button>
+                        </div>
+                        <widget name="web_ribbon" title="Cerrada" bg_color="bg-secondary"
+                            invisible="state != 'closed'" />
+                        <widget name="web_ribbon" title="Publicada" bg_color="bg-success"
+                            invisible="state != 'published'" />
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1" />
+                            </h1>
+                            <h3>
+                                <field name="code" readonly="1" />
+                            </h3>
+                        </div>
+                        <group>
+                            <group string="Ubicación">
+                                <field name="location_city" placeholder="Opcional para sedes virtuales" />
+                                <field name="campus_id" required="1" />
+                            </group>
+                            <group string="Estado">
+                                <field name="active" />
+                                <field name="created_by_id" readonly="1" />
+                            </group>
+                        </group>
+                        <group string="Marco Temporal">
+                            <group string="Fechas">
+                                <field name="date_start" required="1" />
+                                <field name="date_end" required="1" />
+                                <field name="duration_days" readonly="1" />
+                            </group>
+                            <group string="Horarios">
+                            <field name="time_start" widget="time_picker" required="1" />
+                            <field name="time_end" widget="time_picker" required="1" />
+                                <field name="duration_hours" readonly="1" />
+                            </group>
+                        </group>
+                        <group>
+                            <field name="schedule_summary" readonly="1" />
+                        </group>
+                        <group string="Descripción">
+                            <field name="description" nolabel="1"
+                                placeholder="Descripción detallada del propósito de este horario..." />
+                        </group>
+                        <notebook>
+                            <page string="📊 Estadísticas">
+                                <group>
+                                    <group string="Resumen de Clases">
+                                        <field name="session_count" readonly="1" />
+                                        <field name="session_published_count" readonly="1" />
+                                        <field name="session_draft_count" readonly="1" />
+                                    </group>
+                                </group>
+                            </page>
+                            <page string="📝 Clases Programadas"
+                                invisible="session_count == 0">
+                                <field name="session_ids" readonly="1"
+                                    context="{'form_view_ref': 'benglish_academy.view_academic_session_quick_create_form'}">
+                                    <list>
+                                        <field name="date" />
+                                        <field name="time_start_label" string="Hora Inicio" />
+                                        <field name="time_end_label" string="Hora Fin" />
+                                        <field name="subject_id" />
+                                        <field name="subcampus_id" />
+                                        <field name="teacher_id" />
+                                        <field name="enrolled_count" />
+                                        <field name="max_capacity" />
+                                        <field name="state" />
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter />
+                </form>
+            </field>
+        </record>
+
+        <!-- Vista Search -->
+        <record id="view_academic_agenda_search" model="ir.ui.view">
+            <field name="name">benglish.academic.agenda.search</field>
+            <field name="model">benglish.academic.agenda</field>
+            <field name="arch" type="xml">
+                <search string="Buscar Horarios">
+                    <field name="name" string="Nombre o Código"
+                        filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]" />
+                    <field name="location_city" />
+                    <field name="campus_id" />
+                    <separator />
+                    <filter name="filter_draft" string="Borradores"
+                        domain="[('state', '=', 'draft')]" />
+                    <filter name="filter_active" string="Activas"
+                        domain="[('state', '=', 'active')]" />
+                    <filter name="filter_published" string="Publicadas"
+                        domain="[('state', '=', 'published')]" />
+                    <filter name="filter_closed" string="Cerradas"
+                        domain="[('state', '=', 'closed')]" />
+                    <separator />
+                    <filter name="filter_current_year" string="Año Actual"
+                        domain="[('date_start', '&gt;=', (context_today() - datetime.timedelta(days=365)).strftime('%Y-01-01'))]" />
+                    <group expand="0" string="Agrupar por">
+                        <filter name="group_city" string="Ciudad"
+                            context="{'group_by': 'location_city'}" />
+                        <filter name="group_campus" string="Sede"
+                            context="{'group_by': 'campus_id'}" />
+                        <filter name="group_state" string="Estado" context="{'group_by': 'state'}" />
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Vista Calendar -->
+        <record id="view_academic_agenda_calendar" model="ir.ui.view">
+            <field name="name">benglish.academic.agenda.calendar</field>
+            <field name="model">benglish.academic.agenda</field>
+            <field name="arch" type="xml">
+                <calendar string="Calendario de Horarios" mode="month" date_start="date_start"
+                    date_stop="date_end">
+                    <field name="name" />
+                    <field name="campus_id" />
+                    <field name="state" />
+                </calendar>
+            </field>
+        </record>
+
+        <!-- Acción Window -->
+        <record id="action_academic_agenda" model="ir.actions.act_window">
+            <field name="name">Horarios Académicos</field>
+            <field name="res_model">benglish.academic.agenda</field>
+            <field name="view_mode">list,form,calendar</field>
+            <field name="context">{'search_default_group_state': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Crear un nuevo Horario Académico
+                </p>
+                <p> Los horarios definen el marco temporal y espacial donde se pueden programar
+                    sesiones de clase.<br /> Una vez activo, podrás crear sesiones dentro de su
+                    rango de fechas y horarios. </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

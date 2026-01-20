@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+===============================================================================
+ARCHIVO: survey_survey_inherit_views.xml (Odoo 18)
+PROPÓSITO: Extiende formulario y listas con acciones, pestañas y métricas.
+NOTAS:
+- Odoo 18 usa <list> en lugar de <tree>. XPaths apuntan solo a <list>.
+- Usa invisible/required en lugar de modifiers para Odoo 18.
+- Botones con clases Bootstrap: btn-primary / btn-secondary.
+- Se añade una vista propia de tipo <list> para user_input_ids.
+===============================================================================
+-->
+<odoo>
+
+  <!-- ============================
+       FORMULARIO: extensiones UI
+       ============================ -->
+  <record id="survey_form_inherit_audience" model="ir.ui.view">
+    <field name="name">survey.survey.form.inherit.audience</field>
+    <field name="model">survey.survey</field>
+    <!-- Ajusta si tu instalación usa otro xml_id para el form -->
+    <field name="inherit_id" ref="survey.survey_survey_view_form"/>
+    <field name="arch" type="xml">
+
+      <!-- Botones en cabecera -->
+      <xpath expr="//form/header" position="inside">
+        <button name="action_assign_audience"
+                string="Asignar al público objetivo"
+                type="object"
+                class="btn-primary"
+                invisible="audience_category_ids == []"
+                help="Crea participaciones para las audiencias seleccionadas (sin enviar correo)."/>
+        <button name="action_open_version_wizard"
+                string="Versionar"
+                type="object"
+                class="btn-secondary"
+                invisible="id == False"
+                help="Duplica la encuesta con una nueva versión y preguntas seleccionadas."/>
+      </xpath>
+
+      <!-- Pestañas nuevas -->
+      <xpath expr="//form/sheet/notebook" position="inside">
+
+        <!-- Configuración avanzada -->
+        <page name="survey_extension_settings" string="Configuración avanzada">
+          <group>
+            <group>
+              <field name="audience_category_ids"
+                     widget="many2many_tags"
+                     string="Público objetivo"
+                     placeholder="Selecciona etiquetas"
+                     help="Grupos de contactos destinatarios (p. ej., Empleados, Estudiantes)."/>
+              <field name="response_deadline"
+                     string="Fecha límite"
+                     help="Último momento para aceptar respuestas."/>
+    <field name="version_year"
+      string="Año de versión"
+      placeholder="2025"
+      help="Identifica la vigencia de esta versión de la encuesta."/>
+    <field name="version_date" invisible="1"/>
+            </group>
+            <group string="Evaluación">
+              <field name="is_gradable"
+                     string="Encuesta calificable"
+                     help="Activa el cálculo de puntaje final en base a las respuestas y pesos."/>
+              <field name="min_score"
+                     string="Puntaje mínimo (%)"
+                     placeholder="Ej: 70"
+                     required="is_gradable == True"
+                     invisible="is_gradable == False"
+                     help="Porcentaje mínimo para aprobar (solo si es calificable)."/>
+            </group>
+          </group>
+          
+          <!-- Sección de Segmentación -->
+          <group string="Segmentación de Participantes">
+            <group>
+              <field name="target_region_ids"
+                     widget="many2many_tags"
+                     string="Regiones Objetivo"
+                     placeholder="Selecciona regiones"
+                     help="Regiones geográficas a las que se dirige esta encuesta."/>
+              <field name="target_participant_types"
+                     string="Tipos de Participantes"
+                     help="Define qué tipos de participantes son el objetivo de esta encuesta."/>
+            </group>
+            <group>
+              <field name="response_count_by_region" readonly="1"
+                     string="Regiones con Respuestas"/>
+              <field name="response_count_students" readonly="1"
+                     string="Respuestas de Estudiantes"
+                     invisible="target_participant_types not in ['student', 'student_teacher', 'all']"/>
+              <field name="response_count_teachers" readonly="1"
+                     string="Respuestas de Profesores"
+                     invisible="target_participant_types not in ['teacher', 'student_teacher', 'all']"/>
+            </group>
+          </group>
+          
+          <!-- Sección de Cronómetro -->
+          <group string="⏱️ Configuración de Cronómetro">
+            <group>
+              <field name="enable_timer"
+                     string="Activar cronómetro"
+                     help="Habilita el sistema de cronómetro para esta encuesta."/>
+              <field name="timer_mode"
+                     string="Modo de cronómetro"
+                     invisible="enable_timer == False"
+                     required="enable_timer == True"
+                     help="Selecciona cómo funcionará el cronómetro."/>
+              <field name="show_timer_to_user"
+                     string="Mostrar al usuario"
+                     invisible="enable_timer == False"
+                     help="El usuario verá el tiempo corriendo en pantalla."/>
+            </group>
+            <group>
+              <field name="survey_time_limit"
+                     string="Tiempo límite general (seg)"
+                     invisible="enable_timer == False or timer_mode == 'question'"
+                     help="Tiempo máximo para toda la encuesta. 0 = sin límite."/>
+              <field name="default_question_time_limit"
+                     string="Tiempo por pregunta (seg)"
+                     invisible="enable_timer == False or timer_mode == 'survey'"
+                     help="Tiempo predeterminado por pregunta."/>
+              <field name="timer_warning_threshold"
+                     string="Umbral de advertencia (%)"
+                     invisible="enable_timer == False"
+                     help="Mostrar alerta cuando quede este % de tiempo."/>
+            </group>
+            <group colspan="2">
+              <field name="auto_submit_on_timeout"
+                     string="Enviar automáticamente al agotar tiempo"
+                     invisible="enable_timer == False or timer_mode == 'question'"
+                     help="Envía la encuesta automáticamente cuando se acabe el tiempo."/>
+              <field name="timer_sound_enabled"
+                     string="Activar sonido de alerta"
+                     invisible="enable_timer == False"
+                     help="Emitir sonido cuando el tiempo esté por agotarse."/>
+            </group>
+          </group>
+          
+          <!-- Botones de análisis por segmentación -->
+          <div class="oe_button_box" name="segmentation_buttons" style="margin-top: 16px;">
+            <button class="oe_stat_button" 
+                    type="object" 
+                    name="action_view_participants_by_segment"
+                    icon="fa-pie-chart"
+                    help="Ver participantes agrupados por segmento">
+              <div class="o_field_widget o_stat_info">
+                <span class="o_stat_text">Análisis</span>
+                <span class="o_stat_text">por Segmento</span>
+              </div>
+            </button>
+            <button class="oe_stat_button" 
+                    type="object" 
+                    name="action_view_participants_students"
+                    icon="fa-graduation-cap"
+                    invisible="response_count_students == 0">
+              <field name="response_count_students" widget="statinfo" string="Estudiantes"/>
+            </button>
+            <button class="oe_stat_button" 
+                    type="object" 
+                    name="action_view_participants_teachers"
+                    icon="fa-chalkboard-teacher"
+                    invisible="response_count_teachers == 0">
+              <field name="response_count_teachers" widget="statinfo" string="Profesores"/>
+            </button>
+          </div>
+        </page>
+
+        <!-- Resultados -->
+        <page name="survey_extension_results" string="Resultados">
+          <group>
+            <group>
+              <field name="invited_count" readonly="1"/>
+              <field name="responses_count" readonly="1"/>
+              <field name="participation_rate" readonly="1"/>
+            </group>
+            <group>
+              <field name="average_score" readonly="1"
+                     invisible="is_gradable == False"/>
+              <field name="evaluation_state" readonly="1"/>
+            </group>
+          </group>
+
+          <!-- Participantes (solo hechos) -->
+          <field name="user_input_ids"
+                 domain="[('state','=','done'),('test_entry','=',False)]"
+                 context="{'default_survey_id': id}"
+                 readonly="1"/>
+        </page>
+
+      </xpath>
+    </field>
+  </record>
+
+  <!-- ============================
+       LISTA: columnas y colores
+       ============================ -->
+  <record id="survey_list_inherit_audience" model="ir.ui.view">
+    <field name="name">survey.survey.list.inherit.audience</field>
+    <field name="model">survey.survey</field>
+    <!-- Ajusta si tu instalación usa otro xml_id para el tree/list -->
+    <field name="inherit_id" ref="survey.survey_survey_view_tree"/>
+    <field name="arch" type="xml">
+
+      <!-- Decoraciones por estado (Odoo 18 usa <list>) -->
+      <xpath expr="//list" position="attributes">
+        <attribute name="decoration-success">evaluation_state == 'passed'</attribute>
+        <attribute name="decoration-danger">evaluation_state == 'failed'</attribute>
+        <attribute name="decoration-warning">evaluation_state == 'in_progress'</attribute>
+      </xpath>
+
+      <!-- Columnas adicionales tras el título -->
+      <xpath expr="//list/field[@name='title']" position="after">
+        <field name="is_gradable"/>
+        <field name="min_score"/>
+        <field name="audience_category_ids" widget="many2many_tags"/>
+  <field name="response_deadline"/>
+  <field name="version_year" optional="show"/>
+        <field name="evaluation_state"/>
+      </xpath>
+
+    </field>
+  </record>
+
+  <!-- =======================================================
+       Vista propia para user_input_ids (tipo LIST Odoo 18)
+       ======================================================= -->
+  <record id="survey_user_input_view_list_results" model="ir.ui.view">
+    <field name="name">survey.user_input.view.list.results</field>
+    <field name="model">survey.user_input</field>
+    <field name="arch" type="xml">
+      <list string="Respuestas (finalizadas)">
+        <field name="create_date"/>
+        <field name="partner_id"/>
+        <field name="email"/>
+        <field name="scoring_percentage" string="Puntuación (%)" column_invisible="parent.is_gradable == False"/>
+        <field name="deadline" column_invisible="1"/>
+        <field name="state"/>
+      </list>
+    </field>
+  </record>
+
+</odoo>

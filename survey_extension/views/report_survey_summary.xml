@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Archivo: c:\ModulosOdoo18\survey_extension\views\report_survey_summary.xml
+
+    Propósito:
+      Plantilla QWeb y acciones relacionadas para generar un PDF resumen de una
+      encuesta (`survey.survey`). Muestra metadatos de la encuesta, estadísticas
+      (participantes, tasa de participación, promedio), lista de participantes
+      que respondieron y preguntas clave.
+  -->
+  <template id="report_survey_summary">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="survey">
+        <t t-call="web.external_layout">
+          <div class="page">
+            <h2 class="mt0 mb16">
+              <strong>Resumen de Encuesta</strong>
+            </h2>
+            <h3 class="mt8 mb16">
+              <t t-esc="survey.title or 'Encuesta sin título'"/>
+            </h3>
+
+            <t t-set="audience_names" t-value="survey.audience_category_ids.mapped('name')"/>
+            <t t-set="responses" t-value="survey.user_input_ids.filtered(lambda u: u.state == 'done' and not u.test_entry)"/>
+            <t t-set="key_questions" t-value="survey.question_ids.filtered(lambda q: not q.is_page and q.is_key)"/>
+
+            <table class="table table-sm mb16 o_main_table">
+              <tbody>
+                <tr>
+                  <th class="text-start" style="width: 35%;">
+                    <span>Responsable</span>
+                  </th>
+                  <td><t t-esc="survey.user_id.display_name or 'Sin asignar'"/></td>
+                </tr>
+                <tr>
+                  <th class="text-start">
+                    <span>Público objetivo</span>
+                  </th>
+                  <td>
+                    <t t-if="audience_names">
+                      <t t-esc="', '.join(audience_names)"/>
+                    </t>
+                    <t t-else="">
+                      <span>Sin definir</span>
+                    </t>
+                  </td>
+                </tr>
+                <tr>
+                  <th class="text-start">
+                    <span>Fecha límite</span>
+                  </th>
+                  <td>
+                    <t t-if="survey.response_deadline">
+                      <t t-esc="survey.response_deadline.strftime('%d/%m/%Y %H:%M')"/>
+                    </t>
+                    <t t-else="">
+                      <span>Sin fecha límite</span>
+                    </t>
+                  </td>
+                </tr>
+                <tr>
+                  <th class="text-start">
+                    <span>Participantes invitados</span>
+                  </th>
+                  <td><t t-esc="survey.invited_count"/></td>
+                </tr>
+                <tr>
+                  <th class="text-start">
+                    <span>Respuestas recibidas</span>
+                  </th>
+                  <td><t t-esc="survey.responses_count"/></td>
+                </tr>
+                <tr>
+                  <th class="text-start">
+                    <span>Tasa de participación</span>
+                  </th>
+                  <td>
+                    <t t-esc="str(round(survey.participation_rate or 0.0, 2)) + ' %'"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th class="text-start">
+                    <span>Promedio general</span>
+                  </th>
+                  <td>
+                    <t t-if="survey.is_gradable">
+                      <t t-esc="str(round(survey.average_score or 0.0, 2)) + ' %'"/>
+                    </t>
+                    <t t-else="">
+                      <span>No aplica (encuesta no calificable)</span>
+                    </t>
+                  </td>
+                </tr>
+                <tr t-if="survey.is_gradable">
+                  <th class="text-start">
+                    <span>Puntaje mínimo requerido</span>
+                  </th>
+                  <td><t t-esc="str(round(survey.min_score or 0.0, 2)) + ' %'"/></td>
+                </tr>
+                <tr>
+                  <th class="text-start">
+                    <span>Estado de evaluación</span>
+                  </th>
+                  <td>
+                    <t t-if="survey.evaluation_state == 'passed'">
+                      <span>Aprobada</span>
+                    </t>
+                    <t t-elif="survey.evaluation_state == 'failed'">
+                      <span>No aprobada</span>
+                    </t>
+                    <t t-else="">
+                      <span>En curso</span>
+                    </t>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3 class="mt16 mb8">Participantes que respondieron</h3>
+            <table class="table table-sm o_secondary_table" t-if="responses">
+              <thead>
+                <tr>
+                  <th>Participante</th>
+                  <th>Correo</th>
+                  <th>Fecha de envío</th>
+                  <th>Duración</th>
+                  <th t-if="survey.is_gradable">Nota (%)</th>
+                  <th t-if="survey.is_gradable">Aprobó</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr t-foreach="responses" t-as="response">
+                  <td>
+                    <t t-esc="response.partner_id.display_name or response.nickname or 'Invitado anónimo'"/>
+                  </td>
+                  <td><t t-esc="response.email or (response.partner_id and response.partner_id.email) or '-'"/></td>
+                  <td>
+                    <t t-if="response.end_datetime">
+                      <t t-esc="response.end_datetime.strftime('%d/%m/%Y %H:%M')"/>
+                    </t>
+                    <t t-else="">-</t>
+                  </td>
+                  <td>
+                    <t t-if="response.x_survey_duration_display">
+                      <t t-esc="response.x_survey_duration_display"/>
+                    </t>
+                    <t t-else="">-</t>
+                  </td>
+                  <td t-if="survey.is_gradable">
+                    <t t-esc="str(round(response.score_percentage or 0.0, 2)) + ' %'"/>
+                  </td>
+                  <td t-if="survey.is_gradable">
+                    <t t-if="response.is_passed">
+                      <span style="color: green;">✓ Sí</span>
+                    </t>
+                    <t t-else="">
+                      <span style="color: red;">✗ No</span>
+                    </t>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p t-if="not responses" class="text-muted">Aún no se registran respuestas enviadas.</p>
+
+            <h3 class="mt16 mb8">Preguntas clave</h3>
+            <table class="table table-sm o_secondary_table" t-if="key_questions">
+              <thead>
+                <tr>
+                  <th style="width: 70%;">Pregunta</th>
+                  <th>Categoría</th>
+                  <th class="text-end">Peso</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr t-foreach="key_questions" t-as="question">
+                  <td><t t-esc="question.title"/></td>
+                  <td><t t-esc="question.category_id.display_name or '-'"/></td>
+                  <td class="text-end"><t t-esc="str(round(question.weight or 0.0, 2))"/></td>
+                </tr>
+              </tbody>
+            </table>
+            <p t-if="not key_questions" class="text-muted">No hay preguntas marcadas como clave.</p>
+          </div>
+        </t>
+      </t>
+    </t>
+  </template>
+
+  <record id="action_report_survey_summary" model="ir.actions.report">
+    <field name="name">Resumen de encuesta</field>
+    <field name="model">survey.survey</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">survey_extension.report_survey_summary</field>
+    <field name="report_file">survey_extension.report_survey_summary</field>
+    <field name="print_report_name">'Resumen - %s' % (object.title or 'Encuesta')</field>
+    <field name="binding_model_id" ref="survey.model_survey_survey"/>
+    <field name="binding_type">report</field>
+  </record>
+
+  <record id="action_generate_summary_report_server" model="ir.actions.server">
+    <field name="name">Generar reporte</field>
+    <field name="model_id" ref="survey.model_survey_survey"/>
+    <field name="state">code</field>
+    <field name="binding_model_id" ref="survey.model_survey_survey"/>
+    <field name="code">
+action = env.ref('survey_extension.action_report_survey_summary').report_action(record)
+    </field>
+  </record>
+</odoo>

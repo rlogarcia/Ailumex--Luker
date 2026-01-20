@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Vista list (Lista) de Fases -->
+        <record id="view_benglish_phase_list" model="ir.ui.view">
+            <field name="name">benglish.phase.list</field>
+            <field name="model">benglish.phase</field>
+            <field name="arch" type="xml">
+                <list string="Fases Académicas" default_order="program_id, sequence, name"
+                    decoration-muted="not active" create="false">
+                    <field name="sequence" widget="handle" />
+                    <field name="code" />
+                    <field name="name" />
+                    <field name="program_id" />
+                    <field name="duration_months" string="Duración (meses)" />
+                    <field name="level_count" string="Niveles" />
+                    <field name="active" invisible="1" />
+                    <button name="action_view_levels" type="object" string="Ver Niveles"
+                        class="btn-success" icon="fa-graduation-cap"
+                        invisible="level_count == 0" />
+                </list>
+            </field>
+        </record>
+
+        <!-- Vista Form (Formulario) de Fases -->
+        <record id="view_benglish_phase_form" model="ir.ui.view">
+            <field name="name">benglish.phase.form</field>
+            <field name="model">benglish.phase</field>
+            <field name="arch" type="xml">
+                <form string="Fase Académica" create="false">
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_levels" type="object"
+                                class="oe_stat_button" icon="fa-graduation-cap"
+                                style="background-color: #28a745; color: white;">
+                                <field name="level_count" widget="statinfo"
+                                    string="Niveles Académicos" />
+                            </button>
+                        </div>
+                        <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger"
+                            invisible="active" />
+                        <div class="oe_title">
+                            <group>
+                                <group>
+                                    <div class="badge text-bg-warning"
+                                        style="display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fa fa-tag" />
+                                        <field name="code" placeholder="Código" />
+                                    </div>
+                                </group>
+                                <group>
+                                    <field name="active" widget="boolean_toggle" />
+                                </group>
+                            </group>
+                        </div>
+                        <group>
+                            <div>
+                                <label for="name" class="oe_edit_only" />
+                                <h2>
+                                    <field name="name" placeholder="Ej: Fase Básica" />
+                                </h2>
+                            </div>
+                        </group>
+                        <group>
+                            <div>
+                                <label for="plan_ids" string="Planes que usan esta fase" />
+                                <field name="plan_ids" widget="many2many_tags"
+                                    options="{'no_create': True}" />
+                            </div>
+                        </group>
+                        <group>
+                            <group string="📚 Jerarquía Académica">
+                                <field name="program_id" readonly="1" />
+                            </group>
+                            <group string="⏱️ Duración">
+                                <!--<field
+                                name="sequence" />-->
+                                <field name="duration_months" string="Duración (meses)" />
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Descripción">
+                                <field name="description"
+                                    placeholder="Descripción de la fase académica..." />
+                            </page>
+                            <!-- <page string="Niveles">
+                                <field name="level_ids" context="{'default_phase_id': id}">
+                                    <list>
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="code"/>
+                                        <field name="name"/>
+                                        <field name="duration_weeks"/>
+                                        <field name="subject_count"/>
+                                        <field name="active" widget="boolean_toggle"/>
+                                    </list>
+                                </field>
+                            </page>-->
+                        </notebook>
+                    </sheet>
+                    <chatter />
+                </form>
+            </field>
+        </record>
+
+        <!-- Vista Kanban de Fases -->
+        <record id="view_benglish_phase_kanban" model="ir.ui.view">
+            <field name="name">benglish.phase.kanban</field>
+            <field name="model">benglish.phase</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_mobile" create="false">
+                    <field name="name" />
+                    <field name="code" />
+                    <field name="program_id" />
+                    <field name="duration_months" />
+                    <field name="level_count" />
+                    <field name="active" />
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_global_click">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title" style="display:block;">
+                                            <field name="name" />
+                                        </strong>
+                                        <div style="margin-top: 2px;">
+                                            <span class="badge text-bg-warning"
+                                                style="font-size:13px; color:#fff; display:inline-block;">
+                                                <field name="code" />
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <div class="text-muted">
+                                        <field name="program_id" />
+                                    </div>
+                                    <div class="mt-2">
+                                        <span class="badge text-bg-success me-1">
+                                            <i class="fa fa-clock-o" /> <field name="duration_months" />
+                                            meses </span>
+                                        <span class="badge text-bg-info">
+                                            <i class="fa fa-graduation-cap" /> <field
+                                                name="level_count" /> niveles </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Vista de Búsqueda de Fases -->
+        <record id="view_benglish_phase_search_v2" model="ir.ui.view">
+            <field name="name">benglish.phase.search.v2</field>
+            <field name="model">benglish.phase</field>
+            <field name="arch" type="xml">
+                <search string="Buscar Fases">
+                    <field name="name" string="Fase"
+                        filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]" />
+                    <field name="code" />
+                    <field name="program_id" />
+                    <separator />
+                    <filter string="Activos" name="active" domain="[('active', '=', True)]" />
+                    <filter string="Archivados" name="inactive" domain="[('active', '=', False)]" />
+                    <group expand="0" string="Agrupar por">
+                        <filter string="Programa" name="group_by_program"
+                            context="{'group_by': 'program_id'}" />
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Acción de Ventana para Fases -->
+        <record id="action_benglish_phase" model="ir.actions.act_window">
+            <field name="name">Fases Académicas</field>
+            <field name="res_model">benglish.phase</field>
+            <field name="view_mode">kanban,list,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    📚 Crear tu primera Fase Académica
+                </p>
+                <p>
+                    <strong>Las fases</strong> organizan el plan de estudio en grandes bloques de
+                    aprendizaje.<br />
+                    <em>Ejemplos:</em> Fase Básica, Fase Intermedia, Fase
+                    Avanzada, Fase de Especialización. </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

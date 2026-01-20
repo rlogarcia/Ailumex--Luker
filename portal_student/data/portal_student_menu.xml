@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Enlace en la barra superior hacia el portal del estudiante -->
+        <record id="menu_portal_student" model="website.menu">
+            <field name="name">Portal</field>
+            <field name="parent_id" ref="website.main_menu"/>
+            <field name="url">/my/student</field>
+            <field name="sequence" eval="40"/>
+            <field name="group_ids" eval="[(6, 0, [ref('portal_student.group_benglish_student')])]"/>
+        </record>
+    </data>
+</odoo>

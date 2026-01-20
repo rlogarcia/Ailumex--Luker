@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ARCHIVO: survey_templates.xml
+PROPÓSITO: Ajustes visuales del formulario público de encuestas.
+- Banner de fecha límite vencida.
+- Ocultar formulario si venció (sin pisar clases existentes).
+- Atributos data-* para preguntas condicionales (consumidos por JS).
+- Flags de control de dispositivo con fallback seguro (getattr).
+-->
+<odoo>
+
+  <!-- Banner y ocultar formulario cuando la encuesta está vencida -->
+  <template id="survey_deadline_in_progress_banner"
+            inherit_id="survey.survey_fill_form_in_progress"
+            name="Survey In-Progress Deadline Banner">
+
+    <!-- Alerta antes del formulario si venció -->
+    <xpath expr="//div[contains(@class,'o_survey_form')]" position="before">
+      <t t-if="survey and survey.deadline_passed">
+        <div class="alert alert-danger my-3" role="alert">
+          <strong>La fecha límite de esta encuesta ya ha pasado, no es posible enviar respuestas.</strong>
+        </div>
+      </t>
+    </xpath>
+
+    <!-- Añadir la clase d-none sin sobrescribir las clases existentes -->
+    <xpath expr="//div[contains(@class,'o_survey_form')]" position="attributes">
+      <!-- t-att-class se CONCATENA a la clase estática, no la reemplaza -->
+      <attribute name="t-att-class">(survey and survey.deadline_passed) and 'd-none' or None</attribute>
+    </xpath>
+  </template>
+
+  <!-- Atributos data-* en el contenedor de cada pregunta (para lógica JS) -->
+  <template id="survey_conditional_questions_attributes"
+            inherit_id="survey.question_container"
+            name="Conditional Questions Data Attributes">
+
+    <!-- Aplica sobre el div principal de la pregunta -->
+    <xpath expr="//div[@t-att-id='question.id']" position="attributes">
+      <attribute name="t-att-data-conditional">question.is_conditional</attribute>
+      <attribute name="t-att-data-question-id">question.id</attribute>
+      <attribute name="t-att-data-conditional-question-id">
+        question.is_conditional and question.conditional_question_id and question.conditional_question_id.id or False
+      </attribute>
+      <attribute name="t-att-data-conditional-answer-id">
+        question.is_conditional and question.conditional_answer_id and question.conditional_answer_id.id or False
+      </attribute>
+      <attribute name="t-att-data-originally-required">question.constr_mandatory</attribute>
+    </xpath>
+  </template>
+
+  <!-- Datos de control de dispositivos en el formulario público (con fallback seguro) -->
+  <template id="survey_device_form_flags"
+            inherit_id="survey.survey_fill_form"
+            name="Survey Device Control Flags">
+    <xpath expr="//form" position="attributes">
+      <attribute name="t-att-data-survey-id">survey.id</attribute>
+      <!-- Usamos getattr para evitar AttributeError si el campo no existe aún -->
+      <attribute name="t-att-data-restrict-device">('x_restrict_by_device' in survey._fields) and survey.x_restrict_by_device or False</attribute>
+      <attribute name="t-att-data-capture-device-info">('x_capture_device_info' in survey._fields) and survey.x_capture_device_info or False</attribute>
+      <attribute name="t-att-data-allowed-device-types">('x_allowed_device_types' in survey._fields) and survey.x_allowed_device_types or ''</attribute>
+    </xpath>
+  </template>
+
+  <!-- Atributo data-answer-id en cada opción (radio) -->
+  <template id="survey_conditional_answer_attributes"
+            inherit_id="survey.question_simple_choice"
+            name="Conditional Answer Data Attributes">
+
+    <!-- Agregamos el data-answer-id a cada input radio -->
+    <xpath expr="//input[@type='radio']" position="attributes">
+      <attribute name="t-att-data-answer-id">label and label.id or False</attribute>
+    </xpath>
+  </template>
+
+  <!-- Contenedor para adjuntar archivos a cada pregunta -->
+  <template id="survey_question_attachment_area"
+            inherit_id="survey.question_container"
+            name="Survey Question Attachment Area">
+    <xpath expr="//div[@t-att-id='question.id']" position="inside">
+      <t t-if="not question.is_page and question.question_type == 'file_upload'">
+        <t t-set="question_attachments" t-value="answer.get_question_attachments(question) if answer else request.env['survey.user_input.attachment']"/>
+        <t t-set="initial_count" t-value="len(question_attachments)"/>
+        <div class="o_survey_attachment_area mt-3"
+             t-att-data-question-id="question.id"
+             t-att-data-survey-token="survey.access_token"
+             t-att-data-answer-token="answer.access_token"
+             t-att-data-readonly="survey_form_readonly">
+          <input type="hidden"
+                 class="o_survey_attachment_counter"
+                 data-question-type="file_upload"
+                 t-att-name="question.id"
+                 t-att-value="initial_count"/>
+          <div class="text-muted small mb-2">
+            <span t-translate="Sube uno o varios archivos como respuesta.">Sube uno o varios archivos como respuesta.</span>
+          </div>
+          <div class="o_survey_attachment_list d-flex flex-column gap-2"
+               t-if="question_attachments">
+            <t t-foreach="question_attachments" t-as="qa">
+              <div class="o_survey_attachment_item d-flex align-items-center gap-2"
+                   t-att-data-link-id="qa.id"
+                   t-att-data-attachment-id="qa.attachment_id.id">
+                <a class="o_survey_attachment_link"
+                   t-att-href="'/web/content/%s?download=1' % qa.attachment_id.id"
+                   target="_blank" rel="noopener">
+                  <i class="fa fa-paperclip me-1"/>
+                  <t t-esc="qa.attachment_id.name"/>
+                </a>
+                <span class="text-muted small" t-if="qa.mimetype">
+                  <t t-esc="qa.mimetype"/>
+                </span>
+                <button t-if="not survey_form_readonly"
+                        type="button"
+                        class="btn btn-sm btn-link text-danger o_survey_attachment_remove"
+                        t-att-data-link-id="qa.id">
+                  <i class="fa fa-times"/>
+                </button>
+              </div>
+            </t>
+          </div>
+          <div class="o_survey_attachment_empty text-muted" t-if="not question_attachments">
+            <span>Sin archivos adjuntos para esta pregunta.</span>
+          </div>
+          <div t-if="not survey_form_readonly" class="o_survey_attachment_actions mt-2">
+            <input type="file" class="d-none o_survey_attachment_input"/>
+            <button type="button" class="btn btn-outline-secondary btn-sm o_survey_attachment_add">
+              <i class="fa fa-paperclip me-1"/>
+              Adjuntar archivo
+            </button>
+          </div>
+        </div>
+      </t>
+    </xpath>
+  </template>
+
+  <template id="survey_question_container_required"
+            inherit_id="survey.question_container"
+            name="Survey Question Required Adjustments">
+    <xpath expr="//div[contains(@t-attf-class,'js_question-wrapper')]" position="attributes">
+      <attribute name="t-att-data-required">
+        question.question_type != 'instruction' and
+        (bool(question.constr_mandatory and (not survey.users_can_go_back or survey.questions_layout == 'one_page')) or None)
+        or None
+      </attribute>
+    </xpath>
+    <xpath expr="//span[@class='text-danger']" position="attributes">
+      <attribute name="t-if">question.question_type != 'instruction' and question.constr_mandatory</attribute>
+    </xpath>
+    <xpath expr="//t[@t-set='is_skipped_question']" position="attributes">
+      <attribute name="t-value">question.question_type != 'instruction' and skipped_questions and question in skipped_questions</attribute>
+    </xpath>
+  </template>
+
+</odoo>

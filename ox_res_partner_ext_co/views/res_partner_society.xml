@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- res.partner.society action window -->
+        <record id="res_partner_society_action" model="ir.actions.act_window">
+            <field name="name">Tipo Sociedad</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">res.partner.society</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    Crear Tipo Sociedad
+                </p>
+                <p>
+                No se han creado tipos de sociedad
+                </p>
+            </field>
+        </record>
+
+        <!-- res.partner.society list view -->
+        <record id="res_partner_society_view_list" model="ir.ui.view">
+            <field name="name">res.partner.society.view.list</field>
+            <field name="model">res.partner.society</field>
+            <field name="arch" type="xml">
+                <list>
+                    <field name="name"/>
+                </list>
+            </field>
+        </record>
+
+    </data>
+</odoo>

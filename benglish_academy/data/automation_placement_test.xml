@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- ========================================= -->
+        <!-- AUTOMATED ACTION: AUTO-CONSOLIDAR        -->
+        <!-- PLACEMENT TEST CUANDO AMBAS EVALUACIONES -->
+        <!-- ESTÁN COMPLETAS                          -->
+        <!-- ========================================= -->
+        
+        <record id="automation_consolidate_placement_test" model="base.automation">
+            <field name="name">Consolidar Placement Test Automáticamente</field>
+            <field name="model_id" ref="model_benglish_placement_test_prospect"/>
+            <field name="active" eval="True"/>
+            <field name="trigger">on_write</field>
+            <field name="filter_domain">[
+                ('oral_evaluation_score', '&gt;', 0),
+                ('lms_score', '&gt;', 0),
+                ('placement_status', 'in', ['pending_lms', 'pending_decision'])
+            ]</field>
+        </record>
+        
+        <record id="action_consolidate_placement_test" model="ir.actions.server">
+            <field name="name">Consolidar Placement Test</field>
+            <field name="model_id" ref="model_benglish_placement_test_prospect"/>
+            <field name="base_automation_id" ref="automation_consolidate_placement_test"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+# Auto-sugerir fase cuando ambas evaluaciones están completas
+for record in records:
+    if record.oral_evaluation_score and record.lms_score:
+        record._auto_suggest_phase()
+]]></field>
+        </record>
+        
+        <!-- ========================================= -->
+        <!-- CRON JOB: ALERTAR PLACEMENT TESTS        -->
+        <!-- PENDIENTES DE LMS > 3 DÍAS               -->
+        <!-- ========================================= -->
+        
+        <record id="cron_alert_pending_lms_placement" model="ir.cron">
+            <field name="name">Placement Test: Alertar LMS Pendientes</field>
+            <field name="model_id" ref="model_benglish_placement_test_prospect"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_alert_pending_lms()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+            <field name="priority">10</field>
+            <field name="user_id" ref="base.user_admin"/>
+        </record>
+        
+    </data>
+</odoo>

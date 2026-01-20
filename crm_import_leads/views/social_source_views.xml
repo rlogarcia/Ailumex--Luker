@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Vista de lista para fuentes sociales -->
+    <record id="crm_lead_social_source_list" model="ir.ui.view">
+        <field name="name">crm.lead.social.source.list</field>
+        <field name="model">crm.lead.social.source</field>
+        <field name="arch" type="xml">
+            <list string="Fuentes Sociales" default_order="sequence">
+                <!-- Permite reordenar las fuentes -->
+                <field name="sequence" widget="handle"/>
+                <!-- Nombre de la fuente -->
+                <field name="name"/>
+                <!-- Proveedor (Facebook, LinkedIn, etc.) -->
+                <field name="provider"/>
+                <!-- Compañía asociada -->
+                <field name="company_id"/>
+                <!-- Última y próxima sincronización -->
+                <field name="last_sync"/>
+                <field name="next_sync"/>
+                <!-- Si la importación automática está activa -->
+                <field name="auto_import"/>
+                <!-- Estado activo/inactivo -->
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de formulario para editar una fuente social -->
+    <record id="crm_lead_social_source_form" model="ir.ui.view">
+        <field name="name">crm.lead.social.source.form</field>
+        <field name="model">crm.lead.social.source</field>
+        <field name="arch" type="xml">
+            <form string="Fuente Social">
+                <header>
+                    <!-- Botón para probar la conexión con el proveedor -->
+                    <button name="action_test_connection" type="object" string="Probar conexión" class="oe_highlight"/>
+                    <!-- Estado activo/inactivo de la fuente -->
+                    <field name="active"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <!-- Nombre y proveedor -->
+                            <field name="name"/>
+                            <field name="provider"/>
+                            <!-- Compañía y fuente UTM -->
+                            <field name="company_id" options="{'no_create': True}"/>
+                            <field name="utm_source_id" options="{'no_open': True}"/>
+                            <!-- Si la importación automática está activa -->
+                            <field name="auto_import"/>
+                        </group>
+                        <group>
+                            <!-- Clave de parámetro y token de acceso -->
+                            <field name="token_param_key" readonly="1"/>
+                            <field name="access_token" password="True" modifiers="{'invisible': [('access_token', '=', False)], 'readonly': True}"/>
+                            <!-- ID de cuenta y objeto (formulario/página) -->
+                            <field name="account_id"/>
+                            <field name="object_id"/>
+                            <!-- Intervalo de sincronización y fechas -->
+                            <field name="sync_interval"/>
+                            <field name="last_sync" readonly="1"/>
+                            <field name="next_sync" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <!-- Página de estado y errores -->
+                        <page string="Estado">
+                            <field name="last_status" readonly="1" nolabel="1" widget="text"/>
+                            <field name="last_error" readonly="1" nolabel="1" widget="text"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción para abrir la vista de fuentes sociales -->
+    <record id="crm_lead_social_source_action" model="ir.actions.act_window">
+        <field name="name">Fuentes Sociales</field>
+        <field name="res_model">crm.lead.social.source</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea conectores que traen leads desde Facebook o LinkedIn y los importan automáticamente.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú para acceder a las fuentes sociales -->
+    <menuitem id="menu_crm_import_leads_sources" name="Fuentes Sociales" parent="menu_crm_import_leads" action="crm_lead_social_source_action" sequence="20" groups="sales_team.group_sale_manager"/>
+</odoo>

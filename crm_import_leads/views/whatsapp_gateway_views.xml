@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- WhatsApp Gateway Views -->
+    <record id="view_whatsapp_gateway_list" model="ir.ui.view">
+        <field name="name">whatsapp.gateway.list</field>
+        <field name="model">whatsapp.gateway</field>
+        <field name="arch" type="xml">
+            <list string="WhatsApp Gateways">
+                <field name="name" />
+                <field name="provider" />
+                <field name="phone_number" />
+                <field name="active" widget="boolean_toggle" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_whatsapp_gateway_form" model="ir.ui.view">
+        <field name="name">whatsapp.gateway.form</field>
+        <field name="model">whatsapp.gateway</field>
+        <field name="arch" type="xml">
+            <form string="WhatsApp Gateway">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active" />
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name" />
+                            <field name="provider" />
+                            <field name="phone_number" />
+                            <field name="active" />
+                        </group>
+                        <group>
+                            <field name="api_url" />
+                            <field name="api_key" password="True" />
+                            <field name="api_secret" password="True" />
+                        </group>
+                    </group>
+                    <group>
+                        <field name="webhook_url" readonly="1" widget="url" />
+                        <p class="text-muted">
+                            Configure this URL in your WhatsApp provider's webhook settings.
+                        </p>
+                    </group>
+                    <notebook>
+                        <page string="Configuration Help">
+                            <group invisible="provider != 'twilio'">
+                                <div class="alert alert-info">
+                                    <h4>Twilio Configuration:</h4>
+                                    <ul>
+                                        <li><strong>API URL:</strong>
+                                            https://api.twilio.com/2010-04-01/Accounts/YOUR_ACCOUNT_SID</li>
+                                        <li><strong>API Key:</strong> Your Twilio Account SID</li>
+                                        <li><strong>API Secret:</strong> Your Twilio Auth Token</li>
+                                        <li><strong>Phone Number:</strong> Your Twilio WhatsApp
+                                            number (e.g., +14155238886)</li>
+                                    </ul>
+                                </div>
+                            </group>
+                            <group invisible="provider != 'whatsapp_business'">
+                                <div class="alert alert-info">
+                                    <h4>WhatsApp Business API Configuration:</h4>
+                                    <ul>
+                                        <li><strong>API URL:</strong>
+                                            https://graph.facebook.com/v18.0/YOUR_PHONE_ID/messages</li>
+                                        <li><strong>API Key:</strong> Your WhatsApp Business API
+                                            access token</li>
+                                        <li><strong>Phone Number:</strong> Your verified WhatsApp
+                                            Business number</li>
+                                    </ul>
+                                </div>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_whatsapp_gateway" model="ir.actions.act_window">
+        <field name="name">WhatsApp Gateways</field>
+        <field name="res_model">whatsapp.gateway</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configure your WhatsApp gateway
+            </p>
+            <p>
+                Set up a connection to your WhatsApp service provider (Twilio, WhatsApp Business
+                API, etc.)
+            </p>
+        </field>
+    </record>
+
+    <!-- Submenú: Configuration - Solo administradores del sistema -->
+    <menuitem id="menu_whatsapp_config"
+        name="Configuration"
+        parent="menu_whatsapp_root"
+        groups="base.group_system"
+        sequence="99" />
+
+    <!-- Submenú: Gateways - Solo administradores -->
+    <menuitem id="menu_whatsapp_gateway"
+        name="Gateways"
+        parent="menu_whatsapp_config"
+        action="action_whatsapp_gateway"
+        groups="base.group_system"
+        sequence="1" />
+</odoo>

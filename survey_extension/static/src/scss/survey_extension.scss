@@ -1,0 +1,203 @@
+/* Estilo para agrandar los tags del campo many2many_tags */
+.o_form_view .o_field_many2manytags .o_tag {
+  font-size: 14px;  /* tamaño del texto */
+  padding: 5px 10px;
+  margin: 2px;
+}
+
+.o_form_view .o_field_many2manytags .o_input {
+  min-height: 36px;
+  font-size: 14px;
+  padding: 6px 8px;
+}
+
+.o_survey_attachment_area {
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+  padding-top: 0.75rem;
+}
+
+.o_survey_attachment_area .o_survey_attachment_link {
+  word-break: break-word;
+}
+
+.o_survey_attachment_area .o_survey_attachment_actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ============================================================================
+   ESTILOS WPM (Palabras Por Minuto)
+   ============================================================================ */
+
+/* Contenedor principal de pregunta WPM */
+.o_survey_question_wpm_reading,
+.o_survey_question_wpm_typing {
+  margin: 1.5rem 0;
+}
+
+/* Panel de información/estadísticas */
+.o_survey_question_wpm_reading .card,
+.o_survey_question_wpm_typing .card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.o_survey_question_wpm_reading .card:hover,
+.o_survey_question_wpm_typing .card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Texto de lectura */
+.o_wpm_reading_text {
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 1.5rem;
+  line-height: 1.8;
+  font-size: 16px;
+}
+
+/* Área de escritura */
+.o_wpm_typing_area {
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.o_wpm_typing_area:focus {
+  border-color: #0d6efd;
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Temporizador destacado */
+.o_wpm_timer_display {
+  font-family: 'Courier New', monospace;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #198754;
+}
+
+/* WPM actual en tiempo real */
+.o_wpm_current_wpm {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fd7e14;
+}
+
+/* Contadores de palabras/caracteres */
+.o_wpm_word_count_display,
+.o_wpm_char_count_display {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #0dcaf0;
+}
+
+/* Pantalla de resultados */
+.o_wpm_result_screen {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Puntaje final destacado */
+.o_wpm_final_score {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #0d6efd;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.o_wpm_final_time,
+.o_wpm_final_words {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #6c757d;
+}
+
+/* Badge de clasificación */
+.o_wpm_classification_badge {
+  font-size: 1.2rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+}
+
+/* Botones */
+.o_wpm_start_btn,
+.o_wpm_finish_btn,
+.o_wpm_typing_finish_btn {
+  min-width: 200px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+.o_wpm_start_btn:hover,
+.o_wpm_finish_btn:hover,
+.o_wpm_typing_finish_btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Botón deshabilitado */
+.o_wpm_typing_finish_btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Alertas/advertencias */
+.o_survey_question_wpm_reading .alert,
+.o_survey_question_wpm_typing .alert {
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.alert-primary {
+  border-left-color: #0d6efd;
+}
+
+.alert-warning {
+  border-left-color: #ffc107;
+}
+
+.alert-success {
+  border-left-color: #198754;
+}
+
+/* Iconos en paneles de información */
+.o_survey_question_wpm_reading .fa,
+.o_survey_question_wpm_typing .fa {
+  opacity: 0.7;
+}
+
+/* Responsive: móviles */
+@media (max-width: 768px) {
+  .o_wpm_final_score {
+    font-size: 2rem;
+  }
+  
+  .o_wpm_final_time,
+  .o_wpm_final_words {
+    font-size: 1.5rem;
+  }
+  
+  .o_wpm_reading_text {
+    font-size: 14px;
+    padding: 1rem;
+  }
+  
+  .o_wpm_typing_area {
+    font-size: 14px;
+  }
+}
+

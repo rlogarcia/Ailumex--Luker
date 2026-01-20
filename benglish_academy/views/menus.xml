@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+      <data>
+
+            <!-- Menú Principal: Gestión Académica -->
+            <menuitem id="menu_benglish_root"
+                  name="Gestión Académica"
+                  sequence="10" />
+
+            <!-- Submenú: Diseño Curricular -->
+            <menuitem id="menu_benglish_curricular"
+                  name="Diseño Curricular"
+                  parent="menu_benglish_root"
+                  sequence="10" />
+
+            <menuitem id="menu_benglish_program"
+                  name="Programas"
+                  parent="menu_benglish_curricular"
+                  action="action_benglish_program"
+                  sequence="10" />
+
+            <menuitem id="menu_benglish_plan"
+                  name="Planes de Estudio"
+                  parent="menu_benglish_curricular"
+                  action="action_benglish_plan"
+                  sequence="20" />
+
+            <menuitem id="menu_benglish_phase"
+                  name="Fases"
+                  parent="menu_benglish_curricular"
+                  action="action_benglish_phase"
+                  sequence="30" />
+
+            <menuitem id="menu_benglish_level"
+                  name="Niveles"
+                  parent="menu_benglish_curricular"
+                  action="action_benglish_level"
+                  sequence="40" />
+
+            <menuitem id="menu_benglish_subject"
+                  name="Asignaturas"
+                  parent="menu_benglish_curricular"
+                  action="action_benglish_subject"
+                  sequence="50" />
+
+            <!-- Submenú: Institucional -->
+            <menuitem id="menu_benglish_institutional"
+                  name="Institucional"
+                  parent="menu_benglish_root"
+                  sequence="20"
+                  groups="group_academic_manager,group_academic_coordinator" />
+
+            <menuitem id="menu_benglish_campus"
+                  name="Sedes"
+                  parent="menu_benglish_institutional"
+                  action="action_benglish_campus"
+                  sequence="10"
+                  groups="group_academic_manager,group_academic_coordinator" />
+
+            <menuitem id="menu_benglish_subcampus"
+                  name="Aulas"
+                  parent="menu_benglish_institutional"
+                  action="action_benglish_subcampus"
+                  sequence="20"
+                  groups="group_academic_manager,group_academic_coordinator" />
+
+            <!-- Submenú: Planeación Académica -->
+            <menuitem id="menu_benglish_planning"
+                  name="Planeación Académica"
+                  parent="menu_benglish_root"
+                  sequence="30"
+                  groups="group_academic_manager,group_academic_coordinator" />
+
+            <!-- Submódulo: Horario Académico -->
+            <menuitem id="menu_academic_agenda_root"
+                  name="📅 Horario Académico"
+                  parent="menu_benglish_planning"
+                  sequence="5" />
+
+            <menuitem id="menu_academic_agenda"
+                  name="Horarios"
+                  parent="menu_academic_agenda_root"
+                  action="action_academic_agenda"
+                  sequence="10" />
+
+            <menuitem id="menu_academic_session"
+                  name="Clases"
+                  parent="menu_academic_agenda_root"
+                  action="action_academic_session"
+                  sequence="20" />
+
+            <menuitem id="menu_agenda_template"
+                  name="Plantillas de Agenda"
+                  parent="menu_academic_agenda_root"
+                  action="action_agenda_template"
+                  sequence="25"
+                  groups="group_academic_coordinator,group_academic_manager" />
+
+
+            <!-- Submenú: Matrícula (HU5) -->
+            <menuitem id="menu_benglish_enrollment_root"
+                  name="Matrícula"
+                  parent="menu_benglish_root"
+                  sequence="40" />
+
+            <menuitem id="menu_benglish_enrollment_wizard"
+                  name="Asistente de Matrícula"
+                  parent="menu_benglish_enrollment_root"
+                  action="action_enrollment_wizard"
+                  sequence="5" />
+
+            <menuitem id="menu_benglish_student"
+                  name="Estudiantes"
+                  parent="menu_benglish_enrollment_root"
+                  action="action_student"
+                  sequence="10" />
+
+            <menuitem id="menu_benglish_enrollment"
+                  name="Matrículas"
+                  parent="menu_benglish_enrollment_root"
+                  action="action_enrollment"
+                  sequence="20" />
+
+            <!-- Submenú: Congelamiento (HU-GA-CONG) -->
+            <menuitem id="menu_benglish_freeze_root"
+                  name="Congelamiento"
+                  parent="menu_benglish_root"
+                  sequence="45"
+                  groups="group_academic_coordinator,group_academic_manager" />
+
+            <menuitem id="menu_benglish_freeze_pending"
+                  name=" Pendientes de Aprobación"
+                  parent="menu_benglish_freeze_root"
+                  action="action_freeze_pending"
+                  sequence="10" />
+
+            <menuitem id="menu_benglish_freeze_all"
+                  name=" Todos los Congelamientos"
+                  parent="menu_benglish_freeze_root"
+                  action="action_student_freeze_period"
+                  sequence="20" />
+
+            <!-- Submenú: Configuración de Congelamiento -->
+            <menuitem id="menu_benglish_freeze_config"
+                  name="⚙ Configuración"
+                  parent="menu_benglish_freeze_root"
+                  sequence="90"
+                  groups="group_academic_manager,group_academic_coordinator" />
+
+            <menuitem id="menu_benglish_freeze_reason"
+                  name=" Motivos de Congelamiento"
+                  parent="menu_benglish_freeze_config"
+                  action="action_freeze_reason"
+                  sequence="10" />
+
+            <menuitem id="menu_benglish_freeze_plan_config"
+                  name=" Políticas por Plan"
+                  parent="menu_benglish_freeze_config"
+                  action="action_plan_freeze_config"
+                  sequence="20" />
+
+            <!-- Submenú: Recursos Humanos -->
+            <!--<menuitem
+                  id="menu_benglish_hr"
+                  name="Recursos Humanos"
+                  parent="menu_benglish_root"
+                  sequence="50"
+                  groups="group_academic_manager,group_academic_coordinator" />
+
+            <menuitem id="menu_benglish_coach"
+                  name="Coaches/Docentes"
+                  parent="menu_benglish_hr"
+                  action="action_coach"
+                  sequence="10" />-->
+
+
+            <!-- Submenú: Informes -->
+            <menuitem id="menu_benglish_reports"
+                  name="Informes"
+                  parent="menu_benglish_root"
+                  sequence="60" />
+
+            <!-- Submenú: Configuración -->
+            <menuitem id="menu_benglish_configuration"
+                  name="Configuración"
+                  parent="menu_benglish_root"
+                  sequence="100"
+                  groups="group_academic_manager" />
+
+            <menuitem id="menu_config_profile_states"
+                  name="Estados de Perfil"
+                  parent="menu_benglish_configuration"
+                  action="action_student_profile_state"
+                  sequence="10" />
+
+            <menuitem id="menu_config_state_transitions"
+                  name="Transiciones de Estado"
+                  parent="menu_benglish_configuration"
+                  action="action_student_lifecycle_transition"
+                  sequence="15" />
+
+            <menuitem id="menu_config_students"
+                  name="Importar / Cargar Estudiantes"
+                  parent="menu_benglish_configuration"
+                  action="action_benglish_student_import_batch"
+                  sequence="20" />
+
+            <menuitem id="menu_teacher_replacement_log"
+                  name="Historial de Reemplazos"
+                  parent="menu_benglish_configuration"
+                  action="action_teacher_replacement_log"
+                  sequence="25"
+                  groups="group_academic_coordinator,group_academic_manager" />
+
+            <menuitem id="menu_benglish_class_booking_settings"
+                  name="Parametrizaciones de Clases"
+                  parent="menu_benglish_configuration"
+                  action="action_benglish_class_booking_settings"
+                  sequence="30"
+                  groups="group_academic_manager" />
+
+            <menuitem id="menu_student_password_manager"
+                  name="🔑 Contraseñas de Estudiantes"
+                  parent="menu_benglish_configuration"
+                  action="action_student_password_manager"
+                  sequence="35"
+                  groups="group_academic_manager,base.group_system" />
+
+            <menuitem id="menu_teacher_password_manager"
+                  name="🔑 Contraseñas de Docentes"
+                  parent="menu_benglish_configuration"
+                  action="action_teacher_password_manager"
+                  sequence="36"
+                  groups="group_academic_manager,base.group_system" />
+
+            <!-- Menú para Bitácora Académica -->
+            <menuitem id="menu_benglish_academic_history"
+                  name="Bitácora Académica"
+                  parent="menu_academic_agenda_root"
+                  action="action_benglish_academic_history"
+                  sequence="30" />
+
+            <!-- Menú para Importación Masiva -->
+            <menuitem id="menu_student_enrollment_import"
+                  name="Importación Masiva"
+                  parent="menu_benglish_enrollment_root"
+                  action="action_student_enrollment_import_wizard"
+                  sequence="100"
+                  groups="group_academic_coordinator,group_academic_manager" />
+
+      </data>
+</odoo>

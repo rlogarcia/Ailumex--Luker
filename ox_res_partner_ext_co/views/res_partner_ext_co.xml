@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- res.partner search view -->
+        <record id="res_partner_ext_co_view_search" model="ir.ui.view">
+            <field name="name">res_partner_ext_co.view.search</field>
+            <field name="model">res.partner</field>
+            <field name="arch" type="xml">
+                <search string="Search Description">
+
+                </search>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="wizard_street_form_view">
+            <field name="name">wizard.street.form</field>
+            <field name="model">street.model.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Sugerencia de dirección">
+                    <div class="row">
+                        <div class="col-xs-12 col-xs-offset-1">
+                            <span class="oe_street_space"></span>
+                            <field name="f1" class="oe_inline oe_street_sel" />
+                            <field name="f2" class="oe_street_num" />
+                            <field name="f3" class="oe_inline oe_street_sel" />
+                            <field name="f13" class="oe_inline oe_street_sel" />
+                            <span> Bis? </span>
+                            <field name="f4" class="oe_inline" />
+                            <field name="f5" invisible="1" class="oe_inline oe_street_num" />
+                            <field name="f6" class="oe_inline oe_street_sel" />
+                        </div>
+                        <div class="col-xs-12 col-xs-offset-1">
+                            <span style="min-width:100px;">#</span>
+                            <field name="f7" class="oe_street_num" />
+                            <field name="f8" class="oe_inline oe_street_sel" />
+                            <field name="f14" class="oe_inline oe_street_sel" />
+                            <field name="f10" class="oe_inline oe_street_sel" />
+                        </div>
+                        <div class="col-xs-12 col-xs-offset-1">
+                            <span> - </span>
+                            <field name="f9" class="oe_street_num" />
+                            <field name="f15" class="oe_inline oe_street_sel" />
+                            <field name="f16" class="oe_inline oe_street_sel" />
+                            <span style="margin-left:10px;">Tipo de vivienda</span>
+                            <field name="f11" class="oe_inline oe_street_sel" />
+                            <span class="oe_street_space" />
+                            <span style="margin-left:10px;">Ref. </span>
+                            <field name="f12" class="oe_inline oe_street_num" />
+                        </div>
+                    </div>
+                    <hr />
+                    <group>
+                        <group>
+                            <field name="street_sug" readonly="1" />
+                            <span class="oe_street_space" />
+                        </group>
+                        <group>
+                            <button type="object" id="action_add_street" name="action_add_street" class="btn btn-primary" string="Asignar dirección" colspan="2"/>
+                        </group>
+                    </group>
+                    <footer></footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="wizard_street_action" model="ir.actions.act_window">
+            <field name="name">Sugerencia de dirección</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">street.model.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="wizard_street_form_view"></field>
+            <field name="target">new</field>
+        </record>
+
+        <record id="view_partner_form_inherit" model="ir.ui.view">
+            <field name="name">res.partner.form</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form" />
+            <field name="priority" eval="1" />
+            <field name="arch" type="xml">
+
+                <!-- Oculta el campo VAT -->
+                <field name="vat" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </field>
+
+                <xpath expr="//group[1]" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+
+                <xpath expr="//div[hasclass('oe_title')]" position="after">
+                    <group string="Datos Básicos">
+                        <group>
+                            <label for="l10n_latam_identification_type_id" string="Tipo / Número de Identificación"/>
+                            <div>
+                                <field name="l10n_latam_identification_type_id" options="{'no_open': True, 'no_create': True}" placeholder="Type" class="oe_inline" domain="country_id and ['|', ('country_id', '=', False), ('country_id', '=', country_id)] or []" required="True"/>
+                                <span class="oe_read_only"> - </span>
+                                <field name="ref" class="oe_inline" />
+                            </div>
+                            <!-- CORREGIDO: Sintaxis Odoo 18 para condiciones -->
+                            <field name="primer_nombre" required="company_type == 'person'" invisible="company_type != 'person'"/>
+                            <field name="otros_nombres" invisible="company_type != 'person'"/>
+                            <field name="primer_apellido" required="company_type == 'person'" invisible="company_type != 'person'"/>
+                            <field name="segundo_apellido" invisible="company_type != 'person'"/>
+                        </group>
+                        <group>
+                            <field name="lang" readonly="True" />
+                            <field name="dev_ref" />
+                            <field name="regimen_fiscal"/>
+                            <field name="fecha_nacimiento" />
+                            <field name="city_exp_ref_id" />
+                        </group>
+                    </group>
+                    
+                    <!-- SECCIÓN DE INFORMACIÓN PERSONAL ADICIONAL (Solo para Personas) -->
+                    <!-- CORREGIDO: Sintaxis Odoo 18 para condiciones en grupos -->
+                    <group string="Información Personal Adicional" invisible="company_type != 'person'">
+                        <group>
+                            <field name="sexo_biologico" />
+                            <field name="sexo_identificacion" />
+                            <field name="pais_nacimiento" />
+                            <field name="estado_civil" />
+                        </group>
+                        <group>
+                            <field name="direccion_residencia" />
+                            <field name="zona" />
+                        </group>
+                    </group>
+                    
+                    <!-- SECCIÓN DE INFORMACIÓN DE SALUD/EPS (Solo para Personas) -->
+                    <!-- CORREGIDO: Sintaxis Odoo 18 para condiciones en grupos -->
+                    <group string="Información de Salud y Seguridad Social" invisible="company_type != 'person'">
+                        <group>
+                            <field name="municipio_eps" />
+                            <field name="ips_cotizante" />
+                        </group>
+                        <group>
+                            <field name="fondo_pensiones" />
+                        </group>
+                    </group>
+                    
+                    <hr/>
+                    
+                    <!-- SECCIÓN REORGANIZADA: Representación Legal / Actividad económica -->
+                    <!-- CORREGIDO: Sintaxis Odoo 18 para condiciones en grupos -->
+                    <group string="Representación Legal / Actividad económica" invisible="not is_company">
+                        <group>
+                            <field name="representante_legal_id" />
+                            <field name="society_type_id" string="Tipo sociedad"/>
+                        </group>
+                        <group>
+                            <field name="economic_act_ids" string="Actividad económica" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    
+                    <hr />
+                    
+                    <group string="Dirección principal">
+                        <group>
+                            <field name="street" readonly="1" string="Direccion" placeholder="CLL 44 CRA 44 APTO 5" />
+                            <field name="street2" invisible="1" />
+                            <field name="city" invisible="1" />
+                            <field name="zip" string="Código Postal" />
+                        </group>
+                        <group>
+                            <button type="action" name="%(ox_res_partner_ext_co.wizard_street_action)d" class="btn-primary" string="Adicionar" />
+                        </group>
+                    </group>
+                    <hr />
+                    <group string="Datos Adicionales">
+                        <group>
+                            <field name="nombre_comercial" />
+                            <field name="phone" />
+                            <field name="country_id" placeholder="Pais" class="o_address_country" options="{'no_open': True, 'no_create': True}" readonly="type == 'contact' and parent_id" context="{'country_id': country_id}"/>
+                            <field name="state_id" string="Depto" placeholder="Departamento" class="o_address_state" options="{'no_open': True}" readonly="type == 'contact' and parent_id" context="{'country_id': country_id}"/>
+                            <field name="city_id" string="Ciudad" placeholder="Ciudad" class="o_address_country" options="{'no_open': True, 'no_create': True}" readonly="type == 'contact' and parent_id" context="{'state_id': state_id}"/>
+                            <field name="barrio_ciudad" string="Barrio" />
+                            <field name="genero" />
+                            <field name="profesion_id" string="Profesión" />
+                        </group>
+                        <group>
+                            <field name="mobile" />
+                            <field name="website" widget="url" placeholder="e.g. www.odoo.com" invisible="1" />
+                            <field name="email" widget="email" context="{'gravatar_image': True}" required="1" />
+                            <field name="felec_email" string="Email F.E." widget="email" context="{'gravatar_image': True}" required="1" />
+                            <field name="email_alter_1" />
+                            <field name="email_alter_2" />
+                            <field name="function" placeholder="e.j. Gerente" />
+                            <field name="pricelist_def_id" />
+                        </group>
+                    </group>
+                    <hr />
+                </xpath>
+
+                <xpath expr="//page[@name='contact_addresses']//field[@name='child_ids']//form" position="replace">
+                    <form string="Contact / Address">
+                        <sheet>
+                            <group>
+                                <group>
+                                    <field name="is_contact_customer" string="Contacto" />
+                                </group>
+                                <group>
+                                    <!-- CORREGIDO: Sintaxis Odoo 18 -->
+                                    <field name="tipo_contacto" invisible="type != 'other'"/>
+                                </group>
+                            </group>
+                            <field name="type" required="1" widget="radio" options="{'horizontal': true}" context="{'default_type': 'other'}" invisible="1"/>
+                            <field name="parent_id" invisible="1"/>
+                            <hr/>
+                            <group>
+                                <group>
+                                    <!-- CORREGIDO: Sintaxis Odoo 18 -->
+                                    <field name="name" string="Nombre contacto" required="type == 'contact'"/>
+                                    <field name="title" options="{'no_open': True}" placeholder="e.g. Mr." invisible="tipo_contacto == 'Sede'"/>
+                                    <field name="function" placeholder="e.g. Sales Director" invisible="tipo_contacto == 'Sede'"/>
+                                    <field name="country_id" placeholder="Pais" class="o_address_country" options="{'no_open': True, 'no_create': True}" readonly="type == 'contact' and parent_id" context="{'country_id': country_id}"/>
+                                    <field name="state_id" string="Depto" placeholder="Departamento" class="o_address_state" options="{'no_open': True}" readonly="type == 'contact' and parent_id" context="{'country_id': country_id}"/>
+                                    <field name="city_id" string="Ciudad" placeholder="Ciudad" class="o_address_country" options="{'no_open': True, 'no_create': True}" readonly="type == 'contact' and parent_id" context="{'state_id': state_id}"/>
+                                    <field name="street" invisible="tipo_contacto != 'Sede'" string="Dirección"/>
+                                </group>
+                                <group>
+                                    <field name="ref" readonly="1" force_save="1" />
+                                    <field name="email" widget="email"/>
+                                    <field name="phone" widget="phone"/>
+                                    <field name="mobile" widget="phone"/>
+                                    <field name="company_id" invisible="1"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="comment" placeholder="Internal notes..." nolabel="1" colspan="2"/>
+                            </group>
+                            <field name="lang" invisible="True"/>
+                            <field name="user_id" invisible="True"/>
+                        </sheet>
+                    </form>
+                </xpath>
+
+                <xpath expr="//page[@name='contact_addresses']//field[@name='child_ids']//kanban//templates" position="replace">
+                    <kanban>
+                        <field name="id"/>
+                        <field name="color"/>
+                        <field name="name"/>
+                        <field name="title"/>
+                        <field name="type"/>
+                        <field name="email"/>
+                        <field name="parent_id"/>
+                        <field name="is_company"/>
+                        <field name="function"/>
+                        <field name="phone"/>
+                        <field name="street"/>
+                        <field name="street2"/>
+                        <field name="zip"/>
+                        <field name="city"/>
+                        <field name="country_id"/>
+                        <field name="mobile"/>
+                        <field name="state_id"/>
+                        <field name="image_128"/>
+                        <field name="avatar_128"/>
+                        <field name="lang"/>
+                        <!-- fields in form x2many view to diminish requests -->
+                        <field name="comment"/>
+                        <field name="display_name"/>
+                        <field name="tipo_contacto" />
+                        <templates>
+                            <t t-name="kanban-box">
+                                <t t-set="color" t-value="kanban_color(record.color.raw_value)"/>
+                                <div t-att-class="color + (record.title.raw_value == 1 ? ' oe_kanban_color_alert' : '') + ' oe_kanban_global_click'">
+                                    <div class="o_kanban_image">
+                                        <img alt="Contact image" t-att-src="kanban_image('res.partner', 'avatar_128', record.id.raw_value)"/>
+                                    </div>
+                                    <div class="oe_kanban_details">
+                                        <field name="name"/>
+                                        <div t-if="record.tipo_contacto">
+                                            <t t-esc="record.tipo_contacto.raw_value"/>
+                                        </div>
+                                        <div t-if="record.function.raw_value">
+                                            <field name="function"/>
+                                        </div>
+                                        <div t-if="record.email.raw_value">
+                                            <field name="email" widget="email"/>
+                                        </div>
+                                        <div t-if="record.type.raw_value != 'contact'">
+                                            <div>
+                                                <field name="zip"/>
+                                                <t t-if="record.city"></t>
+                                                <field name="city"/>
+                                            </div>
+                                            <field t-if="record.state_id.raw_value" name="state_id"/>
+                                            <t t-if="record.country_id"></t>
+                                            <field name="country_id"/>
+                                        </div>
+                                        <div t-if="record.phone.raw_value">Teléfono: <t t-esc="record.phone.value"/>
+                                        </div>
+                                        <div t-if="record.mobile.raw_value">Celular: <t t-esc="record.mobile.value"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </templates>
+                    </kanban>
+                </xpath>
+
+                <xpath expr="//page[@name='sales_purchases']//group[@name='container_row_2']//group[3]" position="replace">
+                    <group name="misc" string="Misc">
+                        <field name="company_registry" invisible="1"/>
+                        <field name="ref" string="Reference" invisible="1"/>
+                        <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}" readonly="parent_id" force_save="1"/>
+                        <field name="industry_id" invisible="not is_company" options="{'no_create': True}"/>
+                    </group>
+                </xpath>
+
+                <xpath expr="//page[@name='internal_notes']" position="after">
+                    <page string="Sagrilaft">
+                        <group>
+                            <group>
+                                <field name="sag_pep" />
+                                <field name="sag_tav" />
+                            </group>
+                            <group>
+                                <field name="sag_tme" />
+                                <field name="sag_alto_riesgo" />
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="res_partner_bank_tree_inherit" model="ir.ui.view">
+            <field name="name">res.partner.bank.tree</field>
+            <field name="model">res.partner.bank</field>
+            <field name="inherit_id" ref="base.view_partner_bank_tree" />
+            <field name="priority" eval="1" />
+            <field name="arch" type="xml">
+                <field name="allow_out_payment" position="before">
+                    <field name="type_account" />
+                </field>
+            </field>
+        </record>
+
+        <record id="action_create_employee_from_contact" model="ir.actions.server">
+            <field name="name">Crear Empleado A Contacto</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="binding_model_id" ref="base.model_res_partner" />
+            <field name="binding_view_types">list,form</field>
+            <field name="state">code</field>
+            <field name="code">
+                for n in records:
+                    n.action_create_employee()
+            </field>
+        </record>
+
+        <record id="contacts.action_contacts" model="ir.actions.act_window">
+            <field name="domain">[('tipo_contacto','!=','Sede')]</field>
+        </record>
+
+    </data>
+</odoo>

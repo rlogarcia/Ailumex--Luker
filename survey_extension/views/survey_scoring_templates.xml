@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+===============================================================================
+ARCHIVO: survey_scoring_templates.xml (Odoo 18)
+PROPÓSITO: Mostrar resultados de calificación en el formulario de participación
+           usando campos personalizados (prefijo x_*).
+REQUISITOS:
+- survey.user_input debe tener los campos:
+  is_gradable_rel (related a survey_id.is_gradable, store=True)
+  x_score_obtained (float), x_score_total (float), x_score_percent (float),
+  x_min_required (float), x_passed (boolean)
+NOTAS:
+- Usa invisible en lugar de modifiers para compatibilidad con Odoo 18.
+===============================================================================
+-->
+<odoo>
+
+  <record id="survey_user_input_form_inherit_scores_alt" model="ir.ui.view">
+    <field name="name">survey.user_input.form.inherit.scores.alt</field>
+    <field name="model">survey.user_input</field>
+    <field name="inherit_id" ref="survey.survey_user_input_view_form"/>
+    <field name="arch" type="xml">
+
+      <!-- Insertar al final del <sheet> del formulario -->
+      <xpath expr="//form/sheet" position="inside">
+
+        <!-- Campo auxiliar (relacionado con survey.is_gradable) -->
+        <!-- Oculto en la interfaz -->
+        <field name="is_gradable_rel" column_invisible="1"/>
+
+        <!-- Bloque visible SOLO si la encuesta es calificable -->
+        <group string="Resultados detallados (x_)" invisible="is_gradable_rel == False">
+          <group>
+            <field name="x_score_obtained" readonly="1" string="Puntaje obtenido"/>
+            <field name="x_score_total" readonly="1" string="Puntaje total"/>
+            <field name="x_score_percent" readonly="1" string="Porcentaje (%)"/>
+          </group>
+          <group>
+            <field name="x_min_required" readonly="1" string="Mínimo requerido (%)"/>
+            <field name="x_passed" readonly="1" string="¿Aprobó?"/>
+          </group>
+        </group>
+
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

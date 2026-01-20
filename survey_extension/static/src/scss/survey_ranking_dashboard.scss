@@ -1,0 +1,227 @@
+/* ============================================================================
+   ARCHIVO: survey_ranking_dashboard.scss
+   PROPÓSITO: Estilos para el dashboard de ranking con vista kanban mejorada
+   ============================================================================ */
+
+/* ============================================================================
+   OCULTAR TODAS LAS MEDIDAS EXCEPTO "NÚMERO" 
+   ============================================================================ */
+
+/* Ocultar items del menú de medidas que NO sean __count */
+.o_graph_controller {
+  .dropdown-menu.o_graph_measures_list {
+    .dropdown-item:not([data-measure="__count"]) {
+      display: none !important;
+    }
+  }
+}
+
+/* Si solo queda 1 medida, ocultar todo el botón */
+.o_graph_controller .o_control_panel_main_buttons {
+  button:has(+ .dropdown-menu.o_graph_measures_list) {
+    &:only-of-type {
+      display: none !important;
+    }
+  }
+}
+
+/* Vista Kanban de Ranking con Dashboard */
+.o_kanban_ranking_dashboard {
+  .o_kanban_record_has_image_fill {
+    min-height: 180px;
+    
+    .o_kanban_image_fill_left {
+      width: 120px;
+      border-radius: 8px 0 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .oe_kanban_details {
+      padding: 15px;
+      flex: 1;
+    }
+  }
+  
+  /* Efectos hover para las tarjetas */
+  .oe_kanban_global_click:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+  }
+  
+  /* Medallas con efecto brillante */
+  .o_kanban_image_fill_left {
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0) 40%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0) 60%
+      );
+      transform: rotate(45deg);
+      animation: shine 3s infinite;
+    }
+  }
+  
+  @keyframes shine {
+    0% {
+      left: -50%;
+    }
+    100% {
+      left: 150%;
+    }
+  }
+}
+
+/* Badges de medallas personalizados */
+.badge {
+  &[data-medal="gold"] {
+    background: linear-gradient(135deg, #FFD700, #FFA500) !important;
+    color: #000 !important;
+    font-weight: bold;
+  }
+  
+  &[data-medal="silver"] {
+    background: linear-gradient(135deg, #C0C0C0, #A8A8A8) !important;
+    color: #000 !important;
+    font-weight: bold;
+  }
+  
+  &[data-medal="bronze"] {
+    background: linear-gradient(135deg, #CD7F32, #8B4513) !important;
+    color: #fff !important;
+    font-weight: bold;
+  }
+}
+
+/* Gráficos dentro del dashboard */
+.o_graph_renderer {
+  min-height: 450px;
+  padding: 20px;
+  
+  svg {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    
+    // Estilos para barras
+    .nv-bar {
+      fill-opacity: 0.85;
+      transition: fill-opacity 0.3s ease;
+      
+      &:hover {
+        fill-opacity: 1;
+      }
+    }
+    
+    // Estilos para gráfico de pastel
+    .nv-slice {
+      stroke: #fff;
+      stroke-width: 2px;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        stroke-width: 3px;
+        filter: brightness(1.1);
+      }
+    }
+    
+    // Colores personalizados para medallas en gráfico de pastel
+    .nv-series-0 { fill: #FFD700 !important; } // Oro
+    .nv-series-1 { fill: #C0C0C0 !important; } // Plata
+    .nv-series-2 { fill: #CD7F32 !important; } // Bronce
+    .nv-series-3 { fill: #6c757d !important; } // Participante
+    
+    // Etiquetas
+    text {
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .nv-axislabel {
+      font-size: 13px;
+      font-weight: 600;
+      fill: #495057;
+    }
+  }
+  
+  // Leyenda mejorada
+  .nv-legend {
+    .nv-series {
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+      
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+  }
+  
+  // Control de zoom y pan
+  .nv-controlsWrap {
+    .nv-legend {
+      .nv-series {
+        padding: 5px 10px;
+        border-radius: 4px;
+        
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+        }
+      }
+    }
+  }
+}
+
+// Contenedor de gráficos con animación
+.o_graph_view {
+  .o_graph_renderer {
+    animation: fadeIn 0.5s ease-in;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Botones de tipo de gráfico
+.o_graph_buttons {
+  button {
+    &.active {
+      background-color: #017e84;
+      color: white;
+      border-color: #017e84;
+    }
+  }
+}
+
+/* Estilos para los contadores en el dashboard */
+.o_kanban_dashboard {
+  .o_value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #017e84;
+  }
+  
+  .o_kanban_record_subtitle {
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}

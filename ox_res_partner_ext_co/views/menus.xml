@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <data>
-        <menuitem id="men_res_city_main" name="Ciudades" parent="contacts.menu_localisation" action="action_res_city_menu" sequence="50" />
-        <menuitem id="men_res_partner_eco_act_main" name="Actividad Economica" parent="contacts.res_partner_menu_config" action="res_partner_economic_activity_action" sequence="500" />
-        <menuitem id="men_res_partner_society_type_main" name="Tipo Sociedad" parent="contacts.res_partner_menu_config" action="res_partner_society_action" sequence="501" />
-
-    </data>
-</odoo>

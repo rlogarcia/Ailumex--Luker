@@ -1,6 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_res_city,ox_res_partner_ext_co.res_city,model_res_city,,1,1,1,0
-access_res_partner_profesion,ox_res_partner_ext_co.res_partner_profesion,model_res_partner_profesion,,1,1,1,0
-access_res_partner_society,ox_res_partner_ext_co.res_partner_society,model_res_partner_society,,1,1,1,1
-access_res_partner_economic_activity,ox_res_partner_ext_co.res_partner_economic_activity,model_res_partner_economic_activity,,1,1,1,1
-access_street_model_wizard,ox_res_partner_ext_co.street_model_wizard,model_street_model_wizard,,1,1,1,1

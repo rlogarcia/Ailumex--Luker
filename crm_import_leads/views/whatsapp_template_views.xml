@@ -6,10 +6,10 @@
         <field name="model">whatsapp.template</field>
         <field name="arch" type="xml">
             <list string="WhatsApp Templates">
-                <field name="name"/>
-                <field name="code"/>
-                <field name="template_type"/>
-                <field name="active" widget="boolean_toggle"/>
+                <field name="name" />
+                <field name="code" />
+                <field name="template_type" />
+                <field name="active" widget="boolean_toggle" />
             </list>
         </field>
     </record>
@@ -21,21 +21,22 @@
             <form string="WhatsApp Template">
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" 
-                                invisible="active"/>
+                        <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active" />
                     </div>
                     <group>
                         <group>
-                            <field name="name"/>
-                            <field name="code"/>
-                            <field name="template_type"/>
+                            <field name="name" />
+                            <field name="code" />
+                            <field name="template_type" />
                         </group>
                         <group>
-                            <field name="active"/>
+                            <field name="active" />
                         </group>
                     </group>
                     <group>
-                        <field name="message" widget="text" placeholder="Use {{name}}, {{company}}, {{email}}, {{phone}}, {{user}} as variables"/>
+                        <field name="message" widget="text"
+                            placeholder="Use {{name}}, {{company}}, {{email}}, {{phone}}, {{user}} as variables" />
                     </group>
                     <notebook>
                         <page string="Help">
@@ -72,6 +73,11 @@
         </field>
     </record>
 
-    <menuitem id="menu_whatsapp_templates" name="Templates" parent="menu_whatsapp_root" 
-              action="action_whatsapp_template" sequence="2"/>
+    <!-- Submenú: Templates - Solo supervisores y directores -->
+    <menuitem id="menu_whatsapp_templates"
+        name="Templates"
+        parent="menu_whatsapp_root"
+        action="action_whatsapp_template"
+        groups="group_supervisor_comercial"
+        sequence="3" />
 </odoo>

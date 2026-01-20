@@ -1,7 +1,7 @@
 {
     "name": "CRM Import Leads",
     "version": "18.0.2.0.0",
-    "summary": "Import contacts and leads into CRM with WhatsApp & Email integration.",
+    "summary": "Import contacts and leads into CRM with advanced features.",
     "description": """
         CRM Import Leads - Advanced Lead Management
         ==========================================
@@ -10,20 +10,32 @@
         * Import contacts and leads from Excel or CSV templates
         * Lead Scoring and qualification
         * Social media source tracking
-        * **WhatsApp integration with templates**
         * **Email integration with chatter**
         * Automated follow-ups
         * Lead interaction tracking
         * Company enrichment
+        * HR Integration for commercial team management
+        * Pipeline automation (Marketing → Commercial)
         
-        WhatsApp Integration:
-        * Send WhatsApp messages from leads
-        * Template-based messaging
-        * Automatic message logging in chatter
-        * Support for multiple providers (Twilio, WhatsApp Business API, etc.)
-        * Webhook support for incoming messages
-        * Message status tracking (sent, delivered, read)
-        * Response directly from chatter
+        ⚠️ IMPORTANTE - WhatsApp Integration:
+        ==========================================
+        Los modelos y vistas de WhatsApp en este módulo (whatsapp_message, 
+        whatsapp_gateway, whatsapp_template, whatsapp_composer) están 
+        DESCONTINUADOS.
+        
+        👉 Para integración WhatsApp, instalar el módulo:
+           'crm_whatsapp_gateway'
+        
+        Este módulo usa los módulos OCA mail_gateway y mail_gateway_whatsapp
+        como base, proporcionando:
+        * Creación automática de leads desde WhatsApp
+        * Deduplicación inteligente por número (E.164)
+        * Asignación automática round-robin desde HR
+        * Cola de reintentos con backoff exponencial
+        * Vinculación bidireccional canal ↔ lead
+        
+        Los archivos antiguos de WhatsApp se mantienen por historial pero
+        NO se deben usar. Ver: docs/ANALISIS_WHATSAPP_INTEGRACION.md
     """,
     "category": "Sales/CRM",
     "author": "Custom Development",

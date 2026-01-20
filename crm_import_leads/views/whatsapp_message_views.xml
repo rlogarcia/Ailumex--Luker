@@ -5,15 +5,18 @@
         <field name="name">whatsapp.message.list</field>
         <field name="model">whatsapp.message</field>
         <field name="arch" type="xml">
-            <list string="WhatsApp Messages" decoration-success="state=='delivered'" decoration-danger="state=='failed'">
-                <field name="create_date" string="Date"/>
-                <field name="name"/>
-                <field name="lead_id"/>
-                <field name="partner_id"/>
-                <field name="phone"/>
-                <field name="direction"/>
-                <field name="state" widget="badge" decoration-success="state in ('sent', 'delivered', 'read')" decoration-danger="state=='failed'"/>
-                <field name="gateway_id"/>
+            <list string="WhatsApp Messages" decoration-success="state=='delivered'"
+                decoration-danger="state=='failed'">
+                <field name="create_date" string="Date" />
+                <field name="name" />
+                <field name="lead_id" />
+                <field name="partner_id" />
+                <field name="phone" />
+                <field name="direction" />
+                <field name="state" widget="badge"
+                    decoration-success="state in ('sent', 'delivered', 'read')"
+                    decoration-danger="state=='failed'" />
+                <field name="gateway_id" />
             </list>
         </field>
     </record>
@@ -24,45 +27,46 @@
         <field name="arch" type="xml">
             <form string="WhatsApp Message">
                 <header>
-                    <button name="action_send" string="Send" type="object" class="oe_highlight" 
-                            invisible="state != 'draft'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,sent,delivered,read"/>
+                    <button name="action_send" string="Send" type="object" class="oe_highlight"
+                        invisible="state != 'draft'" />
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="draft,sent,delivered,read" />
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <button name="action_view_lead" type="object" class="oe_stat_button" 
-                                icon="fa-user" invisible="not lead_id">
+                        <button name="action_view_lead" type="object" class="oe_stat_button"
+                            icon="fa-user" invisible="not lead_id">
                             <span>View Lead</span>
                         </button>
                     </div>
                     <group>
                         <group>
-                            <field name="name"/>
-                            <field name="lead_id"/>
-                            <field name="partner_id"/>
-                            <field name="phone"/>
-                            <field name="direction"/>
+                            <field name="name" />
+                            <field name="lead_id" />
+                            <field name="partner_id" />
+                            <field name="phone" />
+                            <field name="direction" />
                         </group>
                         <group>
-                            <field name="template_id"/>
-                            <field name="gateway_id"/>
-                            <field name="external_id" readonly="1"/>
-                            <field name="sent_date" readonly="1"/>
-                            <field name="delivered_date" readonly="1"/>
-                            <field name="read_date" readonly="1"/>
+                            <field name="template_id" />
+                            <field name="gateway_id" />
+                            <field name="external_id" readonly="1" />
+                            <field name="sent_date" readonly="1" />
+                            <field name="delivered_date" readonly="1" />
+                            <field name="read_date" readonly="1" />
                         </group>
                     </group>
                     <group>
-                        <field name="message" widget="text"/>
+                        <field name="message" widget="text" />
                     </group>
                     <group invisible="not error_message">
-                        <field name="error_message" widget="text" readonly="1"/>
+                        <field name="error_message" widget="text" readonly="1" />
                     </group>
                 </sheet>
                 <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="activity_ids"/>
-                    <field name="message_ids"/>
+                    <field name="message_follower_ids" />
+                    <field name="activity_ids" />
+                    <field name="message_ids" />
                 </div>
             </form>
         </field>
@@ -83,8 +87,18 @@
         </field>
     </record>
 
-    <!-- Menu -->
-    <menuitem id="menu_whatsapp_root" name="WhatsApp" parent="crm.crm_menu_root" sequence="10"/>
-    <menuitem id="menu_whatsapp_messages" name="Messages" parent="menu_whatsapp_root" 
-              action="action_whatsapp_message" sequence="1"/>
+    <!-- Menú principal WhatsApp - Con lógica de permisos por rol -->
+    <menuitem id="menu_whatsapp_root"
+        name="WhatsApp"
+        parent="crm.crm_menu_root"
+        sequence="15"
+        groups="group_asesor_comercial" />
+
+    <!-- Submenú: Messages (Legacy) - Solo supervisores y directores -->
+    <menuitem id="menu_whatsapp_messages"
+        name="Messages"
+        parent="menu_whatsapp_root"
+        action="action_whatsapp_message"
+        groups="group_supervisor_comercial"
+        sequence="2" />
 </odoo>

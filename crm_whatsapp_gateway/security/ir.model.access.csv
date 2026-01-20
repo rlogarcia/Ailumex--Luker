@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_whatsapp_message_queue_asesor,whatsapp.message.queue.asesor,model_whatsapp_message_queue,crm_import_leads.group_asesor_comercial,1,0,0,0
+access_whatsapp_message_queue_supervisor,whatsapp.message.queue.supervisor,model_whatsapp_message_queue,crm_import_leads.group_supervisor_comercial,1,1,0,0
+access_whatsapp_message_queue_director,whatsapp.message.queue.director,model_whatsapp_message_queue,crm_import_leads.group_director_comercial,1,1,1,1
+access_integration_log_supervisor,integration.log.supervisor,model_integration_log,crm_import_leads.group_supervisor_comercial,1,0,0,0
+access_integration_log_director,integration.log.director,model_integration_log,crm_import_leads.group_director_comercial,1,1,0,0
+access_integration_log_admin,integration.log.admin,model_integration_log,base.group_system,1,1,1,1

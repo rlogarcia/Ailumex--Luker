@@ -1,0 +1,501 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Wizard: Reemplazo de Docente -->
+        <record id="view_replace_teacher_wizard_form" model="ir.ui.view">
+            <field name="name">benglish.replace.teacher.wizard.form</field>
+            <field name="model">benglish.replace.teacher.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Reemplazar Docente">
+                    <group>
+                        <field name="session_id" invisible="1" />
+                        <field name="session_ids" invisible="1" />
+                    </group>
+
+                    <group string="🔄 Reemplazo de Docente">
+                        <group>
+                            <field name="original_teacher_id" readonly="1"
+                                widget="many2one_avatar_user" string="Docente Actual" />
+                            <field name="new_teacher_id" options="{'no_create': True}"
+                                widget="many2one_avatar_user" string="Nuevo Docente" />
+                        </group>
+                        <group>
+                            <field name="replacement_scope" widget="radio"
+                                string="Alcance del Reemplazo" />
+                            <field name="effective_date"
+                                invisible="replacement_scope != 'future'"
+                                string="Fecha Efectiva" />
+                            <field name="sessions_to_replace_count" readonly="1"
+                                string="Sesiones a Afectar"
+                                class="text-primary fw-bold" />
+                        </group>
+                    </group>
+
+                    <group string="📝 Motivo y Notas">
+                        <field name="replacement_reason" nolabel="1"
+                            placeholder="Indique el motivo del reemplazo: licencia médica, vacaciones, emergencia familiar, etc." />
+                    </group>
+
+                    <group string="📄 Notas Adicionales (Opcional)">
+                        <field name="notes" nolabel="1"
+                            placeholder="Información complementaria sobre el reemplazo..." />
+                    </group>
+
+                    <group string="⚙️ Validaciones">
+                        <group>
+                            <field name="check_conflicts" widget="boolean_toggle"
+                                string="Verificar Conflictos de Horario" />
+                            <field name="skip_conflicts" widget="boolean_toggle"
+                                invisible="not check_conflicts"
+                                string="Omitir Sesiones con Conflictos" />
+                        </group>
+                    </group>
+
+                    <group invisible="not conflict_warning">
+                        <field name="conflict_warning" widget="text" readonly="1"
+                            class="alert alert-warning" nolabel="1" />
+                    </group>
+
+                    <footer>
+                        <button name="action_replace" string="Reemplazar Docente"
+                            type="object" class="btn-primary" />
+                        <button string="Cancelar" class="btn-secondary" special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Wizard: Duplicación de Sesiones        -->
+        <record id="view_duplicate_sessions_wizard_form" model="ir.ui.view">
+            <field name="name">benglish.duplicate.sessions.wizard.form</field>
+            <field name="model">benglish.duplicate.sessions.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Duplicar Sesiones">
+                    <group>
+                        <group string="📍 Periodo Origen">
+                            <field name="source_campus_id" options="{'no_create': True}" />
+                            <field name="source_start_date" />
+                            <field name="source_end_date" />
+                            <field name="source_session_count" readonly="1"
+                                string="Sesiones encontradas" />
+                        </group>
+                        <group string="🎯 Destino">
+                            <field name="target_campus_id" options="{'no_create': True}" />
+                            <field name="target_start_date" />
+                            <field name="date_offset_days" readonly="1"
+                                widget="integer" string="Desplazamiento (días)" />
+                        </group>
+                    </group>
+                    <group string="⚙️ Opciones">
+                        <group>
+                            <field name="copy_published_state" widget="boolean_toggle" />
+                            <field name="auto_adjust_teachers" widget="boolean_toggle" />
+                        </group>
+                        <group>
+                            <field name="skip_conflicts" widget="boolean_toggle" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Sesiones a Duplicar" name="sessions">
+                            <field name="source_session_ids" nolabel="1">
+                                <list>
+                                    <field name="start_datetime" />
+                                    <field name="subject_id" />
+                                    <field name="teacher_id" widget="many2one_avatar_user" />
+                                    <field name="campus_id" />
+                                    <field name="state" widget="badge" />
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <footer>
+                        <button name="action_duplicate" string="Duplicar Sesiones"
+                            type="object" class="btn-primary" />
+                        <button string="Cancelar" class="btn-secondary" special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_duplicate_sessions_wizard" model="ir.actions.act_window">
+            <field name="name">Duplicar Sesiones</field>
+            <field name="res_model">benglish.duplicate.sessions.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- Wizard: Edición Masiva                 -->
+        <record id="view_bulk_edit_sessions_wizard_form" model="ir.ui.view">
+            <field name="name">benglish.bulk.edit.sessions.wizard.form</field>
+            <field name="model">benglish.bulk.edit.sessions.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Edición Masiva de Sesiones">
+                    <group>
+                        <group>
+                            <field name="session_ids" invisible="1" />
+                            <field name="session_count" readonly="1" string="Sesiones seleccionadas" />
+                            <field name="action_type" widget="radio" />
+                        </group>
+                        <group>
+                            <field name="skip_conflicts" widget="boolean_toggle" />
+                            <field name="preview_mode" widget="boolean_toggle" />
+                        </group>
+                    </group>
+                    <group string="⚙️ Parámetros de la Acción">
+                        <group>
+                            <field name="new_teacher_id"
+                                invisible="action_type != 'change_teacher'"
+                                options="{'no_create': True}"
+                                widget="many2one_avatar_user"
+                                required="action_type == 'change_teacher'" />
+                            <field name="new_campus_id"
+                                invisible="action_type != 'change_campus'"
+                                options="{'no_create': True}"
+                                required="action_type == 'change_campus'" />
+                            <field name="new_subcampus_id"
+                                invisible="action_type != 'change_campus'"
+                                options="{'no_create': True}" />
+                            <field name="new_delivery_mode"
+                                invisible="action_type != 'change_mode'"
+                                widget="radio"
+                                required="action_type == 'change_mode'" />
+                        </group>
+                        <group>
+                            <field name="time_shift_days"
+                                invisible="action_type != 'shift_time'" />
+                            <field name="time_shift_hours"
+                                invisible="action_type != 'shift_time'" />
+                        </group>
+                    </group>
+                    <group string="📝 Motivo del Reemplazo (T22-HU6)"
+                        invisible="action_type != 'change_teacher'">
+                        <field name="replacement_reason" nolabel="1"
+                            placeholder="Indique el motivo: licencia médica, vacaciones, emergencia, etc."
+                            required="action_type == 'change_teacher'" />
+                    </group>
+                    <footer>
+                        <button name="action_apply" string="Aplicar Cambios"
+                            type="object" class="btn-primary" />
+                        <button string="Cancelar" class="btn-secondary" special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_bulk_edit_sessions_wizard" model="ir.actions.act_window">
+            <field name="name">Edición Masiva</field>
+            <field name="res_model">benglish.bulk.edit.sessions.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="binding_model_id" ref="model_benglish_class_session" />
+        </record>
+
+        <!-- Wizard: Generador de Sesiones Masivas             -->
+        <record id="view_generate_sessions_wizard_form" model="ir.ui.view">
+            <field name="name">benglish.generate.sessions.wizard.form</field>
+            <field name="model">benglish.generate.sessions.wizard</field>
+            <field name="arch" type="xml">
+                <form string="🗓️ Generar Sesiones de Clase">
+                    <!-- Alertas de información -->
+                    <div class="alert alert-info" role="alert">
+                        <strong><i class="fa fa-magic" /> Generador Automático de Sesiones</strong>
+                        <p class="mb-0">
+                            Configure el horario semanal y el periodo para generar automáticamente
+                            todas las sesiones del grupo. El sistema detectará conflictos de
+                            horario.
+                        </p>
+                    </div>
+
+                    <!-- Alerta de conflictos -->
+                    <div class="alert alert-warning" role="alert" invisible="not conflict_warning">
+                        <field name="conflict_warning" readonly="1" nolabel="1" />
+                    </div>
+
+                    <!-- Información del Grupo -->
+                    <group string="📚 Grupo">
+                        <group>
+                            <field name="group_id" options="{'no_create': True}"
+                                placeholder="Seleccione el grupo..." />
+                            <field name="group_name" invisible="1" />
+                        </group>
+                        <group>
+                            <field name="campus_id" readonly="1" />
+                            <field name="subcampus_id" readonly="1" />
+                        </group>
+                    </group>
+
+                    <group>
+                        <group>
+                            <field name="teacher_id" readonly="1" widget="many2one_avatar_user" />
+                            <field name="coach_id" readonly="1" />
+                        </group>
+                        <group>
+                            <field name="delivery_mode" readonly="1" widget="badge" />
+                        </group>
+                    </group>
+
+                    <separator string="📅 Periodo" />
+
+                    <group>
+                        <group>
+                            <field name="date_start" />
+                            <field name="date_end" />
+                            <field name="weeks_count" readonly="1" string="Semanas" />
+                        </group>
+                        <group>
+                            <field name="session_type" widget="radio" />
+                        </group>
+                    </group>
+
+                    <separator string="🕐 Días y Horario" />
+
+                    <group>
+                        <group string="Días de la Semana">
+                            <div class="row gx-2">
+                                <div class="col-auto d-flex flex-column align-items-center px-2">
+                                    <field name="monday" widget="boolean_toggle" nolabel="1" />
+                                    <div class="small mt-1">Lunes</div>
+                                </div>
+                                <div class="col-auto d-flex flex-column align-items-center px-2">
+                                    <field name="tuesday" widget="boolean_toggle" nolabel="1" />
+                                    <div class="small mt-1">Martes</div>
+                                </div>
+                                <div class="col-auto d-flex flex-column align-items-center px-2">
+                                    <field name="wednesday" widget="boolean_toggle" nolabel="1" />
+                                    <div class="small mt-1">Miércoles</div>
+                                </div>
+                                <div class="col-auto d-flex flex-column align-items-center px-2">
+                                    <field name="thursday" widget="boolean_toggle" nolabel="1" />
+                                    <div class="small mt-1">Jueves</div>
+                                </div>
+                                <div class="col-auto d-flex flex-column align-items-center px-2">
+                                    <field name="friday" widget="boolean_toggle" nolabel="1" />
+                                    <div class="small mt-1">Viernes</div>
+                                </div>
+                                <div class="col-auto d-flex flex-column align-items-center px-2">
+                                    <field name="saturday" widget="boolean_toggle" nolabel="1" />
+                                    <div class="small mt-1">Sábado</div>
+                                </div>
+                                <div class="col-auto d-flex flex-column align-items-center px-2">
+                                    <field name="sunday" widget="boolean_toggle" nolabel="1" />
+                                    <div class="small mt-1">Domingo</div>
+                                </div>
+                            </div>
+                        </group>
+                        <group string="Horario de Clase">
+                            <field name="time_start" widget="float_time" />
+                            <field name="time_end" widget="float_time" />
+                            <div class="mt-2">
+                                <span class="badge text-bg-primary fs-6">
+                                    <i class="fa fa-clock-o" /> 
+                                    <field name="time_start_display"
+                                        readonly="1" /> - <field name="time_end_display"
+                                        readonly="1" />
+                                </span>
+                            </div>
+                        </group>
+                    </group>
+
+                    <separator string="⚙️ Configuración" />
+
+                    <group>
+                        <group>
+                            <field name="auto_publish" widget="boolean_toggle" />
+                            <field name="skip_conflicts" widget="boolean_toggle" />
+                        </group>
+                        <group>
+                            <div class="alert alert-success text-center py-3" role="alert">
+                                <h3 class="mb-0">
+                                    <i class="fa fa-calendar-check-o" />
+                                    <field name="sessions_to_create" readonly="1" class="h3" />
+                                    <span>sesiones a crear</span>
+                                </h3>
+                            </div>
+                        </group>
+                    </group>
+
+                    <separator string="📋 Vista Previa de Fechas" />
+
+                    <group>
+                        <field name="preview_dates" readonly="1" nolabel="1"
+                            widget="text" class="o_field_text" />
+                    </group>
+
+                    <footer>
+                        <button name="action_generate_sessions" string="🚀 Generar Sesiones"
+                            type="object" class="btn-primary" />
+                        <button string="Cancelar" class="btn-secondary" special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_generate_sessions_wizard" model="ir.actions.act_window">
+            <field name="name">Generar Sesiones</field>
+            <field name="res_model">benglish.generate.sessions.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- Acción desde grupo -->
+        <record id="action_generate_sessions_wizard_from_group" model="ir.actions.act_window">
+            <field name="name">Generar Sesiones del Grupo</field>
+            <field name="res_model">benglish.generate.sessions.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{'default_group_id': active_id}</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- WIZARD: ACTUALIZAR CÓDIGOS ACADÉMICOS                                -->
+        <!-- ===================================================================== -->
+
+        <!-- Vista del wizard para actualizar códigos académicos -->
+        <record id="view_update_academic_codes_form" model="ir.ui.view">
+            <field name="name">benglish.update.academic.codes.form</field>
+            <field name="model">benglish.update.academic.codes</field>
+            <field name="arch" type="xml">
+                <form string="Actualizar Códigos Académicos">
+                    <group>
+                        <group>
+                            <field name="model_to_update" widget="radio" />
+                        </group>
+                        <group>
+                            <field name="only_invalid_codes" />
+                            <field name="preview_mode" />
+                        </group>
+                    </group>
+
+                    <notebook invisible="not preview_results">
+                        <page string="Vista Previa de Cambios">
+                            <field name="preview_results" nolabel="1" widget="text" />
+                        </page>
+                    </notebook>
+
+                    <footer>
+                        <button string="Ejecutar" name="action_update_codes" type="object"
+                            class="btn-primary" />
+                        <button string="Cancelar" class="btn-secondary" special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Acción del wizard -->
+        <record id="action_update_academic_codes" model="ir.actions.act_window">
+            <field name="name">Actualizar Códigos Académicos</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">benglish.update.academic.codes</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- ===================================================================== -->
+        <!-- WIZARD: DUPLICAR AGENDA INTELIGENTEMENTE                             -->
+        <!-- ===================================================================== -->
+
+        <!-- Vista Form del Wizard de Duplicación de Agenda -->
+        <record id="view_duplicate_agenda_wizard_form" model="ir.ui.view">
+            <field name="name">benglish.duplicate.agenda.wizard.form</field>
+            <field name="model">benglish.duplicate.agenda.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Duplicar Agenda Académica">
+                    <sheet>
+                        <div class="alert alert-info" role="alert">
+                            <p>
+                                <strong>ℹ️ Duplicación de Agenda</strong><br /> Este asistente
+                                creará una <strong>nueva agenda</strong> con todas sus sesiones.<br /><br />
+                                
+                                <strong>
+                                Características:</strong><br /> • Las sesiones mantienen el <strong>mismo
+                                día de la semana</strong><br /> • Se valida la <strong>
+                                disponibilidad</strong> de docentes y aulas<br />
+                            </p>
+                        </div>
+
+                        <separator string="📋 Agenda Origen" />
+
+                        <group>
+                            <group>
+                                <field name="source_agenda_id" invisible="1" />
+                                <field name="source_code" readonly="1" />
+                                <field name="source_campus" readonly="1" />
+                                <field name="source_date_start" readonly="1" />
+                                <field name="source_date_end" readonly="1" />
+                                <field name="source_session_count" readonly="1" />
+                            </group>
+                            <group>
+                                <field name="source_summary" readonly="1" nolabel="1"
+                                    widget="text"
+                                    class="o_field_text"
+                                    style="font-family: monospace; background-color: #f8f9fa; padding: 10px; border: 1px solid #dee2e6;" />
+                            </group>
+                        </group>
+
+                        <separator string="📅 Configuración de la nueva agenda" />
+
+                        <group>
+                            <group string="Fechas de la nueva agenda">
+                                <field name="new_date_start" required="1" />
+                                <field name="new_date_end" required="1" />
+                                <field name="new_duration_days" readonly="1" />
+                            </group>
+                            <group string="Previsualización">
+                                <field name="estimated_sessions" readonly="1" />
+                                <field name="weekdays_distribution" readonly="1" widget="text"
+                                    style="font-family: monospace; background-color: #e7f3ff; padding: 5px;" />
+                            </group>
+                        </group>
+
+                        <separator string="⚙️ Opciones de Duplicación" />
+
+                        <group>
+                            <group string="Gestión de Conflictos">
+                                <field name="skip_conflicts" />
+                                <div class="alert alert-warning" role="alert"
+                                    invisible="not skip_conflicts">
+                                    <p> ⚠️ <strong>Modo: Omitir conflictos</strong><br /> Las
+                                        sesiones con docentes o aulas ocupadas se omitirán. Al
+                                        finalizar, verás un resumen de sesiones omitidas. </p>
+                                </div>
+                                <div class="alert alert-danger" role="alert"
+                                    invisible="skip_conflicts">
+                                    <p> 🛑 <strong>Modo: Detener en conflictos</strong><br /> El
+                                        proceso se detendrá al encontrar el primer conflicto. No se
+                                        creará ninguna sesión hasta resolver todos los conflictos. </p>
+                                </div>
+                            </group>
+
+                            <group string="Otras Opciones">
+                                <field name="copy_published_state" />
+                                <field name="validate_campus_schedule" />
+                            </group>
+                        </group>
+
+                    </sheet>
+                    <footer>
+                        <button name="action_duplicate_agenda"
+                            string="✅ Duplicar Agenda"
+                            type="object"
+                            class="btn-primary" />
+                        <button string="Cancelar"
+                            class="btn-secondary"
+                            special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Acción para abrir el wizard desde el botón en la vista form de agenda -->
+        <record id="action_duplicate_agenda_wizard" model="ir.actions.act_window">
+            <field name="name">Duplicar Agenda</field>
+            <field name="res_model">benglish.duplicate.agenda.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="binding_model_id" ref="model_benglish_academic_agenda" />
+            <field name="binding_view_types">form</field>
+        </record>
+
+    </data>
+</odoo>

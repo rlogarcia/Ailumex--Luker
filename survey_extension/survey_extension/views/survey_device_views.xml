@@ -1,0 +1,112 @@
+<!--
+    Propósito: Define las vistas (lista y formulario) y la acción para el
+    modelo `survey.device`. Permite a los usuarios ver y gestionar dispositivos
+    que se usan para responder encuestas (información básica, estadísticas,
+    información técnica del navegador y las respuestas asociadas), así como
+    ejecutar la acción de migración/asignación de respuestas desde el formulario.
+-->
+<odoo>
+        <!-- Vista tipo lista -->
+    <record id="view_survey_device_tree" model="ir.ui.view">
+        <field name="name">survey.device.tree</field>
+        <field name="model">survey.device</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="uuid"/>
+                <field name="browser"/>
+                <field name="operating_system"/>
+                <field name="location"/>
+                <field name="owner_id"/>
+                <field name="active"/>
+                <field name="total_responses"/>
+                <field name="last_response_date"/>
+                <field name="first_seen"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista formulario -->
+    <record id="view_survey_device_form" model="ir.ui.view">
+        <field name="name">survey.device.form</field>
+        <field name="model">survey.device</field>
+        <field name="arch" type="xml">
+            <form string="Dispositivo">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_migrate_responses"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-link"
+                                string="Migrar Respuestas"/>
+                    </div>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre del dispositivo..."/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Información básica">
+                            <field name="uuid" readonly="1"/>
+                            <field name="location"/>
+                            <field name="owner_id"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Estadísticas">
+                            <field name="total_responses" readonly="1"/>
+                            <field name="first_seen" readonly="1"/>
+                            <field name="last_response_date" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Información técnica">
+                        <group>
+                            <field name="browser" readonly="1"/>
+                            <field name="operating_system" readonly="1"/>
+                            <field name="platform" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="screen_resolution" readonly="1"/>
+                            <field name="viewport_resolution" readonly="1"/>
+                            <field name="language" readonly="1"/>
+                            <field name="timezone" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Respuestas registradas">
+                            <field name="response_ids">
+                                <list>
+                                    <field name="survey_id"/>
+                                    <field name="partner_id"/>
+                                    <field name="state"/>
+                                    <field name="create_date"/>
+                                    <field name="x_survey_duration_display"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Información del navegador">
+                            <group>
+                                <field name="user_agent" readonly="1" widget="text"/>
+                            </group>
+                        </page>
+                        <page string="Notas">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+   <!-- ACCIÓN (dejarla aquí) -->
+   <record id="action_survey_device" model="ir.actions.act_window">
+      <field name="name">Dispositivos</field>
+      <field name="res_model">survey.device</field>
+      <field name="view_mode">list,form</field>
+      <field name="target">current</field>
+      <field name="context">{}</field>
+   </record>
+</odoo>

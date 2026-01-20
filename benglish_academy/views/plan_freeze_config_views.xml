@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista de árbol (lista) -->
+    <record id="view_plan_freeze_config_tree" model="ir.ui.view">
+        <field name="name">benglish.plan.freeze.config.tree</field>
+        <field name="model">benglish.plan.freeze.config</field>
+        <field name="arch" type="xml">
+            <list string="Configuración de Congelamiento" decoration-danger="not permite_congelamiento"
+                decoration-muted="not active">
+                <field name="plan_id"/>
+                <field name="permite_congelamiento" widget="boolean_toggle"/>
+                <field name="min_dias_congelamiento"/>
+                <field name="max_dias_congelamiento"/>
+                <field name="max_dias_acumulados"/>
+                <field name="requiere_pago_al_dia" widget="boolean_toggle"/>
+                <field name="dias_minimos_cursados" optional="show"/>
+                <field name="max_congelamientos_por_ciclo" optional="hide"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Vista de formulario -->
+    <record id="view_plan_freeze_config_form" model="ir.ui.view">
+        <field name="name">benglish.plan.freeze.config.form</field>
+        <field name="model">benglish.plan.freeze.config</field>
+        <field name="arch" type="xml">
+            <form string="Configuración de Congelamiento">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object"
+                            class="oe_stat_button" icon="fa-archive">
+                            <field name="active" widget="boolean_button"
+                                options='{"terminology": "archive"}'/>
+                        </button>
+                    </div>
+                    
+                    <widget name="web_ribbon" title="No Permite Congelamiento"
+                        invisible="permite_congelamiento" bg_color="text-bg-danger"/>
+                    
+                    <div class="oe_title">
+                        <label for="plan_id"/>
+                        <h1>
+                            <field name="plan_id" options="{'no_create': True}"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Habilitación">
+                            <field name="permite_congelamiento"/>
+                            <field name="requiere_pago_al_dia" 
+                                invisible="not permite_congelamiento"/>
+                        </group>
+                        <group string="Restricciones de Tiempo" 
+                            invisible="not permite_congelamiento">
+                            <field name="dias_minimos_cursados"/>
+                            <field name="max_congelamientos_por_ciclo"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Límites de Días" invisible="not permite_congelamiento">
+                        <group>
+                            <field name="min_dias_congelamiento"/>
+                            <field name="max_dias_congelamiento"/>
+                        </group>
+                        <group>
+                            <field name="max_dias_acumulados"/>
+                        </group>
+                    </group>
+                    
+                    <notebook invisible="not permite_congelamiento">
+                        <page string="Descripción" name="description">
+                            <group>
+                                <field name="descripcion" placeholder="Descripción de la política de congelamiento..."/>
+                            </group>
+                        </page>
+                        <page string="Notas Internas" name="notes">
+                            <group>
+                                <field name="notas_internas" placeholder="Notas para uso interno..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Vista de búsqueda -->
+    <record id="view_plan_freeze_config_search" model="ir.ui.view">
+        <field name="name">benglish.plan.freeze.config.search</field>
+        <field name="model">benglish.plan.freeze.config</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Configuración">
+                <field name="plan_id"/>
+                <filter name="permite" string="Permite Congelamiento" 
+                    domain="[('permite_congelamiento', '=', True)]"/>
+                <filter name="no_permite" string="No Permite" 
+                    domain="[('permite_congelamiento', '=', False)]"/>
+                <separator/>
+                <filter name="active" string="Activos" 
+                    domain="[('active', '=', True)]"/>
+                <filter name="archived" string="Archivados" 
+                    domain="[('active', '=', False)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_permite" string="Permite Congelamiento" 
+                        context="{'group_by': 'permite_congelamiento'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Acción de ventana -->
+    <record id="action_plan_freeze_config" model="ir.actions.act_window">
+        <field name="name">Configuración de Congelamiento</field>
+        <field name="res_model">benglish.plan.freeze.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configure las políticas de congelamiento por plan
+            </p>
+            <p>
+                Defina si un plan permite congelamiento, los días mínimos y máximos,
+                y el máximo acumulado durante la vigencia.
+            </p>
+        </field>
+    </record>
+    
+    <!-- Acción para crear configuración para todos los planes -->
+    <record id="action_create_config_all_plans" model="ir.actions.server">
+        <field name="name">Crear Configuración para Todos los Planes</field>
+        <field name="model_id" ref="model_benglish_plan_freeze_config"/>
+        <field name="binding_model_id" ref="model_benglish_plan_freeze_config"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    action = records[0].action_crear_config_para_todos_planes()
+        </field>
+    </record>
+
+</odoo>

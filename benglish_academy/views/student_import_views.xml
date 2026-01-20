@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_benglish_student_import_wizard" model="ir.actions.act_window">
+        <field name="name">Nueva importación de estudiantes</field>
+        <field name="res_model">benglish.student.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_benglish_student_import_batch" model="ir.actions.act_window">
+        <field name="name">Importaciones de Estudiantes</field>
+        <field name="res_model">benglish.student.import.batch</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay importaciones registradas.
+            </p>
+            <p>
+                <a class="btn btn-primary" type="action"
+                    name="%(action_benglish_student_import_wizard)d">
+                    Nueva importación
+                </a>
+            </p>
+        </field>
+    </record>
+
+    <record id="view_student_import_batch_tree" model="ir.ui.view">
+        <field name="name">benglish.student.import.batch.tree</field>
+        <field name="model">benglish.student.import.batch</field>
+        <field name="arch" type="xml">
+            <list string="Importaciones de Estudiantes" create="false">
+                <header>
+                    <button
+                        name="%(action_benglish_student_import_wizard)d"
+                        type="action"
+                        string="Nueva importación"
+                        class="btn-primary"
+                        display="always"
+                    />
+                </header>
+                <field name="name" />
+                <field name="state" widget="badge"
+                    decoration-success="state == 'imported'"
+                    decoration-warning="state == 'error'"
+                    decoration-info="state in ('validated','ready')" />
+                <field name="create_uid" />
+                <field name="create_date" />
+                <field name="line_count" />
+                <field name="error_count" />
+                <field name="pending_decision_count" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_student_import_batch_form" model="ir.ui.view">
+        <field name="name">benglish.student.import.batch.form</field>
+        <field name="model">benglish.student.import.batch</field>
+        <field name="arch" type="xml">
+            <form string="Importación de estudiantes" create="false">
+                <header>
+                    <button name="action_validate_file"
+                        type="object"
+                        string="Validar y cargar"
+                        class="btn-primary"
+                        invisible="state != 'draft'" />
+                    <button name="action_open_bulk_decision_wizard"
+                        type="object"
+                        string="Cambiar decisiones"
+                        class="btn-secondary"
+                        invisible="state not in ('validated','ready')" />
+                    <button name="action_set_ready"
+                        type="object"
+                        string="Marcar listo"
+                        class="btn-primary"
+                        invisible="state != 'validated'" />
+                    <button name="action_open_confirm_wizard"
+                        type="object"
+                        string="Confirmar importación"
+                        class="btn-primary"
+                        invisible="state != 'ready'" />
+                    <button name="action_generate_error_report"
+                        type="object"
+                        string="Generar reporte de errores"
+                        class="btn-secondary" />
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="draft,validated,ready,imported,error" />
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1" />
+                            <field name="file_name" readonly="1" />
+                            <field name="file_data" filename="file_name" readonly="1" />
+                            <field name="file_checksum" readonly="1" />
+                            <field name="file_size" readonly="1" />
+                        </group>
+                        <group>
+                            <field name="extra_column_policy" readonly="1" />
+                            <field name="enforce_column_order" readonly="1" />
+                            <field name="identity_field" readonly="1" />
+                            <field name="validated_by" readonly="1" />
+                            <field name="validated_at" readonly="1" />
+                            <field name="imported_by" readonly="1" />
+                            <field name="imported_at" readonly="1" />
+                        </group>
+                    </group>
+                    <group>
+                        <field name="error_report_file" filename="error_report_filename"
+                            readonly="1" />
+                    </group>
+                    <notebook>
+                        <page string="Líneas">
+                            <field name="line_ids"
+                                context="{'default_batch_id': id, 'default_source': 'manual'}">
+                                <list editable="bottom"
+                                    decoration-danger="validation_state == 'error'"
+                                    decoration-warning="validation_state == 'warning'"
+                                    decoration-success="validation_state == 'ok'">
+                                    <field name="row_number" readonly="1" />
+                                    <field name="student_id_number" />
+                                    <field name="first_name" />
+                                    <field name="second_name" />
+                                    <field name="first_last_name" />
+                                    <field name="second_last_name" />
+                                    <field name="email" />
+                                    <field name="phone" />
+                                    <field name="mobile" />
+                                    <field name="birth_date" />
+                                    <field name="gender" />
+                                    <field name="duplicate_scope" readonly="1" />
+                                    <field name="duplicate_line_numbers" readonly="1" />
+                                    <field name="existing_student_id" readonly="1" />
+                                    <field name="action_decision" />
+                                    <field name="target_student_id" />
+                                    <field name="validation_state" widget="badge" readonly="1" />
+                                    <field name="result_state" widget="badge" readonly="1" />
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Logs">
+                            <field name="log_ids" readonly="1">
+                                <list>
+                                    <field name="create_date" />
+                                    <field name="level" widget="badge" />
+                                    <field name="message" />
+                                    <field name="line_id" />
+                                    <field name="details" />
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Columnas">
+                            <field name="missing_columns" readonly="1" />
+                            <field name="extra_columns" readonly="1" />
+                            <field name="header_snapshot" readonly="1" />
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <record id="view_student_import_line_form" model="ir.ui.view">
+        <field name="name">benglish.student.import.line.form</field>
+        <field name="model">benglish.student.import.line</field>
+        <field name="arch" type="xml">
+            <form string="Línea de importación">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="row_number" readonly="1" />
+                            <field name="source" readonly="1" />
+                            <field name="student_id_number" />
+                            <field name="first_name" />
+                            <field name="second_name" />
+                            <field name="first_last_name" />
+                            <field name="second_last_name" />
+                            <field name="name" />
+                            <field name="email" />
+                            <field name="phone" />
+                            <field name="mobile" />
+                            <field name="birth_date" />
+                            <field name="gender" />
+                            <field name="code" />
+                        </group>
+                        <group>
+                            <field name="address" />
+                            <field name="city" />
+                            <field name="country_id" />
+                            <field name="program_id" />
+                            <field name="plan_id" />
+                            <field name="preferred_campus_id" />
+                            <field name="preferred_delivery_mode" />
+                            <field name="duplicate_scope" readonly="1" />
+                            <field name="duplicate_line_numbers" readonly="1" />
+                            <field name="existing_student_id" readonly="1" />
+                            <field name="action_decision" />
+                            <field name="target_student_id" />
+                        </group>
+                    </group>
+                    <group>
+                        <field name="error_messages" readonly="1" />
+                        <field name="warning_messages" readonly="1" />
+                        <field name="result_message" readonly="1" />
+                    </group>
+                    <notebook>
+                        <page string="Datos crudos">
+                            <field name="raw_values" readonly="1" />
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_student_import_batch_search" model="ir.ui.view">
+        <field name="name">benglish.student.import.batch.search</field>
+        <field name="model">benglish.student.import.batch</field>
+        <field name="arch" type="xml">
+            <search string="Buscar importaciones">
+                <field name="name" />
+                <field name="state" />
+                <filter name="draft" string="Borrador" domain="[('state','=','draft')]" />
+                <filter name="validated" string="Validado" domain="[('state','=','validated')]" />
+                <filter name="ready" string="Listo" domain="[('state','=','ready')]" />
+                <filter name="imported" string="Importado" domain="[('state','=','imported')]" />
+                <filter name="error" string="Error" domain="[('state','=','error')]" />
+            </search>
+        </field>
+    </record>
+
+</odoo>

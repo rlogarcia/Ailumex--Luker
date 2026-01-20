@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Propósito: Añadir campos y opciones extra a las vistas de preguntas de la
+    encuesta (formulario y lista). Este archivo hereda las vistas base de
+    `survey.question` para introducir configuración adicional como peso,
+    categoría y la marca de "pregunta clave", además de una sección completa
+    para configurar un cronómetro por pregunta (tiempo límite, acciones al
+    agotar el tiempo, advertencias, etc.). También extiende la vista de lista
+    para mostrar columnas adicionales y define una acción para gestionar las
+    categorías de preguntas.
+-->
+<odoo>
+
+        <!-- FORM de pregunta: añade campos en la pestaña Opciones -->
+    <record id="survey_question_form_inherit_extras" model="ir.ui.view">
+        <field name="name">survey.question.form.inherit.extras</field>
+        <field name="model">survey.question</field>
+        <field name="inherit_id" ref="survey.survey_question_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='title']" position="after">
+                <group col="2" invisible="is_page == True" string="Configuración de la pregunta">
+                    <group>
+                        <field name="weight"
+                               string="Peso"
+                               widget="float"
+                               placeholder="Ej.: 1.0"
+                               help="Importancia relativa de la pregunta en el cálculo de la nota."/>
+                        <field name="category_id"
+                               string="Categoría"
+                               help="Clasifica la pregunta (p. ej.: Técnica, Actitudinal, General)."/>
+                    </group>
+                    <group>
+                        <field name="is_key"
+                               string="Pregunta clave"
+                               help="Marca si esta pregunta es clave dentro de la encuesta."/>
+                    </group>
+                </group>
+                
+                <!-- Sección de Cronómetro por Pregunta -->
+                <group col="2" invisible="is_page == True" string="⏱️ Cronómetro de Pregunta">
+                    <group>
+                        <field name="enable_question_timer"
+                               string="Activar cronómetro"
+                               help="Habilita un cronómetro específico para esta pregunta."/>
+                        <field name="question_time_limit"
+                               string="Tiempo límite (seg)"
+                               invisible="enable_question_timer == False"
+                               required="enable_question_timer == True"
+                               help="Tiempo máximo para responder. 0 = sin límite."/>
+                        <field name="show_question_timer"
+                               string="Mostrar al usuario"
+                               invisible="enable_question_timer == False"
+                               help="El usuario verá el cronómetro en pantalla."/>
+                    </group>
+                    <group>
+                        <field name="timer_action_on_timeout"
+                               string="Acción al agotar tiempo"
+                               invisible="enable_question_timer == False"
+                               help="Qué hacer cuando se acabe el tiempo."/>
+                        <field name="timer_warning_percentage"
+                               string="Advertencia al (%)"
+                               invisible="enable_question_timer == False"
+                               help="% de tiempo restante para mostrar alerta."/>
+                        <field name="allow_overtime"
+                               string="Permitir tiempo extra"
+                               invisible="enable_question_timer == False"
+                               help="Permitir continuar después del tiempo límite."/>
+                        <field name="track_time_per_attempt"
+                               string="Rastrear tiempo"
+                               invisible="enable_question_timer == False"
+                               help="Registrar el tiempo dedicado a esta pregunta."/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- LIST de preguntas: muestra columnas extra -->
+    <record id="survey_question_list_inherit_extras" model="ir.ui.view">
+        <field name="name">survey.question.list.inherit.extras</field>
+        <field name="model">survey.question</field>
+        <field name="inherit_id" ref="survey.survey_question_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[@name='title']" position="after">
+                <field name="weight"/>
+                <field name="category_id"/>
+                <field name="is_key"/>
+                <field name="attachment_count"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Acción para gestionar categorías (menú opcional) -->
+    <record id="action_survey_question_category" model="ir.actions.act_window">
+        <field name="name">Categorías de preguntas</field>
+        <field name="res_model">survey.question.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <!-- Activa este menú si tienes un parent válido de configuración de Encuestas -->
+    <!--
+    <menuitem id="menu_survey_question_category"
+              name="Categorías de preguntas"
+              parent="survey.menu_survey_configuration"
+              action="action_survey_question_category"
+              sequence="60"/>
+    -->
+</odoo>

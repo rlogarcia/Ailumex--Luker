@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- WIZARD: Solicitar Congelamiento de Matrícula -->
+    
+    <record id="view_freeze_request_wizard_form" model="ir.ui.view">
+        <field name="name">benglish.freeze.request.wizard.form</field>
+        <field name="model">benglish.freeze.request.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Solicitar Congelamiento">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>🗓️ Solicitar Congelamiento de Matrícula</h1>
+                        <p class="text-muted">
+                            Complete el formulario para solicitar un congelamiento temporal de su matrícula.
+                            Asegúrese de revisar las validaciones antes de crear la solicitud.
+                        </p>
+                    </div>
+                    
+                    <group>
+                        <group string="👤 Estudiante y Matrícula">
+                            <field name="student_id" options="{'no_create': True}"/>
+                            <field name="enrollment_id" options="{'no_create': True}"/>
+                            <field name="plan_id" readonly="1"/>
+                        </group>
+                        <group string="📊 Información de Congelamiento">
+                            <field name="dias_usados" readonly="1"/>
+                            <field name="dias_disponibles" readonly="1" 
+                                decoration-danger="dias_disponibles &lt; 15"
+                                decoration-warning="dias_disponibles &lt; 30"/>
+                            <field name="dias_maximos_plan" readonly="1"/>
+                            <field name="estudiante_al_dia" readonly="1" widget="boolean"/>
+                        </group>
+                    </group>
+                    
+                    <separator string="📝 Motivo del Congelamiento"/>
+                    <group>
+                        <field name="freeze_reason_id" 
+                            options="{'no_create': True, 'no_open': True}"
+                            placeholder="Seleccione el motivo de su solicitud..."/>
+                        <field name="requiere_documentacion" invisible="1"/>
+                        <field name="tipos_documentos_requeridos" invisible="1"/>
+                    </group>
+                    
+                    <div class="alert alert-warning" role="alert" 
+                        invisible="not requiere_documentacion">
+                        <i class="fa fa-exclamation-triangle"/> 
+                        <strong>Documentación Requerida</strong><br/>
+                        Este motivo requiere que adjunte: <field name="tipos_documentos_requeridos" nolabel="1" readonly="1"/><br/>
+                        <small class="text-muted">Podrá adjuntar los documentos después de crear la solicitud.</small>
+                    </div>
+                    
+                    <group string="💬 Descripción Detallada (Opcional pero recomendado)">
+                        <field name="motivo_detalle" nolabel="1"
+                            placeholder="Explique con más detalle su situación para facilitar la evaluación de su solicitud...&#10;&#10;Por ejemplo:&#10;- Fechas específicas&#10;- Motivos detallados&#10;- Planes de retorno"/>
+                    </group>
+                    
+                    <separator string="📅 Fechas del Congelamiento"/>
+                    <group>
+                        <group>
+                            <field name="fecha_inicio"/>
+                            <field name="fecha_fin"/>
+                        </group>
+                        <group>
+                            <field name="dias_solicitados" readonly="1"
+                                decoration-success="dias_solicitados &gt;= 15 and dias_solicitados &lt;= 60"
+                                decoration-warning="dias_solicitados &lt; 15 or dias_solicitados &gt; 60"/>
+                            <field name="puede_solicitar" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <separator string="✅ Estado de Validación"/>
+                    <field name="mensaje_validacion" nolabel="1"/>
+                    
+                </sheet>
+                <footer>
+                    <button name="action_create_request" type="object" string="✅ Crear Solicitud" 
+                        class="btn-primary" invisible="not puede_solicitar"/>
+                    <button name="action_create_request" type="object" string="❌ Crear Solicitud (con errores)" 
+                        class="btn-secondary" invisible="puede_solicitar"
+                        confirm="La solicitud tiene errores. ¿Desea crearla de todos modos?"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Acción del wizard -->
+    <record id="action_freeze_request_wizard" model="ir.actions.act_window">
+        <field name="name">Solicitar Congelamiento</field>
+        <field name="res_model">benglish.freeze.request.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{}</field>
+    </record>
+    
+</odoo>

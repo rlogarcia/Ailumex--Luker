@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220" role="img" aria-label="Benglish">
+  <defs>
+    <style>
+      .text-script { font-family: 'Pacifico','Brush Script MT','Segoe Script',cursive; font-weight: 600; fill: #ffffff; }
+      .text-block { font-family: 'Montserrat Black','Segoe UI Black','Arial Black',sans-serif; font-weight: 900; fill: #ffffff; }
+    </style>
+  </defs>
+  <rect width="220" height="220" fill="none"/>
+  <text x="64" y="150" class="text-block" font-size="170" letter-spacing="-10">B</text>
+  <!-- Script English -->
+  <text x="32" y="174" class="text-script" font-size="56" letter-spacing="-2">E</text>
+  <g transform="translate(60 158)" fill="none" stroke="#ffffff" stroke-width="4">
+    <circle cx="0" cy="0" r="14"/>
+    <path d="M 0 -14 L 0 14" />
+    <path d="M -8 -6 Q 0 -1 8 -6" />
+  </g>
+  <text x="78" y="174" class="text-script" font-size="56" letter-spacing="-2">nglish</text>
+</svg>

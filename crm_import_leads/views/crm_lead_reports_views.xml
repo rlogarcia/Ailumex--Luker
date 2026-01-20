@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- 
+        HU-CRM-11: Reportes Base CRM
+        ============================
+        
+        Vistas de análisis para:
+        1. Leads por fuente/campaña
+        2. Conversión evaluación → matriculado
+        3. Matrículas por asesor
+        4. Rendimiento por filial
+    -->
+
+    <!-- ========================================================== -->
+    <!-- REPORTE 1: Leads por Fuente/Campaña -->
+    <!-- ========================================================== -->
+
+    <!-- Vista Pivot: Leads por Fuente/Campaña -->
+    <record id="view_crm_lead_report_pivot_source_campaign" model="ir.ui.view">
+        <field name="name">crm.lead.report.pivot.source.campaign</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <pivot string="Leads por Fuente/Campaña" sample="1">
+                <field name="source_id" type="row" />
+                <field name="campaign_id" type="row" />
+                <field name="medium_id" type="row" />
+                <field name="stage_id" type="col" />
+                <field name="expected_revenue" type="measure" />
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vista Graph: Leads por Fuente -->
+    <record id="view_crm_lead_report_graph_source" model="ir.ui.view">
+        <field name="name">crm.lead.report.graph.source</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <graph string="Leads por Fuente" type="bar" sample="1">
+                <field name="source_id" />
+                <field name="expected_revenue" type="measure" />
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción: Análisis por Fuente/Campaña -->
+    <record id="action_crm_lead_analysis_source_campaign" model="ir.actions.act_window">
+        <field name="name">Análisis por Fuente/Campaña</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">graph,pivot,list,form</field>
+        <field name="context">{
+            'search_default_filter_opportunity': 1,
+            'graph_mode': 'bar',
+            }</field>
+        <field name="view_ids"
+            eval="[(5, 0, 0),
+                      (0, 0, {'view_mode': 'graph', 'view_id': ref('view_crm_lead_report_graph_source')}),
+                      (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_crm_lead_report_pivot_source_campaign')})]" />
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Analiza tus leads por fuente de captación y campaña
+            </p>
+            <p>
+                Este reporte te permite identificar qué canales (fuentes) y campañas generan más
+                leads
+                y cuál es su valor esperado.
+            </p>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- REPORTE 2: Conversión por Etapa -->
+    <!-- ========================================================== -->
+
+    <!-- Vista Pivot: Conversión por Etapa -->
+    <record id="view_crm_lead_report_pivot_conversion" model="ir.ui.view">
+        <field name="name">crm.lead.report.pivot.conversion</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <pivot string="Conversión por Etapa" sample="1">
+                <field name="team_id" type="row" />
+                <field name="stage_id" type="col" />
+                <field name="probability" type="measure" widget="percentage" />
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vista Graph: Funnel de Conversión -->
+    <record id="view_crm_lead_report_graph_funnel" model="ir.ui.view">
+        <field name="name">crm.lead.report.graph.funnel</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <graph string="Funnel de Conversión" type="line" sample="1">
+                <field name="stage_id" />
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción: Análisis de Conversión -->
+    <record id="action_crm_lead_analysis_conversion" model="ir.actions.act_window">
+        <field name="name">Análisis de Conversión</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">graph,pivot,list,form</field>
+        <field name="context">{
+            'search_default_filter_opportunity': 1,
+            }</field>
+        <field name="view_ids"
+            eval="[(5, 0, 0),
+                      (0, 0, {'view_mode': 'graph', 'view_id': ref('view_crm_lead_report_graph_funnel')}),
+                      (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_crm_lead_report_pivot_conversion')})]" />
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Analiza la conversión de leads a través del embudo de ventas
+            </p>
+            <p>
+                Visualiza cómo avanzan tus leads por las diferentes etapas del proceso comercial.
+            </p>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- REPORTE 3: Rendimiento por Asesor Comercial -->
+    <!-- ========================================================== -->
+
+    <!-- Vista Pivot: Leads por Asesor -->
+    <record id="view_crm_lead_report_pivot_by_user" model="ir.ui.view">
+        <field name="name">crm.lead.report.pivot.by.user</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <pivot string="Rendimiento por Asesor" sample="1">
+                <field name="user_id" type="row" />
+                <field name="team_id" type="row" />
+                <field name="stage_id" type="col" />
+                <field name="expected_revenue" type="measure" />
+                <field name="probability" type="measure" widget="percentage" />
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vista Graph: Leads por Asesor -->
+    <record id="view_crm_lead_report_graph_by_user" model="ir.ui.view">
+        <field name="name">crm.lead.report.graph.by.user</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <graph string="Leads por Asesor" type="bar" sample="1" stacked="True">
+                <field name="user_id" />
+                <field name="stage_id" type="col" />
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción: Rendimiento por Asesor -->
+    <record id="action_crm_lead_analysis_by_user" model="ir.actions.act_window">
+        <field name="name">Rendimiento por Asesor</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">graph,pivot,list,form</field>
+        <field name="context">{
+            'search_default_filter_opportunity': 1,
+            'search_default_assigned': 1,
+            }</field>
+        <field name="view_ids"
+            eval="[(5, 0, 0),
+                      (0, 0, {'view_mode': 'graph', 'view_id': ref('view_crm_lead_report_graph_by_user')}),
+                      (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_crm_lead_report_pivot_by_user')})]" />
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Analiza el rendimiento de cada asesor comercial
+            </p>
+            <p>
+                Compara la cantidad y valor de leads gestionados por cada miembro del equipo
+                comercial.
+            </p>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- REPORTE 4: Análisis Temporal -->
+    <!-- ========================================================== -->
+
+    <!-- Vista Pivot: Análisis Temporal -->
+    <record id="view_crm_lead_report_pivot_temporal" model="ir.ui.view">
+        <field name="name">crm.lead.report.pivot.temporal</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis Temporal" sample="1">
+                <field name="create_date" interval="month" type="row" />
+                <field name="team_id" type="row" />
+                <field name="stage_id" type="col" />
+                <field name="expected_revenue" type="measure" />
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vista Graph: Tendencia Temporal -->
+    <record id="view_crm_lead_report_graph_temporal" model="ir.ui.view">
+        <field name="name">crm.lead.report.graph.temporal</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <graph string="Tendencia de Leads" type="line" sample="1">
+                <field name="create_date" interval="month" />
+                <field name="team_id" type="col" />
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción: Análisis Temporal -->
+    <record id="action_crm_lead_analysis_temporal" model="ir.actions.act_window">
+        <field name="name">Análisis Temporal</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">graph,pivot,list,form</field>
+        <field name="context">{
+            'search_default_filter_opportunity': 1,
+            }</field>
+        <field name="view_ids"
+            eval="[(5, 0, 0),
+                      (0, 0, {'view_mode': 'graph', 'view_id': ref('view_crm_lead_report_graph_temporal')}),
+                      (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_crm_lead_report_pivot_temporal')})]" />
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Analiza la evolución de tus leads en el tiempo
+            </p>
+            <p>
+                Visualiza tendencias mensuales de captación y conversión de leads.
+            </p>
+        </field>
+    </record>
+
+</odoo>

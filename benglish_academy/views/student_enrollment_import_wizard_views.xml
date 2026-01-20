@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista List del Log de Importación -->
+    <record id="view_student_enrollment_import_log_list" model="ir.ui.view">
+        <field name="name">benglish.student.enrollment.import.log.list</field>
+        <field name="model">benglish.student.enrollment.import.log</field>
+        <field name="arch" type="xml">
+            <list decoration-success="log_type == 'success'"
+                decoration-danger="log_type == 'error'"
+                decoration-muted="log_type == 'info'"
+                create="false" edit="false" delete="false">
+                <field name="row_number" />
+                <field name="student_code" />
+                <field name="log_type" />
+                <field name="message" />
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista Form del Wizard de Importación -->
+    <record id="view_student_enrollment_import_wizard_form" model="ir.ui.view">
+        <field name="name">benglish.student.enrollment.import.wizard.form</field>
+        <field name="model">benglish.student.enrollment.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Importación Masiva de Estudiantes y Matrículas">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,processing,done" />
+                </header>
+
+                <sheet>
+                    <group>
+                        <group string="Archivo Excel">
+                            <field name="file_name" invisible="1" />
+                            <field name="file_data"
+                                filename="file_name"
+                                readonly="state != 'draft'" />
+                        </group>
+
+                        <group string="Opciones de Importación">
+                            <field name="update_existing"
+                                readonly="state != 'draft'" />
+                            <field name="skip_errors"
+                                readonly="state != 'draft'" />
+                        </group>
+                    </group>
+
+                    <notebook invisible="state == 'draft'">
+                        <page string="Resultados" name="results">
+                            <group>
+                                <group string="Estadísticas">
+                                    <field name="total_rows" readonly="1" />
+                                    <field name="success_count" readonly="1" />
+                                    <field name="error_count" readonly="1" />
+                                    <field name="skipped_count" readonly="1" />
+                                </group>
+                            </group>
+
+                            <group string="Log de Importación">
+                                <field name="log_ids" nolabel="1" />
+                            </group>
+                        </page>
+
+                        <page string="Instrucciones" name="instructions">
+                            <div class="alert alert-info" role="alert">
+                                <h4>📋 Columnas Requeridas del Excel</h4>
+                                <ul>
+                                    <li>CÓDIGO USUARIO (único identificador)</li>
+                                    <li>PRIMER NOMBRE</li>
+                                    <li>SEGUNDO NOMBRE</li>
+                                    <li>PRIMER APELLIDO</li>
+                                    <li>SEGUNDO APELLIDO</li>
+                                    <li>EMAIL</li>
+                                    <li>DOCUMENTO</li>
+                                    <li>CATEGORÍA (B teens o ADULTOS)</li>
+                                    <li>PLAN (GOLD, PLUS, PREMIUM, etc.)</li>
+                                    <li>SEDE</li>
+                                    <li>F. INICIO CURSO</li>
+                                    <li>DÍAS CONG.</li>
+                                    <li>FECHA FIN CURSO MÁS CONG.</li>
+                                    <li>FASE (BASIC, INTERMEDIATE, ADVANCED)</li>
+                                    <li>NIVEL (ej: "1 - 2", "11 - 12")</li>
+                                    <li>ESTADO (ACTIVO, SUSPENDIDO, FINALIZADO, N/A)</li>
+                                    <li>CONTACTO TÍTULAR</li>
+                                    <li>FECHA NAC.</li>
+                                </ul>
+
+                                <h4>⚠️ Importante</h4>
+                                <ul>
+                                    <li><strong>Categorías Permitidas:</strong> Solo "B teens" y
+                                        "ADULTOS". Otras categorías serán omitidas.</li>
+                                    <li><strong>Plan:</strong> El sistema agregará "PLAN "
+                                        automáticamente (ej: GOLD → PLAN GOLD)</li>
+                                    <li><strong>Nivel:</strong> Se tomará el número mayor (ej: "11 -
+                                        12" → 12)</li>
+                                    <li>
+                                        <strong>Estados:</strong>
+                                        <ul>
+                                            <li>ACTIVO → Estudiante activo</li>
+                                            <li>SUSPENDIDO → Estudiante inactivo</li>
+                                            <li>FINALIZADO → Estudiante graduado (todas las unidades
+                                                completadas)</li>
+                                            <li>N/A → Estudiante inactivo sin agenda</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+
+                                <h4>🔄 Proceso de Importación</h4>
+                                <ol>
+                                    <li>Validar categoría (filtro crítico)</li>
+                                    <li>Normalizar programa y plan</li>
+                                    <li>Crear o actualizar estudiante (por CÓDIGO USUARIO)</li>
+                                    <li>Asignar sede principal</li>
+                                    <li>Crear matrícula con programa, plan y fase</li>
+                                    <li>Procesar asistencia histórica según NIVEL</li>
+                                    <li>Crear congelamientos según DÍAS CONG.</li>
+                                    <li>Aplicar estado académico final</li>
+                                </ol>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <footer>
+                    <button name="action_import"
+                        string="Importar"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'draft'" />
+                    <button string="Cerrar"
+                        class="btn-secondary"
+                        special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción para abrir el wizard -->
+    <record id="action_student_enrollment_import_wizard" model="ir.actions.act_window">
+        <field name="name">Importación Masiva (Estudiantes + Matrículas)</field>
+        <field name="res_model">benglish.student.enrollment.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

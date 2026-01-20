@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_survey_form_inherit_extension" model="ir.ui.view">
+        <field name="name">survey.survey.form.extension</field>
+        <field name="model">survey.survey</field>
+    <field name="inherit_id" ref="survey.survey_survey_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group/group/field[@name='user_id']" position="after">
+                <field name="target_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_survey_tree_inherit_target" model="ir.ui.view">
+        <field name="name">survey.survey.tree.extension.target</field>
+        <field name="model">survey.survey</field>
+        <field name="inherit_id" ref="survey.survey_survey_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[@name='title']" position="after">
+                <field name="target_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_survey_user_input_form_inherit_extension" model="ir.ui.view">
+        <field name="name">survey.user_input.form.extension</field>
+        <field name="model">survey.user_input</field>
+    <field name="inherit_id" ref="survey.survey_user_input_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group" position="inside">
+                <group string="Extensiones">
+                    <field name="extended_feedback"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

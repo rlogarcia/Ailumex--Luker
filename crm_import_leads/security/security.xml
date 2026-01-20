@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ========== GRUPOS DE SEGURIDAD ========== -->
+
+        <record id="group_asesor_comercial" model="res.groups">
+            <field name="name">CRM: Asesor Comercial</field>
+            <field name="category_id" ref="base.module_category_sales_sales" />
+            <field name="comment">
+                Asesor Comercial - Acceso limitado a CRM
+                - Solo ve sus propios leads
+                - No puede eliminar leads
+                - No puede exportar bases completas
+                - No puede modificar fuente/campaña
+            </field>
+        </record>
+
+        <record id="group_supervisor_comercial" model="res.groups">
+            <field name="name">CRM: Supervisor Comercial</field>
+            <field name="category_id" ref="base.module_category_sales_sales" />
+            <field name="implied_ids" eval="[(4, ref('group_asesor_comercial'))]" />
+            <field name="comment">
+                Supervisor Comercial - Acceso extendido a CRM
+                - Ve leads de su equipo (jerarquía HR)
+                - Puede reasignar leads
+                - Puede exportar datos
+                - No puede modificar fuente/campaña
+            </field>
+        </record>
+
+        <record id="group_director_comercial" model="res.groups">
+            <field name="name">CRM: Director Comercial</field>
+            <field name="category_id" ref="base.module_category_sales_sales" />
+            <field name="implied_ids" eval="[(4, ref('group_supervisor_comercial'))]" />
+            <field name="comment">
+                Director Comercial - Acceso total a CRM
+                - Ve todos los leads
+                - Puede eliminar leads
+                - Puede modificar fuente/campaña
+                - Control total sobre operaciones
+            </field>
+        </record>
+
+        <!-- ========== RECORD RULES - CRM.LEAD ========== -->
+
+        <!-- Regla 1: Asesor solo ve sus leads -->
+        <record id="crm_lead_rule_asesor" model="ir.rule">
+            <field name="name">CRM Lead: Asesor - Solo mis leads</field>
+            <field name="model_id" ref="crm.model_crm_lead" />
+            <field name="groups" eval="[(4, ref('group_asesor_comercial'))]" />
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True" />
+            <field name="perm_write" eval="True" />
+            <field name="perm_create" eval="True" />
+            <field name="perm_unlink" eval="False" />
+        </record>
+
+        <!-- Regla 2: Supervisor ve su equipo (jerarquía HR) -->
+        <record id="crm_lead_rule_supervisor" model="ir.rule">
+            <field name="name">CRM Lead: Supervisor - Leads de mi equipo</field>
+            <field name="model_id" ref="crm.model_crm_lead" />
+            <field name="groups" eval="[(4, ref('group_supervisor_comercial'))]" />
+            <field name="domain_force">
+                ['|', '|',
+                ('user_id', '=', user.id),
+                ('user_id.employee_ids.parent_id.user_id', '=', user.id),
+                ('user_id.employee_ids.parent_id.parent_id.user_id', '=', user.id)
+                ]
+            </field>
+            <field name="perm_read" eval="True" />
+            <field name="perm_write" eval="True" />
+            <field name="perm_create" eval="True" />
+            <field name="perm_unlink" eval="False" />
+        </record>
+
+        <!-- Regla 3: Director ve todo -->
+        <record id="crm_lead_rule_director" model="ir.rule">
+            <field name="name">CRM Lead: Director - Todos los leads</field>
+            <field name="model_id" ref="crm.model_crm_lead" />
+            <field name="groups" eval="[(4, ref('group_director_comercial'))]" />
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True" />
+            <field name="perm_write" eval="True" />
+            <field name="perm_create" eval="True" />
+            <field name="perm_unlink" eval="True" />
+        </record>
+
+        <!-- ========== RECORD RULES - HR.EMPLOYEE ========== -->
+
+        <!-- Los asesores solo ven empleados comerciales activos -->
+        <record id="hr_employee_rule_asesor" model="ir.rule">
+            <field name="name">HR Employee: Asesor - Solo equipo comercial</field>
+            <field name="model_id" ref="hr.model_hr_employee" />
+            <field name="groups" eval="[(4, ref('group_asesor_comercial'))]" />
+            <field name="domain_force">
+                [('is_commercial_team', '=', True), ('active', '=', True)]
+            </field>
+            <field name="perm_read" eval="True" />
+            <field name="perm_write" eval="False" />
+            <field name="perm_create" eval="False" />
+            <field name="perm_unlink" eval="False" />
+        </record>
+
+        <!-- Supervisores ven su equipo y superiores -->
+        <record id="hr_employee_rule_supervisor" model="ir.rule">
+            <field name="name">HR Employee: Supervisor - Mi equipo</field>
+            <field name="model_id" ref="hr.model_hr_employee" />
+            <field name="groups" eval="[(4, ref('group_supervisor_comercial'))]" />
+            <field name="domain_force">
+                ['|', '|',
+                ('user_id', '=', user.id),
+                ('parent_id.user_id', '=', user.id),
+                ('is_commercial_team', '=', True)
+                ]
+            </field>
+            <field name="perm_read" eval="True" />
+            <field name="perm_write" eval="False" />
+            <field name="perm_create" eval="False" />
+            <field name="perm_unlink" eval="False" />
+        </record>
+
+        <!-- Directores ven todos los empleados -->
+        <record id="hr_employee_rule_director" model="ir.rule">
+            <field name="name">HR Employee: Director - Todos</field>
+            <field name="model_id" ref="hr.model_hr_employee" />
+            <field name="groups" eval="[(4, ref('group_director_comercial'))]" />
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True" />
+            <field name="perm_write" eval="False" />
+            <field name="perm_create" eval="False" />
+            <field name="perm_unlink" eval="False" />
+        </record>
+
+    </data>
+</odoo>

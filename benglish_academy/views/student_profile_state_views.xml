@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista de árbol (lista) -->
+    <record id="view_student_profile_state_tree" model="ir.ui.view">
+        <field name="name">benglish.student.profile.state.tree</field>
+        <field name="model">benglish.student.profile.state</field>
+        <field name="arch" type="xml">
+            <list string="Estados de Perfil" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="can_schedule" widget="boolean_toggle"/>
+                <field name="can_attend" widget="boolean_toggle"/>
+                <field name="can_use_apps" widget="boolean_toggle"/>
+                <field name="can_request_freeze" widget="boolean_toggle"/>
+                <field name="blocks_enrollment" widget="boolean_toggle"/>
+                <field name="is_default" optional="hide"/>
+                <field name="is_frozen_state" optional="hide"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Vista de formulario -->
+    <record id="view_student_profile_state_form" model="ir.ui.view">
+        <field name="name">benglish.student.profile.state.form</field>
+        <field name="model">benglish.student.profile.state</field>
+        <field name="arch" type="xml">
+            <form string="Estado de Perfil">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object"
+                            class="oe_stat_button" icon="fa-archive">
+                            <field name="active" widget="boolean_button"
+                                options='{"terminology": "archive"}'/>
+                        </button>
+                    </div>
+                    
+                    <widget name="web_ribbon" title="Estado por Defecto"
+                        invisible="not is_default" bg_color="text-bg-success"/>
+                    <widget name="web_ribbon" title="Estado de Congelamiento"
+                        invisible="not is_frozen_state" bg_color="text-bg-info"/>
+                    
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="Nombre del estado..."/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Identificación">
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="color" widget="color_picker"/>
+                            <field name="icon"/>
+                        </group>
+                        <group string="Configuración">
+                            <field name="is_default"/>
+                            <field name="is_frozen_state"/>
+                            <field name="requires_reason"/>
+                            <field name="portal_visible"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Permisos" name="permissions">
+                            <group>
+                                <group string="Actividades Académicas">
+                                    <field name="can_schedule"/>
+                                    <field name="can_attend"/>
+                                    <field name="can_use_apps"/>
+                                    <field name="can_view_history"/>
+                                </group>
+                                <group string="Gestión">
+                                    <field name="can_request_freeze"/>
+                                    <field name="blocks_enrollment"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="Comunicación" name="communication">
+                            <group>
+                                <field name="description" placeholder="Descripción interna del estado..."/>
+                            </group>
+                            <group>
+                                <field name="student_message" 
+                                    placeholder="Mensaje que verá el estudiante cuando tenga este estado..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Vista Kanban -->
+    <record id="view_student_profile_state_kanban" model="ir.ui.view">
+        <field name="name">benglish.student.profile.state.kanban</field>
+        <field name="model">benglish.student.profile.state</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="color"/>
+                <field name="can_schedule"/>
+                <field name="can_attend"/>
+                <field name="can_use_apps"/>
+                <field name="blocks_enrollment"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-att-style="'border-left: 4px solid ' + (record.color.value ? '#' + record.color.value : '#ccc')">
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="name"/>
+                                </strong>
+                                <div class="text-muted">
+                                    <small><field name="code"/></small>
+                                </div>
+                                <div class="mt-2">
+                                    <span t-if="record.can_schedule.raw_value" 
+                                        class="badge text-bg-success me-1" title="Puede agendar">
+                                        <i class="fa fa-calendar"/>
+                                    </span>
+                                    <span t-if="record.can_attend.raw_value" 
+                                        class="badge text-bg-success me-1" title="Puede asistir">
+                                        <i class="fa fa-check"/>
+                                    </span>
+                                    <span t-if="record.can_use_apps.raw_value" 
+                                        class="badge text-bg-success me-1" title="Puede usar apps">
+                                        <i class="fa fa-mobile"/>
+                                    </span>
+                                    <span t-if="record.blocks_enrollment.raw_value" 
+                                        class="badge text-bg-danger" title="Bloquea matrícula">
+                                        <i class="fa fa-ban"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    
+    <!-- Acción de ventana -->
+    <record id="action_student_profile_state" model="ir.actions.act_window">
+        <field name="name">Estados de Perfil</field>
+        <field name="res_model">benglish.student.profile.state</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Cree estados de perfil para estudiantes
+            </p>
+            <p>
+                Los estados de perfil definen qué puede y qué no puede hacer
+                un estudiante en el sistema (agendar, asistir, usar apps, etc.).
+            </p>
+        </field>
+    </record>
+
+</odoo>

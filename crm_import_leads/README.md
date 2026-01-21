@@ -40,6 +40,9 @@ crm_import_leads/
 - Python 3.13+
 - PostgreSQL 12+
 - Módulo `ox_res_partner_ext_co` (para campos de ciudad)
+- Módulos OCA:
+  - `mail_gateway` - Gateway base para mensajería
+  - `mail_gateway_whatsapp` - Integración WhatsApp oficial
 
 ### Proceso de Instalación
 
@@ -47,6 +50,19 @@ crm_import_leads/
 2. Actualizar lista de aplicaciones
 3. Instalar "CRM Import Leads"
 4. Configurar roles comerciales en HR
+
+### Configuración de WhatsApp
+
+⚠️ **IMPORTANTE**: Para que los mensajes de WhatsApp aparezcan en el inbox, debes usar la URL correcta del módulo OCA.
+
+**Ver documentación completa**: [docs/SOLUCION_INBOX_WHATSAPP.md](docs/SOLUCION_INBOX_WHATSAPP.md)
+
+**Script de diagnóstico**: Ejecuta `scripts/diagnostico_whatsapp.py` desde el shell de Odoo:
+
+```python
+exec(open('ruta/al/diagnostico_whatsapp.py').read())
+diagnosticar_whatsapp(env)
+```
 
 ## Configuración Inicial
 

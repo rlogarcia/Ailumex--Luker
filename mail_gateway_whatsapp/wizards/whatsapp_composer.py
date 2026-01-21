@@ -16,7 +16,10 @@ class WhatsappComposer(models.TransientModel):
     number_field_name = fields.Char()
     find_gateway = fields.Boolean()
     gateway_id = fields.Many2one(
-        "mail.gateway", domain=[("gateway_type", "=", "whatsapp")], required=True
+        "mail.gateway",
+        domain=[("gateway_type", "=", "whatsapp")],
+        required=True,
+        ondelete="cascade",
     )
     template_id = fields.Many2one(
         "mail.whatsapp.template",

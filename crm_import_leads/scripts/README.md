@@ -2,17 +2,160 @@
 
 ## Descripción
 
-Esta carpeta contiene scripts de mantenimiento, actualización y corrección para el módulo CRM Import Leads.
+Esta carpeta contiene scripts de mantenimiento, actualización y corrección para el módulo CRM Import Leads, **incluyendo scripts específicos para configurar y diagnosticar WhatsApp Inbox**.
 
 ## Estructura
 
 ```
 scripts/
-├── maintenance/    # Scripts Python, PowerShell y Batch
-└── sql/           # Scripts SQL directos
+├── maintenance/              # Scripts Python, PowerShell y Batch
+├── sql/                      # Scripts SQL directos
+├── configurar_whatsapp_inbox.py   # ⭐ Configuración automática de WhatsApp
+├── diagnostico_whatsapp.py        # 🔍 Diagnóstico completo
+└── verificar_estado.py            # 📊 Verificación rápida del estado
 ```
 
+## 🚀 Scripts de WhatsApp (NUEVO)
+
+### `verificar_estado.py` - Verificación Rápida
+
+**Uso más simple** - Verifica el estado actual en 5 segundos:
+
+```python
+# Desde shell de Odoo (Ajustes > Técnico > Shell Python)
+exec(open('d:/AiLumex/CRM/crm_import_leads/scripts/verificar_estado.py').read())
+```
+
+**Muestra:**
+
+- ✅ Estado del Gateway ID 2
+- ✅ Configuración de `has_new_channel_security`
+- ✅ Miembros del gateway
+- ✅ Canales creados
+- ✅ Últimos mensajes
+- ❌ Problemas encontrados con soluciones
+
+---
+
+### `configurar_whatsapp_inbox.py` - Configuración Automática
+
+**Configuración completa en 1 comando** - Configura todo automáticamente:
+
+```python
+# Desde shell de Odoo
+exec(open('d:/AiLumex/CRM/crm_import_leads/scripts/configurar_whatsapp_inbox.py').read())
+configurar_whatsapp_inbox(env)
+```
+
+**Funcionalidad:**
+
+- ✅ Encuentra el Gateway de WhatsApp
+- ✅ Configura `has_new_channel_security = False`
+- ✅ Agrega usuarios como miembros automáticamente
+- ✅ Genera `webhook_secret` si falta
+- ✅ Verifica toda la configuración
+- ✅ Muestra guía de próximos pasos
+
+**Función adicional - Prueba manual:**
+
+```python
+# Simular recepción de mensaje (para testing)
+test_webhook_manual(env, '573001234567')
+```
+
+---
+
+### `diagnostico_whatsapp.py` - Diagnóstico Completo
+
+**Diagnóstico detallado** - Encuentra todos los problemas:
+
+```python
+# Desde shell de Odoo
+exec(open('d:/AiLumex/CRM/crm_import_leads/scripts/diagnostico_whatsapp.py').read())
+diagnosticar_whatsapp(env)
+```
+
+**Muestra:**
+
+- 📦 Módulos instalados
+- 🌐 Configuración del Gateway
+- 👥 Miembros asignados
+- 💬 Canales existentes
+- 📨 Mensajes recientes
+- 🛣 URLs de webhook
+- ✅ Checklist completo
+
+**Función adicional - Guía de Meta:**
+
+```python
+# Muestra instrucciones detalladas para configurar en Meta
+verificar_webhook_meta(env)
+```
+
+---
+
+## 📋 Flujo Recomendado para Solucionar Inbox
+
+### Si los mensajes NO aparecen en el inbox:
+
+1. **Verificar estado actual** (5 segundos):
+
+   ```python
+   exec(open('d:/AiLumex/CRM/crm_import_leads/scripts/verificar_estado.py').read())
+   ```
+
+2. **Configurar automáticamente** (1 minuto):
+
+   ```python
+   exec(open('d:/AiLumex/CRM/crm_import_leads/scripts/configurar_whatsapp_inbox.py').read())
+   configurar_whatsapp_inbox(env)
+   ```
+
+3. **Reiniciar Odoo**:
+
+   ```powershell
+   Restart-Service "Odoo 18.0"
+   ```
+
+4. **Probar**: Enviar mensaje de WhatsApp
+
+5. **Si sigue sin funcionar**, ejecutar diagnóstico completo:
+   ```python
+   exec(open('d:/AiLumex/CRM/crm_import_leads/scripts/diagnostico_whatsapp.py').read())
+   diagnosticar_whatsapp(env)
+   ```
+
+---
+
+## 📁 Scripts SQL (`sql/`)
+
+### `verificar_whatsapp_gateway.sql`
+
+Scripts SQL para verificar y configurar desde la base de datos directamente.
+
+**Uso desde psql o pgAdmin:**
+
+```sql
+-- 1. Verificar gateway
+\i d:/AiLumex/CRM/crm_import_leads/scripts/sql/verificar_whatsapp_gateway.sql
+
+-- O copiar y pegar secciones específicas
+```
+
+**Incluye:**
+
+1. Verificación de gateway existente
+2. Verificación de miembros
+3. Agregar miembros automáticamente
+4. Configurar `has_new_channel_security`
+5. Verificar canales y mensajes
+6. Script de diagnóstico completo
+
+---
+
 ## Scripts de Mantenimiento (`maintenance/`)
+
+### Actualización del Módulo
 
 ### Actualización del Módulo
 

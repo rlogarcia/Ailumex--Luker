@@ -142,6 +142,50 @@ class WhatsAppController(http.Controller):
         else:
             _logger.info(f"No lead found for phone {phone}")
 
+    @http.route("/whatsapp/n8n/incoming", type="json", auth="public", methods=["POST"], csrf=False)
+    def n8n_incoming_message(self, **kwargs):
+        """Recibir mensajes de WhatsApp desde n8n"""
+        try:
+            phone = kwargs.get("phone")
+            message = kwargs.get("message")
+            sender_name = kwargs.get("name", "")
+            
+            _logger.info(f"Mensaje de n8n - Phone: {phone}, Message: {message}")
+            
+            if not phone or not message:
+                return {"success": False, "error": "Phone and message required"}
+            
+            # Buscar o crear lead
+            Lead = request.env["crm.lead"].sudo()
+            lead = Lead.search(["|", ("phone", "ilike", phone), ("mobile", "ilike", phone)], limit=1)
+            
+            if not lead:
+                # Crear nuevo lead
+                lead = Lead.create({
+                    "name": sender_name or f"WhatsApp Lead - {phone}",
+                    "phone": phone,
+                    "type": "lead",
+                    "description": f"Contacto inicial por WhatsApp: {message}",
+                })
+                _logger.info(f"Nuevo lead creado: {lead.id}")
+            
+            # Registrar mensaje en el lead
+            lead.message_post(
+                body=f"<p><strong>WhatsApp recibido:</strong></p><p>{message}</p>",
+                subject="Mensaje WhatsApp",
+                message_type="comment",
+            )
+            
+            return {
+                "success": True,
+                "lead_id": lead.id,
+                "lead_name": lead.name,
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error procesando mensaje de n8n: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
     @http.route("/whatsapp/send", type="json", auth="user", methods=["POST"])
     def send_message(self, **kwargs):
         """API endpoint to send WhatsApp message"""

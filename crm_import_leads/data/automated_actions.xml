@@ -155,8 +155,7 @@ if activity_type:
             <field name="name">CRM: Actividad - Seguimiento post-evaluación</field>
             <field name="model_id" ref="crm.model_crm_lead" />
             <field name="trigger">on_write</field>
-            <field name="filter_domain">[('stage_id.name', 'in', ['Reprobado', 'Matriculado', 'Pago
-                parcial'])]</field>
+            <field name="filter_domain">[('stage_id.name', 'in', ['Reprobado', 'Matriculado', 'Pago parcial'])]</field>
             <field name="action_server_ids" eval="[(6, 0, [ref('ir_cron_evaluation_closed')])]" />
             <field name="active" eval="True" />
         </record>

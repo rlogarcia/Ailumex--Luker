@@ -25,18 +25,28 @@ class WhatsAppController(http.Controller):
         try:
             # Handle GET request (webhook verification)
             if request.httprequest.method == "GET":
-                _logger.info(f"WhatsApp webhook verification GET request")
+                _logger.info(f"WhatsApp webhook verification GET request: {kwargs}")
 
                 # Meta/WhatsApp verification
                 hub_mode = kwargs.get("hub.mode")
                 hub_verify_token = kwargs.get("hub.verify_token")
                 hub_challenge = kwargs.get("hub.challenge")
 
-                if hub_mode == "subscribe" and hub_challenge:
-                    _logger.info("Webhook verification - returning challenge")
-                    return hub_challenge
+                _logger.info(f"Verification - mode: {hub_mode}, token: {hub_verify_token}, challenge: {hub_challenge}")
 
-                return "OK"
+                # El token debe ser "odoo" según tu configuración en Meta
+                VERIFY_TOKEN = "odoo"
+                
+                if hub_mode == "subscribe" and hub_verify_token == VERIFY_TOKEN:
+                    _logger.info("Webhook verification SUCCESS - returning challenge")
+                    response = request.make_response(hub_challenge)
+                    response.status_code = 200
+                    return response
+                else:
+                    _logger.warning(f"Webhook verification FAILED - expected token: {VERIFY_TOKEN}, got: {hub_verify_token}")
+                    response = request.make_response("Invalid verification token")
+                    response.status_code = 403
+                    return response
 
             # Handle POST request (incoming messages)
             data = (

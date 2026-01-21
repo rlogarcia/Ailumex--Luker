@@ -25,28 +25,18 @@ class WhatsAppController(http.Controller):
         try:
             # Handle GET request (webhook verification)
             if request.httprequest.method == "GET":
-                _logger.info(f"WhatsApp webhook verification GET request: {kwargs}")
+                _logger.info(f"WhatsApp webhook verification GET request")
 
                 # Meta/WhatsApp verification
                 hub_mode = kwargs.get("hub.mode")
                 hub_verify_token = kwargs.get("hub.verify_token")
                 hub_challenge = kwargs.get("hub.challenge")
 
-                _logger.info(f"Verification - mode: {hub_mode}, token: {hub_verify_token}, challenge: {hub_challenge}")
+                if hub_mode == "subscribe" and hub_challenge:
+                    _logger.info("Webhook verification - returning challenge")
+                    return hub_challenge
 
-                # El token debe ser "odoo" según tu configuración en Meta
-                VERIFY_TOKEN = "odoo"
-                
-                if hub_mode == "subscribe" and hub_verify_token == VERIFY_TOKEN:
-                    _logger.info("Webhook verification SUCCESS - returning challenge")
-                    response = request.make_response(hub_challenge)
-                    response.status_code = 200
-                    return response
-                else:
-                    _logger.warning(f"Webhook verification FAILED - expected token: {VERIFY_TOKEN}, got: {hub_verify_token}")
-                    response = request.make_response("Invalid verification token")
-                    response.status_code = 403
-                    return response
+                return "OK"
 
             # Handle POST request (incoming messages)
             data = (
@@ -141,50 +131,6 @@ class WhatsAppController(http.Controller):
             _logger.info(f"WhatsApp message logged for lead {lead.id}")
         else:
             _logger.info(f"No lead found for phone {phone}")
-
-    @http.route("/whatsapp/n8n/incoming", type="json", auth="public", methods=["POST"], csrf=False)
-    def n8n_incoming_message(self, **kwargs):
-        """Recibir mensajes de WhatsApp desde n8n"""
-        try:
-            phone = kwargs.get("phone")
-            message = kwargs.get("message")
-            sender_name = kwargs.get("name", "")
-            
-            _logger.info(f"Mensaje de n8n - Phone: {phone}, Message: {message}")
-            
-            if not phone or not message:
-                return {"success": False, "error": "Phone and message required"}
-            
-            # Buscar o crear lead
-            Lead = request.env["crm.lead"].sudo()
-            lead = Lead.search(["|", ("phone", "ilike", phone), ("mobile", "ilike", phone)], limit=1)
-            
-            if not lead:
-                # Crear nuevo lead
-                lead = Lead.create({
-                    "name": sender_name or f"WhatsApp Lead - {phone}",
-                    "phone": phone,
-                    "type": "lead",
-                    "description": f"Contacto inicial por WhatsApp: {message}",
-                })
-                _logger.info(f"Nuevo lead creado: {lead.id}")
-            
-            # Registrar mensaje en el lead
-            lead.message_post(
-                body=f"<p><strong>WhatsApp recibido:</strong></p><p>{message}</p>",
-                subject="Mensaje WhatsApp",
-                message_type="comment",
-            )
-            
-            return {
-                "success": True,
-                "lead_id": lead.id,
-                "lead_name": lead.name,
-            }
-            
-        except Exception as e:
-            _logger.error(f"Error procesando mensaje de n8n: {str(e)}", exc_info=True)
-            return {"success": False, "error": str(e)}
 
     @http.route("/whatsapp/send", type="json", auth="user", methods=["POST"])
     def send_message(self, **kwargs):

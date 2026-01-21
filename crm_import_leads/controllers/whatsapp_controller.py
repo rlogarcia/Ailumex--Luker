@@ -10,37 +10,31 @@ _logger = logging.getLogger(__name__)
 class WhatsAppController(http.Controller):
 
     @http.route(
-        "/whatsapp/webhook/<int:gateway_id>",
+        ["/whatsapp/webhook", "/whatsapp/webhook/<int:gateway_id>"],
         type="http",
         auth="public",
         methods=["GET", "POST"],
         csrf=False,
     )
-    def webhook(self, gateway_id, **kwargs):
-        """Webhook to receive WhatsApp messages and status updates"""
+    def webhook(self, gateway_id=None, **kwargs):
+        """Webhook to receive WhatsApp messages and status updates
+
+        This is a compatibility route. The main route is /gateway/whatsapp/<token>/update
+        managed by mail_gateway module.
+        """
         try:
             # Handle GET request (webhook verification)
             if request.httprequest.method == "GET":
-                _logger.info(
-                    f"WhatsApp webhook verification GET request for gateway {gateway_id}"
-                )
+                _logger.info(f"WhatsApp webhook verification GET request")
+
                 # Meta/WhatsApp verification
                 hub_mode = kwargs.get("hub.mode")
                 hub_verify_token = kwargs.get("hub.verify_token")
                 hub_challenge = kwargs.get("hub.challenge")
 
-                if hub_mode == "subscribe":
-                    gateway = request.env["whatsapp.gateway"].sudo().browse(gateway_id)
-                    if gateway.exists() and hub_verify_token == gateway.verify_token:
-                        _logger.info(
-                            f"Webhook verified successfully for gateway {gateway_id}"
-                        )
-                        return hub_challenge or "OK"
-                    else:
-                        _logger.warning(
-                            f"Webhook verification failed for gateway {gateway_id}"
-                        )
-                        return request.make_response("Verification failed", status=403)
+                if hub_mode == "subscribe" and hub_challenge:
+                    _logger.info("Webhook verification - returning challenge")
+                    return hub_challenge
 
                 return "OK"
 
@@ -52,23 +46,25 @@ class WhatsAppController(http.Controller):
             )
             _logger.info(f"WhatsApp webhook received POST: {data}")
 
-            # Parse webhook based on provider
-            gateway = request.env["whatsapp.gateway"].sudo().browse(gateway_id)
+            # Try to find gateway by ID or get default
+            Gateway = request.env["mail.gateway"].sudo()
+
+            if gateway_id:
+                gateway = Gateway.browse(gateway_id)
+            else:
+                # Get default WhatsApp gateway
+                gateway = Gateway.search([("gateway_type", "=", "whatsapp")], limit=1)
 
             if not gateway.exists():
+                _logger.warning("No gateway found for WhatsApp webhook")
                 return request.make_json_response(
                     {"status": "error", "message": "Gateway not found"}, status=404
                 )
 
-            # Handle incoming message
-            if data.get("type") == "message":
-                self._handle_incoming_message(gateway, data)
+            # Delegate to mail_gateway_whatsapp for processing
+            result = self._process_whatsapp_webhook(gateway, data)
 
-            # Handle status update
-            elif data.get("type") == "status":
-                self._handle_status_update(data)
-
-            return request.make_json_response({"status": "success"})
+            return request.make_json_response(result)
 
         except Exception as e:
             _logger.error(f"WhatsApp webhook error: {str(e)}", exc_info=True)
@@ -76,58 +72,65 @@ class WhatsAppController(http.Controller):
                 {"status": "error", "message": str(e)}, status=500
             )
 
-    def _handle_incoming_message(self, gateway, data):
-        """Handle incoming WhatsApp message"""
-        phone = data.get("from")
-        message_text = data.get("message", {}).get("text", "")
-        external_id = data.get("message_id")
+    def _process_whatsapp_webhook(self, gateway, data):
+        """Process WhatsApp webhook data using mail_gateway system"""
+        try:
+            # Use mail.gateway.whatsapp to process the webhook
+            whatsapp_gateway = request.env["mail.gateway.whatsapp"].sudo()
 
-        # Find lead by phone
+            # Process the webhook data using the standard mail_gateway method
+            whatsapp_gateway._receive_update(gateway, data)
+
+            # Also handle CRM-specific logic
+            self._handle_crm_integration(gateway, data)
+
+            return {"status": "success"}
+
+        except Exception as e:
+            _logger.error(f"Error processing WhatsApp webhook: {str(e)}", exc_info=True)
+            return {"status": "error", "message": str(e)}
+
+    def _handle_crm_integration(self, gateway, data):
+        """Handle CRM-specific integration for WhatsApp messages"""
+        try:
+            # Process entries for CRM integration
+            for entry in data.get("entry", []):
+                for change in entry.get("changes", []):
+                    if change.get("field") != "messages":
+                        continue
+
+                    for message in change["value"].get("messages", []):
+                        phone = message.get("from")
+                        message_text = message.get("text", {}).get("body", "")
+
+                        if not phone:
+                            continue
+
+                        # Find or create lead
+                        self._find_or_create_lead(phone, message_text, gateway)
+
+        except Exception as e:
+            _logger.warning(f"CRM integration warning: {str(e)}")
+
+    def _find_or_create_lead(self, phone, message_text, gateway):
+        """Find existing lead or create interaction record"""
         Lead = request.env["crm.lead"].sudo()
+
+        # Search for lead by phone
         lead = Lead.search(
             ["|", ("phone", "ilike", phone), ("mobile", "ilike", phone)], limit=1
         )
 
-        # Create message record
-        whatsapp_msg = (
-            request.env["whatsapp.message"]
-            .sudo()
-            .create(
-                {
-                    "name": f"WhatsApp from {phone}",
-                    "lead_id": lead.id if lead else False,
-                    "phone": phone,
-                    "message": message_text,
-                    "direction": "incoming",
-                    "state": "delivered",
-                    "gateway_id": gateway.id,
-                    "external_id": external_id,
-                }
-            )
-        )
-
-        # Log in lead chatter
         if lead:
+            # Log interaction in lead
             lead.message_post(
-                body=f"WhatsApp recibido de {phone}: {message_text}",
+                body=f"WhatsApp recibido: {message_text}",
                 subject="WhatsApp Received",
                 message_type="comment",
             )
-
-    def _handle_status_update(self, data):
-        """Handle message status update"""
-        external_id = data.get("message_id")
-        status = data.get("status")  # sent, delivered, read, failed
-
-        if external_id and status:
-            message = (
-                request.env["whatsapp.message"]
-                .sudo()
-                .search([("external_id", "=", external_id)], limit=1)
-            )
-
-            if message:
-                message.update_status(external_id, status)
+            _logger.info(f"WhatsApp message logged for lead {lead.id}")
+        else:
+            _logger.info(f"No lead found for phone {phone}")
 
     @http.route("/whatsapp/send", type="json", auth="user", methods=["POST"])
     def send_message(self, **kwargs):

@@ -50,7 +50,6 @@
         "hr",
         "base_automation",
         "ox_res_partner_ext_co",  # Requerido para res.city
-        "mail_gateway",  # Para WhatsApp Inbox
     ],
     "external_dependencies": {
         "python": ["requests"],
@@ -84,7 +83,6 @@
         "views/whatsapp_template_views.xml",
         "views/whatsapp_gateway_views.xml",
         "views/whatsapp_composer_views.xml",
-        "views/whatsapp_inbox_views.xml",  # WhatsApp Inbox con discuss.channel
         # Reportes - HU-CRM-11
         "views/crm_lead_reports_views.xml",
         "views/crm_reports_menu.xml",

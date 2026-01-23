@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================== -->
+    <!-- WhatsApp Inbox - Vista de Conversaciones -->
+    <!-- ============================================== -->
+    
+    <!-- Vista de lista de canales de WhatsApp -->
+    <record id="view_discuss_channel_whatsapp_list" model="ir.ui.view">
+        <field name="name">discuss.channel.whatsapp.list</field>
+        <field name="model">discuss.channel</field>
+        <field name="arch" type="xml">
+            <list string="WhatsApp Inbox" default_order="write_date desc">
+                <field name="name" string="Contacto"/>
+                <field name="gateway_channel_token" string="Teléfono"/>
+                <field name="write_date" string="Última actividad"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de formulario para canal de WhatsApp -->
+    <record id="view_discuss_channel_whatsapp_form" model="ir.ui.view">
+        <field name="name">discuss.channel.whatsapp.form</field>
+        <field name="model">discuss.channel</field>
+        <field name="arch" type="xml">
+            <form string="Conversación WhatsApp">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" string="Contacto"/>
+                            <field name="gateway_channel_token" string="Teléfono WhatsApp"/>
+                            <field name="gateway_id" string="Gateway"/>
+                        </group>
+                        <group>
+                            <field name="create_date" string="Inicio conversación"/>
+                            <field name="write_date" string="Última actividad"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción para abrir el Inbox de WhatsApp -->
+    <record id="action_whatsapp_inbox_channels" model="ir.actions.act_window">
+        <field name="name">WhatsApp Inbox</field>
+        <field name="res_model">discuss.channel</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('gateway_id', '!=', False)]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay conversaciones de WhatsApp
+            </p>
+            <p>
+                Las conversaciones de WhatsApp aparecerán aquí cuando los clientes envíen mensajes
+                a la línea configurada.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú para WhatsApp Inbox - Reemplaza el existente -->
+    <record id="menu_whatsapp_inbox_new" model="ir.ui.menu">
+        <field name="name">Inbox</field>
+        <field name="parent_id" ref="menu_whatsapp_root"/>
+        <field name="action" ref="action_whatsapp_inbox_channels"/>
+        <field name="sequence">1</field>
+    </record>
+
+</odoo>

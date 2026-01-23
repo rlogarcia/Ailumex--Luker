@@ -159,6 +159,14 @@ class WhatsAppController(http.Controller):
                 )
             
             _logger.info(f"✅ Gateway: {gateway.name} (ID: {gateway.id})")
+            _logger.info(f"   Members: {gateway.member_ids.mapped('name')}")
+            _logger.info(f"   Webhook User: {gateway.webhook_user_id.name}")
+            
+            # Verify gateway has members configured
+            if not gateway.member_ids:
+                _logger.error("❌ CRITICAL: Gateway has NO members configured!")
+                _logger.error("   Go to: Settings > Technical > Mail Gateways")
+                _logger.error("   Add users in the 'Members' tab")
             
             # Process the webhook data directly (bypass signature verification for now)
             try:
@@ -180,14 +188,17 @@ class WhatsAppController(http.Controller):
                                     _logger.info(f"   Content: {message}")
                                     
                                     try:
-                                        # Use the mail_gateway_whatsapp service
+                                        # Use the mail_gateway_whatsapp service with proper context
                                         whatsapp_service = (
                                             request.env["mail.gateway.whatsapp"]
                                             .sudo()
                                             .with_user(gateway.webhook_user_id.id if gateway.webhook_user_id else 1)
+                                            .with_company(gateway.company_id.id if gateway.company_id else 1)
+                                            .with_context(no_gateway_notification=False)
                                         )
                                         
                                         # Get or create the chat channel
+                                        _logger.info(f"🔍 Getting or creating channel for: {message['from']}")
                                         chat = whatsapp_service._get_channel(
                                             gateway, 
                                             message["from"], 
@@ -196,9 +207,21 @@ class WhatsAppController(http.Controller):
                                         )
                                         
                                         if chat:
-                                            _logger.info(f"💬 Chat channel: {chat.name} (ID: {chat.id})")
+                                            _logger.info(f"💬 Chat channel created/found:")
+                                            _logger.info(f"   Name: {chat.name}")
+                                            _logger.info(f"   ID: {chat.id}")
+                                            _logger.info(f"   Type: {chat.channel_type}")
+                                            _logger.info(f"   Members: {chat.channel_member_ids.mapped('partner_id.name')}")
+                                            
+                                            # Process the message
                                             whatsapp_service._process_update(chat, message, value)
-                                            _logger.info(f"✅ Message processed successfully!")
+                                            
+                                            # Ensure notifications are created
+                                            chat.channel_member_ids.filtered(
+                                                lambda m: not m.is_self
+                                            )._set_new_message_separator()
+                                            
+                                            _logger.info(f"✅ Message processed and posted to channel!")
                                         else:
                                             _logger.warning(f"⚠️ Could not get/create chat channel")
                                             

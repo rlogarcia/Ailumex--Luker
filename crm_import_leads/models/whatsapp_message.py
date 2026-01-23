@@ -114,6 +114,19 @@ class WhatsAppMessage(models.Model):
             except Exception as e:
                 rec.write({"state": "failed", "error_message": str(e)})
 
+    @api.onchange("template_id")
+    def _onchange_template_id_message(self):
+        """When a template is selected in the message form, populate the message field."""
+        if not self.template_id:
+            return
+        try:
+            if self.lead_id:
+                self.message = self.template_id.render_template(self.lead_id)
+            else:
+                self.message = self.template_id.message
+        except Exception:
+            self.message = self.template_id.message
+
     def update_status(self, external_id, status):
         """Update message status from webhook"""
         message = self.search([("external_id", "=", external_id)], limit=1)

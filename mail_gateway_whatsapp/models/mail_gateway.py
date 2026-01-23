@@ -27,6 +27,21 @@ class MailGateway(models.Model):
         for gateway in self:
             gateway.whatsapp_template_count = len(gateway.whatsapp_template_ids)
 
+    @api.constrains("gateway_type", "member_ids")
+    def _check_whatsapp_members(self):
+        """Validar que los gateways de WhatsApp tengan miembros configurados"""
+        for gateway in self:
+            if gateway.gateway_type == "whatsapp" and not gateway.member_ids:
+                raise UserError(
+                    _(
+                        "El gateway de WhatsApp '%s' debe tener al menos un miembro configurado "
+                        "en la pestaña 'Members' para que los mensajes entrantes sean visibles.\n\n"
+                        "Sin miembros configurados, los mensajes llegarán pero nadie podrá verlos "
+                        "en el inbox de WhatsApp."
+                    )
+                    % gateway.name
+                )
+
     def button_import_whatsapp_template(self):
         self.ensure_one()
         WhatsappTemplate = self.env["mail.whatsapp.template"]

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright 2022 Creu Blanca
      License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
 <odoo>
@@ -52,72 +52,95 @@
                     string="Whatsapp configuration info"
                     invisible="gateway_type != 'whatsapp'"
                 >
+                    <div class="alert alert-warning" role="alert" invisible="member_ids">
+                        <strong>⚠️ CONFIGURACIÓN REQUERIDA:</strong>
+                        <p>
+                            <b>Debes añadir miembros en la pestaña "Members"</b> para que los
+                            mensajes entrantes sean visibles. </p>
+                        <p> Sin miembros configurados, los mensajes de WhatsApp llegarán a Odoo pero <b>nadie
+                            podrá verlos</b> en el inbox ni en ningún lugar. </p>
+                        <p> Ve a la pestaña <b>"Members"</b> y añade a todos los usuarios que deben
+                            ver y responder los mensajes de WhatsApp. </p>
+                    </div>
+
+                    <div class="alert alert-info" role="alert" invisible="not member_ids">
+                        <strong>✅ Configuración correcta:</strong>
+                        <p>
+                            Los siguientes usuarios podrán ver los mensajes entrantes de WhatsApp:
+                        </p>
+                        <ul>
+                            <li invisible="not member_ids">
+                                <field name="member_ids" widget="many2many_tags" readonly="1" />
+                            </li>
+                        </ul>
+                        <p> Los mensajes aparecerán en: <ul>
+                                <li>CRM → WhatsApp → WhatsApp Inbox</li>
+                                <li>Icono de mensajería (💬) → Canales de WhatsApp</li>
+                                <li>Chatter del lead correspondiente</li>
+                            </ul>
+                        </p>
+                    </div>
+
                     <div>
                         <h2>First steps</h2>
-                        <span>Define the values of the fields <b>Webhook Key</b> and <b
-                        >Whatsapp Security Key</b>.
-                            You should set some random value of your choice for this fields.
-                            Ensure that facebook will be able to comunicate with your server.</span>
+                        <span>Define the values of the fields <b>Webhook Key</b> and <b>Whatsapp
+                            Security Key</b>. You should set some random value of your choice for
+                            this fields. Ensure that facebook will be able to comunicate with your
+                            server.</span>
                         <h2>Creating the Application from meta developer</h2>
                         <ol>
-                            <li>Access
-                                <a
-                                href="https://developers.facebook.com/apps/?show_reminder=true"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
+                            <li>Access <a
+                                    href="https://developers.facebook.com/apps/?show_reminder=true"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
                                     Meta developer platform</a>.</li>
                             <li>Create a new application.</li>
-                            <li>Select the <b>Other</b> option, then <b
-                            >Business</b> in order to create Whatsapp manager</li>
+                            <li>Select the <b>Other</b> option, then <b>Business</b> in order to
+                                create Whatsapp manager</li>
                             <li>Select a name and create it</li>
-                            <li
-                            >Select the Whatsapp API on the products of the application</li>
+                            <li>Select the Whatsapp API on the products of the application</li>
                             <li>Select the business that you will use</li>
                             <li>Go to <b>Whatsapp / API Configuration</b> menú.</li>
                             <li>Add a new number.</li>
-                            <li>Copy the phone identification number to the field <b
-                            >Whastapp From phone</b> field.</li>
-                            <li>Access the menu <b
-                            >Configuration / Basic information</b>.</li>
-                            <li
-                            >Show the secret key of the application and copy it to the <b
-                            >Webhook secret</b> field.</li>
-                            <li>Access the menu <b
-                            >Configuration / Advanced Options</b>.</li>
-                            <li>Copy the API Version on the <b
-                            >Whastapp Version</b> field.</li>
+                            <li>Copy the phone identification number to the field <b>Whastapp From
+                                phone</b> field.</li>
+                            <li>Access the menu <b>Configuration / Basic information</b>.</li>
+                            <li>Show the secret key of the application and copy it to the <b>Webhook
+                                secret</b> field.</li>
+                            <li>Access the menu <b>Configuration / Advanced Options</b>.</li>
+                            <li>Copy the API Version on the <b>Whastapp Version</b> field.</li>
                         </ol>
                         <h2>Creating a permanent token</h2>
                         <ol>
                             <li>Access your <a
-                                href="https://business.facebook.com/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >meta business site.</a></li>
+                                    href="https://business.facebook.com/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >meta business site.</a></li>
                             <li>Access your business settings menu</li>
-                            <li>Go to <b
-                            >Users / System Users</b> and create a new one with administrator</li>
-                            <li
-                            >Once it is created, Generate a new token related to the created app with no expiry and give access to all whatsapp permissions.</li>
+                            <li>Go to <b>Users / System Users</b> and create a new one with
+                                administrator</li>
+                            <li>Once it is created, Generate a new token related to the created app
+                                with no expiry and give access to all whatsapp permissions.</li>
                             <li>Copy the token value to token field in this page.</li>
                         </ol>
                         <h2>Setting webhook and version</h2>
                         <ol>
                             <li>Save this record. All the values have been filled</li>
                             <li>Press the button Integrate webhook.</li>
-                            <li
-                            >On Facebook Develpment, return to the app menu and go to <b
-                            >Whatsapp / Configuration</b>.</li>
+                            <li>On Facebook Develpment, return to the app menu and go to <b>Whatsapp
+                                / Configuration</b>.</li>
                             <li>Click on <b>Edit Button</b> on the webhook area.</li>
-                            <li>On the wizard, fill the URL field with <b
-                            >Webhook URL</b> field of the gateway. For the verification identifier, use the <b
-                            >Whatsapp Security Key</b> field.</li>
+                            <li>On the wizard, fill the URL field with <b>Webhook URL</b> field of
+                                the gateway. For the verification identifier, use the <b>Whatsapp
+                                Security Key</b> field.</li>
                             <li>Verify and save the wizard.</li>
-                            <li
-                            >If no error is raised, refresh this gateway data, and you should see that it is integrated.
+                            <li>If no error is raised, refresh this gateway data, and you should see
+                                that it is integrated.
                                 You should be able to receive and send messages.
-                                If an error is raised, check that the fields are filled properly and that facebook server is able to access your server.</li>
+                                If an error is raised, check that the fields are filled properly and
+                                that facebook server is able to access your server.</li>
                         </ol>
                     </div>
                 </page>

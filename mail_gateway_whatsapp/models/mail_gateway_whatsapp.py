@@ -27,12 +27,53 @@ class MailGatewayWhatsappService(models.AbstractModel):
     _description = "Whatsapp Gateway services"
 
     def _receive_get_update(self, bot_data, req, **kwargs):
-        self._verify_update(bot_data, {})
+        """Handle WhatsApp webhook verification (GET request from Meta).
+        
+        Meta sends:
+        - hub.mode = 'subscribe'
+        - hub.verify_token = configured token
+        - hub.challenge = random string to echo back
+        
+        MUST return hub.challenge as plain text body for Meta to validate.
+        """
+        hub_mode = kwargs.get("hub.mode")
+        hub_verify_token = kwargs.get("hub.verify_token")
+        hub_challenge = kwargs.get("hub.challenge")
+        
+        _logger.info(f"🔍 WhatsApp webhook verification: mode={hub_mode}, token={hub_verify_token}, challenge={hub_challenge}")
+        
         gateway = self.env["mail.gateway"].browse(bot_data["id"])
-        if kwargs.get("hub.verify_token") != gateway.whatsapp_security_key:
-            return None
+        
+        # Validate the verification request
+        if hub_mode != "subscribe":
+            _logger.warning(f"⚠️ Invalid hub.mode: {hub_mode}")
+            return request.make_response("Invalid mode", status=403)
+        
+        if not hub_challenge:
+            _logger.warning("⚠️ Missing hub.challenge")
+            return request.make_response("Missing challenge", status=400)
+        
+        # Check verify_token against webhook_key OR whatsapp_security_key
+        expected_tokens = [
+            gateway.webhook_key,
+            gateway.whatsapp_security_key,
+        ]
+        # Filter out empty/None values
+        expected_tokens = [t for t in expected_tokens if t]
+        
+        if hub_verify_token not in expected_tokens:
+            _logger.warning(f"⚠️ Token mismatch. Received: {hub_verify_token}, Expected one of: {expected_tokens}")
+            return request.make_response("Invalid verify token", status=403)
+        
+        # SUCCESS! Update gateway state and return challenge
         gateway.sudo().integrated_webhook_state = "integrated"
-        response = request.make_response(kwargs.get("hub.challenge"))
+        _logger.info(f"✅ Webhook verified! Returning challenge: {hub_challenge}")
+        
+        # CRITICAL: Return challenge as plain text with proper Content-Type
+        response = request.make_response(
+            str(hub_challenge),
+            headers=[("Content-Type", "text/plain; charset=utf-8")]
+        )
         response.status_code = 200
         return response
 

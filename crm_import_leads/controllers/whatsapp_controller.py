@@ -109,9 +109,14 @@ class WhatsAppController(http.Controller):
         try:
             _logger.info(f"🔄 Processing webhook with mail.gateway.whatsapp...")
 
-            # CRITICAL: Use mail.gateway.whatsapp to process the webhook
-            # This creates the discuss.channel that appears in the inbox
-            whatsapp_gateway = request.env["mail.gateway.whatsapp"].sudo()
+            # CRITICAL: Use the correct method from mail.gateway.whatsapp
+            # The _receive_update method is called with the gateway user context
+            whatsapp_service = (
+                request.env["mail.gateway.whatsapp"]
+                .sudo()
+                .with_user(gateway.webhook_user_id.id)
+                .with_context(no_gateway_notification=False)
+            )
 
             # Process the webhook data using the standard mail_gateway method
             # This will:
@@ -119,7 +124,7 @@ class WhatsAppController(http.Controller):
             # - Post message to channel
             # - Create notifications
             # - Show in inbox for members
-            whatsapp_gateway._receive_update(gateway, data)
+            whatsapp_service._receive_update(gateway, data)
 
             _logger.info(f"✅ mail.gateway.whatsapp processing completed")
 

@@ -213,7 +213,7 @@ class WhatsAppController(http.Controller):
                                             _logger.info(f"   Type: {chat.channel_type}")
                                             _logger.info(f"   Members: {chat.channel_member_ids.mapped('partner_id.name')}")
                                             
-                                            # Process the message
+                                            # Process the message in discuss channel
                                             whatsapp_service._process_update(chat, message, value)
                                             
                                             # Ensure notifications are created
@@ -222,6 +222,16 @@ class WhatsAppController(http.Controller):
                                             )._set_new_message_separator()
                                             
                                             _logger.info(f"✅ Message processed and posted to channel!")
+                                            
+                                            # =============================================
+                                            # POST MESSAGE TO CRM LEAD CHATTER
+                                            # =============================================
+                                            self._post_to_lead_chatter(
+                                                gateway, 
+                                                message, 
+                                                value, 
+                                                direction='incoming'
+                                            )
                                         else:
                                             _logger.warning(f"⚠️ Could not get/create chat channel")
                                             
@@ -252,6 +262,136 @@ class WhatsAppController(http.Controller):
                 headers=[("Content-Type", "application/json")],
                 status=500
             )
+
+    def _post_to_lead_chatter(self, gateway, message, value, direction='incoming'):
+        """
+        Post WhatsApp message to CRM Lead chatter.
+        This ensures messages appear in the Lead's activity log.
+        
+        Args:
+            gateway: mail.gateway record
+            message: WhatsApp message dict
+            value: Full webhook value with contacts info
+            direction: 'incoming' or 'outgoing'
+        """
+        try:
+            phone = message.get('from', '')
+            if not phone:
+                return
+            
+            # Get contact name from webhook data
+            contact_name = "Cliente"
+            for contact in value.get('contacts', []):
+                if contact.get('wa_id') == phone:
+                    contact_name = contact.get('profile', {}).get('name', phone)
+                    break
+            
+            # Get message text
+            msg_text = ""
+            msg_type = message.get('type', 'text')
+            
+            if msg_type == 'text':
+                msg_text = message.get('text', {}).get('body', '')
+            elif msg_type == 'image':
+                msg_text = "[Imagen recibida]"
+            elif msg_type == 'audio':
+                msg_text = "[Audio recibido]"
+            elif msg_type == 'video':
+                msg_text = "[Video recibido]"
+            elif msg_type == 'document':
+                doc_name = message.get('document', {}).get('filename', 'documento')
+                msg_text = f"[Documento: {doc_name}]"
+            elif msg_type == 'location':
+                msg_text = "[Ubicación compartida]"
+            elif msg_type == 'sticker':
+                msg_text = "[Sticker]"
+            else:
+                msg_text = f"[Mensaje tipo: {msg_type}]"
+            
+            # Normalize phone number for search
+            phone_clean = phone.lstrip('+').replace(' ', '').replace('-', '')
+            phone_variants = [
+                phone,
+                f"+{phone}",
+                phone_clean,
+                f"+{phone_clean}",
+            ]
+            
+            _logger.info(f"🔍 Searching lead for phone: {phone_variants}")
+            
+            # Search for CRM Lead by phone
+            Lead = request.env['crm.lead'].sudo()
+            lead = None
+            
+            for phone_var in phone_variants:
+                lead = Lead.search([
+                    '|', '|', '|',
+                    ('phone', 'ilike', phone_var),
+                    ('mobile', 'ilike', phone_var),
+                    ('partner_id.phone', 'ilike', phone_var),
+                    ('partner_id.mobile', 'ilike', phone_var),
+                ], limit=1)
+                if lead:
+                    break
+            
+            if not lead:
+                _logger.info(f"📝 No lead found for {phone}, creating new one...")
+                # Create new lead
+                lead = Lead.create({
+                    'name': f"{contact_name} - WhatsApp",
+                    'phone': phone,
+                    'contact_name': contact_name,
+                    'description': f"Lead creado automáticamente desde WhatsApp",
+                    'type': 'lead',
+                })
+                _logger.info(f"✅ Created new lead: {lead.name} (ID: {lead.id})")
+            
+            if lead:
+                _logger.info(f"📋 Found lead: {lead.name} (ID: {lead.id})")
+                
+                # Format message for chatter
+                if direction == 'incoming':
+                    body = f"""
+                    <div style="background-color: #dcf8c6; padding: 10px; border-radius: 8px; margin: 5px 0;">
+                        <strong>📱 WhatsApp Recibido de {contact_name}</strong><br/>
+                        <span style="color: #666;">Teléfono: {phone}</span><br/><br/>
+                        <p>{msg_text}</p>
+                    </div>
+                    """
+                else:
+                    body = f"""
+                    <div style="background-color: #e3f2fd; padding: 10px; border-radius: 8px; margin: 5px 0;">
+                        <strong>📤 WhatsApp Enviado a {contact_name}</strong><br/>
+                        <span style="color: #666;">Teléfono: {phone}</span><br/><br/>
+                        <p>{msg_text}</p>
+                    </div>
+                    """
+                
+                # Post to lead chatter
+                lead.message_post(
+                    body=body,
+                    message_type='notification',
+                    subtype_xmlid='mail.mt_note',
+                )
+                _logger.info(f"✅ Message posted to lead chatter!")
+                
+                # Also log as interaction if the model exists
+                try:
+                    if 'lead.interaction' in request.env:
+                        Interaction = request.env['lead.interaction'].sudo()
+                        Interaction.create({
+                            'lead_id': lead.id,
+                            'contact_type': 'whatsapp',
+                            'result': 'positive' if direction == 'incoming' else 'neutral',
+                            'observations': msg_text[:500] if msg_text else 'Mensaje de WhatsApp',
+                            'registered_by': gateway.webhook_user_id.id if gateway.webhook_user_id else 1,
+                        })
+                        _logger.info(f"✅ Interaction logged!")
+                except Exception as e:
+                    _logger.warning(f"⚠️ Could not log interaction: {e}")
+                    
+        except Exception as e:
+            _logger.error(f"❌ Error posting to lead chatter: {e}", exc_info=True)
 
     @http.route(
         ["/whatsapp/webhook", "/whatsapp/webhook/<int:gateway_id>"],

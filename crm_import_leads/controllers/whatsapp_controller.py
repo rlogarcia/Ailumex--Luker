@@ -222,6 +222,11 @@ class WhatsAppController(http.Controller):
                                             )._set_new_message_separator()
                                             
                                             _logger.info(f"✅ Message processed and posted to channel!")
+                                            
+                                            # POST TO LEAD CHATTER
+                                            self._post_message_to_lead_chatter(
+                                                message, value, direction='incoming'
+                                            )
                                         else:
                                             _logger.warning(f"⚠️ Could not get/create chat channel")
                                             
@@ -252,6 +257,97 @@ class WhatsAppController(http.Controller):
                 headers=[("Content-Type", "application/json")],
                 status=500
             )
+
+    def _post_message_to_lead_chatter(self, message, value, direction='incoming'):
+        """
+        Registra el mensaje de WhatsApp en el chatter del Lead correspondiente.
+        Busca el lead por número de teléfono y crea uno si no existe.
+        """
+        try:
+            phone = message.get('from', '')
+            if not phone:
+                return
+            
+            # Obtener nombre del contacto
+            contact_name = phone
+            for contact in value.get('contacts', []):
+                if contact.get('wa_id') == phone:
+                    contact_name = contact.get('profile', {}).get('name', phone)
+                    break
+            
+            # Obtener texto del mensaje
+            msg_text = ""
+            msg_type = message.get('type', 'text')
+            
+            if msg_type == 'text':
+                msg_text = message.get('text', {}).get('body', '')
+            elif msg_type == 'image':
+                msg_text = "📷 [Imagen recibida]"
+            elif msg_type == 'audio':
+                msg_text = "🎵 [Audio recibido]"
+            elif msg_type == 'video':
+                msg_text = "🎬 [Video recibido]"
+            elif msg_type == 'document':
+                doc_name = message.get('document', {}).get('filename', 'documento')
+                msg_text = f"📄 [Documento: {doc_name}]"
+            elif msg_type == 'location':
+                msg_text = "📍 [Ubicación compartida]"
+            elif msg_type == 'sticker':
+                msg_text = "🎭 [Sticker]"
+            else:
+                msg_text = f"[Mensaje tipo: {msg_type}]"
+            
+            # Buscar lead por teléfono
+            phone_clean = phone.lstrip('+').replace(' ', '').replace('-', '')
+            
+            Lead = request.env['crm.lead'].sudo()
+            lead = Lead.search([
+                '|', '|', '|',
+                ('phone', 'ilike', phone_clean[-10:]),
+                ('mobile', 'ilike', phone_clean[-10:]),
+                ('partner_id.phone', 'ilike', phone_clean[-10:]),
+                ('partner_id.mobile', 'ilike', phone_clean[-10:]),
+            ], limit=1)
+            
+            if not lead:
+                # Crear nuevo lead
+                _logger.info(f"📝 Creating new lead for {contact_name} ({phone})")
+                lead = Lead.create({
+                    'name': f"{contact_name} - WhatsApp",
+                    'phone': phone,
+                    'contact_name': contact_name,
+                    'description': 'Lead creado automáticamente desde WhatsApp',
+                    'type': 'lead',
+                })
+            
+            if lead:
+                # Formato del mensaje para el chatter
+                if direction == 'incoming':
+                    body = f"""
+                    <div style="background-color: #dcf8c6; padding: 10px; border-radius: 8px; margin: 5px 0; border-left: 4px solid #25D366;">
+                        <strong>📱 WhatsApp recibido de {contact_name}</strong><br/>
+                        <small style="color: #666;">Tel: {phone}</small><br/><br/>
+                        <p style="margin: 0;">{msg_text}</p>
+                    </div>
+                    """
+                else:
+                    body = f"""
+                    <div style="background-color: #e3f2fd; padding: 10px; border-radius: 8px; margin: 5px 0; border-left: 4px solid #1976d2;">
+                        <strong>📤 WhatsApp enviado a {contact_name}</strong><br/>
+                        <small style="color: #666;">Tel: {phone}</small><br/><br/>
+                        <p style="margin: 0;">{msg_text}</p>
+                    </div>
+                    """
+                
+                lead.message_post(
+                    body=body,
+                    message_type='notification',
+                    subtype_xmlid='mail.mt_note',
+                )
+                _logger.info(f"✅ Message posted to lead {lead.name} chatter")
+                
+        except Exception as e:
+            _logger.error(f"❌ Error posting to lead chatter: {e}", exc_info=True)
 
     @http.route(
         ["/whatsapp/webhook", "/whatsapp/webhook/<int:gateway_id>"],

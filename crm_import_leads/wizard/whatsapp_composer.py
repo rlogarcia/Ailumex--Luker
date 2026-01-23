@@ -16,10 +16,7 @@ class WhatsAppComposer(models.TransientModel):
         "mail.gateway",
         string="Gateway",
         required=True,
-        domain=[
-            ("gateway_type", "=", "whatsapp"),
-            ("integrated_webhook_state", "=", "integrated"),
-        ],
+        domain=[("gateway_type", "=", "whatsapp")],
     )
 
     @api.onchange("template_id")

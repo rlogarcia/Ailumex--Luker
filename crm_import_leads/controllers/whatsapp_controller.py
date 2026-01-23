@@ -156,6 +156,22 @@ class WhatsAppController(http.Controller):
             try:
                 ok_sig = True
                 # If gateway has a webhook_secret, verify request signature
+                # If the gateway forwarded the signature header under a different name
+                # (for example when passing through a proxy), copy it into the environ
+                # key that mail_gateway_whatsapp expects: HTTP_X_HUB_SIGNATURE_256
+                forwarded_sig = request.httprequest.headers.get(
+                    "X-Forwarded-X-Hub-Signature-256"
+                ) or request.httprequest.headers.get("x-forwarded-x-hub-signature-256")
+                if forwarded_sig:
+                    try:
+                        request.httprequest.environ["HTTP_X_HUB_SIGNATURE_256"] = (
+                            forwarded_sig
+                        )
+                    except Exception:
+                        _logger.warning(
+                            "Could not copy forwarded signature into environ"
+                        )
+
                 if getattr(gateway, "webhook_secret", False):
                     ok_sig = whatsapp_service._verify_update(
                         {"webhook_secret": gateway.webhook_secret}, {}

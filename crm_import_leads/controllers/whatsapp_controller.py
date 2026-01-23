@@ -43,13 +43,47 @@ class WhatsAppController(http.Controller):
                 _logger.info(f"  hub.verify_token: {hub_verify_token}")
                 _logger.info(f"  hub.challenge: {hub_challenge}")
 
-                if hub_mode == "subscribe" and hub_challenge:
-                    _logger.info(
-                        "✅ Webhook verification successful - returning challenge"
-                    )
-                    return hub_challenge
+                # Find gateway to verify token against
+                Gateway = request.env["mail.gateway"].sudo()
+                gateway = False
+                if gateway_id:
+                    gateway = Gateway.browse(gateway_id)
+                else:
+                    # Try to match webhook_key or whatsapp_security_key
+                    if hub_verify_token:
+                        gateway = Gateway.search(
+                            [
+                                "|",
+                                ("webhook_key", "=", hub_verify_token),
+                                ("whatsapp_security_key", "=", hub_verify_token),
+                            ],
+                            limit=1,
+                        )
+                    if not gateway:
+                        # fallback to any whatsapp gateway
+                        gateway = Gateway.search(
+                            [("gateway_type", "=", "whatsapp")], limit=1
+                        )
 
-                _logger.warning("⚠️ Webhook verification incomplete")
+                if (
+                    hub_mode == "subscribe"
+                    and hub_challenge
+                    and gateway
+                    and gateway.exists()
+                ):
+                    # Accept verification only when token matches configured one (if provided)
+                    if not hub_verify_token or hub_verify_token in (
+                        gateway.webhook_key,
+                        gateway.whatsapp_security_key,
+                    ):
+                        _logger.info(
+                            "✅ Webhook verification successful - returning challenge"
+                        )
+                        return hub_challenge
+                    _logger.warning("⚠️ Webhook verification token mismatch")
+                    return "Forbidden"
+
+                _logger.warning("⚠️ Webhook verification incomplete or no gateway found")
                 return "OK"
 
             # Handle POST request (incoming messages)
@@ -117,6 +151,22 @@ class WhatsAppController(http.Controller):
                 .with_user(gateway.webhook_user_id.id)
                 .with_context(no_gateway_notification=False)
             )
+
+            # Verify POST signature (if configured) using mail.gateway.whatsapp helper
+            try:
+                ok_sig = True
+                # If gateway has a webhook_secret, verify request signature
+                if getattr(gateway, "webhook_secret", False):
+                    ok_sig = whatsapp_service._verify_update(
+                        {"webhook_secret": gateway.webhook_secret}, {}
+                    )
+                if not ok_sig:
+                    _logger.warning("⚠️ Webhook signature verification failed")
+                    return {"status": "error", "message": "Invalid signature"}
+
+            except Exception:
+                _logger.exception("Error during webhook signature verification")
+                return {"status": "error", "message": "Signature verification error"}
 
             # Process the webhook data using the standard mail_gateway method
             # This will:

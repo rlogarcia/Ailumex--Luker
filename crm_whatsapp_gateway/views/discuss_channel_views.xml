@@ -29,32 +29,32 @@
         </field>
     </record>
 
-    <!-- Vista de lista de canales WhatsApp -->
+    <!-- Vista de lista de canales WhatsApp MEJORADA -->
     <record id="view_discuss_channel_list_whatsapp" model="ir.ui.view">
         <field name="name">discuss.channel.list.whatsapp</field>
         <field name="model">discuss.channel</field>
         <field name="arch" type="xml">
-            <list string="Conversaciones WhatsApp"
+            <list string="Conversaciones WhatsApp" default_order="write_date desc"
                 decoration-info="lead_id != False"
                 decoration-muted="lead_id == False">
-                <field name="name" />
-                <field name="gateway_channel_token" string="Número" />
-                <field name="lead_id" />
-                <field name="create_date" string="Iniciada" />
+                <field name="name" string="Contacto"/>
+                <field name="gateway_channel_token" string="Teléfono" />
+                <field name="lead_id" string="Lead Vinculado"/>
+                <field name="write_date" string="Última actividad"/>
+                <field name="create_date" string="Inicio" optional="hide"/>
             </list>
         </field>
     </record>
 
-    <!-- Acción de ventana: WhatsApp Inbox -->
+    <!-- Acción de ventana: WhatsApp Inbox - MEJORADA -->
     <record id="action_whatsapp_inbox" model="ir.actions.act_window">
         <field name="name">WhatsApp Inbox</field>
         <field name="res_model">discuss.channel</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('channel_type', '=', 'gateway'), ('gateway_id.gateway_type', '=',
-            'whatsapp')]</field>
-        <field name="context">{
-            'search_default_my_channels': 1,
-            }</field>
+        <field name="domain">[('gateway_id', '!=', False)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_discuss_channel_list_whatsapp')})]"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 No hay conversaciones de WhatsApp

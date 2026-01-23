@@ -8,6 +8,169 @@ _logger = logging.getLogger(__name__)
 
 
 class WhatsAppController(http.Controller):
+    
+    # ============================================================
+    # EMERGENCY WEBHOOK - Ruta directa para verificación Meta
+    # Esta ruta NO depende del cache y funciona inmediatamente
+    # ============================================================
+    @http.route(
+        "/gateway/whatsapp/odoo/update",
+        type="http",
+        auth="public",
+        methods=["GET", "POST"],
+        csrf=False,
+    )
+    def meta_webhook_direct(self, **kwargs):
+        """Direct WhatsApp webhook handler - bypasses cache issues.
+        
+        URL: /gateway/whatsapp/odoo/update
+        This matches your Meta webhook URL exactly.
+        """
+        try:
+            # =============================================
+            # HANDLE GET - Meta Webhook Verification
+            # =============================================
+            if request.httprequest.method == "GET":
+                hub_mode = kwargs.get("hub.mode")
+                hub_verify_token = kwargs.get("hub.verify_token")
+                hub_challenge = kwargs.get("hub.challenge")
+                
+                _logger.info("=" * 60)
+                _logger.info("🔍 META WEBHOOK VERIFICATION REQUEST")
+                _logger.info(f"   hub.mode: {hub_mode}")
+                _logger.info(f"   hub.verify_token: {hub_verify_token}")
+                _logger.info(f"   hub.challenge: {hub_challenge}")
+                _logger.info("=" * 60)
+                
+                # Validate mode
+                if hub_mode != "subscribe":
+                    _logger.warning(f"❌ Invalid hub.mode: {hub_mode}")
+                    return request.make_response(
+                        "Invalid mode",
+                        headers=[("Content-Type", "text/plain")],
+                        status=403
+                    )
+                
+                # Validate challenge exists
+                if not hub_challenge:
+                    _logger.warning("❌ Missing hub.challenge")
+                    return request.make_response(
+                        "Missing challenge",
+                        headers=[("Content-Type", "text/plain")],
+                        status=400
+                    )
+                
+                # Find the WhatsApp gateway
+                Gateway = request.env["mail.gateway"].sudo()
+                gateway = Gateway.search([
+                    ("gateway_type", "=", "whatsapp")
+                ], limit=1)
+                
+                if not gateway:
+                    _logger.error("❌ No WhatsApp gateway configured in Odoo")
+                    return request.make_response(
+                        "No gateway configured",
+                        headers=[("Content-Type", "text/plain")],
+                        status=404
+                    )
+                
+                _logger.info(f"📦 Gateway found: {gateway.name} (ID: {gateway.id})")
+                _logger.info(f"   webhook_key: {gateway.webhook_key}")
+                _logger.info(f"   whatsapp_security_key: {gateway.whatsapp_security_key}")
+                
+                # Validate verify_token against configured values
+                expected_tokens = []
+                if gateway.webhook_key:
+                    expected_tokens.append(gateway.webhook_key)
+                if hasattr(gateway, 'whatsapp_security_key') and gateway.whatsapp_security_key:
+                    expected_tokens.append(gateway.whatsapp_security_key)
+                
+                # ALSO accept "odoo" as hardcoded fallback for emergency
+                if "odoo" not in expected_tokens:
+                    expected_tokens.append("odoo")
+                
+                _logger.info(f"   Expected tokens: {expected_tokens}")
+                
+                if hub_verify_token not in expected_tokens:
+                    _logger.warning(f"❌ Token mismatch! Received: '{hub_verify_token}', Expected: {expected_tokens}")
+                    return request.make_response(
+                        "Invalid verify token",
+                        headers=[("Content-Type", "text/plain")],
+                        status=403
+                    )
+                
+                # SUCCESS! Update gateway state
+                try:
+                    gateway.integrated_webhook_state = "integrated"
+                    _logger.info("✅ Gateway state updated to 'integrated'")
+                except Exception as e:
+                    _logger.warning(f"⚠️ Could not update gateway state: {e}")
+                
+                # CRITICAL: Return challenge as plain text
+                _logger.info(f"✅ VERIFICATION SUCCESS - Returning challenge: {hub_challenge}")
+                
+                response = request.make_response(
+                    str(hub_challenge),
+                    headers=[("Content-Type", "text/plain; charset=utf-8")]
+                )
+                response.status_code = 200
+                return response
+            
+            # =============================================
+            # HANDLE POST - Incoming Messages/Events
+            # =============================================
+            data = {}
+            if request.httprequest.data:
+                try:
+                    data = json.loads(request.httprequest.data.decode("utf-8"))
+                except json.JSONDecodeError as e:
+                    _logger.error(f"❌ Invalid JSON in POST body: {e}")
+                    return request.make_response(
+                        json.dumps({"status": "error", "message": "Invalid JSON"}),
+                        headers=[("Content-Type", "application/json")],
+                        status=400
+                    )
+            
+            _logger.info(f"📨 WhatsApp POST webhook received")
+            _logger.info(f"   Data: {json.dumps(data, indent=2)[:500]}...")
+            
+            # Find gateway
+            Gateway = request.env["mail.gateway"].sudo()
+            gateway = Gateway.search([("gateway_type", "=", "whatsapp")], limit=1)
+            
+            if not gateway:
+                _logger.error("❌ No WhatsApp gateway found")
+                return request.make_response(
+                    json.dumps({"status": "error", "message": "Gateway not found"}),
+                    headers=[("Content-Type", "application/json")],
+                    status=404
+                )
+            
+            # Delegate to mail_gateway_whatsapp for processing
+            try:
+                whatsapp_service = (
+                    request.env["mail.gateway.whatsapp"]
+                    .sudo()
+                    .with_user(gateway.webhook_user_id.id if gateway.webhook_user_id else 1)
+                )
+                whatsapp_service._receive_update(gateway, data)
+                _logger.info("✅ Message processed successfully")
+            except Exception as e:
+                _logger.error(f"⚠️ Error processing message: {e}", exc_info=True)
+            
+            # Always return 200 OK to Meta (they retry on errors)
+            return request.make_response(
+                json.dumps({"status": "ok"}),
+                headers=[("Content-Type", "application/json")]
+            )
+            
+        except Exception as e:
+            _logger.error(f"❌ Webhook error: {str(e)}", exc_info=True)
+            return request.make_response(
+                json.dumps({"status": "error", "message": str(e)}),
+                headers=[("Content-Type", "application/json")],
+                status=500
+            )
 
     @http.route(
         ["/whatsapp/webhook", "/whatsapp/webhook/<int:gateway_id>"],

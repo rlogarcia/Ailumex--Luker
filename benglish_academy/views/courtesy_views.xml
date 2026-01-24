@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<data>
+
+        <!-- ============================================ -->
+        <!-- VISTAS PARA PLANES CORTESÍA -->
+        <!-- ============================================ -->
+
+        <!-- Formulario de Plan - Extensión para Cortesía -->
+        <record id="view_benglish_plan_form_courtesy" model="ir.ui.view">
+            <field name="name">benglish.plan.form.courtesy</field>
+            <field name="model">benglish.plan</field>
+            <field name="inherit_id" ref="benglish_academy.view_benglish_plan_form_v2" />
+            <field name="arch" type="xml">
+                
+                <!-- Agregar badge en el nombre -->
+                <field name="name" position="after">
+                    <field name="is_courtesy_plan" invisible="1" />
+                    <div class="badge badge-warning" invisible="1" style="font-size: 14px; padding: 8px 12px;">
+                        🎁 PLAN CORTESÍA
+                    </div>
+                </field>
+
+                <!-- Agregar grupo de campos después de modalidad -->
+                <field name="modality" position="after">
+                    <group name="courtesy_config" string="⭐ Configuración de Cortesía" invisible="1">
+                        <field name="courtesy_activation_mode" widget="radio" />
+                        <field name="courtesy_inactivity_days" />
+                        <field name="courtesy_reason" />
+                        <field name="courtesy_weekly_hours" />
+                    </group>
+                </field>
+
+            </field>
+        </record>
+
+        <!-- Vista de Lista - Mostrar badge cortesía -->
+        <record id="view_benglish_plan_tree_courtesy" model="ir.ui.view">
+            <field name="name">benglish.plan.tree.courtesy</field>
+            <field name="model">benglish.plan</field>
+            <field name="inherit_id" ref="benglish_academy.view_benglish_plan_list" />
+            <field name="arch" type="xml">
+                
+                <field name="name" position="after">
+                    <field name="is_courtesy_plan" invisible="1" />
+                    <field name="courtesy_activation_mode" optional="hide" />
+                </field>
+
+            </field>
+        </record>
+
+        <!-- ============================================ -->
+        <!-- VISTAS PARA ENROLLMENT CORTESÍA -->
+        <!-- ============================================ -->
+
+        <!-- Formulario de Enrollment - Extensión para Cortesía -->
+        <record id="view_benglish_enrollment_form_courtesy" model="ir.ui.view">
+            <field name="name">benglish.enrollment.form.courtesy</field>
+            <field name="model">benglish.enrollment</field>
+            <field name="inherit_id" ref="benglish_academy.view_enrollment_form" />
+            <field name="arch" type="xml">
+
+                <!-- Widget de estadísticas - Acciones de cortesía -->
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button name="action_activate_next_module" 
+                            type="object" 
+                            class="oe_stat_button" 
+                            icon="fa-unlock"
+                            invisible="not is_courtesy_plan or not next_phase_to_activate">
+                        <div class="o_field_widget o_stat_info">
+                            <span class="o_stat_value">
+                                <field name="next_phase_to_activate" readonly="1" />
+                            </span>
+                            <span class="o_stat_text">Activar Módulo</span>
+                        </div>
+                    </button>
+
+                </xpath>
+
+                <!-- Agregar grupo de información de cortesía después de plan_id -->
+                <field name="plan_id" position="after">
+                    <field name="is_courtesy_plan" invisible="1" />
+
+                    <group name="courtesy_info" string="🎁 Información de Cortesía" invisible="not is_courtesy_plan">
+                        <group>
+                            <field name="activated_phases_ids" widget="many2many_tags" 
+                                   readonly="1" />
+                            <field name="current_phase_id" />
+                            <field name="next_phase_to_activate" readonly="1" />
+                        </group>
+                        <group>
+                            <field name="last_activity_date" readonly="1" />
+                            <field name="days_since_last_activity" readonly="1" />
+                            <field name="courtesy_inactivity_days" readonly="1" string="Límite Inactividad (días)" />
+                        </group>
+                    </group>
+                </field>
+
+            </field>
+        </record>
+
+        <!-- Vista de Lista - Mostrar info cortesía -->
+        <record id="view_benglish_enrollment_tree_courtesy" model="ir.ui.view">
+            <field name="name">benglish.enrollment.tree.courtesy</field>
+            <field name="model">benglish.enrollment</field>
+            <field name="inherit_id" ref="benglish_academy.view_enrollment_list" />
+            <field name="arch" type="xml">
+                
+                <field name="state" position="before">
+                    <field name="is_courtesy_plan" invisible="1" />
+                    <field name="days_since_last_activity" optional="hide" />
+                </field>
+
+            </field>
+        </record>
+
+        <!-- Filtros adicionales para cortesías -->
+        <record id="view_benglish_enrollment_search_courtesy" model="ir.ui.view">
+            <field name="name">benglish.enrollment.search.courtesy</field>
+            <field name="model">benglish.enrollment</field>
+            <field name="inherit_id" ref="benglish_academy.view_enrollment_search" />
+            <field name="arch" type="xml">
+                
+                <filter name="filter_active" position="after">
+                    <separator />
+                    <filter name="courtesy_plans" string="Planes Cortesía" 
+                            domain="[('plan_id.is_courtesy_plan', '=', True)]" />
+                </filter>
+
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -56,6 +56,12 @@
                             invisible="state in ('done','cancelled')"
                             class="btn-danger"
                             groups="benglish_academy.group_academic_coordinator,benglish_academy.group_academic_manager" />
+                        <button name="%(action_session_transfer_wizard)d"
+                            string="Trasladar Estudiantes"
+                            type="action"
+                            class="btn-secondary"
+                            invisible="state in ('done','cancelled')"
+                            groups="benglish_academy.group_academic_coordinator,benglish_academy.group_academic_manager" />
                         <field name="state" widget="statusbar"
                             statusbar_visible="draft,active,with_enrollment,started,done,cancelled" />
                     </header>

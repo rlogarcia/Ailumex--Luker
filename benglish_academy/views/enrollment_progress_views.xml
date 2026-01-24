@@ -166,7 +166,7 @@
     <record id="action_enrollment_progress" model="ir.actions.act_window">
         <field name="name">Progreso en Asignaturas</field>
         <field name="res_model">benglish.enrollment.progress</field>
-        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="context">{}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">

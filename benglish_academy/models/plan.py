@@ -153,6 +153,56 @@ class StudyPlan(models.Model):
         help="Si está inactivo, el plan no enseñara las asignaturas asociadas",
     )
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS PARA PLANES CORTESÍA
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    is_courtesy_plan = fields.Boolean(
+        string="Es Plan Cortesía",
+        default=False,
+        tracking=True,
+        help="Indica si este es un plan cortesía (sin costo, activación progresiva por módulos)",
+    )
+
+    courtesy_activation_mode = fields.Selection(
+        selection=[
+            ("complete", "Activación Completa"),
+            ("module", "Activación por Módulo"),
+        ],
+        string="Modo de Activación Cortesía",
+        default="complete",
+        tracking=True,
+        help="Cortesía: 'module' = activación progresiva Basic → Intermediate → Advanced. "
+        "'complete' = activación total al inicio (planes regulares)",
+    )
+
+    courtesy_inactivity_days = fields.Integer(
+        string="Días Máx. Inactividad",
+        default=0,
+        tracking=True,
+        help="Cortesía: días máximos sin asistir/agendar antes de cancelación automática. "
+        "0 = sin límite (planes regulares), 21 = 3 semanas (cortesía estándar)",
+    )
+
+    courtesy_reason = fields.Selection(
+        selection=[
+            ("commercial", "Acuerdo Comercial"),
+            ("event", "Evento Especial"),
+            ("institutional", "Convenio Interinstitucional"),
+            ("employee", "Colaborador"),
+            ("other", "Otro"),
+        ],
+        string="Motivo de Cortesía",
+        tracking=True,
+        help="Razón por la que se otorga la cortesía (solo para planes cortesía)",
+    )
+
+    courtesy_weekly_hours = fields.Float(
+        string="Horas Semanales Cortesía",
+        default=5.0,
+        help="Carga horaria semanal para planes cortesía (ej: 5 horas semanales)",
+    )
+
     # Relaciones
     program_id = fields.Many2one(
         comodel_name="benglish.program",
@@ -478,6 +528,10 @@ class StudyPlan(models.Model):
         - Modificar un plan NO debe afectar matrículas históricas
         - Para cambios estructurales: crear NUEVA VERSIÓN del plan
         """
+        # Permitir actualización del módulo aunque existan matrículas activas
+        if self.env.context.get("install_mode") or self.env.context.get("module_install") or self.env.context.get("module_upgrade") or self.env.context.get("update_module"):
+            return super(StudyPlan, self).write(vals)
+
         # Normalizar nombre a MAYÚSCULAS
         if "name" in vals and vals["name"]:
             vals["name"] = normalize_to_uppercase(vals["name"])
@@ -500,10 +554,21 @@ class StudyPlan(models.Model):
 
         if modified_protected:
             for plan in self:
-                # Buscar matrículas que usan este plan como plan_frozen_id
-                enrollment_count = self.env["benglish.enrollment"].search_count(
+                enrollment_model = self.env["benglish.enrollment"]
+                if "plan_frozen_id" in enrollment_model._fields:
+                    plan_link_field = "plan_frozen_id"
+                elif "plan_id" in enrollment_model._fields:
+                    plan_link_field = "plan_id"
+                else:
+                    plan_link_field = None
+
+                if not plan_link_field:
+                    continue
+
+                # Buscar matrículas que usan este plan como plan_frozen_id/plan_id
+                enrollment_count = enrollment_model.search_count(
                     [
-                        ("plan_frozen_id", "=", plan.id),
+                        (plan_link_field, "=", plan.id),
                         ("state", "in", ["active", "suspended", "finished"]),
                     ]
                 )

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from . import res_config_settings
+from . import courtesy_settings
 from . import session_sync_mixin
 from . import program
 from . import plan
@@ -43,6 +45,7 @@ from . import placement_test
 from . import placement_test_prospect
 from . import subject_session_tracking
 from . import agenda_log
+from . import session_transfer_log
 from . import session_enrollment
 from . import res_partner
 from . import academic_settings

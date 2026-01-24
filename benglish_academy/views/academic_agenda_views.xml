@@ -81,6 +81,7 @@
                     decoration-info="state == 'draft'"
                     decoration-warning="state == 'active'"
                     decoration-success="state == 'published'"
+                    decoration-danger="state == 'executed'"
                     decoration-muted="state == 'closed'">
                     <field name="code" />
                     <field name="name" />
@@ -95,6 +96,7 @@
                         decoration-info="state == 'draft'"
                         decoration-warning="state == 'active'"
                         decoration-success="state == 'published'"
+                        decoration-danger="state == 'executed'"
                         decoration-muted="state == 'closed'" />
                 </list>
             </field>
@@ -128,7 +130,7 @@
                             groups="benglish_academy.group_academic_coordinator,benglish_academy.group_academic_manager"
                             help="Duplica este horario con recálculo inteligente de fechas" />
                         <field name="state" widget="statusbar"
-                            statusbar_visible="draft,active,published,closed" />
+                            statusbar_visible="draft,active,published,executed,closed" />
                     </header>
                     <sheet>
                         <div class="oe_button_box" name="button_box">
@@ -165,6 +167,8 @@
                         </div>
                         <widget name="web_ribbon" title="Cerrada" bg_color="bg-secondary"
                             invisible="state != 'closed'" />
+                        <widget name="web_ribbon" title="Ejecutada" bg_color="bg-danger"
+                            invisible="state != 'executed'" />
                         <widget name="web_ribbon" title="Publicada" bg_color="bg-success"
                             invisible="state != 'published'" />
                         <div class="oe_title">
@@ -255,6 +259,8 @@
                         domain="[('state', '=', 'active')]" />
                     <filter name="filter_published" string="Publicadas"
                         domain="[('state', '=', 'published')]" />
+                    <filter name="filter_executed" string="Ejecutadas"
+                        domain="[('state', '=', 'executed')]" />
                     <filter name="filter_closed" string="Cerradas"
                         domain="[('state', '=', 'closed')]" />
                     <separator />

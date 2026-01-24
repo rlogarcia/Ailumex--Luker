@@ -108,6 +108,10 @@
                                     </t>
                                 </div>
 
+                                <div style="text-align: center; margin-top: 16px;">
+                                    <a href="#" id="forgot-password-link" style="color: #007bff; text-decoration: none; font-size: 14px;">¿Olvidaste tu contraseña?</a>
+                                </div>
+
                                 <div class="o_login_auth"/>
                             </form>
 
@@ -121,6 +125,119 @@
                             </t>
                         </div>
                     </div>
+
+                    <div id="password-reset-modal" class="benglish-modal" style="display: none;">
+                        <div class="benglish-modal-overlay"></div>
+                        <div class="benglish-modal-content">
+                            <div class="benglish-modal-header">
+                                <h3 class="benglish-modal-title"><i class="fa fa-key"></i> Recuperar Contraseña</h3>
+                                <button type="button" class="benglish-modal-close" id="close-modal-btn"><i class="fa fa-times"></i></button>
+                            </div>
+                            <div class="benglish-modal-body">
+                                <div class="benglish-stepper">
+                                    <div class="benglish-step active" data-step="1">
+                                        <div class="benglish-step-circle">1</div>
+                                        <span class="benglish-step-label">Identificación</span>
+                                    </div>
+                                    <div class="benglish-step-line"></div>
+                                    <div class="benglish-step" data-step="2">
+                                        <div class="benglish-step-circle">2</div>
+                                        <span class="benglish-step-label">Verificación</span>
+                                    </div>
+                                    <div class="benglish-step-line"></div>
+                                    <div class="benglish-step" data-step="3">
+                                        <div class="benglish-step-circle">3</div>
+                                        <span class="benglish-step-label">Nueva Contraseña</span>
+                                    </div>
+                                </div>
+                                <div id="step-1" class="benglish-step-content active">
+                                    <p class="benglish-step-description">Ingresa tu número de identificación para recibir un código de verificación.</p>
+                                    <form id="request-otp-form">
+                                        <div class="benglish-form-group">
+                                            <label for="identification-number">Número de Identificación</label>
+                                            <input type="text" id="identification-number" name="identification" class="benglish-form-control" placeholder="Ej: 1234567890" required="required" autocomplete="off"/>
+                                        </div>
+                                        <div id="step-1-error" class="benglish-error-message" style="display: none;">
+                                            <i class="fa fa-exclamation-circle"></i> <span id="step-1-error-text"></span>
+                                        </div>
+                                        <div id="email-hint" class="benglish-info-message" style="display: none;">
+                                            <i class="fa fa-envelope"></i> <span id="email-hint-text"></span>
+                                        </div>
+                                        <div class="benglish-form-actions">
+                                            <button type="submit" class="benglish-btn benglish-btn-primary" id="send-code-btn"><i class="fa fa-paper-plane"></i> Enviar Código</button>
+                                            <button type="button" class="benglish-btn benglish-btn-secondary" id="cancel-step-1-btn">Cancelar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div id="step-2" class="benglish-step-content">
+                                    <p class="benglish-step-description">Ingresa el código de 6 dígitos que enviamos a <span id="email-display" style="font-weight: 600;"></span></p>
+                                    <form id="verify-otp-form">
+                                        <div class="benglish-form-group">
+                                            <label for="otp-code">Código de Verificación</label>
+                                            <input type="text" id="otp-code" name="otp_code" class="benglish-form-control benglish-otp-input" placeholder="000000" maxlength="6" required="required" autocomplete="off"/>
+                                            <small class="benglish-form-hint">El código es válido por 10 minutos</small>
+                                        </div>
+                                        <div id="cooldown-timer" class="benglish-cooldown-message" style="display: none;">
+                                            <i class="fa fa-clock-o"></i> Espera <span id="cooldown-seconds">60</span> segundos para reenviar
+                                        </div>
+                                        <div id="step-2-error" class="benglish-error-message" style="display: none;">
+                                            <i class="fa fa-exclamation-circle"></i> <span id="step-2-error-text"></span>
+                                        </div>
+                                        <div class="benglish-form-actions">
+                                            <button type="submit" class="benglish-btn benglish-btn-primary" id="verify-code-btn"><i class="fa fa-check"></i> Verificar Código</button>
+                                            <button type="button" class="benglish-btn benglish-btn-secondary" id="back-to-step-1-btn"><i class="fa fa-arrow-left"></i> Volver</button>
+                                            <button type="button" class="benglish-btn benglish-btn-link" id="resend-code-btn"><i class="fa fa-refresh"></i> Reenviar código</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div id="step-3" class="benglish-step-content">
+                                    <p class="benglish-step-description">Crea una contraseña segura para tu cuenta.</p>
+                                    <form id="reset-password-form">
+                                        <div class="benglish-form-group">
+                                            <label for="new-password">Nueva Contraseña</label>
+                                            <div class="benglish-password-wrapper">
+                                                <input type="password" id="new-password" name="new_password" class="benglish-form-control" placeholder="Mínimo 8 caracteres" minlength="8" required="required" autocomplete="new-password"/>
+                                                <button type="button" class="benglish-password-toggle" data-target="new-password"><i class="fa fa-eye"></i></button>
+                                            </div>
+                                            <div id="password-strength" class="benglish-password-strength" style="display: none;">
+                                                <div class="benglish-strength-bar">
+                                                    <div id="strength-fill" class="benglish-strength-fill"></div>
+                                                </div>
+                                                <span id="strength-text" class="benglish-strength-text"></span>
+                                            </div>
+                                            <small class="benglish-form-hint">Usa al menos 8 caracteres con una combinación de letras, números y símbolos</small>
+                                        </div>
+                                        <div class="benglish-form-group">
+                                            <label for="confirm-password">Confirmar Contraseña</label>
+                                            <div class="benglish-password-wrapper">
+                                                <input type="password" id="confirm-password" name="confirm_password" class="benglish-form-control" placeholder="Repite tu contraseña" minlength="8" required="required" autocomplete="new-password"/>
+                                                <button type="button" class="benglish-password-toggle" data-target="confirm-password"><i class="fa fa-eye"></i></button>
+                                            </div>
+                                        </div>
+                                        <div id="step-3-error" class="benglish-error-message" style="display: none;">
+                                            <i class="fa fa-exclamation-circle"></i> <span id="step-3-error-text"></span>
+                                        </div>
+                                        <div class="benglish-form-actions">
+                                            <button type="submit" class="benglish-btn benglish-btn-primary" id="update-password-btn"><i class="fa fa-save"></i> Actualizar Contraseña</button>
+                                            <button type="button" class="benglish-btn benglish-btn-secondary" id="cancel-step-3-btn">Cancelar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div id="step-success" class="benglish-step-content">
+                                    <div class="benglish-success-icon"><i class="fa fa-check-circle"></i></div>
+                                    <h3 class="benglish-success-title">¡Contraseña actualizada!</h3>
+                                    <p class="benglish-success-description">Tu contraseña ha sido cambiada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.</p>
+                                    <div class="benglish-form-actions">
+                                        <button type="button" class="benglish-btn benglish-btn-primary" id="close-success-btn"><i class="fa fa-sign-in"></i> Ir a Iniciar Sesión</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script type="text/javascript" src="/benglish_academy/static/src/js/password_reset.js?v=2.0"></script>
+                    <link rel="stylesheet" type="text/css" href="/benglish_academy/static/src/css/password_reset.css?v=2.0"/>
+
                 </section>
             </t>
         </xpath>

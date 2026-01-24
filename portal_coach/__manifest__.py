@@ -32,6 +32,11 @@
         'hr',
     ],
     'data': [
+        # Seguridad y grupos
+        'security/coach_security.xml',
+        # Menú backend para coaches
+        'views/coach_backend_menu.xml',
+        'views/coach_backend_widgets.xml',
         # Vistas backend
         #'views/coach_hr_views.xml',
         # Templates frontend
@@ -45,6 +50,9 @@
         'web.assets_frontend': [
             'portal_coach/static/src/css/portal_coach.css',
             'portal_coach/static/src/js/portal_coach.js',
+        ],
+        'web.assets_backend': [
+            'portal_coach/static/src/js/coach_portal_button.js',
         ],
     },
     'installable': True,

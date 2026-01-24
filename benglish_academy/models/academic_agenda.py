@@ -3,6 +3,9 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from datetime import datetime, timedelta
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AcademicAgenda(models.Model):
@@ -189,13 +192,17 @@ class AcademicAgenda(models.Model):
             ("draft", "Borrador"),
             ("active", "Activa"),
             ("published", "Publicada"),
+            ("executed", "Ejecutada"),
             ("closed", "Cerrada"),
         ],
         string="Estado",
         default="draft",
         required=True,
         tracking=True,
-        help="Estado del ciclo de vida del horario",
+        compute="_compute_state",
+        store=True,
+        readonly=False,
+        help="Estado del ciclo de vida del horario. Se actualiza automáticamente a 'Ejecutada' cuando la fecha de fin ha pasado.",
     )
 
     # AUDITORÍA
@@ -376,6 +383,17 @@ class AcademicAgenda(models.Model):
         for record in self:
             record.log_count = len(record.log_ids)
 
+    @api.depends("date_end", "state")
+    def _compute_state(self):
+        """Actualiza automáticamente el estado a 'Ejecutada' cuando la fecha de fin ha pasado."""
+        today = fields.Date.today()
+        for record in self:
+            # Solo actualizar a ejecutada si está en estado publicada
+            if record.state == 'published' and record.date_end and record.date_end < today:
+                record.state = 'executed'
+            elif not record.state or record.state == False:
+                record.state = 'draft'
+
     # VALIDACIONES
 
 
@@ -496,11 +514,11 @@ class AcademicAgenda(models.Model):
             for key in ["date_start", "date_end", "time_start", "time_end", "campus_id"]
         ):
             for record in self:
-                if record.state in ["published", "closed"]:
+                if record.state in ["published", "executed", "closed"]:
                     raise UserError(
                         _(
                             "No se pueden modificar fechas, horarios o sede de una agenda "
-                            "publicada o cerrada."
+                            "publicada, ejecutada o cerrada."
                         )
                     )
                 if record.session_ids.filtered(
@@ -1001,6 +1019,31 @@ class AcademicAgenda(models.Model):
                 "default_time_end": default_end_time,
             },
         }
+
+    # MÉTODOS CRON
+
+    @api.model
+    def _cron_update_executed_agendas(self):
+        """
+        Método ejecutado por el cron job para actualizar automáticamente
+        las agendas publicadas cuya fecha de fin ya ha pasado al estado "Ejecutada".
+        """
+        today = fields.Date.today()
+        
+        # Buscar todas las agendas publicadas cuya fecha de fin ha pasado
+        agendas_to_update = self.search([
+            ('state', '=', 'published'),
+            ('date_end', '<', today)
+        ])
+        
+        if agendas_to_update:
+            agendas_to_update.write({'state': 'executed'})
+            _logger.info(
+                "Cron: %s horarios actualizados a estado 'Ejecutada'",
+                len(agendas_to_update)
+            )
+        
+        return True
 
     def action_duplicate_agenda_wizard(self):
         """

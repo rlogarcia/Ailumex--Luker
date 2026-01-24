@@ -3,7 +3,7 @@
 
 <!-- VISTA DE HORARIO SEMANAL -->
 <template id="coach_agenda" name="Coach Horario Semanal">
-    <t t-call="portal.portal_layout">
+    <t t-call="portal_coach.portal_coach_layout">
         <t t-set="page_name" t-value="'coach_agenda'"/>
         <t t-call="portal_coach.portal_coach_header"/>
         
@@ -197,7 +197,7 @@
 
 <!-- VISTA DE LISTA DE HORARIOS -->
 <template id="coach_agendas" name="Coach Horarios">
-    <t t-call="portal.portal_layout">
+    <t t-call="portal_coach.portal_coach_layout">
         <t t-set="page_name" t-value="'coach_agendas'"/>
         <t t-call="portal_coach.portal_coach_header"/>
         
@@ -275,7 +275,7 @@
 
 <!-- VISTA DE PROGRAMAS -->
 <template id="coach_programs" name="Coach Programs">
-    <t t-call="portal.portal_layout">
+    <t t-call="portal_coach.portal_coach_layout">
         <t t-set="page_name" t-value="'coach_programs'"/>
         <t t-call="portal_coach.portal_coach_header"/>
         

@@ -497,5 +497,95 @@
             <field name="binding_view_types">form</field>
         </record>
 
+        <!-- Wizard: Traslado/Combinacion de Estudiantes -->
+        <record id="view_session_transfer_wizard_form" model="ir.ui.view">
+            <field name="name">benglish.session.transfer.wizard.form</field>
+            <field name="model">benglish.session.transfer.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Traslado/Combinacion de Estudiantes">
+                    <group>
+                        <group string="Origen">
+                            <field name="source_session_id" readonly="1" />
+                            <field name="source_session_code" readonly="1" />
+                            <field name="source_subject_id" readonly="1" />
+                            <field name="source_date" readonly="1" />
+                            <field name="source_time_start_label" readonly="1" />
+                            <field name="source_time_end_label" readonly="1" />
+                            <field name="source_campus_id" readonly="1" />
+                            <field name="source_teacher_id" readonly="1" />
+                            <field name="source_enrolled_count" readonly="1" />
+                        </group>
+                        <group string="Destino">
+                            <field name="destination_session_id"
+                                options="{'no_create': True}"
+                                placeholder="Selecciona la clase destino..." />
+                            <separator string="Detalles de la Clase Destino" colspan="2" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_session_code" readonly="1" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_subject_id" readonly="1" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_date" readonly="1" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_time_start_label" readonly="1" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_time_end_label" readonly="1" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_campus_id" readonly="1" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_teacher_id" readonly="1" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_enrolled_count" readonly="1" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_available_spots" readonly="1" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_state" widget="badge" readonly="1" 
+                                invisible="not destination_session_id"/>
+                            <field name="destination_is_published" readonly="1" 
+                                invisible="not destination_session_id"/>
+                        </group>
+                    </group>
+
+                    <group string="Alcance">
+                        <field name="transfer_mode" widget="radio" />
+                        <field name="student_id"
+                            invisible="transfer_mode != 'single'"
+                            required="transfer_mode == 'single'"
+                            options="{'no_create': True}" />
+                        <field name="reason"
+                            placeholder="Motivo opcional del traslado..." />
+                    </group>
+
+                    <group invisible="not validation_message">
+                        <field name="validation_message"
+                            nolabel="1"
+                            readonly="1"
+                            class="alert alert-warning" />
+                    </group>
+
+                    <footer>
+                        <button name="action_transfer"
+                            string="Confirmar traslado"
+                            type="object"
+                            class="btn-primary"
+                            invisible="can_transfer == False"
+                            confirm="Confirma el traslado de estudiantes al destino seleccionado." />
+                        <button string="Cancelar"
+                            class="btn-secondary"
+                            special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_session_transfer_wizard" model="ir.actions.act_window">
+            <field name="name">Trasladar Estudiantes</field>
+            <field name="res_model">benglish.session.transfer.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="binding_model_id" ref="model_benglish_academic_session" />
+            <field name="binding_view_types">form</field>
+        </record>
+
     </data>
 </odoo>

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ============================================ -->
+        <!-- FASES ACADÉMICAS - PLANES CORTESÍA BENGLISH -->
+        <!-- ============================================ -->
+
+        <!-- ========== CORTESÍA VIRTUAL - BENGLISH ========== -->
+
+        <!-- Fase Basic - Cortesía Virtual -->
+        <record id="phase_benglish_cortesia_virtual_basic" model="benglish.phase">
+            <field name="name">Basic</field>
+            <field name="code">PHASE-BENGLISH-COR-V-BASIC</field>
+            <field name="program_id" ref="program_benglish" />
+            <field name="sequence">40</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase básica del plan CORTESÍA VIRTUAL para Benglish. Se activa al inicio de la cortesía.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- Fase Intermediate - Cortesía Virtual -->
+        <record id="phase_benglish_cortesia_virtual_intermediate" model="benglish.phase">
+            <field name="name">Intermediate</field>
+            <field name="code">PHASE-BENGLISH-COR-V-INTER</field>
+            <field name="program_id" ref="program_benglish" />
+            <field name="sequence">50</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase intermedia del plan CORTESÍA VIRTUAL para Benglish. Se activa al completar Basic.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- Fase Advanced - Cortesía Virtual -->
+        <record id="phase_benglish_cortesia_virtual_advanced" model="benglish.phase">
+            <field name="name">Advanced</field>
+            <field name="code">PHASE-BENGLISH-COR-V-ADV</field>
+            <field name="program_id" ref="program_benglish" />
+            <field name="sequence">60</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase avanzada del plan CORTESÍA VIRTUAL para Benglish. Se activa al completar Intermediate.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- ========== CORTESÍA MIXTO - BENGLISH ========== -->
+
+        <!-- Fase Basic - Cortesía Mixto -->
+        <record id="phase_benglish_cortesia_mixto_basic" model="benglish.phase">
+            <field name="name">Basic</field>
+            <field name="code">PHASE-BENGLISH-COR-M-BASIC</field>
+            <field name="program_id" ref="program_benglish" />
+            <field name="sequence">70</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase básica del plan CORTESÍA MIXTO para Benglish. Se activa al inicio de la cortesía.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- Fase Intermediate - Cortesía Mixto -->
+        <record id="phase_benglish_cortesia_mixto_intermediate" model="benglish.phase">
+            <field name="name">Intermediate</field>
+            <field name="code">PHASE-BENGLISH-COR-M-INTER</field>
+            <field name="program_id" ref="program_benglish" />
+            <field name="sequence">80</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase intermedia del plan CORTESÍA MIXTO para Benglish. Se activa al completar Basic.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- Fase Advanced - Cortesía Mixto -->
+        <record id="phase_benglish_cortesia_mixto_advanced" model="benglish.phase">
+            <field name="name">Advanced</field>
+            <field name="code">PHASE-BENGLISH-COR-M-ADV</field>
+            <field name="program_id" ref="program_benglish" />
+            <field name="sequence">90</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase avanzada del plan CORTESÍA MIXTO para Benglish. Se activa al completar Intermediate.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- ============================================ -->
+        <!-- FASES ACADÉMICAS - PLANES CORTESÍA BETEENS -->
+        <!-- ============================================ -->
+
+        <!-- ========== CORTESÍA VIRTUAL - BETEENS ========== -->
+
+        <!-- Fase Basic - Cortesía Virtual -->
+        <record id="phase_beteens_cortesia_virtual_basic" model="benglish.phase">
+            <field name="name">Basic</field>
+            <field name="code">PHASE-BETEENS-COR-V-BASIC</field>
+            <field name="program_id" ref="program_beteens" />
+            <field name="sequence">40</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase básica del plan CORTESÍA VIRTUAL para Beteens. Se activa al inicio de la cortesía.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- Fase Intermediate - Cortesía Virtual -->
+        <record id="phase_beteens_cortesia_virtual_intermediate" model="benglish.phase">
+            <field name="name">Intermediate</field>
+            <field name="code">PHASE-BETEENS-COR-V-INTER</field>
+            <field name="program_id" ref="program_beteens" />
+            <field name="sequence">50</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase intermedia del plan CORTESÍA VIRTUAL para Beteens. Se activa al completar Basic.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- Fase Advanced - Cortesía Virtual -->
+        <record id="phase_beteens_cortesia_virtual_advanced" model="benglish.phase">
+            <field name="name">Advanced</field>
+            <field name="code">PHASE-BETEENS-COR-V-ADV</field>
+            <field name="program_id" ref="program_beteens" />
+            <field name="sequence">60</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase avanzada del plan CORTESÍA VIRTUAL para Beteens. Se activa al completar Intermediate.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- ========== CORTESÍA MIXTO - BETEENS ========== -->
+
+        <!-- Fase Basic - Cortesía Mixto -->
+        <record id="phase_beteens_cortesia_mixto_basic" model="benglish.phase">
+            <field name="name">Basic</field>
+            <field name="code">PHASE-BETEENS-COR-M-BASIC</field>
+            <field name="program_id" ref="program_beteens" />
+            <field name="sequence">70</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase básica del plan CORTESÍA MIXTO para Beteens. Se activa al inicio de la cortesía.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- Fase Intermediate - Cortesía Mixto -->
+        <record id="phase_beteens_cortesia_mixto_intermediate" model="benglish.phase">
+            <field name="name">Intermediate</field>
+            <field name="code">PHASE-BETEENS-COR-M-INTER</field>
+            <field name="program_id" ref="program_beteens" />
+            <field name="sequence">80</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase intermedia del plan CORTESÍA MIXTO para Beteens. Se activa al completar Basic.</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- Fase Advanced - Cortesía Mixto -->
+        <record id="phase_beteens_cortesia_mixto_advanced" model="benglish.phase">
+            <field name="name">Advanced</field>
+            <field name="code">PHASE-BETEENS-COR-M-ADV</field>
+            <field name="program_id" ref="program_beteens" />
+            <field name="sequence">90</field>
+            <field name="duration_months">4</field>
+            <field name="description">Fase avanzada del plan CORTESÍA MIXTO para Beteens. Se activa al completar Intermediate.</field>
+            <field name="active" eval="True" />
+        </record>
+
+    </data>
+</odoo>

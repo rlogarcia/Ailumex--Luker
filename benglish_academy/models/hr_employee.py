@@ -286,6 +286,20 @@ class HrEmployeeInherit(models.Model):
                 name = employee.name
             result.append((employee.id, name))
         return result
+    
+    # NAVEGACIÓN AL PORTAL
+
+    def action_open_coach_portal(self):
+        """
+        Abre el portal del coach en una nueva ventana.
+        Botón inteligente en la vista del empleado.
+        """
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_url',
+            'url': '/my/coach',
+            'target': 'new',
+        }
 
     # GESTIÓN DE ACCESO AL PORTAL
 
@@ -494,19 +508,37 @@ class HrEmployeeInherit(models.Model):
             return
 
         try:
-            # Obtener grupos de portal
+            # Detectar si el usuario ya es un usuario INTERNO
+            is_internal_user = False
+            if self.user_id:
+                internal_group = self.env.ref("base.group_user", raise_if_not_found=False)
+                is_internal_user = internal_group and internal_group in self.user_id.groups_id
+                _logger.info(f"Usuario existente - Es usuario interno: {is_internal_user}")
+            
+            # Obtener grupos
             portal_group = self.env.ref("base.group_portal")
-
+            
             # Intentar obtener grupo específico de portal_coach (si existe)
             try:
                 coach_group = self.env.ref("portal_coach.group_benglish_coach")
-                group_ids = [portal_group.id, coach_group.id]
                 _logger.info("✅ Grupo portal_coach.group_benglish_coach encontrado")
             except:
                 _logger.warning(
-                    "⚠️ Grupo portal_coach.group_benglish_coach no existe - usando solo base.group_portal"
+                    "⚠️ Grupo portal_coach.group_benglish_coach no existe"
                 )
+                coach_group = None
+            
+            # IMPORTANTE: Si es usuario interno, NO agregar base.group_portal (conflicto de grupos)
+            if is_internal_user:
+                _logger.info("🔒 Usuario interno detectado - NO se agregará base.group_portal")
+                group_ids = []
+                if coach_group:
+                    group_ids.append(coach_group.id)
+            else:
+                # Usuario portal normal
                 group_ids = [portal_group.id]
+                if coach_group:
+                    group_ids.append(coach_group.id)
 
             # Crear usuario portal con número de identificación como login y password
             user_vals = {
@@ -514,7 +546,7 @@ class HrEmployeeInherit(models.Model):
                 "login": normalized_document,  # Login es el número de identificación
                 "email": self.work_email,
                 "partner_id": partner.id,
-                "groups_id": [(6, 0, group_ids)],
+                "groups_id": [(6, 0, group_ids)] if group_ids else False,
                 "password": normalized_document,  # Password es el número de identificación
             }
 

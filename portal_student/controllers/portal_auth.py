@@ -131,11 +131,22 @@ class PortalStudentAuthController(BaseLoginHome):
         """Asegura que el usuario coach tenga los grupos necesarios."""
         coach_group = request.env.ref("portal_coach.group_benglish_coach", raise_if_not_found=False)
         portal_group = request.env.ref("base.group_portal", raise_if_not_found=False)
+        internal_group = request.env.ref("base.group_user", raise_if_not_found=False)
+        
         updates = []
-        if portal_group and portal_group not in user.groups_id:
-            updates.append((4, portal_group.id))
+        
+        # Si es usuario INTERNO (base.group_user), NO agregar base.group_portal
+        is_internal_user = internal_group and internal_group in user.groups_id
+        
+        if not is_internal_user:
+            # Solo agregar base.group_portal si NO es usuario interno
+            if portal_group and portal_group not in user.groups_id:
+                updates.append((4, portal_group.id))
+        
+        # SIEMPRE agregar el grupo de coach
         if coach_group and coach_group not in user.groups_id:
             updates.append((4, coach_group.id))
+        
         if updates:
             user.sudo().write({"groups_id": updates})
 

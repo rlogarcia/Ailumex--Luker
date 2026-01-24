@@ -366,6 +366,10 @@ class PortalCoachController(CustomerPortal):
         if not session:
             return request.redirect('/my/coach/agenda')
 
+        # Verificar si la sesión es de una fecha pasada
+        today = fields.Date.today()
+        is_past_session = session.date < today
+
         # Obtener inscripciones (estudiantes)
         enrollments = session.enrollment_ids
         
@@ -382,6 +386,7 @@ class PortalCoachController(CustomerPortal):
             'enrollments': enrollments,
             'attendance_complete': attendance_complete,
             'pending_count': len(pending_attendance),
+            'is_past_session': is_past_session,  # Nueva variable
             'page_name': 'session_detail',
         }
 
@@ -429,6 +434,15 @@ class PortalCoachController(CustomerPortal):
             if not session:
                 _logger.warning(f"[{request_id}] Sesión no encontrada o no pertenece al docente")
                 return {'success': False, 'error': 'Sesión no encontrada o no tienes permisos'}
+            
+            # Validar que la sesión no sea de una fecha pasada
+            today = fields.Date.today()
+            if session.date < today:
+                _logger.warning(f"[{request_id}] Intento de marcar asistencia en sesión pasada: {session.date}")
+                return {
+                    'success': False, 
+                    'error': f'No se puede marcar asistencia en clases con fechas pasadas. La clase fue programada para {session.date.strftime("%d/%m/%Y")} y hoy es {today.strftime("%d/%m/%Y")}. Esta clase debe marcarse como finalizada.'
+                }
             
             # Validar estado de la sesión
             if session.state not in ['started', 'done']:
@@ -518,10 +532,13 @@ class PortalCoachController(CustomerPortal):
             file_count = 0
             total_size = 0
             
-            # Los archivos vienen en request.httprequest.files
-            for key in request.httprequest.files:
-                file = request.httprequest.files[key]
-                
+            # Los archivos vienen en request.httprequest.files con la clave 'files'
+            # Usar getlist para obtener TODOS los archivos con esa clave
+            files_list = request.httprequest.files.getlist('files')
+            
+            _logger.info(f"[{request_id}] Archivos recibidos: {len(files_list)}")
+            
+            for file in files_list:
                 if file and file.filename:
                     # Leer contenido del archivo
                     file_content = file.read()
@@ -544,6 +561,7 @@ class PortalCoachController(CustomerPortal):
                         'res_model': 'benglish.academic.session',
                         'res_id': session.id,
                         'type': 'binary',
+                        'public': True,  # Hacer público para que sea accesible desde bitácora
                         'description': f'Material de sesión - Subido por {coach.name}',
                     })
                     
@@ -762,6 +780,14 @@ class PortalCoachController(CustomerPortal):
             if not session:
                 return {'success': False, 'error': 'Sesión no encontrada'}
 
+            # Validar que la sesión no sea de una fecha pasada
+            today = fields.Date.today()
+            if session.date < today:
+                return {
+                    'success': False, 
+                    'error': f'No se pueden iniciar clases con fechas pasadas. La clase fue programada para {session.date.strftime("%d/%m/%Y")} y hoy es {today.strftime("%d/%m/%Y")}. Esta clase debe marcarse como finalizada.'
+                }
+
             if session.state not in ['draft', 'active', 'with_enrollment']:
                 return {'success': False, 'error': 'Solo se pueden iniciar sesiones en borrador o activas'}
 
@@ -806,6 +832,14 @@ class PortalCoachController(CustomerPortal):
 
             if not session:
                 return {'success': False, 'error': 'Sesión no encontrada'}
+
+            # Validar que no sea una sesión futura (solo se pueden finalizar sesiones de hoy o pasadas)
+            today = fields.Date.today()
+            if session.date > today:
+                return {
+                    'success': False, 
+                    'error': f'No se pueden finalizar clases con fechas futuras. La clase está programada para {session.date.strftime("%d/%m/%Y")} y hoy es {today.strftime("%d/%m/%Y")}.'
+                }
 
             if session.state != 'started':
                 return {'success': False, 'error': 'Solo se pueden finalizar sesiones iniciadas'}

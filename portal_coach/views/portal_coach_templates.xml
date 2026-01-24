@@ -281,10 +281,6 @@
                     <t t-if="coach.code">
                         <strong>Código:</strong> <t t-esc="coach.code"/>
                     </t>
-                    <t t-if="coach.email">
-                        <t t-if="coach.code"> | </t>
-                        <strong>Email:</strong> <t t-esc="coach.email"/>
-                    </t>
                 </p>
             </div>
         </div>

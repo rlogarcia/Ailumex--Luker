@@ -3,7 +3,7 @@
 
 <!-- TEMPLATE DE HISTORIAL DE CLASES DICTADAS -->
 <template id="coach_history" name="Coach History">
-    <t t-call="portal.portal_layout">
+    <t t-call="portal_coach.portal_coach_layout">
         <t t-set="page_name" t-value="'coach_history'"/>
         <t t-call="portal_coach.portal_coach_header"/>
         

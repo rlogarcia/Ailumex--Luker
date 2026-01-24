@@ -1012,11 +1012,15 @@ class ClassSession(models.Model):
     # Acciones de estado
     def action_mark_in_progress(self):
         for record in self.filtered(lambda s: s.state == "planned"):
-            record.state = "in_progress"
+            record.write({"state": "in_progress"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
 
     def action_mark_done(self):
         for record in self.filtered(lambda s: s.state in ("planned", "in_progress")):
-            record.state = "done"
+            record.write({"state": "done"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
 
     def action_reset_to_planned(self):
         for record in self:

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Benglish - Gestión Académica",
-    "version": "18.0.1.4.9",
+    "version": "18.0.1.6.0",
     "category": "Education",
     "summary": "Sistema de gestión académica para academia de inglés",
     "description": """
@@ -18,7 +18,11 @@
         - Reportes y agenda semanal
         - Publicación de agenda académica
         - Estados de perfil de estudiante
-        - Congelamiento de matrículas 
+        - Congelamiento de matrículas
+        - ⭐ Planes Cortesía (Cor-V, Cor-M): 
+          * Activación progresiva por módulos
+          * Cancelación automática por inactividad (parametrizable)
+          * Filtrado de contenido por fases activadas en portal del estudiante
     """,
     "author": "Ailumex",
     "website": "https://www.benglish.com",
@@ -102,6 +106,7 @@
         "views/academic_session_views.xml",
         "views/session_enrollment_views.xml",
         "views/agenda_log_views.xml",
+        "views/session_transfer_log_views.xml",
         "views/academic_history_views.xml",
         # Vistas - CRM
         # "views/crm_lead_views.xml",  # COMENTADO: archivo no existe
@@ -109,7 +114,11 @@
         "views/class_booking_settings_views.xml",
         "views/student_password_manager_views.xml",  # Gestión de contraseñas de estudiantes
         "views/teacher_password_manager_views.xml",  # Gestión de contraseñas de docentes
-        "views/portal_password_reset_template.xml",  # Modal de recuperación de contraseña en login
+        "views/courtesy_settings_views.xml",
+        "views/res_config_settings_views.xml",  # Configuración de Planes Cortesía
+        # "views/portal_password_reset_template.xml",  # Modal de recuperación - DESACTIVADO: conflicto XML validador Odoo 18
+        # Vistas - Planes Cortesía
+        "views/courtesy_views.xml",
         # MENÚS (DEBEN CARGARSE AL FINAL - dependen de todas las acciones)
         "views/menus.xml",
         # Datos operacionales
@@ -124,6 +133,11 @@
         "data/agenda_templates_data.xml",
         "data/plans_beteens_data.xml",
         "data/plans_benglish_data.xml",
+        # ⭐ Planes Cortesía (Cor-V, Cor-M)
+        "data/plans_cortesia_data.xml",
+        "data/phases_cortesia_data.xml",
+        "data/courtesy_freeze_config.xml",
+        "data/courtesy_init_config.xml",
         "data/phases_beteens_shared.xml",
         "data/phases_benglish_shared.xml",
         "data/levels_beteens_shared.xml",
@@ -150,6 +164,8 @@
         # "views/placement_test_menu.xml",
         # Procesos automáticos (Cron Jobs)
         "data/cron_session_management.xml",  # Cierre automático de sesiones y limpieza de agenda
+        "data/cron_agenda_state.xml",  # Actualización automática de estado de agendas a ejecutadas
+        "data/cron_courtesy_inactivity.xml",  # ⭐ Monitoreo de inactividad de cortesías (cancelación automática 3 semanas)
         # "data/cron_password_reset_cleanup.xml",  # Limpieza de OTPs expirados - TEMPORAL
         # Acciones de servidor
         "data/server_actions_historical_progress.xml",  # Generar historial retroactivo

@@ -20,3 +20,4 @@ from . import student_import_bulk_decision_wizard
 from . import student_enrollment_import_wizard
 from . import portal_user_creation_wizard  # Wizard para creación masiva de usuarios portal
 from . import placement_test_wizards  # Wizards para Placement Test
+from . import session_transfer_wizard

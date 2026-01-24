@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ============================================ -->
+        <!-- FUNCIÓN DE INICIALIZACIÓN - PLANES CORTESÍA -->
+        <!-- ============================================ -->
+
+        <!--
+            Esta función se ejecuta para configurar correctamente los planes cortesía
+            con sus características específicas después de la instalación.
+        -->
+
+        <function model="benglish.plan" name="write">
+            <value eval="[ref('plan_benglish_cortesia_virtual'), ref('plan_benglish_cortesia_mixto'), ref('plan_beteens_cortesia_virtual'), ref('plan_beteens_cortesia_mixto')]" />
+            <value eval="{
+                'is_courtesy_plan': True,
+                'courtesy_activation_mode': 'module',
+                'courtesy_inactivity_days': 21,
+                'courtesy_weekly_hours': 5.0,
+            }" />
+        </function>
+
+        <!-- Activar la primera fase (Basic) para los planes cortesía -->
+        <!-- Esto se hará automáticamente al crear la primera matrícula -->
+
+    </data>
+</odoo>

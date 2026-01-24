@@ -552,6 +552,19 @@ class AcademicSession(models.Model):
 
             record.display_name = " | ".join(parts) if parts else "Nueva Sesión"
 
+    @api.model
+    def name_search(self, name="", args=None, operator="ilike", limit=100):
+        args = args or []
+        if name:
+            domain = [
+                "|",
+                ("session_code", operator, name),
+                ("display_name", operator, name),
+            ]
+            sessions = self.search(domain + args, limit=limit)
+            return sessions.name_get()
+        return super().name_search(name=name, args=args, operator=operator, limit=limit)
+
     @api.depends("template_id.alias_student", "subject_id.alias", "subject_id.name")
     def _compute_student_alias(self):
         for record in self:
@@ -1260,6 +1273,67 @@ class AcademicSession(models.Model):
                         _("El rango de audiencia es inválido (Unidad Desde > Unidad Hasta).")
                     )
 
+    @api.constrains("subject_id", "enrolled_student_ids")
+    def _check_courtesy_phase_access(self):
+        """
+        Validación para planes cortesía: Solo permite inscribir estudiantes
+        a sesiones de fases/módulos que tienen activados.
+        
+        Regla de negocio:
+        - Planes cortesía tienen activación progresiva por módulo
+        - Basic se activa al inicio
+        - Intermediate se activa al completar Basic
+        - Advanced se activa al completar Intermediate
+        """
+        for session in self:
+            if not session.subject_id or not session.enrolled_student_ids:
+                continue
+
+            subject_phase = session.subject_id.level_id.phase_id
+            if not subject_phase:
+                continue
+
+            # Verificar cada estudiante inscrito
+            for enrollment_link in session.enrolled_student_ids:
+                student = enrollment_link.student_id
+                if not student:
+                    continue
+
+                # Buscar matrícula activa del estudiante
+                active_enrollment = self.env["benglish.enrollment"].search([
+                    ("student_id", "=", student.id),
+                    ("state", "in", ["active", "enrolled", "in_progress"]),
+                    ("plan_id.is_courtesy_plan", "=", True),
+                ], limit=1)
+
+                if not active_enrollment:
+                    continue
+
+                # Solo validar si es cortesía con activación por módulo
+                if active_enrollment.plan_id.courtesy_activation_mode != "module":
+                    continue
+
+                # Verificar si la fase de la asignatura está activada
+                if subject_phase not in active_enrollment.activated_phases_ids:
+                    raise ValidationError(
+                        _(
+                            "⛔ ACCESO DENEGADO - MÓDULO NO ACTIVADO\n\n"
+                            "El estudiante '%s' no puede inscribirse a esta sesión.\n\n"
+                            "Asignatura: %s\n"
+                            "Módulo requerido: %s\n"
+                            "Módulo actual: %s\n\n"
+                            "El estudiante debe completar primero el módulo '%s' "
+                            "para desbloquear el acceso a '%s'."
+                        ) % (
+                            student.name,
+                            session.subject_id.name,
+                            subject_phase.name,
+                            active_enrollment.current_phase_id.name if active_enrollment.current_phase_id else "N/A",
+                            active_enrollment.current_phase_id.name if active_enrollment.current_phase_id else "N/A",
+                            subject_phase.name,
+                        )
+                    )
+
     # ONCHANGE
 
     @api.onchange("agenda_id")
@@ -1634,7 +1708,9 @@ class AcademicSession(models.Model):
                     _("Debe asignar al menos un docente o coach antes de iniciar.")
                 )
 
-            record.state = "started"
+            record.write({"state": "started"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
             record.message_post(
                 body=_("Sesión iniciada."), subject=_("Sesión Iniciada")
             )
@@ -1661,7 +1737,9 @@ class AcademicSession(models.Model):
                 )
 
             # Cambiar estado a 'done'
-            record.state = "done"
+            record.write({"state": "done"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
             record.message_post(
                 body=_("Sesión completada."), subject=_("Sesión Dictada")
             )
@@ -1844,7 +1922,9 @@ class AcademicSession(models.Model):
                     )
                 )
 
-            record.state = "draft"
+            record.write({"state": "draft"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
             record.message_post(
                 body=_("Sesión regresada a borrador."),
                 subject=_("Sesión en Borrador"),
@@ -1864,7 +1944,9 @@ class AcademicSession(models.Model):
                     )
                 )
 
-            record.state = "cancelled"
+            record.write({"state": "cancelled"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
             record.message_post(
                 body=_("Sesión cancelada."),
                 subject=_("Sesión Cancelada"),

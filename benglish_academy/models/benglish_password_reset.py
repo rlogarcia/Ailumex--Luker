@@ -61,17 +61,159 @@ class BenglishPasswordReset(models.Model):
         """Determina el rol del usuario para auditoría"""
         if user.has_group('base.group_system') or user.has_group('base.group_erp_manager'):
             return 'admin'
-        elif user.has_group('benglish_academy.group_benglish_teacher'):
-            return 'teacher'
-        elif user.has_group('base.group_portal'):
-            return 'student'
-        else:
-            return 'other'
+        
+        # Usuario portal (puede ser coach o estudiante)
+        if user.has_group('base.group_portal'):
+            # Verificar si es coach
+            coach = self.env['benglish.coach'].sudo().search([
+                ('user_id', '=', user.id),
+                ('active', '=', True)
+            ], limit=1)
+            if coach:
+                return 'teacher'
+            
+            # Verificar si es empleado con acceso portal (coach sin registro en benglish.coach)
+            employee = self.env['hr.employee'].sudo().search([
+                ('user_id', '=', user.id),
+                ('is_teacher', '=', True),
+                ('active', '=', True)
+            ], limit=1)
+            if employee:
+                return 'teacher'
+            
+            # Verificar si es estudiante
+            student = self.env['benglish.student'].sudo().search([
+                ('user_id', '=', user.id),
+                ('active', '=', True)
+            ], limit=1)
+            if student:
+                return 'student'
+        
+        return 'other'
+    
+    @api.model
+    def _find_user_by_identification(self, identification):
+        """
+        Busca un usuario de Odoo por su número de identificación.
+        Busca en TODOS los usuarios (internos, portal, coaches, estudiantes).
+        
+        Args:
+            identification: Número de identificación a buscar
+            
+        Returns:
+            tuple: (usuario encontrado o False, partner con identificación o False, empleado o False)
+        """
+        import re
+        
+        # Normalizar el número de identificación (remover espacios, guiones, etc.)
+        normalized_id = re.sub(r"[^0-9a-zA-Z]", "", identification or "")
+        
+        if not normalized_id:
+            return (False, False, False)
+        
+        _logger.info(f"🔍 Buscando usuario con identificación: {identification}")
+        
+        # MÉTODO 1: Buscar por login directo (número de identificación)
+        user = self.env['res.users'].sudo().search([
+            ('login', '=', identification),
+            ('active', '=', True)
+        ], limit=1)
+        
+        if user:
+            _logger.info(f"✅ Usuario encontrado por login: {user.login} - {user.name}")
+            return (user, False, False)
+        
+        # MÉTODO 2: Buscar en empleados por identification_id
+        _logger.info(f"🔍 Buscando en empleados por identification_id...")
+        employee = self.env['hr.employee'].sudo().search([
+            ('identification_id', '=', identification),
+            ('active', '=', True)
+        ], limit=1)
+        
+        _logger.info(f"   Encontrados {1 if employee else 0} empleados por identification_id")
+        
+        if employee:
+            _logger.info(f"   Empleado encontrado: {employee.name} (ID: {employee.id}) - user_id: {employee.user_id.id if employee.user_id else 'No tiene'}")
+            if employee.user_id:
+                _logger.info(f"✅ Usuario encontrado por identification_id de empleado: {employee.name}")
+                return (employee.user_id, False, employee)
+            else:
+                _logger.warning(f"   ⚠️ Empleado {employee.name} no tiene usuario asociado")
+        
+        # MÉTODO 3: Buscar en empleados por ssnid
+        _logger.info(f"🔍 Buscando en empleados por ssnid...")
+        employee = self.env['hr.employee'].sudo().search([
+            ('ssnid', '=', identification),
+            ('active', '=', True)
+        ], limit=1)
+        
+        if employee and employee.user_id:
+            _logger.info(f"✅ Usuario encontrado por ssnid de empleado: {employee.name}")
+            return (employee.user_id, False, employee)
+        
+        # MÉTODO 4: Buscar por número de identificación del partner (VAT o ref)
+        _logger.info(f"🔍 Buscando en partners por VAT...")
+        # Primero buscar por VAT
+        partners = self.env['res.partner'].sudo().search([
+            ('vat', '=', identification)
+        ])
+        
+        _logger.info(f"   Encontrados {len(partners)} partners por VAT")
+        
+        # Si no encuentra por VAT, buscar por ref (campo de referencia/identificación)
+        if not partners:
+            _logger.info(f"🔍 Buscando en partners por ref...")
+            partners = self.env['res.partner'].sudo().search([
+                ('ref', '=', identification)
+            ])
+            _logger.info(f"   Encontrados {len(partners)} partners por ref")
+        
+        for partner in partners:
+            _logger.info(f"   Partner encontrado: {partner.name} (ID: {partner.id})")
+            # Buscar usuario asociado al partner
+            user = self.env['res.users'].sudo().search([
+                ('partner_id', '=', partner.id),
+                ('active', '=', True)
+            ], limit=1)
+            
+            if user:
+                _logger.info(f"✅ Usuario encontrado por partner (VAT/ref): {user.name}")
+                return (user, partner, False)
+            else:
+                _logger.warning(f"   ⚠️ Partner {partner.name} no tiene usuario asociado")
+                # Buscar si existe un usuario con ese email del partner
+                if partner.email:
+                    _logger.info(f"   🔍 Buscando usuario con login = {partner.email}")
+                    user_by_email = self.env['res.users'].sudo().search([
+                        ('login', '=', partner.email),
+                        ('active', '=', True)
+                    ], limit=1)
+                    if user_by_email:
+                        _logger.info(f"✅ Usuario encontrado por email del partner: {user_by_email.name}")
+                        return (user_by_email, partner, False)
+                    else:
+                        _logger.warning(f"   ⚠️ No existe usuario con login {partner.email}")
+                else:
+                    _logger.warning(f"   ⚠️ Partner {partner.name} no tiene email configurado")
+        
+        # MÉTODO 5: Buscar en estudiantes por número de documento
+        student = self.env['benglish.student'].sudo().search([
+            ('student_id_number', '=', identification),
+            ('active', '=', True)
+        ], limit=1)
+        
+        if student and student.user_id:
+            _logger.info(f"✅ Usuario encontrado por estudiante: {student.name}")
+            return (student.user_id, False, False)
+        
+        _logger.warning(f"❌ No se encontró usuario con identificación: {identification}")
+        return (False, False, False)
     
     @api.model
     def create_otp_request(self, identification, identification_type=None, request_info=None):
         """
-        Crea una nueva solicitud de OTP para un usuario
+        Crea una nueva solicitud de OTP para CUALQUIER usuario de Odoo.
+        Funciona con: estudiantes, coaches, empleados, administradores, cualquier usuario.
         
         Args:
             identification: Número de identificación del usuario
@@ -82,15 +224,12 @@ class BenglishPasswordReset(models.Model):
             dict: Resultado con success, message y email (ofuscado)
         """
         try:
-            # Buscar usuario por login (número de identificación)
-            user = self.env['res.users'].sudo().search([
-                ('login', '=', identification),
-                ('active', '=', True)
-            ], limit=1)
+            # Buscar usuario por número de identificación (cualquier usuario)
+            user, partner_with_id, employee_with_id = self._find_user_by_identification(identification)
             
             if not user:
                 # No revelar si el usuario existe o no (seguridad)
-                _logger.info(f"Intento de recuperación para identificación inexistente: {identification}")
+                _logger.info(f"⚠️ Intento de recuperación para identificación inexistente: {identification}")
                 return {
                     'success': True,  # Siempre retorna True para no enumerar usuarios
                     'message': 'Si existe una cuenta asociada a esta identificación, recibirás un código en tu correo electrónico.',
@@ -98,7 +237,16 @@ class BenglishPasswordReset(models.Model):
                 }
             
             # Verificar que el usuario tenga email
-            email = user.email or user.partner_id.email
+            # PRIORIDAD: 1) email del empleado con identificación, 2) email del partner con identificación, 3) email del usuario
+            if employee_with_id and employee_with_id.work_email:
+                email = employee_with_id.work_email
+                _logger.info(f"📧 Usando email del empleado: {email}")
+            elif partner_with_id and partner_with_id.email:
+                email = partner_with_id.email
+                _logger.info(f"📧 Usando email del partner con identificación: {email}")
+            else:
+                email = user.email or user.partner_id.email
+                _logger.info(f"📧 Usando email del usuario: {email}")
             if not email:
                 _logger.warning(f"Usuario {user.login} sin email configurado")
                 return {

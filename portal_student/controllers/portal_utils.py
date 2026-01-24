@@ -65,11 +65,11 @@ def is_coach(user=None):
     if coach:
         return True
 
-    # MÉTODO 1B: Verificar si es un empleado con acceso al portal docente (is_teacher=True)
+    # MÉTODO 1B: Verificar si es un empleado con acceso al portal docente (is_teacher=True y active)
     employee = (
         request.env["hr.employee"]
         .sudo()
-        .search([("user_id", "=", user.id), ("is_teacher", "=", True)], limit=1)
+        .search([("user_id", "=", user.id), ("is_teacher", "=", True), ("active", "=", True)], limit=1)
     )
 
     if employee:

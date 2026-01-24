@@ -472,7 +472,9 @@ class SessionEnrollment(models.Model):
                     }
                 )
 
-            record.state = "confirmed"
+            record.write({"state": "confirmed"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
             record.message_post(
                 body=_("Inscripción confirmada."),
                 subject=_("Inscripción Confirmada"),
@@ -484,7 +486,7 @@ class SessionEnrollment(models.Model):
                 if record.enrolled_by_id and record.enrolled_by_id.share:
                     session = record.session_id
                     if session.state == "active":
-                        session.state = "with_enrollment"
+                        session.write({"state": "with_enrollment"})
                         session.message_post(
                             body=_(
                                 "La sesión pasó a 'En horario' porque hay inscripciones desde el portal."
@@ -513,7 +515,9 @@ class SessionEnrollment(models.Model):
                     )
                 )
 
-            record.state = "attended"
+            record.write({"state": "attended"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
             record.message_post(
                 body=_("Asistencia registrada."),
                 subject=_("Asistió"),
@@ -540,7 +544,9 @@ class SessionEnrollment(models.Model):
                     )
                 )
 
-            record.state = "absent"
+            record.write({"state": "absent"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
             record.message_post(
                 body=_("Ausencia registrada."),
                 subject=_("Ausente"),
@@ -562,7 +568,9 @@ class SessionEnrollment(models.Model):
                     )
                 )
 
-            record.state = "cancelled"
+            record.write({"state": "cancelled"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
             record.message_post(
                 body=_("Inscripción cancelada."),
                 subject=_("Inscripción Cancelada"),
@@ -579,7 +587,9 @@ class SessionEnrollment(models.Model):
                     _("No se puede reabrir: la sesión no acepta más inscripciones.")
                 )
 
-            record.state = "pending"
+            record.write({"state": "pending"})
+            # Forzar persistencia inmediata en base de datos
+            record.flush_recordset()
             record.message_post(
                 body=_("Inscripción reabierta."),
                 subject=_("Inscripción Reabierta"),

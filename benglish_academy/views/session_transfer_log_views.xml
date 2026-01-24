@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_session_transfer_log_tree" model="ir.ui.view">
+            <field name="name">benglish.session.transfer.log.tree</field>
+            <field name="model">benglish.session.transfer.log</field>
+            <field name="arch" type="xml">
+                <list string="Traslados de Estudiantes" create="false" edit="false" delete="false">
+                    <field name="transfer_at" />
+                    <field name="student_id" />
+                    <field name="transfer_type" />
+                    <field name="source_session_code" />
+                    <field name="destination_session_code" />
+                    <field name="source_session_id" />
+                    <field name="destination_session_id" />
+                    <field name="result" widget="badge" />
+                    <field name="user_id" />
+                </list>
+            </field>
+        </record>
+
+        <record id="view_session_transfer_log_form" model="ir.ui.view">
+            <field name="name">benglish.session.transfer.log.form</field>
+            <field name="model">benglish.session.transfer.log</field>
+            <field name="arch" type="xml">
+                <form string="Traslado de Estudiante" create="false" edit="false" delete="false">
+                    <sheet>
+                        <group>
+                            <group string="Contexto">
+                                <field name="transfer_at" />
+                                <field name="user_id" />
+                                <field name="transfer_type" />
+                                <field name="result" widget="badge" />
+                            </group>
+                            <group string="Estudiante">
+                                <field name="student_id" />
+                            </group>
+                        </group>
+                        <group string="Origen y Destino">
+                            <group>
+                                <field name="source_session_id" />
+                                <field name="source_session_code" />
+                            </group>
+                            <group>
+                                <field name="destination_session_id" />
+                                <field name="destination_session_code" />
+                            </group>
+                        </group>
+                        <group string="Motivo">
+                            <field name="reason" nolabel="1" />
+                        </group>
+                        <group string="Detalle">
+                            <field name="message" nolabel="1" />
+                        </group>
+                        <group string="Lote">
+                            <field name="batch_id" />
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_session_transfer_log_search" model="ir.ui.view">
+            <field name="name">benglish.session.transfer.log.search</field>
+            <field name="model">benglish.session.transfer.log</field>
+            <field name="arch" type="xml">
+                <search string="Buscar Traslados">
+                    <field name="student_id" />
+                    <field name="source_session_code" />
+                    <field name="destination_session_code" />
+                    <field name="user_id" />
+                    <field name="batch_id" />
+                    <filter name="filter_success" string="Exitosos"
+                        domain="[('result', '=', 'success')]" />
+                    <filter name="filter_failed" string="Fallidos"
+                        domain="[('result', '=', 'failed')]" />
+                    <filter name="filter_skipped" string="Omitidos"
+                        domain="[('result', '=', 'skipped')]" />
+                    <group expand="0" string="Agrupar por">
+                        <filter name="group_user" string="Usuario"
+                            context="{'group_by': 'user_id'}" />
+                        <filter name="group_result" string="Resultado"
+                            context="{'group_by': 'result'}" />
+                        <filter name="group_batch" string="Lote"
+                            context="{'group_by': 'batch_id'}" />
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_session_transfer_log" model="ir.actions.act_window">
+            <field name="name">Traslados de Estudiantes</field>
+            <field name="res_model">benglish.session.transfer.log</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_session_transfer_log_search" />
+        </record>
+
+    </data>
+</odoo>

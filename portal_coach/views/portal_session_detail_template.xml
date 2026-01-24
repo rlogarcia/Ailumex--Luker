@@ -57,6 +57,34 @@
                 </div>
             </div>
             
+            <!-- ALERTA DE SESIÓN PASADA -->
+            <t t-if="is_past_session">
+                <div style="margin-bottom: 24px; background: #fef2f2; border: 2px solid #dc2626; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);">
+                    <div style="display: flex; align-items: start; gap: 16px;">
+                        <div style="flex-shrink: 0;">
+                            <i class="fa fa-exclamation-triangle" style="font-size: 32px; color: #dc2626;"></i>
+                        </div>
+                        <div>
+                            <h4 style="margin: 0 0 8px 0; color: #dc2626; font-size: 18px; font-weight: 700;">
+                                ⚠️ Esta clase tiene fecha pasada
+                            </h4>
+                            <p style="margin: 0 0 12px 0; color: #7f1d1d; font-size: 14px; line-height: 1.5;">
+                                La clase estaba programada para <strong><t t-esc="session.date.strftime('%d/%m/%Y')"/></strong> y hoy es <strong><t t-esc="datetime.date.today().strftime('%d/%m/%Y')"/></strong>.
+                            </p>
+                            <p style="margin: 0; color: #7f1d1d; font-size: 14px; line-height: 1.5;">
+                                <strong>No puedes iniciar, marcar asistencia ni gestionar esta clase.</strong> 
+                                <t t-if="session.state != 'done'">
+                                    Esta clase debe ser marcada como <strong>finalizada</strong> por un administrador o cambiada al estado correcto.
+                                </t>
+                                <t t-else="">
+                                    Esta clase ya fue finalizada.
+                                </t>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </t>
+            
             <!-- Encabezado -->
             <div class="pc-card" style="margin-bottom: 20px;">
                 <div style="padding: 20px;">
@@ -345,7 +373,8 @@
                                 </button>
                                 <input type="file" id="sessionFilesInput" multiple="true" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip" style="display: none;" onchange="handleSessionFilesSelect(this)"/>
                                 
-                                <button onclick="saveAndCloseSection()" id="saveFilesBtn" disabled="disabled" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; opacity: 0.5;">
+                                <button onclick="confirmSaveAndClose()" id="saveFilesBtn" disabled="disabled"
+                                 style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; opacity: 0.5;">
                                     <i class="fa fa-save"></i> Guardar y Cerrar
                                 </button>
                                 
@@ -483,8 +512,20 @@
                 String(endMinutes % 60).padStart(2, '0') + ':00');
             
             // VALIDACIÓN DE INICIO - 5 MINUTOS ANTES DE LA HORA PROGRAMADA
+            // Y QUE LA SESIÓN NO SEA DE UNA FECHA PASADA
             function canStartSession() {
                 var now = new Date();
+                var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                var sessionDateOnly = new Date(sessionStartDateTime.getFullYear(), 
+                                              sessionStartDateTime.getMonth(), 
+                                              sessionStartDateTime.getDate());
+                
+                // Si la sesión es de una fecha anterior a hoy, NO se puede iniciar
+                if (sessionDateOnly < today) {
+                    return false;
+                }
+                
+                // Si es de hoy o futura, verificar tiempo de 5 minutos antes
                 var fiveMinutesBefore = new Date(sessionStartDateTime.getTime() - 5 * 60000);
                 return now >= fiveMinutesBefore;
             }
@@ -512,6 +553,19 @@
             
             function getRemainingTimeToStart() {
                 var now = new Date();
+                var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                var sessionDateOnly = new Date(sessionStartDateTime.getFullYear(), 
+                                              sessionStartDateTime.getMonth(), 
+                                              sessionStartDateTime.getDate());
+                
+                // Si la sesión es de una fecha pasada
+                if (sessionDateOnly < today) {
+                    var daysDiff = Math.floor((today - sessionDateOnly) / (1000 * 60 * 60 * 24));
+                    return 'Esta clase fue programada hace ' + daysDiff + ' día' + (daysDiff > 1 ? 's' : '') + 
+                           '. No puedes iniciarla. Debe marcarse como finalizada.';
+                }
+                
+                // Si es de hoy o futura, verificar tiempo de 5 minutos antes
                 var fiveMinutesBefore = new Date(sessionStartDateTime.getTime() - 5 * 60000);
                 var diff = fiveMinutesBefore - now;
                 
@@ -833,7 +887,23 @@
                     return true;
                 }
             }
-            
+            function confirmSaveAndClose() {
+    var message =
+        "⚠️ CONFIRMACIÓN IMPORTANTE\n\n" +
+        "Después de guardar y cerrar:\n" +
+        "❌ No podrás hacer modificaciones.\n" +
+        "❌ No podrás agregar más archivos.\n\n" +
+        "Para cerrar completamente la sesión debes:\n" +
+        "👉 Hacer clic en el botón «Terminar Clase».\n\n" +
+        "¿Deseas continuar?";
+
+    if (confirm(message)) {
+        saveAndCloseSection();
+    } else {
+        showNotification("ℹ️ Guardado cancelado. Puedes seguir editando.", "error");
+    }
+}
+
             function saveAndCloseSection() {
                 // Primero subir archivos si hay seleccionados
                 if (sessionFiles.length > 0) {

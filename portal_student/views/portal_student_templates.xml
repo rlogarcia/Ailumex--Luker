@@ -2220,16 +2220,11 @@
                 <div class="ps-shell">
                     <section class="ps-hero-block ps-hero-block-blue">
                         <div>
-                            <p class="ps-eyebrow">Programa</p>
-                            <h2>Programa, fases, niveles y asignaturas</h2>
+                            <p class="ps-eyebrow">Programa Académico</p>
+                            <h2>Mi Programa de Estudio</h2>
                         </div>
                     </section>
                     <section class="ps-program-card">
-                        <div class="ps-program-head">
-                            <div>
-                            </div>
-                            <span class="ps-chip-secondary"><i class="fa fa-book"></i> Estructura</span>
-                        </div>
 
                         <t t-if="structure">
                             <div class="ps-program-grid">
@@ -2266,76 +2261,24 @@
                                                                             <strong t-esc="level_block.get('level').name"/>
                                                                         </div>
                                                                         
-                                                                        <!-- TPE14: Mostrar asignaturas con detalle de docente y sede -->
+                                                                        <!-- Mostrar solo modalidad si hay asignaturas -->
                                                                         <t t-if="level_block.get('subject_details')">
-                                                                            <div class="ps-subject-details-list">
-                                                                                <t t-foreach="level_block.get('subject_details')" t-as="subject_info">
-                                                                                    <div class="ps-subject-detail-card">
-                                                                                        <div class="ps-subject-detail-header">
-                                                                                            <div class="ps-subject-main-info">
-                                                                                                <span class="ps-subject-code" t-esc="subject_info['subject'].code"/>
-                                                                                                <h5 class="ps-subject-name" t-esc="subject_info['subject'].alias or subject_info['subject'].name"/>
-                                                                                            </div>
-                                                                                            <t t-if="subject_info['state']">
-                                                                                                <span class="ps-pill ps-pill-soft" t-att-class="'ps-pill-' + ('green' if subject_info['state'] in ['enrolled', 'in_progress'] else 'gray')">
-                                                                                                    <t t-if="subject_info['state'] == 'enrolled'">Matriculado</t>
-                                                                                                    <t t-elif="subject_info['state'] == 'in_progress'">En Curso</t>
-                                                                                                    <t t-elif="subject_info['state'] == 'completed'">Completado</t>
-                                                                                                    <t t-else=""><t t-esc="subject_info['state']"/></t>
-                                                                                                </span>
-                                                                                            </t>
-                                                                                        </div>
-                                                                                        
-                                                                                        <div class="ps-subject-detail-body">
-                                                                                            <!-- Sede -->
-                                                                                            <div class="ps-subject-info-item">
-                                                                                                <i class="fa fa-map-marker" aria-hidden="true"></i>
-                                                                                                <div class="ps-info-content">
-                                                                                                    <span class="ps-info-label">Sede:</span>
-                                                                                                    <span class="ps-info-value">
-                                                                                                        <t t-if="subject_info['campus']">
-                                                                                                            <strong t-esc="subject_info['campus'].name"/>
-                                                                                                            <t t-if="subject_info['subcampus']">
-                                                                                                                <span style="color: #64748b;"> - <t t-esc="subject_info['subcampus'].name"/></span>
-                                                                                                            </t>
-                                                                                                        </t>
-                                                                                                        <t t-else="">
-                                                                                                            <em style="color: #94a3b8;">Por asignar</em>
-                                                                                                        </t>
-                                                                                                    </span>
-                                                                                                </div>
-                                                                                            </div>
-            <!-- Modalidad preferida / actual -->
-            <t t-if="subject_info['delivery_mode']">
-                <div class="ps-subject-info-item">
-                    <i class="fa fa-desktop" aria-hidden="true"></i>
-                    <div class="ps-info-content">
-                        <span class="ps-info-label">Modalidad:</span>
-                        <span class="ps-info-value">
-                            <span class="ps-pill ps-pill-xs">
-                                <t t-if="subject_info['delivery_mode'] in ['presential', 'presencial']">Presencial</t>
-                                <t t-elif="subject_info['delivery_mode'] == 'virtual'">Virtual</t>
-                                <t t-elif="subject_info['delivery_mode'] == 'hybrid'">Híbrido</t>
-                            </span>
-                        </span>
-                    </div>
-                </div>
-            </t>
-                                                                                        </div>
+                                                                            <t t-set="delivery_modes" t-value="set([s['delivery_mode'] for s in level_block.get('subject_details') if s['delivery_mode']])"/>
+                                                                            <t t-if="delivery_modes">
+                                                                                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 8px;">
+                                                                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                                                        <i class="fa fa-desktop" style="color: #64748b;"></i>
+                                                                                        <span style="font-weight: 600; color: #334155;">Modalidad:</span>
+                                                                                        <t t-foreach="delivery_modes" t-as="mode">
+                                                                                            <span class="ps-pill ps-pill-xs" style="margin-left: 0.25rem;">
+                                                                                                <t t-if="mode in ['presential', 'presencial']">Presencial</t>
+                                                                                                <t t-elif="mode == 'virtual'">Virtual</t>
+                                                                                                <t t-elif="mode == 'hybrid'">Híbrido</t>
+                                                                                            </span>
+                                                                                        </t>
                                                                                     </div>
-                                                                                </t>
-                                                                            </div>
-                                                                        </t>
-                                                                        
-                                                                        <!-- Fallback: Mostrar solo nombres si no hay subject_details -->
-                                                                        <t t-else="">
-                                                                            <ul class="ps-list ps-list-inline">
-                                                                                <t t-foreach="level_block.get('subjects')" t-as="subject">
-                                                                                    <li class="ps-chip">
-                                                                                        <span t-esc="subject.code"/> - <t t-esc="subject.alias or subject.name"/>
-                                                                                    </li>
-                                                                                </t>
-                                                                            </ul>
+                                                                                </div>
+                                                                            </t>
                                                                         </t>
                                                                     </div>
                                                                 </t>
@@ -2350,9 +2293,19 @@
                             </div>
                         </t>
                         <t t-else="">
-                            <div class="ps-empty-block">
-                                <i class="fa fa-info-circle" aria-hidden="true"></i>
-                                <p>No hay matrículas que permitan construir la estructura académica.</p>
+                            <div class="ps-empty-block" style="padding: 4rem 2rem; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; color: white; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+                                <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.9;">
+                                    <i class="fa fa-graduation-cap" aria-hidden="true"></i>
+                                </div>
+                                <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: white;">Estructura Académica</h3>
+                                <p style="font-size: 1.1rem; opacity: 0.95; max-width: 500px; margin: 0 auto; line-height: 1.6;">
+                                    Aún no hay información de programa disponible. Una vez que estés matriculado en alguna asignatura, podrás ver aquí la estructura completa de tu programa académico.
+                                </p>
+                                <div style="margin-top: 2rem;">
+                                    <a href="/my/student/agenda" class="btn btn-light" style="padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-block;">
+                                        <i class="fa fa-calendar" aria-hidden="true"></i> Ver Horarios
+                                    </a>
+                                </div>
                             </div>
                         </t>
                     </section>
@@ -2501,43 +2454,6 @@
                         <h3 class="ps-status-value">0</h3>
                         <p class="ps-session-meta">Próximas sesiones o actividades</p>
                     </div>
-                </div>
-            </div>
-
-            <div class="ps-table-card">
-                <div class="ps-card-head">
-                    <div>
-                        <h3>Detalle de matrículas</h3>
-                        <p class="ps-session-meta">Incluye matrículas activas y finalizadas.</p>
-                    </div>
-                </div>
-                <div class="ps-table">
-                    <div class="ps-table-head">
-                        <span>Asignatura</span>
-                        <span>Grupo</span>
-                        <span>Estado</span>
-                        <span>Calificación</span>
-                        <span>Inicio</span>
-                        <span>Fin</span>
-                    </div>
-                    <t t-foreach="enrollments" t-as="enrollment">
-                        <div class="ps-table-row">
-                            <span t-esc="enrollment.subject_id.alias or enrollment.subject_id.name"/>
-                            <span t-esc="enrollment.group_id.name"/>
-                            <span class="ps-pill ps-pill-neutral" t-esc="enrollment.state"/>
-                            <span>
-                                <t t-if="enrollment.final_grade"><t t-esc="enrollment.final_grade"/></t>
-                                <t t-else="">N/D</t>
-                            </span>
-                            <span t-esc="enrollment.start_date"/>
-                            <span t-esc="enrollment.end_date"/>
-                        </div>
-                    </t>
-                    <t t-if="not enrollments">
-                        <div class="ps-table-row">
-                            <span colspan="6">Sin matrículas registradas.</span>
-                        </div>
-                    </t>
                 </div>
             </div>
         </div>

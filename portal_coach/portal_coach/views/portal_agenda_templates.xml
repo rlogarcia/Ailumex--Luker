@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!-- VISTA DE AGENDA SEMANAL -->
+<template id="coach_agenda" name="Coach Agenda Semanal">
+    <t t-call="portal.portal_layout">
+        <t t-set="page_name" t-value="'coach_agenda'"/>
+        <t t-call="portal_coach.portal_coach_header"/>
+        
+        <div class="pc-shell">
+            <!-- Encabezado de Agenda -->
+            <div class="pc-card" style="margin-bottom: 24px;">
+                <div style="padding: 24px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0;"><i class="fa fa-calendar"></i> Agenda Semanal</h2>
+                        <p style="margin: 8px 0 0 0; color: #64748b;">
+                            Semana <strong t-esc="week_number"/> | 
+                            <t t-esc="start_date.strftime('%d de %B')"/> - <t t-esc="end_date.strftime('%d de %B, %Y')"/>
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <a t-attf-href="/my/coach/agenda?start=#{prev_week_start}" class="pc-button">
+                            <i class="fa fa-chevron-left"></i> Semana Anterior
+                        </a>
+                        <a href="/my/coach/agenda" class="pc-button pc-button-primary">
+                            <i class="fa fa-calendar-o"></i> Semana Actual
+                        </a>
+                        <a t-attf-href="/my/coach/agenda?start=#{next_week_start}" class="pc-button">
+                            Siguiente Semana <i class="fa fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen de la Semana -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                <div class="pc-status-card">
+                    <div class="pc-status-icon pc-status-icon-blue">
+                        <i class="fa fa-calendar-check-o"></i>
+                    </div>
+                    <div>
+                        <p class="pc-status-label">SESIONES TOTALES</p>
+                        <h3 class="pc-status-value"><t t-esc="total_sessions or 0"/></h3>
+                        <p class="pc-session-meta">Esta semana</p>
+                    </div>
+                </div>
+                
+                <div class="pc-status-card">
+                    <div class="pc-status-icon pc-status-icon-green">
+                        <i class="fa fa-book"></i>
+                    </div>
+                    <div>
+                        <p class="pc-status-label">ASIGNATURAS</p>
+                        <h3 class="pc-status-value"><t t-esc="unique_subjects_count or 0"/></h3>
+                        <p class="pc-session-meta">Diferentes</p>
+                    </div>
+                </div>
+                
+                <div class="pc-status-card">
+                    <div class="pc-status-icon pc-status-icon-purple">
+                        <i class="fa fa-list-alt"></i>
+                    </div>
+                    <div>
+                        <p class="pc-status-label">AGENDAS</p>
+                        <h3 class="pc-status-value"><t t-esc="unique_agendas_count or 0"/></h3>
+                        <p class="pc-session-meta">Activas</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista de Calendario Semanal - Estilo Cuadrícula -->
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px;">
+                <t t-foreach="sessions_by_day" t-as="day_data">
+                    <t t-set="day" t-value="day_data[0]"/>
+                    <t t-set="sessions" t-value="day_data[1]"/>
+                    
+                    <div style="background: #f8fafc; border-radius: 12px; overflow: hidden; border: 2px solid #e2e8f0;">
+                        <!-- Encabezado del día -->
+                        <div t-attf-style="background: #{day == today and '#2563eb' or '#1e3a8a'}; color: white; padding: 12px; text-align: center;">
+                            <div style="font-weight: 600; font-size: 14px; text-transform: uppercase;">
+                                <t t-if="day.weekday() == 0">Lunes</t>
+                                <t t-elif="day.weekday() == 1">Martes</t>
+                                <t t-elif="day.weekday() == 2">Miércoles</t>
+                                <t t-elif="day.weekday() == 3">Jueves</t>
+                                <t t-elif="day.weekday() == 4">Viernes</t>
+                                <t t-elif="day.weekday() == 5">Sábado</t>
+                                <t t-elif="day.weekday() == 6">Domingo</t>
+                            </div>
+                            <div style="font-size: 12px; margin-top: 2px; opacity: 0.9;">
+                                <t t-esc="day"/>
+                            </div>
+                        </div>
+                        
+                        <!-- Sesiones del día -->
+                        <div style="padding: 8px; min-height: 200px;">
+                            <t t-if="sessions">
+                                <t t-foreach="sessions" t-as="session">
+                                    <!-- Tarjeta de sesión compacta - CON DATA-ATTRIBUTE EN VEZ DE ONCLICK -->
+                                    <div 
+                                        class="session-card-clickable"
+                                        t-att-data-session-id="session.id"
+                                        t-attf-style="background: white; border-radius: 8px; padding: 12px; margin-bottom: 8px; border-left: 4px solid #{session.state == 'done' and '#10b981' or '#3b82f6'}; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">
+                                        <!-- Hora -->
+                                        <div style="font-size: 12px; font-weight: 600; color: #1e40af; margin-bottom: 6px;">
+                                            <i class="fa fa-clock-o"></i>
+                                            <t t-esc="'{:02d}:{:02d}'.format(int(session.time_start), int((session.time_start % 1) * 60))"/>
+                                            -
+                                            <t t-esc="'{:02d}:{:02d}'.format(int(session.time_end), int((session.time_end % 1) * 60))"/>
+                                        </div>
+                                        
+                                        <!-- Asignatura -->
+                                        <div style="font-weight: 600; font-size: 13px; color: #1e293b; margin-bottom: 4px; line-height: 1.3;">
+                                            <t t-esc="session.subject_id.code"/>
+                                        </div>
+                                        <div style="font-size: 11px; color: #64748b; margin-bottom: 6px; line-height: 1.3;">
+                                            <t t-esc="session.subject_id.name[:35]"/>
+                                        </div>
+                                        
+                                        <!-- Programa y modalidad en una línea -->
+                                        <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;">
+                                            <span style="display: inline-block; background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;">
+                                                <t t-esc="session.program_id.name"/>
+                                            </span>
+                                            
+                                            <span t-attf-style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; #{
+                                                session.delivery_mode == 'virtual' and 'background: #ddd6fe; color: #5b21b6;' or
+                                                session.delivery_mode == 'presential' and 'background: #dcfce7; color: #166534;' or
+                                                'background: #fef3c7; color: #92400e;'
+                                            }">
+                                                <t t-if="session.delivery_mode == 'virtual'">Virtual</t>
+                                                <t t-elif="session.delivery_mode == 'presential'">Presencial</t>
+                                                <t t-else="">Híbrida</t>
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Estudiantes e ícono -->
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-size: 11px; color: #64748b;">
+                                                <i class="fa fa-users"></i>
+                                                <t t-esc="session.enrolled_count"/>/<t t-esc="session.max_capacity"/> estudiantes
+                                            </span>
+                                            <i class="fa fa-chevron-right" style="color: #cbd5e1; font-size: 10px;"></i>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div style="text-align: center; padding: 24px 8px; color: #94a3b8; font-size: 12px;">
+                                    <i class="fa fa-calendar-o" style="font-size: 24px; margin-bottom: 8px; opacity: 0.3;"></i>
+                                    <p style="margin: 0;">Sin sesiones</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+        
+        <!-- JavaScript para manejar clicks en sesiones -->
+        <script type="text/javascript">
+        <![CDATA[
+        document.addEventListener('DOMContentLoaded', function() {
+            // Agregar event listener a todas las tarjetas de sesión
+            var sessionCards = document.querySelectorAll('.session-card-clickable');
+            
+            sessionCards.forEach(function(card) {
+                card.addEventListener('click', function(e) {
+                    // Prevenir propagación
+                    e.stopPropagation();
+                    
+                    // Obtener el ID de la sesión
+                    var sessionId = this.getAttribute('data-session-id');
+                    
+                    if (sessionId) {
+                        // Abrir en la misma pestaña
+                        var url = '/my/coach/session/' + sessionId;
+                        window.location.href = url;
+                    }
+                });
+                
+                // Agregar efecto hover
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                });
+            });
+        });
+        ]]>
+        </script>
+    </t>
+</template>
+
+<!-- VISTA DE LISTA DE AGENDAS -->
+<template id="coach_agendas" name="Coach Agendas">
+    <t t-call="portal.portal_layout">
+        <t t-set="page_name" t-value="'coach_agendas'"/>
+        <t t-call="portal_coach.portal_coach_header"/>
+        
+        <div class="pc-shell">
+            <div class="pc-card">
+                <div class="pc-card-head">
+                    <h3><i class="fa fa-list-alt"></i> Mis Agendas Académicas</h3>
+                    <p style="margin: 8px 0 0 0; color: #64748b;">
+                        Total: <strong t-esc="total_agendas or 0"/> agendas con sesiones publicadas
+                    </p>
+                </div>
+                
+                <t t-if="agendas_data">
+                    <div class="pc-list-view">
+                        <t t-foreach="agendas_data" t-as="agenda_data">
+                            <t t-set="agenda" t-value="agenda_data['agenda']"/>
+                            <div class="pc-list-item">
+                                <div class="pc-list-item-icon pc-status-icon-purple">
+                                    <i class="fa fa-list-alt"></i>
+                                </div>
+                                <div class="pc-list-item-content">
+                                    <h4>
+                                        <t t-esc="agenda.name"/>
+                                        <span t-attf-class="pc-badge pc-badge-#{
+                                            agenda.state == 'published' and 'success' or
+                                            agenda.state == 'active' and 'info' or
+                                            agenda.state == 'closed' and 'secondary' or
+                                            'warning'
+                                        }">
+                                            <t t-if="agenda.state == 'draft'">Borrador</t>
+                                            <t t-elif="agenda.state == 'active'">Activa</t>
+                                            <t t-elif="agenda.state == 'published'">Publicada</t>
+                                            <t t-elif="agenda.state == 'closed'">Cerrada</t>
+                                        </span>
+                                    </h4>
+                                    <p>
+                                        <span class="pc-badge">
+                                            <i class="fa fa-calendar"></i>
+                                            <t t-esc="agenda.date_start"/> a <t t-esc="agenda.date_end"/>
+                                        </span>
+                                        <span class="pc-badge">
+                                            <i class="fa fa-map-marker"></i>
+                                            <t t-esc="agenda.campus_id.name"/>
+                                        </span>
+                                        <span class="pc-badge pc-badge-info">
+                                            <i class="fa fa-book"></i>
+                                            <t t-esc="agenda_data['total_sessions']"/> sesiones
+                                        </span>
+                                        <span class="pc-badge pc-badge-success">
+                                            <i class="fa fa-clock-o"></i>
+                                            <t t-esc="agenda_data['future_sessions_count']"/> futuras
+                                        </span>
+                                    </p>
+                                    <div style="margin-top: 8px; font-size: 13px; color: #64748b;">
+                                        Borradores: <strong t-esc="agenda_data['draft_count']"/> | 
+                                        Iniciadas: <strong t-esc="agenda_data['started_count']"/> | 
+                                        Dictadas: <strong t-esc="agenda_data['done_count']"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="pc-empty-state">
+                        <i class="fa fa-list-alt"></i>
+                        <h4>No hay agendas</h4>
+                        <p>No tienes agendas con sesiones publicadas</p>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</template>
+
+<!-- VISTA DE PROGRAMAS -->
+<template id="coach_programs" name="Coach Programs">
+    <t t-call="portal.portal_layout">
+        <t t-set="page_name" t-value="'coach_programs'"/>
+        <t t-call="portal_coach.portal_coach_header"/>
+        
+        <div class="pc-shell" style="padding-top: 0; margin-top: 0;">
+            <div class="pc-card">
+                <div class="pc-card-head">
+                    <h3><i class="fa fa-graduation-cap"></i> Mis Programas</h3>
+                </div>
+                
+                <t t-if="programs_data">
+                    <div class="pc-list-view">
+                        <t t-foreach="programs_data" t-as="program_data">
+                            <t t-set="program" t-value="program_data['program']"/>
+                            <div class="pc-list-item">
+                                <div class="pc-list-item-icon pc-status-icon-blue">
+                                    <i class="fa fa-graduation-cap"></i>
+                                </div>
+                                <div class="pc-list-item-content">
+                                    <h4><t t-esc="program.name"/></h4>
+                                    <p>
+                                        <span class="pc-badge pc-badge-info">
+                                            <i class="fa fa-book"></i>
+                                            <t t-esc="program_data['sessions_count']"/> sesiones
+                                        </span>
+                                        <span class="pc-badge">
+                                            <i class="fa fa-list"></i>
+                                            <t t-esc="program_data['subjects_count']"/> asignaturas
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="pc-empty-state">
+                        <i class="fa fa-graduation-cap"></i>
+                        <h4>No hay programas</h4>
+                        <p>No tienes programas asignados</p>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</template>
+
+</odoo>

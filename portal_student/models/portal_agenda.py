@@ -560,6 +560,8 @@ class PortalStudentWeeklyPlanLine(models.Model):
         Validación: No permitir programar una clase si el estudiante ya completó esa asignatura.
         Para BChecks en pareja: Validar que haya completado todas las skills de la unidad anterior.
         """
+        if self.env.context.get("skip_portal_plan_constraints"):
+            return
         for line in self:
             if not line.session_id or not line.plan_id or not line.plan_id.student_id:
                 continue
@@ -1009,6 +1011,8 @@ class PortalStudentWeeklyPlanLine(models.Model):
 
     @api.constrains("session_id", "plan_id")
     def _check_session_constraints(self):
+        if self.env.context.get("skip_portal_plan_constraints"):
+            return
         for line in self:
             plan = line.plan_id
             session = line.session_id

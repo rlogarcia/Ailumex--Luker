@@ -36,15 +36,18 @@ class PortalStudentController(CustomerPortal):
         if portal_utils.must_change_password(user):
             return request.redirect("/my/welcome")
         
-        # Usuarios internos (no portal): mantener comportamiento estándar
-        if not user.has_group('base.group_portal') or user.has_group('base.group_user'):
-            _logger.info(f"User {user.login} is internal user, using standard portal")
-            return super(PortalStudentController, self).portal_my_home(**kwargs)
-        
-        # Detectar roles
+        # Detectar roles PRIMERO
         is_coach = portal_utils.is_coach(user)
         is_student = portal_utils.is_student(user)
         _logger.info(f"User {user.login} - is_coach: {is_coach}, is_student: {is_student}")
+        
+        # Usuarios internos (base.group_user) que NO son coach ni student → comportamiento estándar
+        is_internal = user.has_group('base.group_user')
+        if is_internal and not is_coach and not is_student:
+            _logger.info(f"User {user.login} is internal user (not coach/student), using standard portal")
+            return super(PortalStudentController, self).portal_my_home(**kwargs)
+        
+        # Si es coach o student, continuar con la lógica de portal personalizado
         
         # Obtener URL de home según rol
         home_url = portal_utils.get_portal_home_url(user)
@@ -125,19 +128,20 @@ class PortalStudentController(CustomerPortal):
         if not student:
             return Subject.browse()
         program, plan = self._get_student_program_plan(student)
+        
         if program:
-            subjects = Subject.search(
-                [
-                    ("program_id", "=", program.id),
-                    ("active", "=", True),
-                ]
-            )
+            subjects = Subject.search([
+                ("program_id", "=", program.id),
+                ("active", "=", True),
+            ])
         else:
             subjects = student.enrollment_ids.sudo().mapped("subject_id")
+        
         if plan and subjects:
             filtered = subjects.filtered(lambda s: plan in (s.plan_ids or []))
             if filtered:
                 subjects = filtered
+        
         return subjects
 
     def _get_student_program_plan(self, student):
@@ -814,13 +818,15 @@ class PortalStudentController(CustomerPortal):
     def _prepare_program_structure(self, student):
         """Construye jerarquía Programa -> Plan -> Fase -> Nivel -> Asignaturas con detalle de docente y sede."""
         enrollments = student.enrollment_ids.sudo().filtered(
-            lambda e: e.state in ["enrolled", "in_progress", "completed"]
+            lambda e: e.state in ["draft", "pending", "enrolled", "in_progress", "active", "completed"]
         )
         subjects = enrollments.mapped("subject_id")
         levels = subjects.mapped("level_id")
         phases = levels.mapped("phase_id")
-        plans = phases.mapped("plan_id")
-        programs = plans.mapped("program_id")
+        programs = phases.mapped("program_id")
+        
+        # Obtener SOLO los planes en los que el estudiante está matriculado
+        plans = enrollments.mapped("plan_id")
 
         structure = []
         for program in programs.sorted(key=lambda p: p.sequence or 0):
@@ -829,7 +835,9 @@ class PortalStudentController(CustomerPortal):
             )
             plan_items = []
             for plan in program_plans:
-                plan_phases = phases.filtered(lambda ph: ph.plan_id == plan).sorted(
+                # Las fases están relacionadas con el programa, no con el plan directamente
+                # Filtrar fases del programa que tengan niveles con asignaturas del estudiante
+                plan_phases = phases.filtered(lambda ph: ph.program_id == program).sorted(
                     key=lambda ph: ph.sequence or 0
                 )
                 phase_items = []
@@ -1215,12 +1223,29 @@ class PortalStudentController(CustomerPortal):
         unique_campus_ids = list(set(campus_ids))
         _logger.info("DEBUG SEDES - Campus IDs unicos: %s - %s", len(unique_campus_ids), unique_campus_ids)
 
+        # Verificar si hay B-checks o Oral Tests en sedes virtuales (SIEMPRE accesibles para todos)
+        has_bcheck_or_oral = any(
+            self._is_bcheck_session(s) and s.campus_id.campus_type == "online"
+            for s in available_sessions_for_campuses
+            if s.campus_id
+        )
+        
         available_campuses_domain = [
             ("id", "in", campus_ids),
             ("active", "=", True),
         ]
-        if student_is_virtual:
+        
+        # Filtrar sedes según modalidad del estudiante
+        # EXCEPCIÓN: Si hay B-checks/Oral Tests en sedes virtuales, NO filtrar (mostrar todo)
+        if student_is_virtual and not has_bcheck_or_oral:
+            # Estudiantes virtuales puros solo ven sedes virtuales
             available_campuses_domain.append(("campus_type", "=", "online"))
+        elif not student_is_virtual and student.preferred_delivery_mode == "presential" and not has_bcheck_or_oral:
+            # Estudiantes presenciales puros solo ven sedes físicas (NO virtuales)
+            # EXCEPTO cuando hay B-checks/Oral Tests virtuales disponibles
+            available_campuses_domain.append(("campus_type", "!=", "online"))
+        # Híbridos y casos con B-checks/Oral Tests ven todas las sedes
+        
         available_campuses = Campus.search(
             [
                 *available_campuses_domain,
@@ -1235,13 +1260,26 @@ class PortalStudentController(CustomerPortal):
                 ("agenda_id", "in", agendas.ids),
             ]
             fallback_sessions = Session.search(fallback_domain)
+            
+            # Verificar si hay B-checks o Oral Tests en sedes virtuales en el fallback
+            has_bcheck_or_oral_fallback = any(
+                self._is_bcheck_session(s) and s.campus_id.campus_type == "online"
+                for s in fallback_sessions
+                if s.campus_id
+            )
+            
             fallback_campus_ids = fallback_sessions.mapped("campus_id").ids
             fallback_campus_domain = [
                 ("id", "in", fallback_campus_ids),
                 ("active", "=", True),
             ]
-            if student_is_virtual:
+            
+            # Aplicar mismo filtro que arriba
+            if student_is_virtual and not has_bcheck_or_oral_fallback:
                 fallback_campus_domain.append(("campus_type", "=", "online"))
+            elif not student_is_virtual and student.preferred_delivery_mode == "presential" and not has_bcheck_or_oral_fallback:
+                fallback_campus_domain.append(("campus_type", "!=", "online"))
+            
             available_campuses = Campus.search(fallback_campus_domain, order="city_name, name")
         _logger.info("DEBUG SEDES - Sedes disponibles (activas): %s", len(available_campuses))
         for camp in available_campuses:
@@ -2101,10 +2139,11 @@ class PortalStudentController(CustomerPortal):
 
         # Obtener historial académico del estudiante (excluir Placement Test)
         History = request.env["benglish.academic.history"].sudo()
-        history_records = History.search([
+        history_domain = [
             ('student_id', '=', student.id),
             ('subject_id.subject_category', '!=', 'placement_test')
-        ], order='session_date desc')
+        ]
+        history_records = History.search(history_domain, order='session_date desc')
         
         # Obtener resumen de asistencia
         attendance_summary = {
@@ -2142,7 +2181,6 @@ class PortalStudentController(CustomerPortal):
             subject_domain.append(('program_id', '=', program.id))
         if plan:
             subject_domain.append(('plan_ids', 'in', [plan.id]))
-        
         # ⭐ ORDEN CORRECTO: level_id, unit_number, sequence, name
         # Esto asegura que UNIT 9 aparezca antes de UNIT 10, UNIT 11, etc.
         all_subjects = Subject.search(subject_domain, order='level_id, unit_number, sequence, name')
@@ -3195,12 +3233,21 @@ class PortalStudentController(CustomerPortal):
         
         # Obtener historial académico
         History = request.env["benglish.academic.history"].sudo()
-        history = History.search([
-            ("student_id", "=", student.id)
-        ], order="session_date desc, session_time_start desc", limit=100)
+        domain = [("student_id", "=", student.id)]
+        history = History.search(domain, order="session_date desc, session_time_start desc", limit=100)
         
         # Obtener resumen de asistencia
-        attendance_summary = History.get_attendance_summary(student.id)
+        total = len(history)
+        attended = len(history.filtered(lambda h: h.attendance_status == "attended"))
+        absent = len(history.filtered(lambda h: h.attendance_status == "absent"))
+        pending = len(history.filtered(lambda h: h.attendance_status == "pending"))
+        attendance_summary = {
+            "total_classes": total,
+            "attended": attended,
+            "absent": absent,
+            "pending": pending,
+            "attendance_rate": round((attended / total * 100), 2) if total > 0 else 0,
+        }
         
         # Preparar valores para la vista
         values = self._prepare_portal_values(student, access=access)
@@ -3251,13 +3298,23 @@ class PortalStudentController(CustomerPortal):
             
             # Obtener historial con filtros
             History = request.env["benglish.academic.history"].sudo()
-            
             if filters is None:
                 filters = {}
-            
             limit = int(filters.get("limit", 100))
-            history = History.get_student_history(student.id, filters=filters)
-            
+
+            domain = [("student_id", "=", student.id)]
+            if filters.get("program_id"):
+                domain.append(("program_id", "=", filters["program_id"]))
+            if filters.get("subject_id"):
+                domain.append(("subject_id", "=", filters["subject_id"]))
+            if filters.get("attendance_status"):
+                domain.append(("attendance_status", "=", filters["attendance_status"]))
+            if filters.get("date_from"):
+                domain.append(("session_date", ">=", filters["date_from"]))
+            if filters.get("date_to"):
+                domain.append(("session_date", "<=", filters["date_to"]))
+
+            history = History.search(domain, order="session_date desc, session_time_start desc")
             if limit > 0:
                 history = history[:limit]
             
@@ -3285,8 +3342,17 @@ class PortalStudentController(CustomerPortal):
                 })
             
             # Obtener resumen de asistencia
-            program_id = filters.get("program_id")
-            summary = History.get_attendance_summary(student.id, program_id=program_id)
+            total = len(history)
+            attended = len(history.filtered(lambda h: h.attendance_status == "attended"))
+            absent = len(history.filtered(lambda h: h.attendance_status == "absent"))
+            pending = len(history.filtered(lambda h: h.attendance_status == "pending"))
+            summary = {
+                "total_classes": total,
+                "attended": attended,
+                "absent": absent,
+                "pending": pending,
+                "attendance_rate": round((attended / total * 100), 2) if total > 0 else 0,
+            }
             
             return {
                 "success": True,

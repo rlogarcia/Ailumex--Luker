@@ -969,29 +969,23 @@ class PortalStudentWeeklyPlanLine(models.Model):
         is_bcheck = self._is_prerequisite_subject(subject)
         
         # ═══════════════════════════════════════════════════════════════════════════════
-        # VALIDACIÓN B-CHECK / SKILLS POR UNIDAD (unit_number) - CORREGIDA
+        # VALIDACIÓN B-CHECK / SKILLS POR UNIDAD (unit_number)
         # ═══════════════════════════════════════════════════════════════════════════════
-        # LÓGICA CORREGIDA:
-        # - Skills de unidad N NO requieren B-Check como prerrequisito
-        # - B-Check de unidad N+1 SÍ requiere que TODAS las Skills de unidad N estén completadas
-        # - El B-Check es obligatorio para AVANZAR de unidad, no para ver skills
+        # LÓGICA:
+        # - Skills de unidad N requieren B-Check de unidad N (agendado O completado)
+        # - B-Check de unidad N+1 requiere que TODAS las Skills de unidad N estén completadas
         # ═══════════════════════════════════════════════════════════════════════════════
         subject_unit = subject.unit_number if subject else 0
         student = plan.student_id.sudo()
         History = self.env['benglish.academic.history'].sudo()
         Subject = self.env['benglish.subject'].sudo()
         
-        if not is_bcheck:
+        if not is_bcheck and subject_unit and subject_unit > 0:
             # ═══════════════════════════════════════════════════════════════════════
-            # CASO 1: SKILLS - No requieren prerrequisitos de B-check de la misma unidad  
+            # CASO 1: SKILL - Requiere B-Check de LA MISMA UNIDAD
             # ═══════════════════════════════════════════════════════════════════════
-            # Las skills se pueden VER y AGENDAR libremente en su unidad correspondiente
-            # El B-check es obligatorio para AVANZAR de unidad, no para acceder a skills
-            pass
             
-            # ═══════════════════════════════════════════════════════════════════
-            # PASO 2: Buscar B-Check de la MISMA UNIDAD que la skill
-            # ═══════════════════════════════════════════════════════════════════
+            # Buscar B-Check de la misma unidad
             bcheck_same_unit = Subject.search([
                 ('subject_category', '=', 'bcheck'),
                 ('unit_number', '=', subject_unit),
@@ -1064,63 +1058,42 @@ class PortalStudentWeeklyPlanLine(models.Model):
         
         elif is_bcheck and subject_unit and subject_unit > 1:
             # ═══════════════════════════════════════════════════════════════════════
-            # CASO 2: B-CHECK - Requiere TODAS las Skills de unidad anterior COMPLETADAS
+            # CASO 2: B-CHECK - Requiere Skills de unidad anterior COMPLETADAS
             # ═══════════════════════════════════════════════════════════════════════
-            # REGLA DE NEGOCIO CORRECTA:
-            # Para agendar B-check de unidad N, DEBE haber completado (asistido) 
-            # TODAS las Skills de la unidad N-1 en su historial académico.
-            # 
-            # REGLA ESPECIAL: Si tienes skills Y bcheck de la misma unidad agendados,
-            # y eliminas el bcheck, también se deben eliminar las skills (el bcheck 
-            # es obligatorio para pasar de unidad).
-            # 
-            # Ejemplo: Para agendar B-check Unit 8, debe tener TODAS las skills de 
-            # Unit 7 completadas (4 skills con attendance_status='attended')
+            # REGLA: "no me puede dejar agendar un bcheck de una unidad 2 si no he
+            # cumplido con las skill requeridas de la unidad 1"
             # ═══════════════════════════════════════════════════════════════════════
             previous_unit = subject_unit - 1
             
-            import logging
-            _logger = logging.getLogger(__name__)
-            _logger.info(f"[BCHECK VALIDATION] Validando B-check Unit {subject_unit} - Revisando skills Unit {previous_unit}")
-            
-            # Buscar TODAS las Skills de la unidad anterior
+            # Buscar las Skills de la unidad anterior
             skills_previous = Subject.search([
                 ('subject_category', '=', 'bskills'),
                 ('unit_number', '=', previous_unit),
                 ('program_id', '=', subject.program_id.id)
             ])
             
-            _logger.info(f"[BCHECK VALIDATION] Skills de Unit {previous_unit} encontradas: {len(skills_previous)} - IDs: {skills_previous.ids}")
-            
             if skills_previous:
-                # Verificar cuántas Skills están COMPLETADAS (asistió)
+                # Verificar cuántas Skills están completadas
                 skills_completed = 0
                 skills_pending = []
                 
                 for skill in skills_previous:
-                    # Buscar en historial académico si ASISTIÓ a esta skill
-                    completed = History.search([
+                    completed = History.search_count([
                         ('student_id', '=', student.id),
                         ('subject_id', '=', skill.id),
                         ('attendance_status', '=', 'attended')
-                    ])
+                    ]) > 0
                     
-                    _logger.info(f"[BCHECK VALIDATION] Skill '{skill.name}' (ID: {skill.id}) - Completada: {len(completed) > 0}")
-                    
-                    if len(completed) > 0:
+                    if completed:
                         skills_completed += 1
                     else:
                         skills_pending.append(skill.alias or skill.name)
-                
-                _logger.info(f"[BCHECK VALIDATION] RESUMEN: {skills_completed}/{len(skills_previous)} skills completadas de Unit {previous_unit}")
                 
                 # Si NO todas las skills están completadas → ERROR
                 if skills_completed < len(skills_previous):
                     missing_list = "\n".join([f"• {s}" for s in skills_pending[:5]])
                     if len(skills_pending) > 5:
                         missing_list += f"\n• ... y {len(skills_pending) - 5} más"
-                    
-                    _logger.info(f"[BCHECK VALIDATION] ❌ BLOQUEADO - Faltan {len(skills_pending)} skills de Unit {previous_unit}")
                     
                     add_error("incomplete_previous_skills",
                              _("⚠️ PRERREQUISITO: SKILLS DE UNIDAD {prev_unit}\n\n"
@@ -1129,8 +1102,7 @@ class PortalStudentWeeklyPlanLine(models.Model):
                                "📋 SKILLS PENDIENTES ({pending}/{total}):\n{missing}\n\n"
                                "📚 FLUJO CORRECTO:\n"
                                "1. Completa todas las Skills de Unidad {prev_unit}\n"
-                               "2. Luego podrás agendar el B-Check de Unidad {current_unit}\n\n"
-                               "💡 REVISIÓN: Verifica tu historial académico para confirmar que asististe a todas las skills.").format(
+                               "2. Luego podrás agendar el B-Check de Unidad {current_unit}").format(
                                 prev_unit=previous_unit,
                                 current_unit=subject_unit,
                                 bcheck_name=subject.alias or subject.name,
@@ -1138,10 +1110,6 @@ class PortalStudentWeeklyPlanLine(models.Model):
                                 total=len(skills_previous),
                                 missing=missing_list))
                     result["prerequisites_ok"] = False
-                else:
-                    _logger.info(f"[BCHECK VALIDATION] ✅ PERMITIDO - Todas las skills de Unit {previous_unit} completadas")
-            else:
-                _logger.info(f"[BCHECK VALIDATION] ⚠️ No se encontraron skills para Unit {previous_unit} - permitiendo")
 
         # Validar solapes de horario antes de crear la línea
         if plan and session and session.datetime_start and session.datetime_end:
@@ -1299,10 +1267,9 @@ class PortalStudentWeeklyPlanLine(models.Model):
             # T-PE-BCHK-02: VALIDACIÓN B-CHECK / SKILLS POR UNIDAD (unit_number)
             # ═══════════════════════════════════════════════════════════════════════════════
             # LÓGICA CORREGIDA:
-            # - Skills de unidad N NO requieren B-Check como prerrequisito
-            #   (puedes agendar skills y bcheck de la misma unidad en cualquier orden)
-            # - B-Check de unidad N+1 SÍ requiere que TODAS las Skills de unidad N estén completadas
-            # - El B-Check es obligatorio solo para AVANZAR de unidad, no para ver skills
+            # - Las Skills de unidad N requieren B-Check de unidad N (agendado O completado)
+            # - El B-Check de unidad N+1 requiere que TODAS las Skills de unidad N estén completadas
+            # - La validación usa unit_number, NO level_id (level_id puede tener múltiples unidades)
             # ═══════════════════════════════════════════════════════════════════════════════
             
             subject_unit = subject.unit_number if subject else 0
@@ -1310,29 +1277,220 @@ class PortalStudentWeeklyPlanLine(models.Model):
             
             if not is_bcheck:
                 # ═══════════════════════════════════════════════════════════════════════
-                # CASO 1: SKILLS - No requieren prerrequisitos de B-check de la misma unidad
+                # CASO 1: SKILL - Requiere B-Check de LA MISMA UNIDAD (agendado O completado)
                 # ═══════════════════════════════════════════════════════════════════════
-                # REGLA CORREGIDA: Las skills se pueden agendar libremente en su unidad.
-                # El B-check es obligatorio para AVANZAR de unidad, no para ver skills.
+                # LÓGICA PARA SISTEMA DE PAREJAS:
+                # - Las sesiones de B-Check se publican para PAREJAS (ej: audiencia 7-8)
+                # - Cuando un estudiante de Unidad 7 agenda, el sistema le asigna B-Check U7
+                # - Cuando un estudiante de Unidad 8 agenda la MISMA sesión, le asigna B-Check U8
+                # - Para Skills de Unidad N, verificar si hay B-Check de Unidad N:
+                #   1. COMPLETADO en historial académico (ya asistió)
+                #   2. AGENDADO en el plan semanal (effective_subject tiene unit_number = N)
                 # ═══════════════════════════════════════════════════════════════════════
-                # Skills no requieren validaciones adicionales de prerrequisitos
-                pass
+                if subject_unit and subject_unit > 0:
+                    _logger.info(f"[BCHECK DEBUG] ═══════════════════════════════════════")
+                    _logger.info(f"[BCHECK DEBUG] Validando Skill '{subject.name}' de Unidad {subject_unit}")
+                    _logger.info(f"[BCHECK DEBUG] Estudiante: {plan.student_id.name} (ID: {plan.student_id.id})")
+                    _logger.info(f"[BCHECK DEBUG] Plan ID: {plan.id}, Líneas en plan: {len(plan.line_ids)}")
+                    _logger.info(f"[BCHECK DEBUG] ═══════════════════════════════════════")
+                    
+                    History = self.env['benglish.academic.history'].sudo()
+                    Subject = self.env['benglish.subject'].sudo()
+                    student = plan.student_id
+                    
+                    # ═══════════════════════════════════════════════════════════════════
+                    # PASO 1: Buscar B-Checks de esta unidad en el programa
+                    # ═══════════════════════════════════════════════════════════════════
+                    bcheck_subjects = Subject.search([
+                        ('subject_category', '=', 'bcheck'),
+                        ('unit_number', '=', subject_unit),
+                        ('program_id', '=', subject.program_id.id),
+                    ])
+                    _logger.info(f"[BCHECK DEBUG] B-Checks de Unidad {subject_unit} encontrados: {len(bcheck_subjects)} - IDs: {bcheck_subjects.ids}")
+                    
+                    # ═══════════════════════════════════════════════════════════════════
+                    # PASO 2: Verificar si el B-Check está COMPLETADO en historial
+                    # IMPORTANTE: Solo cuenta como "completado" si ASISTIÓ (attended)
+                    # Si faltó (absent), NO puede agendar Skills - debe agendar nuevo B-Check
+                    # ═══════════════════════════════════════════════════════════════════
+                    bcheck_completed = False
+                    bcheck_absent = False  # Para mensaje específico
+                    if bcheck_subjects:
+                        bcheck_completed = History.search_count([
+                            ('student_id', '=', student.id),
+                            ('subject_id', 'in', bcheck_subjects.ids),
+                            ('attendance_status', '=', 'attended')  # Solo 'attended', NO 'absent'
+                        ]) > 0
+                        
+                        # Verificar si tiene 'absent' para mensaje específico
+                        if not bcheck_completed:
+                            bcheck_absent = History.search_count([
+                                ('student_id', '=', student.id),
+                                ('subject_id', 'in', bcheck_subjects.ids),
+                                ('attendance_status', '=', 'absent')
+                            ]) > 0
+                    _logger.info(f"[BCHECK DEBUG] B-Check Unidad {subject_unit} completado en historial (asistió): {bcheck_completed}, absent: {bcheck_absent}")
+                    
+                    # ═══════════════════════════════════════════════════════════════════
+                    # PASO 3: Si no está completado, verificar si está AGENDADO
+                    # ═══════════════════════════════════════════════════════════════════
+                    bcheck_scheduled = False
+                    if not bcheck_completed:
+                        _logger.info(f"[BCHECK DEBUG] Buscando B-Check Unidad {subject_unit} agendado en el plan...")
+                        _logger.info(f"[BCHECK DEBUG] Total líneas a revisar: {len(plan.line_ids)}")
+                        
+                        # Invalidar caché para obtener líneas más recientes
+                        plan.invalidate_recordset(['line_ids'])
+                        
+                        for line_item in plan.line_ids:
+                            if line_item.id == line.id:
+                                _logger.info(f"[BCHECK DEBUG] Saltando línea actual {line_item.id}")
+                                continue
+                            
+                            # MÉTODO 1: Verificar effective_subject_id si existe
+                            line_subject = line_item.effective_subject_id
+                            
+                            # MÉTODO 2: Si no hay effective_subject, resolverlo ahora
+                            if not line_subject and line_item.session_id:
+                                try:
+                                    line_subject = line_item._get_effective_subject(
+                                        check_completed=False,
+                                        check_prereq=False,
+                                    )
+                                except Exception as e:
+                                    _logger.info(f"[BCHECK DEBUG] Error resolviendo subject: {e}")
+                                    line_subject = line_item.session_id.subject_id
+                            
+                            # MÉTODO 3: Si aún no hay subject, usar session.subject_id como fallback
+                            if not line_subject:
+                                line_subject = line_item.session_id.subject_id if line_item.session_id else None
+                            
+                            if not line_subject:
+                                continue
+                            
+                            # Verificar si es B-Check
+                            is_bcheck_line = self._is_prerequisite_subject(line_subject)
+                            line_unit = line_subject.unit_number or 0
+                            
+                            _logger.info(f"[BCHECK DEBUG] Revisando línea: {line_subject.name}, is_bcheck={is_bcheck_line}, unit={line_unit}")
+                            
+                            # CRÍTICO: También verificar si la sesión está configurada para múltiples unidades
+                            # pero el effective_subject es de la unidad que necesitamos
+                            if is_bcheck_line and line_unit == subject_unit:
+                                bcheck_scheduled = True
+                                _logger.info(f"[BCHECK DEBUG] ✅ B-Check Unidad {subject_unit} encontrado agendado: {line_subject.name}")
+                                break
+                            
+                            # MÉTODO ALTERNATIVO: Si es B-Check pero de unidad diferente,
+                            # verificar si la sesión original podría resolverse a nuestra unidad
+                            elif is_bcheck_line and line_item.session_id:
+                                try:
+                                    # Intentar resolver para nuestro estudiante específicamente
+                                    alternative_subject = line_item.session_id.resolve_effective_subject(
+                                        student,
+                                        check_completed=False,
+                                        raise_on_error=False,
+                                        check_prereq=False,
+                                    ) if hasattr(line_item.session_id, 'resolve_effective_subject') else None
+                                    
+                                    if alternative_subject and alternative_subject.unit_number == subject_unit:
+                                        bcheck_scheduled = True
+                                        _logger.info(f"[BCHECK DEBUG] ✅ B-Check Unidad {subject_unit} encontrado (resolución alternativa): {alternative_subject.name}")
+                                        break
+                                except Exception as e:
+                                    _logger.info(f"[BCHECK DEBUG] Error en resolución alternativa: {e}")
+                        
+                        _logger.info(f"[BCHECK DEBUG] Resultado búsqueda agendado: bcheck_scheduled={bcheck_scheduled}")
+                        
+                        # ═══════════════════════════════════════════════════════════════════
+                        # VERIFICACIÓN ADICIONAL: Buscar B-Check en líneas recientes de la BD
+                        # ═══════════════════════════════════════════════════════════════════
+                        if not bcheck_scheduled:
+                            _logger.info(f"[BCHECK DEBUG] Haciendo verificación adicional en BD...")
+                            WeeklyPlanLine = self.env["portal.student.weekly.plan.line"].sudo()
+                            recent_lines = WeeklyPlanLine.search([
+                                ('plan_id', '=', plan.id),
+                                ('id', '!=', line.id if hasattr(line, 'id') else False),
+                            ])
+                            _logger.info(f"[BCHECK DEBUG] Líneas encontradas en BD: {len(recent_lines)}")
+                            
+                            for recent_line in recent_lines:
+                                recent_subject = recent_line.effective_subject_id
+                                if not recent_subject and recent_line.session_id:
+                                    try:
+                                        recent_subject = recent_line._get_effective_subject(
+                                            check_completed=False, check_prereq=False
+                                        )
+                                    except:
+                                        recent_subject = recent_line.session_id.subject_id
+                                
+                                if recent_subject:
+                                    is_recent_bcheck = self._is_prerequisite_subject(recent_subject)
+                                    recent_unit = recent_subject.unit_number or 0
+                                    _logger.info(f"[BCHECK DEBUG] BD - Línea {recent_line.id}: {recent_subject.name}, bcheck={is_recent_bcheck}, unit={recent_unit}")
+                                    
+                                    if is_recent_bcheck and recent_unit == subject_unit:
+                                        bcheck_scheduled = True
+                                        _logger.info(f"[BCHECK DEBUG] ✅ B-Check Unidad {subject_unit} encontrado en BD: {recent_subject.name}")
+                                        break
+                    
+                    # ═══════════════════════════════════════════════════════════════════
+                    # PASO 4: Si NO está completado NI agendado → ERROR
+                    # ═══════════════════════════════════════════════════════════════════
+                    if not bcheck_completed and not bcheck_scheduled:
+                        _logger.info(f"[BCHECK DEBUG] ❌ B-Check Unidad {subject_unit} NO completado NI agendado, absent={bcheck_absent}")
+                        
+                        # Mensaje específico si faltó al B-Check
+                        if bcheck_absent:
+                            raise ValidationError(
+                                _("⚠️ NO ASISTISTE AL B-CHECK DE UNIDAD {unit}\n\n"
+                                  "No puedes agendar '{skill_name}' porque faltaste al B-Check de la Unidad {unit}.\n\n"
+                                  "📋 SITUACIÓN:\n"
+                                  "• Tenías un B-Check programado pero NO asististe\n"
+                                  "• Sin completar el B-Check, no puedes acceder a las Skills de esta unidad\n\n"
+                                  "✅ SOLUCIÓN:\n"
+                                  "1. Solicita que te habiliten un NUEVO B-Check de la Unidad {unit}\n"
+                                  "2. Agenda y asiste al nuevo B-Check\n"
+                                  "3. Después podrás agendar las Skills de esta unidad\n\n"
+                                  "💡 Contacta a tu coordinador académico para que te habilite la recuperación.").format(
+                                    unit=subject_unit,
+                                    skill_name=subject.alias or subject.name)
+                            )
+                        else:
+                            raise ValidationError(
+                                _("⚠️ PRERREQUISITO OBLIGATORIO: B-CHECK UNIDAD {unit}\n\n"
+                                  "Para agendar '{skill_name}', DEBES tener el B-check de la UNIDAD {unit}:\n"
+                                  "• Completado (ya asististe) O\n"
+                                  "• Agendado en tu horario semanal\n\n"
+                                  "📚 FLUJO CORRECTO:\n"
+                                  "1. Busca y agenda el B-Check (aparece para tu unidad actual)\n"
+                                  "2. El sistema te asignará automáticamente el B-Check de la Unidad {unit}\n"
+                                  "3. Luego podrás agendar las Skills de esa unidad").format(
+                                    unit=subject_unit,
+                                    skill_name=subject.alias or subject.name)
+                            )
+                    else:
+                        status = "completado" if bcheck_completed else "agendado"
+                        _logger.info(f"[BCHECK DEBUG] ✅ Skill Unidad {subject_unit} puede agendarse (B-Check {status})")
             
             else:
                 # ═══════════════════════════════════════════════════════════════════════
-                # CASO 2: B-CHECK - Requiere TODAS las Skills de unidad anterior COMPLETADAS
+                # CASO 2: B-CHECK - VALIDACIÓN PARA SISTEMA DE PAREJAS
                 # ═══════════════════════════════════════════════════════════════════════
-                # REGLA DE NEGOCIO CORRECTA:
-                # Para agendar B-check de unidad N, DEBE haber completado (asistido) 
-                # TODAS las Skills de la unidad N-1 en su historial académico.
+                # LÓGICA DE NEGOCIO SEGÚN REQUERIMIENTO:
+                # 1. Los B-Checks se publican en PAREJAS (ej: 1-2, 3-4, 5-6, 7-8, etc.)
+                # 2. Un estudiante PUEDE agendar el B-Check de su unidad actual
+                # 3. Para agendar B-Check de unidad N (donde N es INICIO de nueva pareja):
+                #    - DEBE tener completadas las SKILLS de unidad N-1
+                #    - Ejemplo: Para B-Check Unidad 3, debe tener Skills Unidad 2 completadas
                 #
-                # Ejemplo: Para agendar B-check Unit 8, debe tener TODAS las skills de 
-                # Unit 7 completadas (4 skills con attendance_status='attended')
+                # REGLA CLAVE: "no me puede dejar agendar un bcheck de una unidad 2 si 
+                # no he cumplido con las skill requeridas de la unidad 1"
                 # ═══════════════════════════════════════════════════════════════════════
-                pass  # Las skills se validan correctamente en _check_session_constraints
-
-        # Validar solapes de horario antes de crear la línea
-        if plan and session and session.datetime_start and session.datetime_end:
+                
+                # B-Check de Unidad 1 NO tiene prerrequisitos (es el inicio)
+                if subject_unit and subject_unit > 1:
+                    _logger.info(f"[BCHECK DEBUG] Validando B-Check '{subject.name}' Unidad {subject_unit}")
                     
                     student = plan.student_id
                     History = self.env['benglish.academic.history'].sudo()
@@ -1364,28 +1522,19 @@ class PortalStudentWeeklyPlanLine(models.Model):
                         skills_completed = 0
                         skills_not_completed = []
                         
-                        _logger.info(f"[BCHECK DEBUG] Estudiante ID: {student.id} - Programa ID: {subject.program_id.id}")
-                        
                         for skill in skills_previous_unit:
-                            # Buscar historial específico para esta skill
-                            history_records = History.search([
+                            skill_in_history = History.search_count([
                                 ('student_id', '=', student.id),
                                 ('subject_id', '=', skill.id),
-                                ('attendance_status', '=', 'attended')
-                            ])
+                                ('attendance_status', '=', 'attended')  # Solo las que asistió
+                            ]) > 0
                             
-                            skill_completed = len(history_records) > 0
-                            _logger.info(f"[BCHECK DEBUG] Skill '{skill.name}' (ID:{skill.id}, Unit:{skill.unit_number}) - Completada: {skill_completed}")
-                            
-                            if history_records:
-                                _logger.info(f"[BCHECK DEBUG] Historia encontrada: IDs {[h.id for h in history_records]}")
-                            
-                            if skill_completed:
+                            if skill_in_history:
                                 skills_completed += 1
                             else:
                                 skills_not_completed.append(skill.alias or skill.name)
                         
-                        _logger.info(f"[BCHECK DEBUG] TOTAL Skills Unidad {previous_unit}: {skills_completed}/{len(skills_previous_unit)} completadas")
+                        _logger.info(f"[BCHECK DEBUG] Skills Unidad {previous_unit}: {skills_completed}/{len(skills_previous_unit)} completadas")
                         
                         # Si NO todas las skills están completadas → ERROR
                         if skills_completed < len(skills_previous_unit):
@@ -1393,9 +1542,7 @@ class PortalStudentWeeklyPlanLine(models.Model):
                             if len(skills_not_completed) > 5:
                                 missing_list += f"\n• ... y {len(skills_not_completed) - 5} más"
                             
-                            _logger.info(f"[BCHECK DEBUG] ❌ BLOQUEADO - Faltan {len(skills_not_completed)} Skills de Unidad {previous_unit}")
-                            _logger.info(f"[BCHECK DEBUG] Skills faltantes: {skills_not_completed}")
-                            
+                            _logger.info(f"[BCHECK DEBUG] ❌ Faltan {len(skills_not_completed)} Skills de Unidad {previous_unit}")
                             raise ValidationError(
                                 _("⚠️ PRERREQUISITO: SKILLS DE UNIDAD {prev_unit}\n\n"
                                   "Para agendar '{bcheck_name}' (Unidad {current_unit}), DEBES completar "
@@ -1403,8 +1550,7 @@ class PortalStudentWeeklyPlanLine(models.Model):
                                   "📋 SKILLS PENDIENTES ({pending}/{total}):\n{missing_list}\n\n"
                                   "📚 FLUJO CORRECTO:\n"
                                   "1. Completa todas las Skills de Unidad {prev_unit}\n"
-                                  "2. Luego podrás agendar el B-Check de Unidad {current_unit}\n\n"
-                                  "🔍 DEBUG: Revisa tu historial académico para verificar que asististe a todas las skills.").format(
+                                  "2. Luego podrás agendar el B-Check de Unidad {current_unit}").format(
                                     prev_unit=previous_unit,
                                     current_unit=subject_unit,
                                     bcheck_name=subject.alias or subject.name,
@@ -1413,26 +1559,179 @@ class PortalStudentWeeklyPlanLine(models.Model):
                                     missing_list=missing_list)
                             )
                         else:
-                            _logger.info(f"[BCHECK DEBUG] ✅ PERMITIDO - Todas las Skills de Unidad {previous_unit} completadas")
+                            _logger.info(f"[BCHECK DEBUG] ✅ Todas las Skills de Unidad {previous_unit} completadas")
                     else:
                         _logger.info(f"[BCHECK DEBUG] ⚠️ No se encontraron Skills para Unidad {previous_unit} - permitiendo")
 
-    @api.depends("plan_id.student_id", "effective_subject_id")
-    def _compute_prerequisites_flag(self):
-        for line in self:
-            subject = line.effective_subject_id or line._get_effective_subject(
-                check_completed=False,
-                check_prereq=False,
+            # Validar prerrequisitos específicos entre asignaturas (lógica existente)
+            # IMPORTANTE: Si el prerrequisito es un B-check, lo IGNORAMOS aquí porque
+            # ya validamos arriba que haya AL MENOS UN B-check agendado en la semana.
+            # La regla es: tener UN b-check de la semana actual agendado es suficiente,
+            # no importa si es el b-check "específico" configurado como prerrequisito.
+            if not is_bcheck:
+                prereq_subjects = subject.prerequisite_ids if subject else self.env["benglish.subject"]
+                student = plan.student_id
+                
+                if prereq_subjects:
+                    for prereq_subject in prereq_subjects:
+                        # Si el prerrequisito es BCheck, IGNORARLO - ya validamos arriba
+                        is_prereq_bcheck = (
+                            prereq_subject.subject_category == 'bcheck'
+                            or prereq_subject.subject_classification == 'prerequisite'
+                            or 'bcheck' in (prereq_subject.name or '').lower()
+                            or 'b check' in (prereq_subject.name or '').lower()
+                        )
+                        
+                        if is_prereq_bcheck:
+                            # IGNORAR: Ya validamos que hay B-check en la semana arriba
+                            # No exigir el B-check ESPECÍFICO, cualquier B-check de la semana sirve
+                            _logger.info("[BCHECK DEBUG] Ignorando prerrequisito B-check específico '%s' - ya hay B-check agendado en la semana", prereq_subject.name)
+                            continue
+                        else:
+                            # Para otros prerrequisitos normales: validar que estén completados
+                            prereq_check = subject.check_prerequisites_completed(student) if subject else {}
+                            if not prereq_check.get("completed"):
+                                raise ValidationError(prereq_check.get("message") or _("No cumples prerrequisitos."))
+
+            # T-PE-BCHK-01: Validación de máximo UN Bcheck por semana
+            if is_bcheck:
+                # Verificar si ya existe otro Bcheck en esta semana
+                existing_bcheck = self.env["portal.student.weekly.plan.line"]
+                for line_item in plan.line_ids:
+                    if line_item.id == line.id:
+                        continue
+                    line_subject = line_item.effective_subject_id or line_item._get_effective_subject(
+                        check_completed=False,
+                        check_prereq=False,
+                    )
+                    if (
+                        line_subject
+                        and self._is_prerequisite_subject(line_subject)
+                        and line_item.date >= plan.week_start
+                        and line_item.date <= plan.week_end
+                    ):
+                        existing_bcheck |= line_item
+                if existing_bcheck:
+                    existing_label = self._format_session_label(existing_bcheck[0].session_id)
+                    raise ValidationError(
+                        _("⚠️ SOLO PUEDES PROGRAMAR UN (1) BCHECK POR SEMANA\n\n"
+                          "Ya tienes un BCheck programado en esta semana:\n"
+                          "• %s\n\n"
+                          "La metodología del curso requiere máximo un BCheck por semana calendario.\n"
+                          "Si necesitas cambiar tu BCheck, primero cancela el actual y luego programa el nuevo.")
+                        % existing_label
+                    )
+            
+            # T-PE-ORAL-01: Validar habilitación condicional de Oral Test por avance en unidades
+            # Las clases de Oral Test solo se habilitan cuando el estudiante ha completado
+            # el bloque de unidades correspondiente (unidades 4, 8, 12, 16, 20, 24)
+            is_oral_test = (
+                (subject and subject.subject_category == 'oral_test')
+                or (subject and any(keyword in (subject.name or '').lower() 
+                                   for keyword in ['oral test', 'oral_test', 'prueba oral']))
             )
-            if line.plan_id and subject and line.plan_id.student_id:
-                result = subject.check_prerequisites_completed(line.plan_id.student_id)
-                line.prerequisites_ok = result.get("completed", True)
-                missing = result.get("missing_prerequisites") or self.env["benglish.subject"]
-                missing_names = [m.alias or m.name for m in missing]
-                line.missing_prerequisites = ", ".join([n for n in missing_names if n])
-            else:
-                line.prerequisites_ok = True
-                line.missing_prerequisites = ""
+            if is_oral_test:
+                # Obtener la unidad actual del estudiante desde su perfil académico
+                student = plan.student_id.sudo()
+                
+                # La unidad actual se determina por la matrícula activa más reciente
+                active_enrollments = student.enrollment_ids.filtered(
+                    lambda e: e.state in ['active', 'enrolled', 'in_progress']
+                ).sorted('enrollment_date', reverse=True)
+                
+                if not active_enrollments:
+                    raise ValidationError(
+                        _("NO PUEDES PROGRAMAR ORAL TEST\n\n"
+                          "No se encontró una matrícula activa para determinar tu avance académico.\n\n"
+                          "Por favor contacta a tu coordinador académico.")
+                    )
+                
+                # CORRECCIÓN CRÍTICA: Calcular el progreso REAL del estudiante basado en historial académico
+                # El portal lee DIRECTAMENTE del historial académico para obtener el progreso real
+                
+                # Buscar todas las asignaturas en el historial académico (asistidas o no)
+                History = self.env['benglish.academic.history'].sudo()
+                completed_subjects = History.search([
+                    ('student_id', '=', student.id),
+                    ('attendance_status', 'in', ['attended', 'absent'])
+                ])
+                
+                # Calcular la unidad máxima completada basándose en las asignaturas del historial
+                student_max_unit = 0
+                if completed_subjects:
+                    # Obtener todos los números de unidad de las asignaturas completadas
+                    completed_units = []
+                    for history in completed_subjects:
+                        if history.subject_id and hasattr(history.subject_id, 'unit_number') and history.subject_id.unit_number:
+                            completed_units.append(history.subject_id.unit_number)
+                    
+                    # La unidad máxima es la más alta completada
+                    if completed_units:
+                        student_max_unit = max(completed_units)
+                
+                # Si no hay progreso en historial, usar el nivel de la matrícula como fallback
+                if student_max_unit == 0:
+                    current_level = active_enrollments[0].current_level_id or student.current_level_id
+                    if current_level:
+                        student_max_unit = current_level.max_unit or 0
+                
+                # Obtener el nombre del nivel para el mensaje (solo para mostrar)
+                current_enrollment = active_enrollments[0]
+                current_level = current_enrollment.current_level_id or student.current_level_id
+                level_name = current_level.name if current_level else "Desconocido"
+                
+                # Obtener las unidades prerequisito del Oral Test
+                required_units = [4, 8, 12, 16, 20, 24]
+                subject_block_end = getattr(subject, "unit_block_end", 0) or 0
+                if subject_block_end:
+                    required_units = [subject_block_end]
+                can_take_oral = any(student_max_unit >= req_unit for req_unit in required_units)
+                if not can_take_oral:
+                    next_unit = min(
+                        [u for u in required_units if u > student_max_unit],
+                        default=required_units[0],
+                    )
+                    raise ValidationError(
+                        _("ORAL TEST NO DISPONIBLE: Avance insuficiente\n\n"
+                          "Los Oral Tests solo están disponibles al completar bloques de unidades específicos.\n\n"
+                          "TU SITUACIÓN ACADÉMICA:\n"
+                          "- Nivel actual: %s\n"
+                          "- Unidad actual: hasta unidad %d\n"
+                          "- Oral Test requiere: unidad %d completada\n\n"
+                          "¿Qué son los bloques de unidades?\n"
+                          "El programa está dividido en bloques de 4 unidades:\n"
+                          "- Bloque 1: Unidades 1-4 (Oral Test al completar unidad 4)\n"
+                          "- Bloque 2: Unidades 5-8 (Oral Test al completar unidad 8)\n"
+                          "- Bloque 3: Unidades 9-12 (Oral Test al completar unidad 12)\n"
+                          "- Bloque 4: Unidades 13-16 (Oral Test al completar unidad 16)\n"
+                          "- Bloque 5: Unidades 17-20 (Oral Test al completar unidad 20)\n"
+                          "- Bloque 6: Unidades 21-24 (Oral Test al completar unidad 24)\n\n"
+                          "PRÓXIMOS PASOS:\n"
+                          "1. Completa las unidades de tu bloque actual\n"
+                          "2. El Oral Test se habilitará al alcanzar la unidad %d\n"
+                          "3. Consulta tu progreso con tu coordinador académico si tienes dudas\n\n"
+                          "El Oral Test evalúa el bloque completo y se habilita al final de cada bloque.")
+                        % (
+                            level_name,
+                            student_max_unit,
+                            next_unit,
+                            next_unit,
+                        )
+                    )
+            overlaps = plan.line_ids.filtered(
+                lambda l: l.id != line.id
+                and l.start_datetime
+                and session.datetime_start
+                and l.start_datetime < session.datetime_end
+                and l.end_datetime > session.datetime_start
+            )
+            if overlaps:
+                overlap_labels = [self._format_session_label(ln.session_id) for ln in overlaps]
+                overlap_labels = [label for label in overlap_labels if label]
+                raise ValidationError(
+                    _("No puedes programar dos clases a la misma hora. Conflicto con: %s")
+                    % ", ".join(overlap_labels)
+                )
 
     @api.depends("plan_id.student_id", "effective_subject_id")
     def _compute_prerequisites_flag(self):
@@ -1472,92 +1771,6 @@ class PortalStudentWeeklyPlanLine(models.Model):
             "delivery_mode": self.delivery_mode,
             "meeting_link": self.session_id.teacher_meeting_link or self.meeting_link,
         }
-    
-    def unlink(self):
-        """
-        REGLA DE ELIMINACIÓN AUTOMÁTICA PARA B-CHECKS
-        
-        Implementa la lógica: "Si eliminas un B-check → eliminar automáticamente las skills de la misma unidad"
-        
-        Esta regla garantiza la consistencia del sistema de prerrequisitos:
-        - Las skills solo tienen sentido si hay un B-check para la unidad
-        - Al eliminar el B-check, las skills de esa unidad quedan sin propósito
-        - Por tanto, se eliminan automáticamente para evitar inconsistencias
-        """
-        import logging
-        _logger = logging.getLogger(__name__)
-        
-        lines_to_auto_remove = self.env['portal.student.weekly.plan.line']
-        
-        for line in self:
-            # Solo procesar si es un B-check
-            subject = line.effective_subject_id or line._get_effective_subject(
-                check_completed=False, 
-                check_prereq=False
-            )
-            
-            if not subject or not self._is_prerequisite_subject(subject):
-                continue  # No es un B-check, continuar normal
-                
-            # Es un B-check - buscar skills de la misma unidad para eliminar
-            try:
-                # Obtener el número de unidad del B-check
-                bcheck_unit = getattr(subject, 'unit_number', None)
-                if not bcheck_unit:
-                    _logger.warning(
-                        f"[AUTO-DELETE] B-check {subject.name} no tiene unit_number definido"
-                    )
-                    continue
-                
-                # Buscar todas las skills de la misma unidad en la misma semana
-                plan = line.plan_id
-                if not plan:
-                    continue
-                    
-                same_unit_skills = plan.line_ids.filtered(
-                    lambda l: l.id != line.id  # Excluir el B-check actual
-                    and l.effective_subject_id
-                    and getattr(l.effective_subject_id, 'unit_number', None) == bcheck_unit
-                    and l.effective_subject_id.subject_category == 'skill'
-                    and not self._is_prerequisite_subject(l.effective_subject_id)
-                )
-                
-                if same_unit_skills:
-                    student_name = plan.student_id.name if plan.student_id else "Desconocido"
-                    skill_names = [
-                        s.effective_subject_id.alias or s.effective_subject_id.name 
-                        for s in same_unit_skills
-                    ]
-                    
-                    _logger.info(
-                        f"[AUTO-DELETE] Eliminando B-check {subject.alias or subject.name} "
-                        f"de estudiante {student_name} - También se eliminarán {len(same_unit_skills)} "
-                        f"skills de Unit {bcheck_unit}: {', '.join(skill_names)}"
-                    )
-                    
-                    lines_to_auto_remove |= same_unit_skills
-                    
-            except Exception as e:
-                _logger.error(
-                    f"[AUTO-DELETE] Error procesando eliminación automática para línea {line.id}: {str(e)}"
-                )
-                continue
-        
-        # Primero eliminar las skills automáticamente
-        if lines_to_auto_remove:
-            try:
-                _logger.info(
-                    f"[AUTO-DELETE] Eliminando automáticamente {len(lines_to_auto_remove)} "
-                    f"skills por eliminación de B-checks"
-                )
-                lines_to_auto_remove.unlink()
-            except Exception as e:
-                _logger.error(
-                    f"[AUTO-DELETE] Error eliminando skills automáticamente: {str(e)}"
-                )
-        
-        # Luego proceder con la eliminación normal
-        return super(PortalStudentWeeklyPlanLine, self).unlink()
     
     @api.model
     def _cron_clean_finished_sessions_from_agenda(self):

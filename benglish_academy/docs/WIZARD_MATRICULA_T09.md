@@ -1,5 +1,8 @@
 # ✅ WIZARD DE MATRÍCULA PASO A PASO - TAREA TÉCNICA T09
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## 📋 Descripción de la Tarea
 
 **T09 - Wizard de matrícula interna**: Crear wizard paso a paso para seleccionar estudiante, estructura académica y grupos/asignaturas a matricular.
@@ -12,7 +15,7 @@
 
 ## 🎯 Funcionalidad Implementada
 
-Se ha implementado un **asistente de matrícula paso a paso** que guía al usuario a través de 5 pasos intuitivos, con validaciones en tiempo real y alertas visuales.
+Yo implemente un **asistente de matricula paso a paso** que guia al usuario a traves de 5 pasos intuitivos, con validaciones en tiempo real y alertas visuales.
 
 ### Pasos del Wizard
 

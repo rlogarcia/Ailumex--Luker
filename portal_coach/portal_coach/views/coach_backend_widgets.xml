@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Agregar enlace "Mi Portal Coach" en el menú de Apps (cuando está en backend) -->
+    <record id="ir_ui_menu_coach_portal" model="ir.ui.menu">
+        <field name="name">🏠 Mi Portal Coach</field>
+        <field name="sequence">1</field>
+        <field name="action" ref="action_open_coach_portal"/>
+        <field name="parent_id" ref=""/>
+        <field name="groups_id" eval="[(4, ref('portal_coach.group_benglish_coach'))]"/>
+    </record>
+</odoo>

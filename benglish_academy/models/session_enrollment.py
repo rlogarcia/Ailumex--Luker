@@ -122,7 +122,7 @@ class SessionEnrollment(models.Model):
     effective_subject_id = fields.Many2one(
         comodel_name="benglish.subject",
         string="Asignatura Efectiva",
-        ondelete="restrict",
+        ondelete="cascade",
         help="Asignatura real contabilizada para este estudiante en esta sesión.",
     )
 

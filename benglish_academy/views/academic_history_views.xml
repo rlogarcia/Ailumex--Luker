@@ -12,6 +12,7 @@
         <field name="arch" type="xml">
             <list string="Bitácora Académica"
                 create="false"
+                delete="true"
                 default_order="session_date desc, session_time_start desc"
                 decoration-success="attendance_status=='attended' or attended==True"
                 decoration-danger="attendance_status=='absent'"
@@ -40,7 +41,7 @@
         <field name="name">benglish.academic.history.form</field>
         <field name="model">benglish.academic.history</field>
         <field name="arch" type="xml">
-            <form string="Bitácora Académica" create="false" delete="false">
+            <form string="Bitácora Académica" create="false" delete="true">
                 <header>
                     <button name="action_mark_attended" string="Marcar Asistió"
                         type="object" class="btn-primary"

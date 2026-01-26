@@ -170,5 +170,33 @@
             <field name="alias_student">Oral Test</field>
         </record>
 
+        <!-- =============================== -->
+        <!-- Plantilla SING IT - Benglish    -->
+        <!-- =============================== -->
+
+        <record id="agenda_template_benglish_sing_it" model="benglish.agenda.template">
+            <field name="name">SING IT</field>
+            <field name="code">SING_IT</field>
+            <field name="program_id" ref="program_benglish"/>
+            <field name="subject_category">conversation_club</field>
+            <field name="mapping_mode">fixed</field>
+            <field name="fixed_subject_id" ref="subject_sing_it_benglish"/>
+            <field name="alias_student">SING IT</field>
+        </record>
+
+        <!-- =============================== -->
+        <!-- Plantilla SING IT - B teens     -->
+        <!-- =============================== -->
+
+        <record id="agenda_template_beteens_sing_it" model="benglish.agenda.template">
+            <field name="name">SING IT</field>
+            <field name="code">SING_IT</field>
+            <field name="program_id" ref="program_beteens"/>
+            <field name="subject_category">conversation_club</field>
+            <field name="mapping_mode">fixed</field>
+            <field name="fixed_subject_id" ref="subject_sing_it_beteens"/>
+            <field name="alias_student">SING IT</field>
+        </record>
+
     </data>
 </odoo>

@@ -1,5 +1,8 @@
 # 🔐 Sistema de Recuperación de Contraseña - Benglish Academy
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## 🎯 Resumen Ejecutivo
 
 Sistema completo de "¿Olvidaste tu contraseña?" integrado en el portal de Benglish Academy, con modal de 3 pasos (Identificación → Verificación OTP → Nueva Contraseña) sin salir de la página de login.

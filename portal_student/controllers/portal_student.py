@@ -147,14 +147,50 @@ class PortalStudentController(CustomerPortal):
     def _get_student_program_plan(self, student):
         if not student:
             return False, False
+        
+        # 1. Buscar en matrículas activas
         active_enrollment = student.enrollment_ids.sudo().filtered(
             lambda e: e.state in ["draft", "pending", "enrolled", "in_progress", "active"]
         ).sorted("enrollment_date", reverse=True)[:1]
         if active_enrollment:
             program = active_enrollment.program_id or active_enrollment.plan_id.program_id
             plan = active_enrollment.plan_id
+            _logger.info("[PROGRAM DEBUG] Found program from active enrollment: %s, plan: %s", 
+                        program.name if program else 'N/A', plan.name if plan else 'N/A')
             return program, plan
-        return student.program_id, student.plan_id
+        
+        # 2. Buscar en campos directos del estudiante
+        if student.program_id and student.plan_id:
+            _logger.info("[PROGRAM DEBUG] Found program from student fields: %s, plan: %s",
+                        student.program_id.name, student.plan_id.name)
+            return student.program_id, student.plan_id
+        
+        # 3. Buscar en TODAS las matrículas (incluyendo completadas)
+        all_enrollments = student.enrollment_ids.sudo().filtered(
+            lambda e: e.state in ["draft", "pending", "enrolled", "in_progress", "active", "completed"]
+        ).sorted("enrollment_date", reverse=True)[:1]
+        if all_enrollments:
+            program = all_enrollments.program_id or all_enrollments.plan_id.program_id
+            plan = all_enrollments.plan_id
+            _logger.info("[PROGRAM DEBUG] Found program from any enrollment: %s, plan: %s",
+                        program.name if program else 'N/A', plan.name if plan else 'N/A')
+            return program, plan
+        
+        # 4. Buscar si el estudiante tiene nivel/fase asignado y deducir el programa
+        if hasattr(student, 'current_level_id') and student.current_level_id:
+            level = student.current_level_id
+            if level.phase_id and level.phase_id.program_id:
+                program = level.phase_id.program_id
+                # Buscar plan por defecto del programa
+                plan = request.env['benglish.plan'].sudo().search([
+                    ('program_id', '=', program.id)
+                ], limit=1)
+                _logger.info("[PROGRAM DEBUG] Found program from current_level: %s, plan: %s",
+                            program.name, plan.name if plan else 'N/A')
+                return program, plan
+        
+        _logger.info("[PROGRAM DEBUG] No program found for student: %s", student.name)
+        return False, False
 
     def _get_student_current_unit(self, student):
         """
@@ -237,8 +273,58 @@ class PortalStudentController(CustomerPortal):
         return 1
 
     def _get_effective_subject(self, session, student, check_completed=True, check_prereq=True):
+        """
+        Obtiene el subject efectivo para una sesión y estudiante.
+        
+        LÓGICA ESPECIAL PARA B-CHECKS CON INASISTENCIA:
+        Si el estudiante tiene un B-check con 'absent' (no asistió), el sistema
+        debe permitir agendar un NUEVO B-check de la MISMA unidad, no avanzar.
+        """
         if not session or not student:
             return False
+        
+        # Verificar si es B-check
+        base_subject = session.subject_id
+        is_bcheck = self._is_prerequisite_subject(base_subject) if base_subject else False
+        
+        if is_bcheck and check_completed:
+            # Para B-checks: Verificar si hay registro con 'absent' sin 'attended'
+            History = request.env['benglish.academic.history'].sudo()
+            Subject = request.env['benglish.subject'].sudo()
+            
+            # Buscar B-checks del mismo programa ordenados por unit_number
+            program_id = base_subject.program_id.id if base_subject.program_id else False
+            if program_id:
+                bcheck_subjects = Subject.search([
+                    ('subject_category', '=', 'bcheck'),
+                    ('program_id', '=', program_id),
+                ], order='unit_number asc')
+                
+                # Buscar la primera unidad donde tiene 'absent' pero NO 'attended'
+                for bcheck_subj in bcheck_subjects:
+                    has_attended = History.search_count([
+                        ('student_id', '=', student.id),
+                        ('subject_id', '=', bcheck_subj.id),
+                        ('attendance_status', '=', 'attended')
+                    ]) > 0
+                    
+                    has_absent = History.search_count([
+                        ('student_id', '=', student.id),
+                        ('subject_id', '=', bcheck_subj.id),
+                        ('attendance_status', '=', 'absent')
+                    ]) > 0
+                    
+                    # Si tiene 'absent' pero NO 'attended', debe agendar este B-check
+                    if has_absent and not has_attended:
+                        _logger.info(f"[BCHECK RECOVERY] Estudiante {student.id} tiene B-check Unidad {bcheck_subj.unit_number} con 'absent'. Forzando resolución a esta unidad.")
+                        return bcheck_subj
+                    
+                    # Si NO tiene ni 'attended' ni 'absent', esta es la siguiente unidad pendiente
+                    if not has_attended and not has_absent:
+                        _logger.info(f"[BCHECK NEXT] Estudiante {student.id} siguiente B-check pendiente: Unidad {bcheck_subj.unit_number}")
+                        return bcheck_subj
+        
+        # Lógica original para otros casos
         if hasattr(session, "resolve_effective_subject"):
             subject = session.resolve_effective_subject(
                 student,
@@ -464,47 +550,114 @@ class PortalStudentController(CustomerPortal):
         return (start_local - now_local) >= timedelta(minutes=minutos_cancelar)
 
     def _ensure_session_enrollment(self, session, student):
+        """
+        Crea o actualiza el enrollment de un estudiante en una sesión.
+        
+        LÓGICA ESPECIAL PARA B-CHECKS CON INASISTENCIA:
+        Si el estudiante tiene un B-check con 'absent', se debe forzar
+        que el effective_subject_id sea de la unidad con 'absent', no la siguiente.
+        """
         SessionEnrollment = request.env["benglish.session.enrollment"].sudo()
+        
+        # Obtener el effective_subject correcto usando nuestra lógica de recuperación
+        effective_subject = self._get_effective_subject(
+            session, student, check_completed=True, check_prereq=False
+        )
+        
         enrollment = SessionEnrollment.search(
             [("session_id", "=", session.id), ("student_id", "=", student.id)],
             limit=1,
         )
         if enrollment:
+            # Actualizar effective_subject_id si es diferente
+            if effective_subject and enrollment.effective_subject_id != effective_subject:
+                _logger.info(f"[ENROLLMENT DEBUG] Actualizando effective_subject_id de {enrollment.effective_subject_id.name if enrollment.effective_subject_id else 'None'} a {effective_subject.name}")
+                enrollment.write({'effective_subject_id': effective_subject.id})
+            
             if enrollment.state == "pending":
                 enrollment.action_confirm()
             elif enrollment.state == "cancelled":
                 enrollment.write({"state": "pending"})
+                if effective_subject:
+                    enrollment.write({'effective_subject_id': effective_subject.id})
                 enrollment.action_confirm()
             return enrollment
 
-        enrollment = SessionEnrollment.create(
-            {
-                "session_id": session.id,
-                "student_id": student.id,
-                "state": "pending",
-            }
-        )
+        # Crear nuevo enrollment con effective_subject_id explícito
+        vals = {
+            "session_id": session.id,
+            "student_id": student.id,
+            "state": "pending",
+        }
+        if effective_subject:
+            vals['effective_subject_id'] = effective_subject.id
+            _logger.info(f"[ENROLLMENT DEBUG] Creando enrollment con effective_subject_id={effective_subject.name} (Unit {effective_subject.unit_number})")
+        
+        enrollment = SessionEnrollment.create(vals)
         enrollment.action_confirm()
         return enrollment
 
     def _cancel_session_enrollment(self, session, student, target_state="cancelled"):
+        """
+        Cancela la inscripción de un estudiante en una sesión.
+        Esto libera el cupo para que otro estudiante pueda agendarlo.
+        
+        Args:
+            session: Sesión académica
+            student: Estudiante
+            target_state: Estado objetivo ('cancelled' o 'absent')
+        
+        Returns:
+            enrollment o False
+        """
         SessionEnrollment = request.env["benglish.session.enrollment"].sudo()
         enrollment = SessionEnrollment.search(
             [("session_id", "=", session.id), ("student_id", "=", student.id)],
             limit=1,
         )
         if not enrollment:
+            _logger.info(f"[CANCEL ENROLLMENT] No enrollment found for session {session.id}, student {student.id}")
             return False
+        
+        _logger.info(f"[CANCEL ENROLLMENT] Processing enrollment {enrollment.id} - Session: {session.display_name}, Student: {student.name}, Current state: {enrollment.state}, Target: {target_state}")
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # CRÍTICO: LIBERAR CUPO
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # El enrolled_count se calcula solo con state="confirmed"
+        # Al cambiar a cualquier otro estado (cancelled, absent), el cupo se libera
+        # ═══════════════════════════════════════════════════════════════════════════════
+        
+        old_state = enrollment.state
+        
         if target_state == "absent":
-            if enrollment.state != "absent":
+            if enrollment.state not in ["attended", "absent"]:
                 enrollment.write({"state": "absent"})
+                enrollment.flush_recordset()  # Forzar persistencia
+                _logger.info(f"[CANCEL ENROLLMENT] ✅ Changed state from {old_state} to absent")
             return enrollment
-        if enrollment.state in ["cancelled", "attended", "absent"]:
+        
+        # Para target_state = "cancelled"
+        if enrollment.state == "attended":
+            _logger.info(f"[CANCEL ENROLLMENT] ⚠️ Cannot cancel - student already attended")
             return enrollment
+        
+        if enrollment.state == "cancelled":
+            _logger.info(f"[CANCEL ENROLLMENT] Already cancelled")
+            return enrollment
+        
+        # Cancelar y forzar liberación de cupo
         try:
             enrollment.action_cancel()
-        except Exception:
+            _logger.info(f"[CANCEL ENROLLMENT] ✅ Successfully cancelled enrollment {enrollment.id} (was {old_state})")
+        except Exception as e:
+            _logger.warning(f"[CANCEL ENROLLMENT] action_cancel() failed: {e}, forcing state to cancelled")
             enrollment.write({"state": "cancelled"})
+            enrollment.flush_recordset()  # Forzar persistencia
+        
+        # Invalidar caché de la sesión para forzar recálculo de available_spots
+        session.invalidate_recordset(['enrolled_count', 'available_spots', 'is_full', 'occupancy_rate'])
+        
         return enrollment
 
     def _apply_late_cancel_failure(self, student, session):
@@ -829,59 +982,142 @@ class PortalStudentController(CustomerPortal):
         plans = enrollments.mapped("plan_id")
 
         structure = []
-        for program in programs.sorted(key=lambda p: p.sequence or 0):
-            program_plans = plans.filtered(lambda p: p.program_id == program).sorted(
-                key=lambda p: p.sequence or 0
-            )
-            plan_items = []
-            for plan in program_plans:
-                # Las fases están relacionadas con el programa, no con el plan directamente
-                # Filtrar fases del programa que tengan niveles con asignaturas del estudiante
-                plan_phases = phases.filtered(lambda ph: ph.program_id == program).sorted(
-                    key=lambda ph: ph.sequence or 0
+        
+        # Si hay matrículas activas, construir estructura basada en matrículas
+        if enrollments:
+            for program in programs.sorted(key=lambda p: p.sequence or 0):
+                program_plans = plans.filtered(lambda p: p.program_id == program).sorted(
+                    key=lambda p: p.sequence or 0
                 )
-                phase_items = []
-                for phase in plan_phases:
-                    phase_levels = levels.filtered(lambda lv: lv.phase_id == phase).sorted(
-                        key=lambda lv: lv.sequence or 0
+                plan_items = []
+                for plan in program_plans:
+                    # Las fases están relacionadas con el programa, no con el plan directamente
+                    # Filtrar fases del programa que tengan niveles con asignaturas del estudiante
+                    plan_phases = phases.filtered(lambda ph: ph.program_id == program).sorted(
+                        key=lambda ph: ph.sequence or 0
                     )
-                    level_items = []
-                    for level in phase_levels:
-                        level_subjects = subjects.filtered(lambda sb: sb.level_id == level).sorted(
-                            key=lambda sb: sb.sequence or 0
+                    phase_items = []
+                    for phase in plan_phases:
+                        phase_levels = levels.filtered(lambda lv: lv.phase_id == phase).sorted(
+                            key=lambda lv: lv.sequence or 0
                         )
-                        # TPE14: Preparar información de cada asignatura con docente y sede
-                        subject_details = []
-                        for subject in level_subjects:
-                            # Buscar matrícula(s) activa(s) para esta asignatura
-                            subject_enrollments = enrollments.filtered(
-                                lambda e: e.subject_id.id == subject.id
-                            ).sorted(key=lambda e: e.enrollment_date or datetime.min, reverse=True)
+                        level_items = []
+                        for level in phase_levels:
+                            level_subjects = subjects.filtered(lambda sb: sb.level_id == level).sorted(
+                                key=lambda sb: sb.sequence or 0
+                            )
+                            # TPE14: Preparar información de cada asignatura con docente y sede
+                            subject_details = []
+                            for subject in level_subjects:
+                                # Buscar matrícula(s) activa(s) para esta asignatura
+                                subject_enrollments = enrollments.filtered(
+                                    lambda e: e.subject_id.id == subject.id
+                                ).sorted(key=lambda e: e.enrollment_date or datetime.min, reverse=True)
+                                
+                                # Obtener la matrícula más reciente (solo si existe)
+                                enrollment = subject_enrollments[:1] if subject_enrollments else request.env['benglish.enrollment'].sudo().browse()
+                                
+                                subject_info = {
+                                    "subject": subject,
+                                    "enrollment": enrollment if enrollment else False,
+                                    "campus": enrollment.campus_id if enrollment else None,
+                                    "subcampus": enrollment.subcampus_id if enrollment else None,
+                                    "group": enrollment.group_id if enrollment else None,
+                                    "delivery_mode": enrollment.delivery_mode if enrollment else False,
+                                    "state": enrollment.state if enrollment else False,
+                                }
+                                subject_details.append(subject_info)
                             
-                            # Obtener la matrícula más reciente (solo si existe)
-                            enrollment = subject_enrollments[:1] if subject_enrollments else request.env['benglish.enrollment'].sudo().browse()
-                            
-                            subject_info = {
-                                "subject": subject,
-                                "enrollment": enrollment if enrollment else False,
-                                "campus": enrollment.campus_id if enrollment else None,
-                                "subcampus": enrollment.subcampus_id if enrollment else None,
-                                "group": enrollment.group_id if enrollment else None,
-                                "delivery_mode": enrollment.delivery_mode if enrollment else False,
-                                "state": enrollment.state if enrollment else False,
-                            }
-                            subject_details.append(subject_info)
+                            level_items.append(
+                                {
+                                    "level": level,
+                                    "subjects": level_subjects,  # Mantenemos por compatibilidad
+                                    "subject_details": subject_details,  # Nueva estructura con detalles
+                                }
+                            )
+                        phase_items.append({"phase": phase, "levels": level_items})
+                    plan_items.append({"plan": plan, "phases": phase_items})
+                structure.append({"program": program, "plans": plan_items})
+        else:
+            # Si no hay matrículas, mostrar estructura básica del programa/plan asignado al estudiante
+            _logger.info("[PROGRAM DEBUG] No enrollments found, trying to get program from student fields")
+            student_program, student_plan = self._get_student_program_plan(student)
+            _logger.info("[PROGRAM DEBUG] student_program: %s, student_plan: %s", 
+                        student_program.name if student_program else 'N/A',
+                        student_plan.name if student_plan else 'N/A')
+            
+            if student_program and student_plan:
+                # Obtener modalidad preferida del estudiante
+                delivery_mode = student.preferred_delivery_mode or 'presencial'
+                
+                # Crear estructura básica - mostrar solo el nivel actual del estudiante
+                phase_items = []
+                
+                # Intentar obtener la fase del estudiante
+                student_phase = None
+                student_level = None
+                
+                if hasattr(student, 'current_phase_id') and student.current_phase_id:
+                    student_phase = student.current_phase_id
+                if hasattr(student, 'current_level_id') and student.current_level_id:
+                    student_level = student.current_level_id
+                    if not student_phase and student_level.phase_id:
+                        student_phase = student_level.phase_id
+                
+                # Si tiene fase/nivel, mostrar solo eso
+                if student_phase and student_level:
+                    level_items = [{
+                        "level": student_level,
+                        "subjects": request.env['benglish.subject'].sudo().browse(),
+                        "subject_details": [{
+                            "subject": None,
+                            "enrollment": False,
+                            "campus": None,
+                            "subcampus": None,
+                            "group": None,
+                            "delivery_mode": delivery_mode,
+                            "state": False,
+                        }],
+                    }]
+                    phase_items = [{"phase": student_phase, "levels": level_items}]
+                else:
+                    # Buscar todas las fases del programa
+                    phases = request.env['benglish.phase'].sudo().search([
+                        ('program_id', '=', student_program.id)
+                    ], order='sequence')
+                    
+                    for phase in phases:
+                        levels = request.env['benglish.level'].sudo().search([
+                            ('phase_id', '=', phase.id)
+                        ], order='sequence')
                         
-                        level_items.append(
-                            {
+                        level_items = []
+                        for level in levels:
+                            # Preparar información básica del nivel
+                            subject_details = [{
+                                "subject": None,
+                                "enrollment": False,
+                                "campus": None,
+                                "subcampus": None,
+                                "group": None,
+                                "delivery_mode": delivery_mode,
+                                "state": False,
+                            }]
+                            
+                            level_items.append({
                                 "level": level,
-                                "subjects": level_subjects,  # Mantenemos por compatibilidad
-                                "subject_details": subject_details,  # Nueva estructura con detalles
-                            }
-                        )
-                    phase_items.append({"phase": phase, "levels": level_items})
-                plan_items.append({"plan": plan, "phases": phase_items})
-            structure.append({"program": program, "plans": plan_items})
+                                "subjects": request.env['benglish.subject'].sudo().browse(),
+                                "subject_details": subject_details,
+                            })
+                        
+                        phase_items.append({"phase": phase, "levels": level_items})
+                
+                plan_items = [{"plan": student_plan, "phases": phase_items}]
+                structure.append({"program": student_program, "plans": plan_items})
+                _logger.info("[PROGRAM DEBUG] Built structure with %d programs", len(structure))
+            else:
+                _logger.info("[PROGRAM DEBUG] No program/plan found for student, structure will be empty")
+        
         return structure
 
     def _serialize_student(self, student):
@@ -1238,8 +1474,18 @@ class PortalStudentController(CustomerPortal):
         # Filtrar sedes según modalidad del estudiante
         # EXCEPCIÓN: Si hay B-checks/Oral Tests en sedes virtuales, NO filtrar (mostrar todo)
         if student_is_virtual and not has_bcheck_or_oral:
-            # Estudiantes virtuales puros solo ven sedes virtuales
-            available_campuses_domain.append(("campus_type", "=", "online"))
+            # NUEVO: Estudiantes virtuales ven TODAS las sedes que tengan sesiones virtuales o híbridas
+            # No limitamos solo a campus_type="online", sino a sedes con horarios virtuales disponibles
+            virtual_campus_ids = set()
+            for session in available_sessions_for_campuses:
+                if session.delivery_mode in ['virtual', 'hybrid'] and session.campus_id:
+                    virtual_campus_ids.add(session.campus_id.id)
+            
+            if virtual_campus_ids:
+                available_campuses_domain.append(("id", "in", list(virtual_campus_ids)))
+            else:
+                # Fallback: si no hay sesiones virtuales/híbridas, mostrar sedes tipo "online"
+                available_campuses_domain.append(("campus_type", "=", "online"))
         elif not student_is_virtual and student.preferred_delivery_mode == "presential" and not has_bcheck_or_oral:
             # Estudiantes presenciales puros solo ven sedes físicas (NO virtuales)
             # EXCEPTO cuando hay B-checks/Oral Tests virtuales disponibles
@@ -1276,7 +1522,16 @@ class PortalStudentController(CustomerPortal):
             
             # Aplicar mismo filtro que arriba
             if student_is_virtual and not has_bcheck_or_oral_fallback:
-                fallback_campus_domain.append(("campus_type", "=", "online"))
+                # Fallback: estudiantes virtuales ven sedes que tengan sesiones virtuales/híbridas
+                virtual_fallback_campus_ids = set()
+                for session in fallback_sessions:
+                    if session.delivery_mode in ['virtual', 'hybrid'] and session.campus_id:
+                        virtual_fallback_campus_ids.add(session.campus_id.id)
+                
+                if virtual_fallback_campus_ids:
+                    fallback_campus_domain.append(("id", "in", list(virtual_fallback_campus_ids)))
+                else:
+                    fallback_campus_domain.append(("campus_type", "=", "online"))
             elif not student_is_virtual and student.preferred_delivery_mode == "presential" and not has_bcheck_or_oral_fallback:
                 fallback_campus_domain.append(("campus_type", "!=", "online"))
             
@@ -1300,7 +1555,9 @@ class PortalStudentController(CustomerPortal):
             using_default_campus = True
             default_campus_source = "agenda"
 
-        if student_is_virtual:
+        # NUEVO: Solo asignar sede virtual automáticamente si NO hay filtro manual
+        if student_is_virtual and not filter_campus_id and not filter_city and not selected_campus:
+            _logger.info("[SEDE DEBUG] Estudiante virtual sin filtro manual - aplicando sede virtual automática")
             virtual_campus = Campus.search([("campus_type", "=", "online"), ("active", "=", True)], limit=1)
             if virtual_campus:
                 selected_campus = virtual_campus
@@ -1309,6 +1566,9 @@ class PortalStudentController(CustomerPortal):
                 default_campus_source = "virtual"
                 filter_mode = "virtual"
                 plan.sudo().write({"filter_campus_id": virtual_campus.id, "filter_city": selected_city})
+                _logger.info(f"[SEDE DEBUG] Sede virtual automática asignada: {virtual_campus.name}")
+        elif student_is_virtual and (filter_campus_id or filter_city or selected_campus):
+            _logger.info(f"[SEDE DEBUG] Estudiante virtual con filtro manual - respetando selección: campus_id={filter_campus_id}, city={filter_city}, selected={selected_campus.name if selected_campus else 'None'}")
 
         agendas_for_city = None
         if selected_city and not selected_campus:
@@ -1791,8 +2051,13 @@ class PortalStudentController(CustomerPortal):
         session = Session.browse(session_id)
         if not session or not session.exists():
             return {"status": "error", "message": _("No se encontro la clase seleccionada.")}
-        # HU-PE-CUPO-01 & T-PE-CUPO-01: Validar disponibilidad de cupos SIN revelar cifras
-        # Usar la capacidad de la sesión publicada (max_capacity) para evitar grupos sin nombre/capacidad
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # HU-PE-CUPO-01 & T-PE-CUPO-01: VALIDACIÓN DE CUPOS
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # Contar estudiantes ACTUALMENTE agendados (excluyendo al estudiante actual)
+        # Las líneas eliminadas (canceladas) NO se cuentan - esto garantiza que
+        # al cancelar, el cupo queda disponible inmediatamente.
         Line = request.env["portal.student.weekly.plan.line"].sudo()
         students_scheduled_count = Line.search_count(
             [("session_id", "=", session.id), ("plan_id.student_id", "!=", student.id)]
@@ -1800,7 +2065,15 @@ class PortalStudentController(CustomerPortal):
         max_capacity = session.max_capacity or 0
         is_full = bool(getattr(session, "is_full", False))
         available_spots = getattr(session, "available_spots", 0)
+        
+        # Log para debug de cupos
+        _logger.info(f"[CUPOS DEBUG] Session {session.id} ({session.display_name})")
+        _logger.info(f"[CUPOS DEBUG] - Estudiantes agendados (otros): {students_scheduled_count}")
+        _logger.info(f"[CUPOS DEBUG] - Capacidad máxima: {max_capacity}")
+        _logger.info(f"[CUPOS DEBUG] - is_full: {is_full}, available_spots: {available_spots}")
+        
         if is_full or (max_capacity and students_scheduled_count >= max_capacity) or (available_spots is not False and available_spots <= 0):
+            _logger.info(f"[CUPOS DEBUG] ❌ Sin cupos disponibles para sesión {session.id}")
             return {
                 "status": "error",
                 "message": _(
@@ -1810,6 +2083,8 @@ class PortalStudentController(CustomerPortal):
                 ),
                 "no_capacity": True,
             }
+        
+        _logger.info(f"[CUPOS DEBUG] ✅ Cupos disponibles: {max_capacity - students_scheduled_count if max_capacity else 'ilimitado'}")
 
         plan_model = request.env["portal.student.weekly.plan"].sudo()
         plan = plan_model.get_or_create_for_student(student, week_start or session.date)
@@ -1885,6 +2160,22 @@ class PortalStudentController(CustomerPortal):
                     "plan_id": plan.id,
                     "session_id": session.id,
                 })
+                
+                # ═══════════════════════════════════════════════════════════════════════════════
+                # CRÍTICO: Forzar cálculo inmediato del effective_subject_id para B-Checks
+                # ═══════════════════════════════════════════════════════════════════════════════
+                # Esto es especialmente importante para B-Checks que usan resolve_effective_subject
+                # para determinar la unidad específica del estudiante
+                # ═══════════════════════════════════════════════════════════════════════════════
+                if line.session_id and not line.effective_subject_id:
+                    _logger.info(f"[AGENDA DEBUG] Forzando cálculo de effective_subject_id para línea {line.id}")
+                    line._compute_effective_subject()
+                    line.flush_recordset()  # Forzar persistencia inmediata
+                    
+                    calculated_subject = line.effective_subject_id
+                    _logger.info(f"[AGENDA DEBUG] effective_subject_id calculado: {calculated_subject.name if calculated_subject else 'None'}")
+                    _logger.info(f"[AGENDA DEBUG] unit_number: {calculated_subject.unit_number if calculated_subject else 'None'}")
+                    _logger.info(f"[AGENDA DEBUG] subject_category: {calculated_subject.subject_category if calculated_subject else 'None'}")
         except ValidationError as e:
             return {"status": "error", "message": self._error_message(e)}
         except Exception as e:
@@ -1985,24 +2276,57 @@ class PortalStudentController(CustomerPortal):
         to_remove = (dependents | line).sorted(key=lambda l: l.start_datetime or fields.Datetime.now())
         removed_names = [self._format_session_label(ln.session_id) for ln in to_remove]
 
-        # Actualizar inscripciones en backend (cupo/estado)
+        # Log de cancelación
+        _logger.info(f"[CANCEL DEBUG] Cancelando línea {line_id} - Session: {line.session_id.display_name}")
+        _logger.info(f"[CANCEL DEBUG] Es prerrequisito: {is_prerequisite}")
+        _logger.info(f"[CANCEL DEBUG] Dependencias encontradas: {len(dependents)}")
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # CRÍTICO: LIBERAR CUPOS DE TODAS LAS SESIONES
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # SIEMPRE cancelamos el enrollment para liberar el cupo, sin importar:
+        # - Si es cancelación tardía (apply_failure): El estudiante recibe falla pero el cupo se libera
+        # - Si la sesión ya terminó (state="done"): El enrollment puede seguir activo, cancelarlo
+        # 
+        # La ÚNICA excepción es si el estudiante ya asistió (state="attended"), 
+        # en cuyo caso no se puede cancelar
+        # ═══════════════════════════════════════════════════════════════════════════════
         for rem_line in to_remove:
+            if not rem_line.session_id:
+                continue
+            
+            # Determinar el estado objetivo según el caso
             if apply_failure and rem_line.id == line.id:
-                continue
-            if rem_line.session_id and rem_line.session_id.state == "done":
-                continue
-            self._cancel_session_enrollment(rem_line.session_id, student, target_state="cancelled")
+                # Cancelación tardía: marcar como ausente pero IGUAL liberar cupo
+                target = "absent"
+                _logger.info(f"[CANCEL DEBUG] ⚠️ Cancelación tardía - marcando como ausente: {rem_line.session_id.display_name}")
+            else:
+                target = "cancelled"
+            
+            _logger.info(f"[CANCEL DEBUG] Liberando cupo - Session: {rem_line.session_id.display_name}, target_state={target}")
+            result = self._cancel_session_enrollment(rem_line.session_id, student, target_state=target)
+            _logger.info(f"[CANCEL DEBUG] Resultado cancelación: {result}")
 
-        message = _("Se eliminó la clase de tu agenda.")
+        message = _("✅ Clase eliminada de tu agenda. El cupo ha sido liberado.")
         warning_type = "success"
 
         if dependents:
             warning_type = "warning"
-            message = _("Se eliminaron %s clases dependientes por prerrequisitos.") % len(to_remove)
-            if is_prerequisite:
-                message = _("Al eliminar el prerrequisito se cancelaron %s clases que dependían de él.") % len(to_remove)
+            # Obtener unidad del B-Check cancelado para mensaje más claro
+            line_unit = line_subject.unit_number if line_subject and hasattr(line_subject, 'unit_number') else 0
+            if is_prerequisite and line_unit:
+                message = _("✅ Se eliminó el B-Check Unidad {} y {} Skills de la misma unidad.\n"
+                           "Los cupos han sido liberados.").format(line_unit, len(dependents))
+            else:
+                message = _("✅ Se eliminaron {} clases dependientes.\n"
+                           "Los cupos han sido liberados.").format(len(to_remove))
         elif is_prerequisite:
-            message = _("Se eliminó el prerrequisito agendado para esta semana.")
+            line_unit = line_subject.unit_number if line_subject and hasattr(line_subject, 'unit_number') else 0
+            if line_unit:
+                message = _("✅ Se eliminó el B-Check Unidad {}.\n"
+                           "El cupo ha sido liberado.").format(line_unit)
+            else:
+                message = _("✅ Se eliminó el prerrequisito.\nEl cupo ha sido liberado.")
 
         if skip_penalty:
             warning_type = "info"

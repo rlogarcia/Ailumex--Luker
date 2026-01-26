@@ -1,5 +1,8 @@
 # Plantilla Excel para Importación Masiva
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 Este documento describe la estructura del archivo Excel necesario para la importación masiva.
 
 ## Columnas Requeridas (Primera Fila - Encabezados)

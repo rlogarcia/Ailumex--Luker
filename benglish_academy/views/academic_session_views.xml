@@ -101,7 +101,7 @@
                                     options="{'no_create': True}" />
                                 <field name="is_oral_test_template" invisible="1"/>
                                 <field name="audience_phase_id"
-                                    domain="[('program_id', '=', program_id)]"
+                                    domain="[('program_id', '=', program_id), ('active', '=', True)]"
                                     options="{'no_create': True}"
                                     invisible="not template_id"/>
                                 

@@ -1,5 +1,8 @@
 # TRASLADO/COMBINACION DE ESTUDIANTES
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## A) Descripcion funcional final
 Esta funcionalidad permite a Operacion mover estudiantes desde una sesion origen
 hacia una sesion destino equivalente, para consolidar horarios duplicados sin

@@ -79,10 +79,16 @@ class GenerateHistoricalProgressWizard(models.TransientModel):
             raise UserError(_("La fecha histórica debe ser anterior a hoy"))
         
         # Obtener estudiantes
-        students = self.student_ids if self.student_ids else self.env['benglish.student'].search([
-            ('active', '=', True),
-            ('current_level_id', '!=', False)
-        ])
+        # IMPORTANTE: NO filtrar por current_level_id porque es un campo computado
+        # que NO incluye matrículas en 'draft' (matrículas manuales recién creadas)
+        if self.student_ids:
+            students = self.student_ids
+        else:
+            # Buscar estudiantes con al menos una matrícula (incluyendo draft)
+            students = self.env['benglish.student'].search([
+                ('active', '=', True),
+                ('enrollment_ids', '!=', False)
+            ])
         
         if not students:
             raise UserError(_("No hay estudiantes para procesar"))
@@ -103,37 +109,107 @@ class GenerateHistoricalProgressWizard(models.TransientModel):
         
         for student in students:
             try:
-                # Obtener matrícula activa
+                # ═══════════════════════════════════════════════════════════════════════
+                # DEBUG EXHAUSTIVO: Ver todas las matrículas del estudiante
+                # ═══════════════════════════════════════════════════════════════════════
+                _logger.info("=" * 100)
+                _logger.info(f"🔍 [WIZARD] PROCESANDO ESTUDIANTE: {student.code} - {student.name}")
+                _logger.info(f"    📊 Total de matrículas: {len(student.enrollment_ids)}")
+                
+                for idx, enr in enumerate(student.enrollment_ids, 1):
+                    _logger.info(
+                        f"    📄 Matrícula #{idx}: "
+                        f"Código={enr.enrollment_code or 'N/A'} | "
+                        f"Estado={enr.state} | "
+                        f"Fecha={enr.enrollment_date} | "
+                        f"Nivel={enr.current_level_id.name if enr.current_level_id else 'N/A'} | "
+                        f"Programa={enr.program_id.name if enr.program_id else 'N/A'}"
+                    )
+                
+                # Obtener matrícula activa (incluyendo draft para matrículas manuales recién creadas)
                 active_enrollments = student.enrollment_ids.filtered(
-                    lambda e: e.state in ['enrolled', 'in_progress']
+                    lambda e: e.state in ['enrolled', 'in_progress', 'active', 'draft']
                 ).sorted('enrollment_date', reverse=True)
                 
+                _logger.info(f"    ✅ Matrículas con estado válido: {len(active_enrollments)}")
+                
                 if not active_enrollments:
+                    _logger.warning(f"    ⚠️ {student.name}: SIN MATRÍCULA ACTIVA - OMITIDO")
                     results.append(f"⚠️ {student.name}: Sin matrícula activa - OMITIDO")
                     continue
                 
                 enrollment = active_enrollments[0]
-                current_level = enrollment.level_id
+                _logger.info(f"    🎯 Matrícula seleccionada: {enrollment.enrollment_code or 'N/A'}")
+                
+                # CORREGIDO: Usar current_level_id (nuevo) en lugar de level_id (legacy)
+                current_level = enrollment.current_level_id or enrollment.level_id
                 program = enrollment.program_id
                 plan = student.plan_id
                 
+                _logger.info(
+                    f"    🎓 Nivel actual: {current_level.name if current_level else 'N/A'} "
+                    f"(ID: {current_level.id if current_level else 'N/A'})"
+                )
+                _logger.info(f"    📚 Programa: {program.name if program else 'N/A'}")
+                _logger.info(f"    📋 Plan: {plan.name if plan else 'N/A'}")
+                
                 if not current_level or not program:
+                    _logger.error(f"    ❌ {student.name}: FALTA nivel={bool(current_level)} o programa={bool(program)} - OMITIDO")
                     results.append(f"⚠️ {student.name}: Sin nivel/programa - OMITIDO")
                     continue
                 
-                current_unit = current_level.max_unit or 0
+                # ═══════════════════════════════════════════════════════════════════════
+                # CORRECCIÓN CRÍTICA: Calcular unidad máxima completada correctamente
+                # ═══════════════════════════════════════════════════════════════════════
+                _logger.info(f"    🔍 BUSCANDO asignaturas del nivel ID={current_level.id}")
                 
-                if current_unit <= 1:
-                    results.append(f"✓ {student.name}: En Unit {current_unit} - Sin historial previo necesario")
+                # Buscar asignaturas del nivel actual para determinar la unidad mínima
+                current_level_subjects = Subject.search([
+                    ('level_id', '=', current_level.id),
+                    ('active', '=', True),
+                    ('unit_number', '>', 0)  # Solo asignaturas con unit_number definido
+                ], order='unit_number ASC')
+                
+                _logger.info(f"    📚 Asignaturas encontradas en el nivel: {len(current_level_subjects)}")
+                
+                if not current_level_subjects:
+                    # Fallback: usar max_unit del nivel si no hay asignaturas
+                    _logger.warning(
+                        f"    ⚠️ Nivel {current_level.name} SIN asignaturas con unit_number. "
+                        f"Usando max_unit={current_level.max_unit} como referencia."
+                    )
+                    min_unit_current_level = current_level.max_unit or 0
+                else:
+                    # Obtener la unidad mínima del nivel actual
+                    units_in_level = current_level_subjects.mapped('unit_number')
+                    min_unit_current_level = min(units_in_level)
+                    _logger.info(
+                        f"    📊 Unidades en el nivel: {sorted(set(units_in_level))}, "
+                        f"Mínima: {min_unit_current_level}"
+                    )
+                
+                # La unidad máxima completada es la anterior a la mínima del nivel actual
+                max_completed_unit = min_unit_current_level - 1
+                
+                _logger.info(
+                    f"    ✅ CÁLCULO FINAL: "
+                    f"Unit mínima del nivel={min_unit_current_level}, "
+                    f"Unit máxima completada={max_completed_unit}"
+                )
+                
+                if max_completed_unit < 1:
+                    _logger.info(f"    ℹ️ Unit máxima completada < 1, no hay historial previo necesario")
+                    results.append(f"✓ {student.name}: En Unit {min_unit_current_level} - Sin historial previo necesario")
                     continue
                 
-                # Buscar asignaturas de unidades anteriores
-                previous_units = list(range(1, current_unit))
+                # Buscar asignaturas de unidades anteriores (1 hasta max_completed_unit)
+                previous_units = list(range(1, max_completed_unit + 1))
+                _logger.info(f"    🎯 Generando historial para unidades: {previous_units}")
                 
                 # BUSCAR TODAS las asignaturas de unidades previas (bcheck, bskills, oral_test, etc.)
                 # Incluir:
                 # 1. Asignaturas con unit_number en previous_units (B-checks, B-skills 1-4 únicamente)
-                # 2. Oral Tests cuyo unit_block_end < current_unit (NO incluir el del nivel actual)
+                # 2. Oral Tests cuyo unit_block_end <= max_completed_unit
                 # NOTA: Para bskills solo generar 1-4 (curriculares), no las extras (5-6-7)
                 subjects_to_complete = Subject.search([
                     ('program_id', '=', program.id),
@@ -148,10 +224,13 @@ class GenerateHistoricalProgressWizard(models.TransientModel):
                                     ('bskill_number', '<=', 4),  # Solo bskills 1-4
                         '&',
                             ('subject_category', '=', 'oral_test'),
-                            ('unit_block_end', '<', current_unit)  # MENOR QUE, no menor o igual
+                            ('unit_block_end', '<=', max_completed_unit)  # Hasta la unidad completada
                 ], order='unit_number, unit_block_end, sequence')
                 
+                _logger.info(f"    📚 Asignaturas a completar encontradas: {len(subjects_to_complete)}")
+                
                 if not subjects_to_complete:
+                    _logger.warning(f"    ⚠️ No se encontraron asignaturas previas para el programa {program.name}")
                     results.append(f"⚠️ {student.name}: No hay asignaturas previas")
                     continue
                 
@@ -163,7 +242,7 @@ class GenerateHistoricalProgressWizard(models.TransientModel):
                 ])
                 
                 _logger.info(
-                    f"Estudiante {student.name}: Unit actual={current_unit}, "
+                    f"📋 Estudiante {student.name}: Unit máxima completada={max_completed_unit}, "
                     f"Units previas={previous_units}, "
                     f"Asignaturas totales={len(subjects_to_complete)}, "
                     f"Historial existente={len(existing_history)}"
@@ -173,6 +252,16 @@ class GenerateHistoricalProgressWizard(models.TransientModel):
                 subjects_without_history = subjects_to_complete.filtered(
                     lambda s: s.id not in existing_subject_ids
                 )
+                
+                _logger.info(
+                    f"🔍 [DEBUG] {student.name}: "
+                    f"Asignaturas sin historial={len(subjects_without_history)}, "
+                    f"Ya tienen historial={len(existing_history)}"
+                )
+                
+                # Si no hay asignaturas sin historial, verificar si al menos hay que actualizar progreso
+                if not subjects_without_history and not self.dry_run:
+                    _logger.info(f"✓ {student.name}: Ya tiene historial completo para todas las asignaturas")
                 
                 # Buscar matrícula al plan para actualizar progreso
                 plan_enrollment = student.enrollment_ids.filtered(
@@ -244,14 +333,16 @@ class GenerateHistoricalProgressWizard(models.TransientModel):
                     total_created += created_count
                     
                     if created_count > 0 or progress_updated > 0:
-                        results.append(f"✅ {student.name}: {created_count} historial + {progress_updated} progreso (Units {min(previous_units)}-{max(previous_units)})")
+                        unit_range = f"Units {min(previous_units)}-{max(previous_units)}" if previous_units else "Sin unidades"
+                        results.append(f"✅ {student.name}: {created_count} historial + {progress_updated} progreso ({unit_range})")
                     else:
                         results.append(f"✓ {student.name}: Ya tiene historial y progreso completo")
                 else:
                     # Modo simulación
                     created_count = len(subjects_without_history)
                     progress_count = len(subjects_to_complete)
-                    results.append(f"[SIMULACIÓN] {student.name}: Se crearían {created_count} historial + {progress_count} progreso (Units {min(previous_units)}-{max(previous_units)})")
+                    unit_range = f"Units {min(previous_units)}-{max(previous_units)}" if previous_units else "Sin unidades"
+                    results.append(f"[SIMULACIÓN] {student.name}: Se crearían {created_count} historial + {progress_count} progreso ({unit_range})")
             
             except Exception as e:
                 results.append(f"❌ {student.name}: ERROR - {str(e)}")

@@ -94,14 +94,23 @@ def generate_historical_progress(env, student_ids=None, dry_run=False):
             
             # Buscar TODAS las asignaturas de unidades anteriores
             # Asignaturas a marcar como completadas: Unit 1 hasta Unit (current_unit - 1)
+            # IMPORTANTE: Para bskills solo generar 1-4 (curriculares), no las extras (5-6-7)
             previous_units = list(range(1, current_unit))
             
             subjects_to_complete = Subject.search([
                 ('program_id', '=', program.id),
-                ('unit_number', 'in', previous_units),
+                ('active', '=', True),
                 '|',
-                ('subject_category', '=', 'bcheck'),
-                ('subject_category', '=', 'bskills')
+                    '&',
+                        ('unit_number', 'in', previous_units),
+                        '|',
+                            ('subject_category', '!=', 'bskills'),  # Incluir todas las no-bskills
+                            '&',
+                                ('subject_category', '=', 'bskills'),
+                                ('bskill_number', '<=', 4),  # ⭐ SOLO bskills 1-4
+                    '&',
+                        ('subject_category', '=', 'oral_test'),
+                        ('unit_block_end', '<', current_unit)  # Oral tests de bloques anteriores
             ], order='unit_number, sequence')
             
             if not subjects_to_complete:

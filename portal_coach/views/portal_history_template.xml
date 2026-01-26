@@ -109,9 +109,22 @@
                                     <!-- Información principal -->
                                     <div style="flex: 1;">
                                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                                            <div style="background: #10b981; color: white; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;">
-                                                <i class="fa fa-check-circle"></i> DICTADA
-                                            </div>
+                                            <!-- Badge de estado según novedad -->
+                                            <t t-if="session.incident_type == 'aplazada'">
+                                                <div style="background: #f59e0b; color: white; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                                                    <i class="fa fa-clock-o"></i> APLAZADA
+                                                </div>
+                                            </t>
+                                            <t t-elif="session.incident_type == 'material'">
+                                                <div style="background: #3b82f6; color: white; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                                                    <i class="fa fa-file-text-o"></i> MATERIAL
+                                                </div>
+                                            </t>
+                                            <t t-else="">
+                                                <div style="background: #10b981; color: white; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                                                    <i class="fa fa-check-circle"></i> DICTADA
+                                                </div>
+                                            </t>
                                             <div style="background: #f1f5f9; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #475569;">
                                                 <i class="fa fa-calendar"></i> <t t-esc="session.date.strftime('%d/%m/%Y')"/>
                                             </div>

@@ -1,5 +1,8 @@
 # Importación Masiva de Estudiantes y Matrículas
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## 📋 Descripción
 
 Este módulo implementa un sistema de importación masiva de estudiantes y matrículas desde archivos Excel siguiendo una especificación técnica detallada.

@@ -153,56 +153,6 @@ class StudyPlan(models.Model):
         help="Si está inactivo, el plan no enseñara las asignaturas asociadas",
     )
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    # CAMPOS ESPECÍFICOS PARA PLANES CORTESÍA
-    # ═══════════════════════════════════════════════════════════════════════════
-
-    is_courtesy_plan = fields.Boolean(
-        string="Es Plan Cortesía",
-        default=False,
-        tracking=True,
-        help="Indica si este es un plan cortesía (sin costo, activación progresiva por módulos)",
-    )
-
-    courtesy_activation_mode = fields.Selection(
-        selection=[
-            ("complete", "Activación Completa"),
-            ("module", "Activación por Módulo"),
-        ],
-        string="Modo de Activación Cortesía",
-        default="complete",
-        tracking=True,
-        help="Cortesía: 'module' = activación progresiva Basic → Intermediate → Advanced. "
-        "'complete' = activación total al inicio (planes regulares)",
-    )
-
-    courtesy_inactivity_days = fields.Integer(
-        string="Días Máx. Inactividad",
-        default=0,
-        tracking=True,
-        help="Cortesía: días máximos sin asistir/agendar antes de cancelación automática. "
-        "0 = sin límite (planes regulares), 21 = 3 semanas (cortesía estándar)",
-    )
-
-    courtesy_reason = fields.Selection(
-        selection=[
-            ("commercial", "Acuerdo Comercial"),
-            ("event", "Evento Especial"),
-            ("institutional", "Convenio Interinstitucional"),
-            ("employee", "Colaborador"),
-            ("other", "Otro"),
-        ],
-        string="Motivo de Cortesía",
-        tracking=True,
-        help="Razón por la que se otorga la cortesía (solo para planes cortesía)",
-    )
-
-    courtesy_weekly_hours = fields.Float(
-        string="Horas Semanales Cortesía",
-        default=5.0,
-        help="Carga horaria semanal para planes cortesía (ej: 5 horas semanales)",
-    )
-
     # Relaciones
     program_id = fields.Many2one(
         comodel_name="benglish.program",
@@ -518,89 +468,20 @@ class StudyPlan(models.Model):
 
     def write(self, vals):
         """
-        PROTECCIÓN DE NO-RETROACTIVIDAD:
-
-        Si un plan tiene matrículas asociadas (como plan_frozen_id),
-        NO se pueden modificar campos académicos críticos.
-
-        REGLA DE NEGOCIO INNEGOCIABLE:
-        - Las matrículas congelan el plan vigente al momento de creación
-        - Modificar un plan NO debe afectar matrículas históricas
-        - Para cambios estructurales: crear NUEVA VERSIÓN del plan
+        MODIFICACIÓN FORZADA HABILITADA PARA GESTORES.
+        Permite modificar planes sin restricciones para facilitar gestión.
         """
-        # Permitir actualización del módulo aunque existan matrículas activas
-        if self.env.context.get("install_mode") or self.env.context.get("module_install") or self.env.context.get("module_upgrade") or self.env.context.get("update_module"):
-            return super(StudyPlan, self).write(vals)
-
         # Normalizar nombre a MAYÚSCULAS
         if "name" in vals and vals["name"]:
             vals["name"] = normalize_to_uppercase(vals["name"])
-        # Campos académicos críticos que NO se pueden modificar
-        protected_fields = {
-            "phase_ids",
-            "level_ids",
-            "subject_ids",
-            "duration_years",
-            "duration_months",
-            "total_hours",
-            "periodicity",
-            "periodicity_value",
-            "credits_value",
-            "modality",
-        }
-
-        # Verificar si se están modificando campos protegidos
-        modified_protected = protected_fields & set(vals.keys())
-
-        if modified_protected:
-            for plan in self:
-                enrollment_model = self.env["benglish.enrollment"]
-                if "plan_frozen_id" in enrollment_model._fields:
-                    plan_link_field = "plan_frozen_id"
-                elif "plan_id" in enrollment_model._fields:
-                    plan_link_field = "plan_id"
-                else:
-                    plan_link_field = None
-
-                if not plan_link_field:
-                    continue
-
-                # Buscar matrículas que usan este plan como plan_frozen_id/plan_id
-                enrollment_count = enrollment_model.search_count(
-                    [
-                        (plan_link_field, "=", plan.id),
-                        ("state", "in", ["active", "suspended", "finished"]),
-                    ]
-                )
-
-                if enrollment_count > 0:
-                    # Listar campos que se intentan modificar
-                    fields_list = ", ".join(
-                        [
-                            self._fields[f].string
-                            for f in modified_protected
-                            if f in self._fields
-                        ]
-                    )
-
-                    raise ValidationError(
-                        _(
-                            "⛔ PLAN PROTEGIDO - NO SE PUEDE MODIFICAR\n\n"
-                            '❌ El plan "%s" tiene %d matrícula(s) activa(s) asociada(s).\n\n'
-                            "🔒 Campos protegidos que intenta modificar:\n"
-                            "%s\n\n"
-                            "📚 FUNDAMENTO:\n"
-                            "Las matrículas representan contratos académicos que congelan "
-                            "el plan vigente al momento de su creación. Modificar el plan "
-                            "podría alterar condiciones contractuales históricas.\n\n"
-                            "✅ SOLUCIÓN:\n"
-                            "1. Crear una NUEVA VERSIÓN del plan (ej: Plan 2026 v2)\n"
-                            "2. Aplicar los cambios en la nueva versión\n"
-                            "3. Asignar nuevas matrículas a la nueva versión\n"
-                            "4. Mantener plan actual para matrículas históricas\n\n"
-                            "💡 Esto protege la integridad de los datos históricos."
-                        )
-                        % (plan.name, enrollment_count, fields_list)
-                    )
-
+        
+        # Permitir modificación forzada sin validaciones
         return super(StudyPlan, self).write(vals)
+
+    def unlink(self):
+        """
+        ELIMINACIÓN FORZADA HABILITADA PARA GESTORES.
+        Permite eliminar planes sin restricciones para facilitar gestión.
+        """
+        # Permitir eliminación forzada sin validaciones
+        return super(StudyPlan, self).unlink()

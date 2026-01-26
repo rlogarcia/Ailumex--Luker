@@ -94,7 +94,7 @@ class AgendaTemplate(models.Model):
     fixed_subject_id = fields.Many2one(
         comodel_name="benglish.subject",
         string="Asignatura Fija",
-        ondelete="restrict",
+        ondelete="cascade",
         domain="[('program_id', '=', program_id)]",
         help="Asignatura fija cuando mapping_mode es 'fixed'.",
     )
@@ -128,10 +128,11 @@ class AgendaTemplate(models.Model):
                     _("El tamaño de bloque debe ser >= 2 para Oral Test.")
                 )
 
-    @api.constrains("mapping_mode", "fixed_subject_id")
-    def _check_fixed_subject(self):
-        for record in self:
-            if record.mapping_mode == "fixed" and not record.fixed_subject_id:
-                raise ValidationError(
-                    _("Debe definir una asignatura fija para plantillas 'fixed'.")
-                )
+    # VALIDACIÓN DE ASIGNATURA FIJA ELIMINADA - Las plantillas funcionan como catálogo independiente
+    # @api.constrains("mapping_mode", "fixed_subject_id")
+    # def _check_fixed_subject(self):
+    #     for record in self:
+    #         if record.mapping_mode == "fixed" and not record.fixed_subject_id:
+    #             raise ValidationError(
+    #                 _("Debe definir una asignatura fija para plantillas 'fixed'.")
+    #             )

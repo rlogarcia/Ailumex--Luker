@@ -151,7 +151,7 @@ class Subject(models.Model):
         comodel_name="benglish.level",
         string="Nivel",
         required=True,
-        ondelete="restrict",
+        ondelete="cascade",
         help="Nivel al que pertenece esta asignatura",
     )
     phase_id = fields.Many2one(
@@ -648,6 +648,58 @@ class Subject(models.Model):
                 "sticky": False,
             },
         }
+
+    def unlink(self):
+        """
+        ELIMINACIÓN FORZADA DE ASIGNATURAS CON LIMPIEZA AUTOMÁTICA.
+        Elimina automáticamente todos los registros relacionados antes de eliminar la asignatura.
+        Las plantillas de agenda se mantienen como catálogo independiente.
+        """
+        for subject in self:
+            # Eliminar TODOS los registros relacionados automáticamente
+            
+            # 1. Eliminar registros de progreso académico
+            progress_records = self.env['benglish.enrollment.progress'].search([('subject_id', '=', subject.id)])
+            if progress_records:
+                progress_records.unlink()
+            
+            # 2. MANTENER plantillas de agenda como catálogo - solo limpiar referencia
+            template_records = self.env['benglish.agenda.template'].search([('fixed_subject_id', '=', subject.id)])
+            if template_records:
+                template_records.write({'fixed_subject_id': False})  # Limpiar referencia, mantener plantilla
+                
+            # 3. Eliminar historial académico
+            history_records = self.env['benglish.academic.history'].search([('subject_id', '=', subject.id)])
+            if history_records:
+                history_records.unlink()
+                
+            # 4. Eliminar sesiones académicas
+            session_records = self.env['benglish.academic.session'].search([('subject_id', '=', subject.id)])
+            if session_records:
+                session_records.unlink()
+                
+            # 5. Eliminar tracking de sesiones
+            tracking_records = self.env['benglish.subject.session.tracking'].search([('subject_id', '=', subject.id)])
+            if tracking_records:
+                tracking_records.unlink()
+                
+            # 6. Limpiar referencias en matrículas (sin eliminar las matrículas)
+            enrollment_records = self.env['benglish.enrollment'].search([('subject_id', '=', subject.id)])
+            if enrollment_records:
+                enrollment_records.write({'subject_id': False})
+                
+            # 7. Limpiar referencias en estudiantes
+            student_records = self.env['benglish.student'].search([('current_subject_id', '=', subject.id)])
+            if student_records:
+                student_records.write({'current_subject_id': False})
+                
+            # 8. Limpiar inscripciones a sesiones
+            enrollments = self.env['benglish.session.enrollment'].search([('effective_subject_id', '=', subject.id)])
+            if enrollments:
+                enrollments.write({'effective_subject_id': False})
+
+        # Ahora eliminar las asignaturas
+        return super(Subject, self).unlink()
 
     @api.model
     def init(self):

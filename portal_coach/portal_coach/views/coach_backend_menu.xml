@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Acción para ir al Portal del Coach -->
+    <record id="action_open_coach_portal" model="ir.actions.act_url">
+        <field name="name">Mi Portal Coach</field>
+        <field name="url">/my/coach</field>
+        <field name="target">self</field>
+    </record>
+
+    <!-- Menú en el menú principal de usuario para coaches -->
+    <menuitem
+        id="menu_coach_portal_access"
+        name="📱 Mi Portal Coach"
+        parent="base.menu_administration"
+        action="action_open_coach_portal"
+        sequence="1"
+        groups="portal_coach.group_benglish_coach"/>
+    
+    <!-- También agregar en el menú de usuario (arriba a la derecha) -->
+    <record id="coach_portal_shortcut" model="ir.actions.act_url">
+        <field name="name">🏠 Ir a Mi Portal</field>
+        <field name="url">/my/coach</field>
+        <field name="target">self</field>
+    </record>
+</odoo>

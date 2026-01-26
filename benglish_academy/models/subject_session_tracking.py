@@ -42,7 +42,7 @@ class SubjectSessionTracking(models.Model):
         comodel_name="benglish.subject",
         string="Asignatura",
         required=True,
-        ondelete="restrict",
+        ondelete="cascade",
         index=True,
     )
 

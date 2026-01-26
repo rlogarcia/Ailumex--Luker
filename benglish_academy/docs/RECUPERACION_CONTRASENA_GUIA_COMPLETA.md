@@ -1,5 +1,8 @@
 # Funcionalidad de Recuperación de Contraseña - Benglish Academy
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## 📋 Descripción General
 
 Sistema completo de recuperación de contraseña integrado en el portal de Benglish Academy, que permite a los usuarios restablecer su contraseña de forma segura mediante verificación por correo electrónico con código OTP.

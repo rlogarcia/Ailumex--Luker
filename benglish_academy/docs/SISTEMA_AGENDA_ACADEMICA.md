@@ -1,5 +1,8 @@
 # Sistema de Agenda Académica - Benglish Academy
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## 📋 Resumen de Implementación
 
 Este documento describe la implementación completa del **Sistema de Agenda Académica** para el módulo Benglish Academy en Odoo 18, enfocado exclusivamente en el **backend** para que sea consumido por el portal de estudiante.

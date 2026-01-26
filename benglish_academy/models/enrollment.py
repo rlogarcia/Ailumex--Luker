@@ -159,7 +159,7 @@ class Enrollment(models.Model):
         comodel_name="benglish.subject",
         string="Asignatura (Legacy)",
         required=False,  # ✅ YA NO ES OBLIGATORIO
-        ondelete="restrict",
+        ondelete="cascade",
         tracking=True,
         help="[DEPRECADO - Solo para compatibilidad con matrículas antiguas]\n"
         "Este campo representa el modelo antiguo donde la matrícula era a una asignatura.\n"
@@ -199,7 +199,7 @@ class Enrollment(models.Model):
         comodel_name="benglish.group",
         string="Grupo",
         required=False,
-        ondelete="restrict",
+        ondelete="cascade",
         tracking=True,
         help="Grupo al que se asigna el estudiante",
     )
@@ -491,64 +491,7 @@ class Enrollment(models.Model):
         tracking=True,
         help="Fecha en que el estudiante completó la asignatura",
     )
-    
-    # ═══════════════════════════════════════════════════════════════════════════
-    # CAMPOS ESPECÍFICOS PARA PLANES CORTESÍA
-    # ═══════════════════════════════════════════════════════════════════════════
 
-    is_courtesy_plan = fields.Boolean(
-        string="Es Plan Cortesía",
-        related="plan_id.is_courtesy_plan",
-        store=True,
-        help="Indica si esta matrícula es de un plan de cortesía",
-    )
-
-    courtesy_inactivity_days = fields.Integer(
-        string="Días Límite de Inactividad",
-        related="plan_id.courtesy_inactivity_days",
-        store=True,
-        help="Número de días de inactividad permitidos antes de cancelación automática",
-    )
-
-    activated_phases_ids = fields.Many2many(
-        comodel_name="benglish.phase",
-        relation="enrollment_activated_phase_rel",
-        column1="enrollment_id",
-        column2="phase_id",
-        string="Fases Activadas",
-        tracking=True,
-        help="Fases/módulos desbloqueados para planes cortesía. "
-        "Solo aplica cuando plan.courtesy_activation_mode = 'module'",
-    )
-
-    next_phase_to_activate = fields.Many2one(
-        comodel_name="benglish.phase",
-        string="Siguiente Fase a Activar",
-        compute="_compute_next_phase_to_activate",
-        store=True,
-        help="Próximo módulo que se desbloqueará al completar el actual (solo cortesía)",
-    )
-
-    last_activity_date = fields.Date(
-        string="Última Actividad",
-        compute="_compute_last_activity_date",
-        store=True,
-        help="Fecha de última asistencia o agendamiento de clases",
-    )
-
-    days_since_last_activity = fields.Integer(
-        string="Días desde Última Actividad",
-        compute="_compute_days_since_last_activity",
-        help="Días transcurridos desde la última actividad del estudiante",
-    )
-    courtesy_at_risk = fields.Boolean(
-        string="Cortesía en Riesgo",
-        compute="_compute_courtesy_at_risk",
-        store=True,
-        help="Campo de compatibilidad. No se usa en la lógica actual.",
-    )
-
-    
     # ═══════════════════════════════════════════════════════════════════════════
     # PLACEMENT TEST
     # ═══════════════════════════════════════════════════════════════════════════
@@ -1030,9 +973,10 @@ class Enrollment(models.Model):
         # ═══════════════════════════════════════════════════════════════════════
         # INICIALIZACIÓN DE PROGRESIÓN ACADÉMICA
         # ═══════════════════════════════════════════════════════════════════════
-        # Si se especifica plan pero no hay progresión actual, inicializar en primera fase/nivel
-
-        if vals.get("plan_id") and not vals.get("current_phase_id"):
+        # CORREGIDO: Solo inicializar con primera fase/nivel si NO vienen valores del wizard
+        # Esto permite que el wizard establezca el nivel correcto del estudiante
+        
+        if vals.get("plan_id") and not vals.get("current_phase_id") and not vals.get("current_level_id"):
             plan = self.env["benglish.plan"].browse(vals["plan_id"])
             if plan and plan.program_id:
                 # Obtener primera fase del programa
@@ -1073,10 +1017,6 @@ class Enrollment(models.Model):
         if enrollment.plan_id and not enrollment.enrollment_progress_ids:
             enrollment._generate_progress_records()
 
-        # ⭐ CORTESÍA: Activar automáticamente la primera fase (Basic)
-        if enrollment.plan_id.is_courtesy_plan and enrollment.plan_id.courtesy_activation_mode == "module":
-            enrollment._activate_initial_courtesy_phase()
-
         return enrollment
 
     def write(self, vals):
@@ -1092,18 +1032,11 @@ class Enrollment(models.Model):
 
     def unlink(self):
         """
-        BLOQUEADO: No se permite eliminar matrículas por integridad de datos.
-        Para dar de baja una matrícula, usar action_cancel() o action_withdraw().
+        ELIMINACIÓN FORZADA HABILITADA PARA GESTORES.
+        Permite eliminar matrículas sin restricciones para facilitar gestión.
         """
-        raise ValidationError(
-            _(
-                "No se pueden eliminar matrículas directamente por integridad de datos.\n\n"
-                "Use las siguientes opciones según el estado:\n"
-                '• Estado Borrador/Pendiente: usar "Cancelar"\n'
-                '• Estado Matriculado/En Progreso: usar "Retirar"\n\n'
-                "Esto preserva el historial académico del estudiante."
-            )
-        )
+        # Permitir eliminación forzada sin validaciones
+        return super(Enrollment, self).unlink()
 
     def _update_group_student_count(self):
         """Actualiza el contador de estudiantes en el grupo"""
@@ -1954,262 +1887,5 @@ class Enrollment(models.Model):
             },
         }
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    # MÉTODOS COMPUTADOS Y ACCIONES PARA PLANES CORTESÍA
-    # ═══════════════════════════════════════════════════════════════════════════
 
-    @api.depends("current_phase_id", "activated_phases_ids", "plan_id", "plan_id.phase_ids")
-    def _compute_next_phase_to_activate(self):
-        """
-        Calcula qué fase se debe activar al completar la actual.
-        Solo aplica para planes cortesía con activación por módulo.
-        """
-        for enrollment in self:
-            if not enrollment.plan_id.is_courtesy_plan or enrollment.plan_id.courtesy_activation_mode != "module":
-                enrollment.next_phase_to_activate = False
-                continue
-
-            # Obtener todas las fases del plan ordenadas por secuencia
-            all_phases = enrollment.plan_id.phase_ids.sorted("sequence")
-            activated = enrollment.activated_phases_ids
-
-            # Buscar la siguiente fase no activada
-            next_phase = False
-            for phase in all_phases:
-                if phase not in activated:
-                    next_phase = phase
-                    break
-
-            enrollment.next_phase_to_activate = next_phase
-
-    @api.depends("student_id", "student_id.academic_history_ids", "student_id.academic_history_ids.session_date")
-    def _compute_last_activity_date(self):
-        """
-        Calcula la fecha de última actividad (asistencia a clases).
-        """
-        for enrollment in self:
-            # Buscar última sesión con asistencia del estudiante
-            last_history = self.env["benglish.academic.history"].search(
-                [
-                    ("student_id", "=", enrollment.student_id.id),
-                    ("attendance_status", "=", "attended"),
-                ],
-                order="session_date desc, session_time_start desc, id desc",
-                limit=1,
-            )
-
-            if last_history:
-                enrollment.last_activity_date = last_history.session_date
-            else:
-                # Si no hay asistencias, usar fecha de matrícula
-                enrollment.last_activity_date = enrollment.enrollment_date
-
-    @api.depends("last_activity_date")
-    def _compute_days_since_last_activity(self):
-        """
-        Calcula días transcurridos desde la última actividad.
-        """
-        today = fields.Date.today()
-        for enrollment in self:
-            if enrollment.last_activity_date:
-                delta = today - enrollment.last_activity_date
-                enrollment.days_since_last_activity = delta.days
-            else:
-                enrollment.days_since_last_activity = 0
-
-    @api.depends("plan_id.is_courtesy_plan")
-    def _compute_courtesy_at_risk(self):
-        for enrollment in self:
-            enrollment.courtesy_at_risk = False
-
-    def action_activate_next_module(self):
-        """
-        Activa el siguiente módulo cuando el estudiante completa el actual.
-        Solo para planes cortesía con activación por módulo.
-        
-        Reglas de activación:
-        1. Verificar que es un plan cortesía
-        2. Verificar que hay un siguiente módulo disponible
-        3. Activar la fase y actualizar current_phase_id
-        4. Notificar al estudiante
-        """
-        self.ensure_one()
-
-        if not self.plan_id.is_courtesy_plan:
-            raise UserError(
-                _("Esta acción solo aplica para planes cortesía.")
-            )
-
-        if self.plan_id.courtesy_activation_mode != "module":
-            raise UserError(
-                _("Este plan cortesía no usa activación por módulos.")
-            )
-
-        next_phase = self.next_phase_to_activate
-        if not next_phase:
-            raise UserError(
-                _("No hay más módulos para activar. El estudiante ha completado todo el plan.")
-            )
-
-        # Activar la fase
-        self.write({
-            "activated_phases_ids": [(4, next_phase.id)],
-            "current_phase_id": next_phase.id,
-        })
-
-        # Buscar el primer nivel de la nueva fase para actualizar current_level_id
-        first_level = self.env["benglish.level"].search(
-            [("phase_id", "=", next_phase.id)], order="sequence", limit=1
-        )
-        if first_level:
-            self.current_level_id = first_level
-
-        # Mensaje al estudiante
-        self.message_post(
-            body=_(
-                "🎉 <b>¡Felicidades!</b><br/><br/>"
-                "Has completado exitosamente el módulo <b>%s</b>.<br/><br/>"
-                "Se ha activado el siguiente módulo: <b>%s</b><br/><br/>"
-                "Ya puedes agendar clases de este nuevo nivel."
-            ) % (self.current_phase_id.name, next_phase.name),
-            subject="Nuevo Módulo Activado - Cortesía",
-            message_type="notification",
-        )
-
-        _logger.info(
-            f"Enrollment {self.code}: Fase {next_phase.name} activada para cortesía."
-        )
-
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": _("Módulo Activado"),
-                "message": _("Se ha activado el módulo %s exitosamente.") % next_phase.name,
-                "type": "success",
-                "sticky": False,
-            },
-        }
-
-    @api.model
-    def _cron_check_courtesy_inactivity(self):
-        """
-        Tarea programada: Cancela cortesías con inactividad >= límite configurado.
-        Se ejecuta diariamente.
-        
-        Flujo:
-        1. Buscar matrículas cortesía activas
-        2. Calcular días desde última actividad
-        3. Si excede el límite configurado, cancelar
-        4. Notificar al estudiante y administradores
-        """
-        # Leer configuración del sistema
-        ICP = self.env['ir.config_parameter'].sudo()
-        cancel_days = int(ICP.get_param('benglish_academy.courtesy_inactivity_cancel_days', 21))
-
-        courtesy_enrollments = self.search([
-            ("plan_id.is_courtesy_plan", "=", True),
-            ("state", "in", ["active", "enrolled", "in_progress"]),
-        ])
-
-        cancelled_count = 0
-
-        for enrollment in courtesy_enrollments:
-            days_inactive = enrollment.days_since_last_activity
-            if days_inactive >= cancel_days:
-                enrollment._cancel_courtesy_for_inactivity(days_inactive, cancel_days)
-                cancelled_count += 1
-
-        _logger.info(
-            f"Cron cortesía: {len(courtesy_enrollments)} matrículas verificadas, "
-            f"{cancelled_count} canceladas por inactividad (límite: {cancel_days} días)."
-        )
-
-        return True
-
-    def _cancel_courtesy_for_inactivity(self, days, threshold):
-        """
-        Cancela la cortesía por inactividad prolongada.
-        
-        Args:
-            days (int): Días de inactividad
-            threshold (int): Límite configurado
-        """
-        self.ensure_one()
-
-        cancellation_message = _(
-            "Cancelación automática por inactividad prolongada.\n\n"
-            "Días sin actividad: %d días (límite configurado: %d días)\n"
-            "Última actividad: %s\n\n"
-            "Política de cortesías: Se requiere asistir o agendar clases "
-            "regularmente para mantener la cortesía activa. El límite de inactividad "
-            "es configurable desde Gestión Académica > Configuración > Planes Cortesía."
-        ) % (
-            days,
-            threshold,
-            self.last_activity_date.strftime("%d/%m/%Y") if self.last_activity_date else "N/A",
-        )
-
-        self.write({
-            "state": "cancelled",
-            "cancellation_reason": cancellation_message,
-        })
-
-        # Notificar al estudiante
-        self.message_post(
-            body=_(
-                "⚠️ <b>Cortesía Cancelada por Inactividad</b><br/><br/>"
-                "Tu cortesía ha sido cancelada automáticamente debido a "
-                "inactividad prolongada (%d días sin asistir o agendar clases).<br/><br/>"
-                "Si deseas reactivar tu cortesía, por favor contacta con "
-                "el área administrativa."
-            ) % days,
-            subject="Cortesía Cancelada - Inactividad",
-            message_type="notification",
-        )
-
-        _logger.warning(
-            f"Cortesía cancelada por inactividad: {self.code} "
-            f"({days} días sin actividad, límite: {threshold} días)"
-        )
-
-    def _activate_initial_courtesy_phase(self):
-        """
-        Activa automáticamente la primera fase (Basic) al crear una matrícula cortesía.
-        Solo se ejecuta en el create() de enrollments con planes cortesía.
-        """
-        self.ensure_one()
-
-        if not self.plan_id.is_courtesy_plan:
-            return
-
-        # Obtener la primera fase del plan (Basic)
-        first_phase = self.env["benglish.phase"].search(
-            [("plan_id", "=", self.plan_id.id)],
-            order="sequence",
-            limit=1,
-        )
-
-        if not first_phase:
-            _logger.warning(
-                f"No se encontró fase inicial para plan cortesía {self.plan_id.code}"
-            )
-            return
-
-        # Activar la primera fase
-        self.write({
-            "activated_phases_ids": [(4, first_phase.id)],
-            "current_phase_id": first_phase.id,
-        })
-
-        # Buscar el primer nivel de la fase para actualizar current_level_id
-        first_level = self.env["benglish.level"].search(
-            [("phase_id", "=", first_phase.id)], order="sequence", limit=1
-        )
-        if first_level:
-            self.current_level_id = first_level
-
-        _logger.info(
-            f"Cortesía {self.code}: Fase inicial '{first_phase.name}' activada automáticamente."
-        )
 

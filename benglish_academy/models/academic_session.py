@@ -200,7 +200,7 @@ class AcademicSession(models.Model):
         comodel_name="benglish.subject",
         string="Asignatura",
         required=True,
-        ondelete="restrict",
+        ondelete="cascade",
         tracking=True,
         domain="[('program_id', '=', program_id), ('active', '=', True)]",
         index=True,
@@ -233,7 +233,7 @@ class AcademicSession(models.Model):
         comodel_name="benglish.phase",
         string="Fase Audiencia",
         ondelete="restrict",
-        domain="[('program_id', '=', program_id)]",
+        domain="[('program_id', '=', program_id), ('active', '=', True)]",
         help="Fase (rango de unidades) objetivo para la sesión.",
     )
 
@@ -1273,67 +1273,6 @@ class AcademicSession(models.Model):
                         _("El rango de audiencia es inválido (Unidad Desde > Unidad Hasta).")
                     )
 
-    @api.constrains("subject_id", "enrolled_student_ids")
-    def _check_courtesy_phase_access(self):
-        """
-        Validación para planes cortesía: Solo permite inscribir estudiantes
-        a sesiones de fases/módulos que tienen activados.
-        
-        Regla de negocio:
-        - Planes cortesía tienen activación progresiva por módulo
-        - Basic se activa al inicio
-        - Intermediate se activa al completar Basic
-        - Advanced se activa al completar Intermediate
-        """
-        for session in self:
-            if not session.subject_id or not session.enrolled_student_ids:
-                continue
-
-            subject_phase = session.subject_id.level_id.phase_id
-            if not subject_phase:
-                continue
-
-            # Verificar cada estudiante inscrito
-            for enrollment_link in session.enrolled_student_ids:
-                student = enrollment_link.student_id
-                if not student:
-                    continue
-
-                # Buscar matrícula activa del estudiante
-                active_enrollment = self.env["benglish.enrollment"].search([
-                    ("student_id", "=", student.id),
-                    ("state", "in", ["active", "enrolled", "in_progress"]),
-                    ("plan_id.is_courtesy_plan", "=", True),
-                ], limit=1)
-
-                if not active_enrollment:
-                    continue
-
-                # Solo validar si es cortesía con activación por módulo
-                if active_enrollment.plan_id.courtesy_activation_mode != "module":
-                    continue
-
-                # Verificar si la fase de la asignatura está activada
-                if subject_phase not in active_enrollment.activated_phases_ids:
-                    raise ValidationError(
-                        _(
-                            "⛔ ACCESO DENEGADO - MÓDULO NO ACTIVADO\n\n"
-                            "El estudiante '%s' no puede inscribirse a esta sesión.\n\n"
-                            "Asignatura: %s\n"
-                            "Módulo requerido: %s\n"
-                            "Módulo actual: %s\n\n"
-                            "El estudiante debe completar primero el módulo '%s' "
-                            "para desbloquear el acceso a '%s'."
-                        ) % (
-                            student.name,
-                            session.subject_id.name,
-                            subject_phase.name,
-                            active_enrollment.current_phase_id.name if active_enrollment.current_phase_id else "N/A",
-                            active_enrollment.current_phase_id.name if active_enrollment.current_phase_id else "N/A",
-                            subject_phase.name,
-                        )
-                    )
-
     # ONCHANGE
 
     @api.onchange("agenda_id")
@@ -1376,6 +1315,7 @@ class AcademicSession(models.Model):
     def _onchange_audience_phase_id(self):
         if not self.audience_phase_id:
             return
+        
         unit_from, unit_to = self._get_phase_unit_range(self.audience_phase_id)
         if unit_from and unit_to:
             self.audience_unit_from = unit_from
@@ -1547,6 +1487,10 @@ class AcademicSession(models.Model):
                 if template.subject_category == 'oral_test':
                     if vals.get('audience_unit_to') and not vals.get('audience_unit_from'):
                         vals['audience_unit_from'] = vals['audience_unit_to']
+                    # Si no se proporciona audience_unit_to pero se proporciona audience_unit_from,
+                    # asumir que es una sesión para esa unidad específica
+                    elif vals.get('audience_unit_from') and not vals.get('audience_unit_to'):
+                        vals['audience_unit_to'] = vals['audience_unit_from']
                 
                 if not vals.get("program_id"):
                     if template.program_id:
@@ -1564,9 +1508,55 @@ class AcademicSession(models.Model):
                     placeholder = virtual._get_placeholder_subject_from_template()
                     if placeholder:
                         vals["subject_id"] = placeholder.id
+                    elif template.subject_category == 'oral_test':
+                        # Para Oral Tests, si no se encuentra un subject específico,
+                        # buscar cualquier oral test del programa como fallback
+                        program_to_search = template.program_id.id if template.program_id else vals.get("program_id")
+                        if program_to_search:
+                            oral_test_fallback = self.env["benglish.subject"].sudo().search([
+                                ("program_id", "=", program_to_search),
+                                ("active", "=", True),
+                                ("subject_category", "=", "oral_test"),
+                            ], limit=1)
+                            if oral_test_fallback:
+                                vals["subject_id"] = oral_test_fallback.id
+                            else:
+                                # Último recurso: crear un placeholder temporal para oral test
+                                # Esto permitirá que se cree la sesión y después se pueda resolver dinámicamente
+                                import logging
+                                _logger = logging.getLogger(__name__)
+                                _logger.warning(
+                                    f"[ACADEMIC SESSION] No se encontró subject específico para Oral Test en programa {program_to_search}. "
+                                    f"Buscando fallback general..."
+                                )
+                                # Buscar CUALQUIER oral test del sistema como placeholder
+                                any_oral_test = self.env["benglish.subject"].sudo().search([
+                                    ("active", "=", True),
+                                    ("subject_category", "=", "oral_test"),
+                                ], limit=1)
+                                if any_oral_test:
+                                    vals["subject_id"] = any_oral_test.id
+                                    _logger.info(f"[ACADEMIC SESSION] Usando oral test fallback: {any_oral_test.name} (ID: {any_oral_test.id})")
+                                else:
+                                    # Error crítico: no hay oral tests en el sistema
+                                    _logger.error("[ACADEMIC SESSION] No hay ningún oral test en el sistema. No se puede crear la sesión.")
+                                    raise ValidationError(
+                                        _("Error: No se encontraron asignaturas de tipo 'Oral Test' en el sistema. "
+                                          "Contacte al administrador para configurar las asignaturas.")
+                                    )
+                # Validación final: asegurar que siempre hay subject_id para oral tests
+                if template.subject_category == 'oral_test' and not vals.get("subject_id"):
+                    raise ValidationError(
+                        _("Error crítico: No se pudo asignar una asignatura para la sesión de Oral Test. "
+                          "Verifique que:\n"
+                          "1. El programa tenga asignaturas de tipo 'Oral Test' configuradas\n"
+                          "2. La plantilla tenga mapping_mode = 'block'\n"
+                          "3. Las asignaturas tengan unit_block_start y unit_block_end configurados\n"
+                          "4. Se haya especificado audience_unit_to en la sesión")
+                    )
         sessions = super(AcademicSession, self).create(vals_list)
 
-        # Registrar logs de creación
+        # Post-procesamiento de sesiones creadas
         for session in sessions:
             # Si no se proporcionó un código de sesión, generarlo automáticamente
             if not session.session_code:
@@ -1575,6 +1565,19 @@ class AcademicSession(models.Model):
                 except Exception:
                     # No bloquear la creación por errores menores en generación de código
                     pass
+
+            # Para oral tests, intentar resolver el subject_id correcto si es necesario
+            if (session.template_id and 
+                session.template_id.subject_category == 'oral_test' and
+                session.audience_unit_to):
+                try:
+                    better_subject = session._get_placeholder_subject_from_template()
+                    if better_subject and better_subject.id != session.subject_id.id:
+                        session.subject_id = better_subject.id
+                except Exception as e:
+                    import logging
+                    _logger = logging.getLogger(__name__)
+                    _logger.warning(f"[ORAL TEST] No se pudo resolver mejor subject para sesión {session.id}: {str(e)}")
 
             if session.agenda_id:
                 session._create_session_log("create")
@@ -1654,25 +1657,16 @@ class AcademicSession(models.Model):
         return result
 
     def unlink(self):
-        """Prevenir eliminación de sesiones con inscripciones."""
-        for record in self:
-            if record.enrollment_ids:
-                raise UserError(
-                    _(
-                        "No se puede eliminar la sesión '%(name)s' porque tiene %(count)s inscripciones. "
-                        "Cancele primero las inscripciones o cancele la sesión."
-                    )
-                    % {
-                        "name": record.display_name,
-                        "count": len(record.enrollment_ids),
-                    }
-                )
-
+        """
+        ELIMINACIÓN FORZADA HABILITADA PARA GESTORES.
+        Permite eliminar sesiones sin restricciones para facilitar gestión.
+        """
         # Registrar logs de eliminación ANTES de borrar
         for record in self:
             if record.agenda_id:
                 record._create_session_log("delete")
 
+        # Permitir eliminación forzada sin validaciones
         return super(AcademicSession, self).unlink()
 
     # TRANSICIONES DE ESTADO
@@ -2119,7 +2113,20 @@ class AcademicSession(models.Model):
             return template.fixed_subject_id
         if not program:
             return False
+        
         Subject = self.env["benglish.subject"].sudo()
+        
+        # LÓGICA ESPECIAL PARA ORAL TESTS
+        if template.subject_category == 'oral_test':
+            # Si no hay audiencia específica, buscar cualquier oral test disponible
+            if not (self.audience_unit_from and self.audience_unit_to):
+                domain = [
+                    ("program_id", "=", program.id),
+                    ("active", "=", True),
+                    ("subject_category", "=", "oral_test"),
+                ]
+                return Subject.search(domain, order="unit_block_end asc", limit=1)
+        
         unit_from, unit_to = self._get_audience_unit_range()
         unit_from = unit_from or 1
         unit_to = unit_to or unit_from
@@ -2156,7 +2163,20 @@ class AcademicSession(models.Model):
                 ("unit_block_start", "=", unit_from),
                 ("unit_block_end", "=", unit_to),
             ]
-            return Subject.search(domain, limit=1)
+            subject = Subject.search(domain, limit=1)
+            if subject:
+                return subject
+            
+            # FALLBACK ESPECÍFICO PARA ORAL TESTS: Si no encuentra con bloque exacto,
+            # buscar cualquier oral test que tenga unit_block_end coincidente (unidad objetivo)
+            if template.subject_category == 'oral_test':
+                fallback_domain = [
+                    ("program_id", "=", program.id),
+                    ("active", "=", True),
+                    ("subject_category", "=", "oral_test"),
+                    ("unit_block_end", "=", unit_to),  # La unidad objetivo debe coincidir
+                ]
+                return Subject.search(fallback_domain, limit=1)
         return False
 
     def _get_student_target_unit(self, student, max_unit=None):
@@ -2231,17 +2251,29 @@ class AcademicSession(models.Model):
     def _get_completed_subject_ids(self, student):
         """
         Obtiene los IDs de asignaturas completadas por el estudiante.
-        - B-checks y B-skills: 'attended' o 'absent' (slot usado = avanzar)
+        
+        REGLAS DE NEGOCIO:
+        - B-checks: SOLO 'attended' cuenta como completado
+          → Si faltó ('absent'), puede agendar otro B-check de la MISMA unidad
+        - B-skills: 'attended' o 'absent' (slot usado = avanzar)
+          → Si faltó, pierde el slot pero no puede repetir
         - Oral Tests: 'attended' Y nota >= 70% (aprobar evaluación)
         - Otras asignaturas: solo 'attended'
         """
         History = self.env["benglish.academic.history"].sudo()
         
-        # B-checks y B-skills: asistidos O inasistidos (slot usado)
-        bcheck_bskills = History.search([
+        # B-checks: SOLO asistidos (si faltó, puede recuperar)
+        bchecks_completed = History.search([
+            ("student_id", "=", student.id),
+            ("attendance_status", "=", "attended"),  # ← SOLO 'attended', NO 'absent'
+            ("subject_id.subject_category", "=", "bcheck")
+        ])
+        
+        # B-skills: asistidos O inasistidos (slot usado, no recuperable)
+        bskills_used = History.search([
             ("student_id", "=", student.id),
             ("attendance_status", "in", ["attended", "absent"]),
-            ("subject_id.subject_category", "in", ["bcheck", "bskills"])
+            ("subject_id.subject_category", "=", "bskills")
         ])
         
         # Oral Tests: asistió Y aprobó con >= 70%
@@ -2259,18 +2291,29 @@ class AcademicSession(models.Model):
             ("subject_id.subject_category", "not in", ["bcheck", "bskills", "oral_test"])
         ])
         
-        completed = bcheck_bskills | oral_tests | other_subjects
+        completed = bchecks_completed | bskills_used | oral_tests | other_subjects
         completed_ids = set(completed.mapped("subject_id").ids)
         
         # Log de diagnóstico para B-checks
         import logging
         _logger = logging.getLogger(__name__)
-        bchecks = completed.filtered(lambda h: h.subject_id.subject_category == 'bcheck')
-        if bchecks:
+        if bchecks_completed:
             _logger.info(
                 f"[COMPLETED SUBJECTS] Estudiante {student.name} (ID: {student.id}), "
-                f"B-checks completados: {len(bchecks)} - "
-                f"Units: {sorted([h.subject_id.unit_number for h in bchecks if h.subject_id.unit_number])}"
+                f"B-checks ASISTIDOS: {len(bchecks_completed)} - "
+                f"Units: {sorted([h.subject_id.unit_number for h in bchecks_completed if h.subject_id.unit_number])}"
+            )
+        
+        # Log de B-checks con 'absent' (no completados, pueden recuperar)
+        bchecks_absent = History.search([
+            ("student_id", "=", student.id),
+            ("attendance_status", "=", "absent"),
+            ("subject_id.subject_category", "=", "bcheck")
+        ])
+        if bchecks_absent:
+            _logger.info(
+                f"[BCHECK RECOVERY] Estudiante {student.name} tiene B-checks con 'absent' (puede recuperar): "
+                f"Units: {sorted([h.subject_id.unit_number for h in bchecks_absent if h.subject_id.unit_number])}"
             )
         
         return completed_ids
@@ -2308,11 +2351,28 @@ class AcademicSession(models.Model):
             ('subject_id.program_id', '=', student.program_id.id if student.program_id else False)
         ])
         
-        # B-check completado (asistido O inasistido = slot usado)
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # REGLA DE NEGOCIO PARA B-CHECK:
+        # - B-check solo cuenta como "completado" si ASISTIÓ ('attended')
+        # - Si faltó ('absent'), NO habilita las Skills → debe recuperar el B-check
+        # ═══════════════════════════════════════════════════════════════════════════════
         bcheck_done = any(
-            h.subject_id.subject_category == 'bcheck' and h.attendance_status in ['attended', 'absent']
+            h.subject_id.subject_category == 'bcheck' and h.attendance_status == 'attended'
             for h in history_records
         )
+        
+        # Verificar si hay B-check con 'absent' (para logging/debugging)
+        bcheck_absent = any(
+            h.subject_id.subject_category == 'bcheck' and h.attendance_status == 'absent'
+            for h in history_records
+        )
+        if bcheck_absent and not bcheck_done:
+            import logging
+            _logger = logging.getLogger(__name__)
+            _logger.info(
+                f"[BCHECK RECOVERY] Unit {unit_number}: Estudiante {student.name} tiene B-check con 'absent'. "
+                f"NO puede agendar Skills hasta que asista a un nuevo B-check."
+            )
         
         # Slots únicos USADOS (asistió o no asistió, pero ya pasó por ese slot)
         # IMPORTANTE: Usamos set para contar skills ÚNICAS, permitiendo repeticiones

@@ -72,7 +72,7 @@ class EnrollmentProgress(models.Model):
         comodel_name="benglish.subject",
         string="Asignatura",
         required=True,
-        ondelete="restrict",
+        ondelete="cascade",
         index=True,
         help="Asignatura del plan de estudios",
     )
@@ -95,7 +95,7 @@ class EnrollmentProgress(models.Model):
     group_id = fields.Many2one(
         comodel_name="benglish.group",
         string="Grupo Asignado",
-        ondelete="restrict",
+        ondelete="cascade",
         help="Grupo en el que el estudiante cursa esta asignatura",
     )
     coach_id = fields.Many2one(

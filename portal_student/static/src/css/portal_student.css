@@ -1443,6 +1443,16 @@ header#top {
     background: rgba(30, 58, 138, 0.08);
 }
 
+.ps-pill-info {
+    background: #3b82f6;
+    color: #fff;
+}
+
+.ps-pill-xs {
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
 .ps-resource-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -5949,6 +5959,23 @@ html.o-bl-body {
     padding: 12px 24px;
     background: rgba(30, 58, 138, 0.08);
     color: var(--ps-text);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+/* Estilos adicionales para botones outline */
+.btn.btn-outline-light {
+    background: transparent !important;
+    border: 2px solid white !important;
+    color: white !important;
+    transition: all 0.3s ease;
+}
+
+.btn.btn-outline-light:hover {
+    background: white !important;
+    color: var(--ps-primary) !important;
+    border-color: white !important;
+}
     border-bottom: 1px solid var(--ps-border);
     font-weight: 600;
 }

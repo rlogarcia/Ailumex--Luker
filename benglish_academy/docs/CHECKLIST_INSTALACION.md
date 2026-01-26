@@ -1,4 +1,7 @@
-# Checklist de Instalación - Sprint 1
+# Checklist de Instalación
+
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
 
 ## Pre-requisitos
 
@@ -22,7 +25,7 @@
 ### 1.2 Actualizar el módulo
 
 ```bash
-cd "C:\Program Files\Odoo 18.0.20251128\server"
+cd "C:\Program Files\Odoo 18.0.20250614\server"
 
 python odoo-bin -c odoo.conf -d TU_BASE_DATOS -u benglish_academy --stop-after-init
 ```
@@ -283,7 +286,6 @@ En la carpeta `docs/` deben existir:
 
 - [ ] `API_REST_TECHNICAL_DOCUMENTATION.md`
 - [ ] `CONFIGURACION_ENTORNO_WEBHOOKS.md`
-- [ ] `SPRINT_1_RESUMEN_IMPLEMENTACION.md`
 
 ### 7.2 Compartir documentación
 
@@ -306,28 +308,8 @@ En la carpeta `docs/` deben existir:
 ```bash
 cd "d:\AiLumex\Ailumex--Be"
 git add benglish_academy/
-git commit -m "feat(CRM): Sprint 1 - Integración CRM y HR completa
-
-- HU-S0-02: Configuración de entorno y webhooks
-- HU-S0-01: Documentación técnica API REST
-- HU-CRM-01: Campo is_sales en empleados con validaciones
-- HU-CRM-03: Pipeline Marketing con asignación automática
-- HU-CRM-04: Pipeline Comercial con validación de usuario activo
-- HU-CRM-05: Campos académicos en leads (equivalencia Excel)
-- HU-CRM-06: Bloqueo de fuente por rol con auditoría en chatter
-
-Archivos nuevos:
-- models/crm_lead.py
-- views/hr_employee_sales_views.xml
-- views/crm_lead_views.xml
-- data/crm_pipelines_data.xml
-- data/crm_automations_data.xml
-- security/crm_security.xml
-- docs/API_REST_TECHNICAL_DOCUMENTATION.md
-- docs/CONFIGURACION_ENTORNO_WEBHOOKS.md
-- docs/SPRINT_1_RESUMEN_IMPLEMENTACION.md"
-
-git push origin ralejo
+git commit -m "chore: actualizacion del modulo benglish_academy"
+git push origin <tu_rama>
 ```
 
 - [ ] Cambios commiteados
@@ -375,7 +357,7 @@ git push origin ralejo
 
 **En caso de problemas:**
 
-- Revisar logs de Odoo en `C:\Program Files\Odoo 18.0.20251128\server\odoo.log`
+- Revisar logs de Odoo en `C:\Program Files\Odoo 18.0.20250614\server\odoo.log`
 - Revisar documentación en `docs/`
 - Contactar al equipo de desarrollo
 
@@ -383,4 +365,4 @@ git push origin ralejo
 
 **Fecha:** 2026-01-02  
 **Versión del checklist:** 1.0  
-**Sprint:** 1
+

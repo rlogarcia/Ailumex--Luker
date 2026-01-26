@@ -2,9 +2,8 @@
 <odoo>
 
 <template id="session_detail" name="Session Detail">
-    <t t-call="portal.portal_layout">
+    <t t-call="portal_coach.portal_coach_layout">
         <t t-set="page_name" t-value="'session_detail'"/>
-        <t t-call="portal_coach.portal_coach_header"/>
         
         <div class="pc-shell">
             <!-- NAVEGACIÓN Y BOTONES -->
@@ -57,32 +56,30 @@
                 </div>
             </div>
             
-            <!-- ALERTA DE SESIÓN PASADA -->
-            <t t-if="is_past_session">
-                <div style="margin-bottom: 24px; background: #fef2f2; border: 2px solid #dc2626; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);">
-                    <div style="display: flex; align-items: start; gap: 16px;">
-                        <div style="flex-shrink: 0;">
-                            <i class="fa fa-exclamation-triangle" style="font-size: 32px; color: #dc2626;"></i>
-                        </div>
-                        <div>
-                            <h4 style="margin: 0 0 8px 0; color: #dc2626; font-size: 18px; font-weight: 700;">
-                                ⚠️ Esta clase tiene fecha pasada
-                            </h4>
-                            <p style="margin: 0 0 12px 0; color: #7f1d1d; font-size: 14px; line-height: 1.5;">
-                                La clase estaba programada para <strong><t t-esc="session.date.strftime('%d/%m/%Y')"/></strong> y hoy es <strong><t t-esc="datetime.date.today().strftime('%d/%m/%Y')"/></strong>.
-                            </p>
-                            <p style="margin: 0; color: #7f1d1d; font-size: 14px; line-height: 1.5;">
-                                <strong>No puedes iniciar, marcar asistencia ni gestionar esta clase.</strong> 
-                                <t t-if="session.state != 'done'">
-                                    Esta clase debe ser marcada como <strong>finalizada</strong> por un administrador o cambiada al estado correcto.
-                                </t>
-                                <t t-else="">
-                                    Esta clase ya fue finalizada.
-                                </t>
-                            </p>
+            <!-- ALERTA: CLASE CON FECHA PASADA -->
+            <t t-if="session.state == 'done'">
+                <t t-set="today" t-value="datetime.datetime.now().date()"/>
+                <t t-if="session.date &lt; today">
+                    <div style="margin-bottom: 20px; background: #fee2e2; border-left: 4px solid #ef4444; padding: 16px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="display: flex; align-items: start; gap: 12px;">
+                            <i class="fa fa-exclamation-triangle" style="color: #dc2626; font-size: 24px; margin-top: 2px;"></i>
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 8px 0; color: #991b1b; font-size: 16px; font-weight: 700;">
+                                    ⚠️ Esta clase tiene fecha pasada
+                                </h4>
+                                <p style="margin: 0; color: #7f1d1d; font-size: 14px; line-height: 1.5;">
+                                    La clase estaba programada para el <strong><t t-esc="session.date.strftime('%d/%m/%Y')"/></strong> y hoy es <strong><t t-esc="today.strftime('%d/%m/%Y')"/></strong>.
+                                </p>
+                                <p style="margin: 8px 0 0 0; color: #7f1d1d; font-size: 14px; line-height: 1.5;">
+                                    <strong>No puedes iniciar, marcar asistencia ni gestionar esta clase.</strong> Esta debe ser marcada como <strong>finalizada</strong> por un administrador o cambiarla de estado correcto.
+                                </p>
+                                <p style="margin: 8px 0 0 0; color: #7f1d1d; font-size: 13px; font-style: italic;">
+                                    ℹ️ La clase se cerró automáticamente y se marcó en la bitácora académica como <strong>"Clase no dictada"</strong>.
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </t>
             </t>
             
             <!-- Encabezado -->
@@ -331,7 +328,7 @@
                             
                             <!-- MATERIALES - CON ARCHIVOS OBLIGATORIOS -->
                             <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 2px solid #d1d5db; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="updateNovedadBorder(this)">
-                                <input type="checkbox" id="novedad_materiales" name="novedades" value="materials" onchange="handleNovedadChange(this)" style="width: 18px; height: 18px; cursor: pointer;"/>
+                                <input type="checkbox" id="novedad_materiales" name="novedades" value="material" onchange="handleNovedadChange(this)" style="width: 18px; height: 18px; cursor: pointer;"/>
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600; font-size: 14px; color: #1e293b;">
                                         <i class="fa fa-file-text-o" style="color: #3b82f6;"></i> Materiales
@@ -373,8 +370,7 @@
                                 </button>
                                 <input type="file" id="sessionFilesInput" multiple="true" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip" style="display: none;" onchange="handleSessionFilesSelect(this)"/>
                                 
-                                <button onclick="confirmSaveAndClose()" id="saveFilesBtn" disabled="disabled"
-                                 style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; opacity: 0.5;">
+                                <button onclick="saveAndCloseSection()" id="saveFilesBtn" disabled="disabled" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; opacity: 0.5;">
                                     <i class="fa fa-save"></i> Guardar y Cerrar
                                 </button>
                                 
@@ -512,20 +508,8 @@
                 String(endMinutes % 60).padStart(2, '0') + ':00');
             
             // VALIDACIÓN DE INICIO - 5 MINUTOS ANTES DE LA HORA PROGRAMADA
-            // Y QUE LA SESIÓN NO SEA DE UNA FECHA PASADA
             function canStartSession() {
                 var now = new Date();
-                var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                var sessionDateOnly = new Date(sessionStartDateTime.getFullYear(), 
-                                              sessionStartDateTime.getMonth(), 
-                                              sessionStartDateTime.getDate());
-                
-                // Si la sesión es de una fecha anterior a hoy, NO se puede iniciar
-                if (sessionDateOnly < today) {
-                    return false;
-                }
-                
-                // Si es de hoy o futura, verificar tiempo de 5 minutos antes
                 var fiveMinutesBefore = new Date(sessionStartDateTime.getTime() - 5 * 60000);
                 return now >= fiveMinutesBefore;
             }
@@ -553,19 +537,6 @@
             
             function getRemainingTimeToStart() {
                 var now = new Date();
-                var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                var sessionDateOnly = new Date(sessionStartDateTime.getFullYear(), 
-                                              sessionStartDateTime.getMonth(), 
-                                              sessionStartDateTime.getDate());
-                
-                // Si la sesión es de una fecha pasada
-                if (sessionDateOnly < today) {
-                    var daysDiff = Math.floor((today - sessionDateOnly) / (1000 * 60 * 60 * 24));
-                    return 'Esta clase fue programada hace ' + daysDiff + ' día' + (daysDiff > 1 ? 's' : '') + 
-                           '. No puedes iniciarla. Debe marcarse como finalizada.';
-                }
-                
-                // Si es de hoy o futura, verificar tiempo de 5 minutos antes
                 var fiveMinutesBefore = new Date(sessionStartDateTime.getTime() - 5 * 60000);
                 var diff = fiveMinutesBefore - now;
                 
@@ -829,8 +800,8 @@
                     currentNovedadType = checkbox.value;
                     novedadObservationsSection.style.display = 'block';
                     
-                    // Si es "Materiales", marcar archivos como obligatorios
-                    if (checkbox.value === 'materiales') {
+                    // Si es "Material", marcar archivos como obligatorios
+                    if (checkbox.value === 'material') {
                         attachmentsRequiredLabel.innerHTML = '<span style="color: #ef4444; font-weight: 600;">(OBLIGATORIO - para Materiales)</span>';
                         filesRequiredError.style.display = 'block';
                         checkMaterialesFilesRequirement();
@@ -887,23 +858,7 @@
                     return true;
                 }
             }
-            function confirmSaveAndClose() {
-    var message =
-        "⚠️ CONFIRMACIÓN IMPORTANTE\n\n" +
-        "Después de guardar y cerrar:\n" +
-        "❌ No podrás hacer modificaciones.\n" +
-        "❌ No podrás agregar más archivos.\n\n" +
-        "Para cerrar completamente la sesión debes:\n" +
-        "👉 Hacer clic en el botón «Terminar Clase».\n\n" +
-        "¿Deseas continuar?";
-
-    if (confirm(message)) {
-        saveAndCloseSection();
-    } else {
-        showNotification("ℹ️ Guardado cancelado. Puedes seguir editando.", "error");
-    }
-}
-
+            
             function saveAndCloseSection() {
                 // Primero subir archivos si hay seleccionados
                 if (sessionFiles.length > 0) {
@@ -1384,17 +1339,27 @@ function loadGeneralObservations() {
             function validateFinishButton() {
                 var btnFinish = document.getElementById('btnFinishSession');
                 var materialesSelected = document.getElementById('novedad_materiales').checked;
+                var aplazadaSelected = document.getElementById('novedad_aplazada').checked;
                 var atLeastOneAttended = checkAtLeastOneAttended();
                 var attendanceComplete = document.getElementById('attendanceProgress').textContent.includes('Completo');
                 
                 if (btnFinish) {
-                    // Si seleccionó Materiales y no hay archivos, bloquear
+                    // SOLO bloquear si seleccionó Materiales y no hay archivos
+                    // Aplazada NO requiere archivos
                     if (materialesSelected && !hasUploadedFiles && sessionFiles.length === 0) {
                         btnFinish.disabled = true;
                         btnFinish.style.opacity = '0.5';
                         btnFinish.style.cursor = 'not-allowed';
                         btnFinish.title = 'Debes adjuntar archivos para la opción Materiales';
                     } 
+                    // Si seleccionó Aplazada, puede cerrar sin archivos
+                    else if (aplazadaSelected) {
+                        btnFinish.disabled = false;
+                        btnFinish.style.opacity = '1';
+                        btnFinish.style.cursor = 'pointer';
+                        btnFinish.title = '';
+                        updateButtonStates();
+                    }
                     // Si al menos un estudiante asistió O la asistencia está completa, habilitar
                     else if (atLeastOneAttended || attendanceComplete) {
                         btnFinish.disabled = false;
@@ -1563,7 +1528,7 @@ function loadGeneralObservations() {
                         var novedadMateriales = document.getElementById('novedad_materiales');
                         
                         if (novedadAplazada && novedadAplazada.checked) {
-                            novedadType = 'postponed';
+                            novedadType = 'aplazada';
                         } else if (novedadMateriales && novedadMateriales.checked) {
                             novedadType = 'material';
                         }

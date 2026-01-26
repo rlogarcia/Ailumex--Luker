@@ -1,5 +1,8 @@
 # ✅ Checklist de Pruebas - Sistema de Recuperación de Contraseña
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## 📋 Instrucciones
 
 Este checklist debe completarse **ANTES** de poner el sistema en producción. Marca cada casilla ✅ cuando la prueba se complete exitosamente.

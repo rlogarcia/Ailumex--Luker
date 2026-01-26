@@ -366,9 +366,26 @@ class PortalCoachController(CustomerPortal):
         if not session:
             return request.redirect('/my/coach/agenda')
 
-        # Verificar si la sesión es de una fecha pasada
-        today = fields.Date.today()
-        is_past_session = session.date < today
+        # ============================================================
+        # AUTO-CERRAR CLASES PASADAS
+        # ============================================================
+        from datetime import datetime, date
+        
+        # Verificar si la clase ya pasó Y está en estado iniciado
+        today = date.today()
+        session_date = session.date
+        
+        if session_date < today and session.state == 'started':
+            _logger.warning(f"Auto-cerrando sesión {session.id} con fecha pasada: {session_date}")
+            
+            # Cerrar automáticamente la sesión y crear bitácora con "clase_no_dictada"
+            try:
+                self._auto_close_past_session(session)
+                # Refrescar la sesión después de cerrarla
+                session = request.env['benglish.academic.session'].sudo().browse(session.id)
+            except Exception as e:
+                _logger.error(f"Error al auto-cerrar sesión {session.id}: {str(e)}")
+        # ============================================================
 
         # Obtener inscripciones (estudiantes)
         enrollments = session.enrollment_ids
@@ -386,11 +403,82 @@ class PortalCoachController(CustomerPortal):
             'enrollments': enrollments,
             'attendance_complete': attendance_complete,
             'pending_count': len(pending_attendance),
-            'is_past_session': is_past_session,  # Nueva variable
             'page_name': 'session_detail',
+            'datetime': datetime,  # Pasar datetime al template
         }
 
         return request.render('portal_coach.session_detail', values)
+    
+    def _auto_close_past_session(self, session):
+        """
+        Cierra automáticamente una sesión con fecha pasada
+        Crea o actualiza registros en bitácora con novedad "clase_no_dictada"
+        """
+        _logger.info(f"Iniciando auto-cierre de sesión {session.id} - {session.complete_code}")
+        
+        # Marcar todos los estudiantes como ausentes
+        for enrollment in session.enrollment_ids:
+            if enrollment.state not in ['attended', 'absent', 'cancelled']:
+                enrollment.state = 'absent'
+        
+        # Procesar registros de bitácora para cada estudiante inscrito
+        for enrollment in session.enrollment_ids.filtered(lambda e: e.state != 'cancelled'):
+            # Buscar si ya existe un registro
+            existing = request.env['benglish.academic.history'].sudo().search([
+                ('session_id', '=', session.id),
+                ('student_id', '=', enrollment.student_id.id),
+            ], limit=1)
+            
+            if existing:
+                # ACTUALIZAR registro existente con clase_no_dictada
+                _logger.warning(f"Actualizando registro existente de bitácora para estudiante {enrollment.student_id.id}")
+                existing.sudo().write({
+                    'novedad': 'clase_no_dictada',
+                    'notes': 'Clase cerrada automáticamente por fecha pasada. No se dictó la clase.',
+                    'attendance_status': 'absent',
+                })
+                continue
+            
+            # CREAR registro nuevo con novedad "clase_no_dictada"
+            history_vals = {
+                # Relaciones principales
+                'student_id': enrollment.student_id.id,
+                'session_id': session.id,
+                'enrollment_id': enrollment.id,
+                
+                # Datos de la sesión
+                'session_date': session.date,
+                'session_time_start': session.time_start,
+                'session_time_end': session.time_end,
+                'program_id': session.program_id.id,
+                'level_id': enrollment.student_id.current_level_id.id if enrollment.student_id.current_level_id else False,
+                'subject_id': session.subject_id.id,
+                'teacher_id': session.teacher_id.id,
+                'campus_id': session.campus_id.id,
+                'group_id': session.group_id.id if session.group_id else False,
+                'modality': session.modality,
+                'session_code': session.complete_code,
+                
+                # Estado de asistencia
+                'attendance_status': 'absent',
+                
+                # Novedad: CLASE NO DICTADA
+                'novedad': 'clase_no_dictada',
+                'notes': 'Clase cerrada automáticamente por fecha pasada. No se dictó la clase.',
+                
+                # Sin calificación
+                'grade': False,
+            }
+            
+            request.env['benglish.academic.history'].sudo().create(history_vals)
+            _logger.info(f"Creado registro de bitácora para {enrollment.student_id.name} con novedad 'clase_no_dictada'")
+        
+        # Cambiar estado de la sesión a 'done'
+        session.state = 'done'
+        
+        _logger.info(f"Sesión {session.id} auto-cerrada exitosamente")
+        
+        return True
 
     # ========================================
     # RUTAS PARA GESTIÓN DE ASISTENCIA
@@ -434,15 +522,6 @@ class PortalCoachController(CustomerPortal):
             if not session:
                 _logger.warning(f"[{request_id}] Sesión no encontrada o no pertenece al docente")
                 return {'success': False, 'error': 'Sesión no encontrada o no tienes permisos'}
-            
-            # Validar que la sesión no sea de una fecha pasada
-            today = fields.Date.today()
-            if session.date < today:
-                _logger.warning(f"[{request_id}] Intento de marcar asistencia en sesión pasada: {session.date}")
-                return {
-                    'success': False, 
-                    'error': f'No se puede marcar asistencia en clases con fechas pasadas. La clase fue programada para {session.date.strftime("%d/%m/%Y")} y hoy es {today.strftime("%d/%m/%Y")}. Esta clase debe marcarse como finalizada.'
-                }
             
             # Validar estado de la sesión
             if session.state not in ['started', 'done']:
@@ -780,14 +859,6 @@ class PortalCoachController(CustomerPortal):
             if not session:
                 return {'success': False, 'error': 'Sesión no encontrada'}
 
-            # Validar que la sesión no sea de una fecha pasada
-            today = fields.Date.today()
-            if session.date < today:
-                return {
-                    'success': False, 
-                    'error': f'No se pueden iniciar clases con fechas pasadas. La clase fue programada para {session.date.strftime("%d/%m/%Y")} y hoy es {today.strftime("%d/%m/%Y")}. Esta clase debe marcarse como finalizada.'
-                }
-
             if session.state not in ['draft', 'active', 'with_enrollment']:
                 return {'success': False, 'error': 'Solo se pueden iniciar sesiones en borrador o activas'}
 
@@ -813,7 +884,7 @@ class PortalCoachController(CustomerPortal):
         
         Args:
             session_id: ID de la sesión
-            novedad_type: Tipo de novedad ('postponed', 'material', None para sin novedad)
+            novedad_type: Tipo de novedad ('aplazada', 'material', None para sin novedad)
             observaciones: Observaciones de la sesión
         """
         try:
@@ -832,14 +903,6 @@ class PortalCoachController(CustomerPortal):
 
             if not session:
                 return {'success': False, 'error': 'Sesión no encontrada'}
-
-            # Validar que no sea una sesión futura (solo se pueden finalizar sesiones de hoy o pasadas)
-            today = fields.Date.today()
-            if session.date > today:
-                return {
-                    'success': False, 
-                    'error': f'No se pueden finalizar clases con fechas futuras. La clase está programada para {session.date.strftime("%d/%m/%Y")} y hoy es {today.strftime("%d/%m/%Y")}.'
-                }
 
             if session.state != 'started':
                 return {'success': False, 'error': 'Solo se pueden finalizar sesiones iniciadas'}
@@ -862,19 +925,21 @@ class PortalCoachController(CustomerPortal):
             # Mapeo de novedades del portal → bitácora académica
             # El campo 'novedad' en benglish.academic.history tiene estas opciones:
             # - "normal" (por defecto)
-            # - "retraso", "salida_temprana", "comportamiento", "participacion_destacada", "otro"
+            # - "aplazada" (clase aplazada)
+            # - "material" (materiales subidos)
+            # - "clase_no_dictada" (auto-cierre por fecha pasada)
             
             novedad_value = 'normal'  # Por defecto
             notes_text = observaciones or ''
             
             if novedad_type:
-                if novedad_type == 'postponed':
-                    novedad_value = 'otro'
+                if novedad_type == 'aplazada':
+                    novedad_value = 'aplazada'
                     prefix = 'CLASE APLAZADA'
                     notes_text = f'{prefix}: {observaciones}' if observaciones else prefix
                     
-                elif novedad_type == 'materials':
-                    novedad_value = 'otro'
+                elif novedad_type == 'material':
+                    novedad_value = 'material'
                     prefix = 'MATERIALES SUBIDOS'
                     notes_text = f'{prefix}: {observaciones}' if observaciones else prefix
             

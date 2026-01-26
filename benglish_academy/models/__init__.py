@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from . import res_config_settings
-from . import courtesy_settings
 from . import session_sync_mixin
 from . import program
 from . import plan

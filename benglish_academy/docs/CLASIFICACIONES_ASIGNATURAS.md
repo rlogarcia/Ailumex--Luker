@@ -1,5 +1,8 @@
 # CLASIFICACIONES DE ASIGNATURAS - BENGLISH ACADEMY
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## Resumen de Implementación
 
 Las asignaturas en benglish_academy tienen clasificaciones específicas según su rol en el flujo académico:

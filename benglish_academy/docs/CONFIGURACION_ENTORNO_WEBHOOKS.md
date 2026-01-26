@@ -1,8 +1,11 @@
 # Configuración de Entorno Odoo para Webhooks
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## Versión de Odoo
 
-- **Versión instalada**: Odoo 18.0.20251128
+- **Versión instalada**: Odoo 18.0.20250614
 - **Módulo compatible**: benglish_academy v18.0.1.4.0
 
 ## Configuración Requerida

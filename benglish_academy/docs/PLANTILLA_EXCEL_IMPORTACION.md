@@ -1,5 +1,8 @@
 # 📋 PLANTILLA EXCEL - IMPORTACIÓN DE ESTUDIANTES
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## 📥 COLUMNAS SOPORTADAS
 
 ### ✅ OBLIGATORIAS

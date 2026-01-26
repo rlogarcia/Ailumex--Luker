@@ -1,5 +1,8 @@
 # 🎓 Configuración de Unidades Máximas por Nivel
 
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
+
 ## ✅ Sistema Dinámico Implementado
 
 El sistema ahora es **completamente dinámico** y NO requiere modificar código cuando agregas nuevos niveles.

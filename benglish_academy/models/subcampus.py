@@ -55,7 +55,7 @@ class SubCampus(models.Model):
         selection=[
             ("presential", "Presencial"),
             ("virtual", "Virtual"),
-            ("hybrid", "Híbrida (Presencial + Virtual)"),
+            ("hybrid", "Híbrida (Presencial O Virtual)"),
         ],
         string="Modalidad",
         required=True,
@@ -79,7 +79,7 @@ class SubCampus(models.Model):
         string="Capacidad Total",
         compute="_compute_total_capacity",
         store=True,
-        help="Capacidad total (presencial + virtual)",
+        help="Capacidad total efectiva del aula. Para aulas híbridas es la máxima entre presencial y virtual.",
     )
 
     # Relaciones
@@ -244,15 +244,21 @@ class SubCampus(models.Model):
 
     @api.depends("modality", "capacity", "virtual_capacity")
     def _compute_total_capacity(self):
-        """Calcula la capacidad total (presencial + virtual)."""
+        """Calcula la capacidad total.
+        
+        Para aulas híbridas, la capacidad total es la MÁXIMA entre presencial y virtual,
+        no la suma, ya que los estudiantes pueden estar físicos O remotos, no ambos simultáneamente.
+        """
         for subcampus in self:
             if subcampus.modality == "presential":
                 subcampus.total_capacity = subcampus.capacity
             elif subcampus.modality == "virtual":
                 subcampus.total_capacity = subcampus.virtual_capacity
             else:  # hybrid
-                subcampus.total_capacity = (
-                    subcampus.capacity + subcampus.virtual_capacity
+                # Para modalidad híbrida, tomar el máximo entre capacidad presencial y virtual
+                # No sumar, ya que es excluyente: estudiantes están presencial O virtual
+                subcampus.total_capacity = max(
+                    subcampus.capacity, subcampus.virtual_capacity
                 )
 
     def name_get(self):

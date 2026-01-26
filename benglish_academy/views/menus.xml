@@ -206,12 +206,6 @@
                   action="action_student_lifecycle_transition"
                   sequence="15" />
 
-            <menuitem id="menu_config_students"
-                  name="Importar / Cargar Estudiantes"
-                  parent="menu_benglish_configuration"
-                  action="action_benglish_student_import_batch"
-                  sequence="20" />
-
             <menuitem id="menu_teacher_replacement_log"
                   name="Historial de Reemplazos"
                   parent="menu_benglish_configuration"
@@ -239,13 +233,6 @@
                   action="action_teacher_password_manager"
                   sequence="36"
                   groups="group_academic_manager,base.group_system" />
-
-            <menuitem id="menu_benglish_courtesy_settings"
-                  name="Planes Cortesía"
-                  parent="menu_benglish_configuration"
-                  action="action_benglish_courtesy_settings"
-                  sequence="40"
-                  groups="group_academic_manager" />
 
             <!-- Menú para Bitácora Académica -->
             <menuitem id="menu_benglish_academic_history"

@@ -19,10 +19,6 @@
         - Publicación de agenda académica
         - Estados de perfil de estudiante
         - Congelamiento de matrículas
-        - ⭐ Planes Cortesía (Cor-V, Cor-M): 
-          * Activación progresiva por módulos
-          * Cancelación automática por inactividad (parametrizable)
-          * Filtrado de contenido por fases activadas en portal del estudiante
     """,
     "author": "Ailumex",
     "website": "https://www.benglish.com",
@@ -114,11 +110,7 @@
         "views/class_booking_settings_views.xml",
         "views/student_password_manager_views.xml",  # Gestión de contraseñas de estudiantes
         "views/teacher_password_manager_views.xml",  # Gestión de contraseñas de docentes
-        "views/courtesy_settings_views.xml",
-        "views/res_config_settings_views.xml",  # Configuración de Planes Cortesía
         # "views/portal_password_reset_template.xml",  # Modal de recuperación - DESACTIVADO: conflicto XML validador Odoo 18
-        # Vistas - Planes Cortesía
-        "views/courtesy_views.xml",
         # MENÚS (DEBEN CARGARSE AL FINAL - dependen de todas las acciones)
         "views/menus.xml",
         # Datos operacionales
@@ -130,16 +122,12 @@
         "data/email_template_password_reset_simple.xml",  # Plantilla email OTP recuperación de contraseña
         # Estructura curricular
         "data/programs_data.xml",
-        "data/agenda_templates_data.xml",
         "data/plans_beteens_data.xml",
         "data/plans_benglish_data.xml",
-        # ⭐ Planes Cortesía (Cor-V, Cor-M)
-        "data/plans_cortesia_data.xml",
-        "data/phases_cortesia_data.xml",
-        "data/courtesy_freeze_config.xml",
-        "data/courtesy_init_config.xml",
+        # Fases compartidas (deben cargarse ANTES de las de cortesía)
         "data/phases_beteens_shared.xml",
         "data/phases_benglish_shared.xml",
+        # Niveles compartidos
         "data/levels_beteens_shared.xml",
         "data/levels_benglish_shared.xml",
         "data/class_types_structured.xml",
@@ -153,6 +141,10 @@
         "data/subjects_bskills_beteens.xml",
         # "data/subjects_bskills_extra_beteens.xml",  # DESACTIVADO: Contiene bskill_number 5-7 incompatibles con sistema refactorizado (solo 1-4)
         "data/subjects_oral_tests_beteens.xml",
+        # Asignaturas complementarias
+        "data/subjects_sing_it.xml",  # ⭐ NUEVA: Asignatura SING IT
+        # Plantillas de agenda (deben cargarse DESPUÉS de las asignaturas)
+        "data/agenda_templates_data.xml",
         # Placement Test - Asignaturas desactivadas (active=False) pero mantienen datos
         "data/subjects_placement_test.xml",
         "data/automation_placement_test.xml",
@@ -165,7 +157,6 @@
         # Procesos automáticos (Cron Jobs)
         "data/cron_session_management.xml",  # Cierre automático de sesiones y limpieza de agenda
         "data/cron_agenda_state.xml",  # Actualización automática de estado de agendas a ejecutadas
-        "data/cron_courtesy_inactivity.xml",  # ⭐ Monitoreo de inactividad de cortesías (cancelación automática 3 semanas)
         # "data/cron_password_reset_cleanup.xml",  # Limpieza de OTPs expirados - TEMPORAL
         # Acciones de servidor
         "data/server_actions_historical_progress.xml",  # Generar historial retroactivo

@@ -1,4 +1,7 @@
-# 🧪 Guía de Pruebas Completas - Sprint 1
+# 🧪 Guía de Pruebas Completas
+
+Yo desarrolle el modulo Benglish Academy y documente este archivo para su operacion en produccion.
+
 
 ## 📋 Requisitos Previos
 
@@ -19,7 +22,7 @@ Antes de comenzar las pruebas, asegúrate de tener:
 # Detener Odoo si está corriendo
 # Luego ejecutar:
 
-cd "C:\Program Files\Odoo 18.0.20251128\server"
+cd "C:\Program Files\Odoo 18.0.20250614\server"
 python odoo-bin -c odoo.conf -d TU_BASE_DATOS -u benglish_academy --stop-after-init
 ```
 
@@ -585,7 +588,7 @@ Solución:
 
 Si encuentras errores:
 
-1. Revisar logs: `C:\Program Files\Odoo 18.0.20251128\server\odoo.log`
+1. Revisar logs: `C:\Program Files\Odoo 18.0.20250614\server\odoo.log`
 2. Ejecutar validadores: `validate_syntax.py` y `validate_xml.py`
 3. Consultar: `SPRINT_1_RESUMEN_IMPLEMENTACION.md`
 

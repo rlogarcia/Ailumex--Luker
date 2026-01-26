@@ -194,7 +194,7 @@ class AcademicHistory(models.Model):
         comodel_name="benglish.subject",
         string="Asignatura",
         required=True,
-        ondelete="restrict",
+        ondelete="cascade",
         index=True,
         readonly=True,
         help="Asignatura dictada",
@@ -320,11 +320,9 @@ class AcademicHistory(models.Model):
     novedad = fields.Selection(
         selection=[
             ("normal", "Normal"),
-            ("retraso", "Retraso"),
-            ("salida_temprana", "Salida Temprana"),
-            ("comportamiento", "Comportamiento"),
-            ("participacion_destacada", "Participación Destacada"),
-            ("otro", "Otro"),
+            ("aplazada", "aplazada"),
+            ("material", "material"),
+            ("clase_no_dictada", "Clase no dictada"),
         ],
         string="Tipo Novedad",
         default="normal",
@@ -510,17 +508,18 @@ class AcademicHistory(models.Model):
 
         return result
 
-    def unlink(self):
-        """
-        Previene eliminación de registros de historial.
-        El historial es inmutable.
-        """
-        raise UserError(
-            _(
-                "No se pueden eliminar registros del historial académico.\n\n"
-                "El historial es inmutable y debe mantenerse para auditoría."
-            )
-        )
+    # NOTA: Eliminación permitida para correcciones administrativas
+    # def unlink(self):
+    #     """
+    #     Previene eliminación de registros de historial.
+    #     El historial es inmutable.
+    #     """
+    #     raise UserError(
+    #         _(
+    #             "No se pueden eliminar registros del historial académico.\n\n"
+    #             "El historial es inmutable y debe mantenerse para auditoría."
+    #         )
+    #     )
 
     # MÉTODOS DE NEGOCIO
 

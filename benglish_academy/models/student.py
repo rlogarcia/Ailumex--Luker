@@ -941,6 +941,7 @@ class Student(models.Model):
         "academic_history_ids",
         "academic_history_ids.attendance_status",
         "academic_history_ids.subject_id",
+        "current_level_id",  # ← AGREGADO: Para recalcular cuando cambia el nivel
     )
     def _compute_max_unit_from_history(self):
         """
@@ -964,13 +965,42 @@ class Student(models.Model):
             )
 
             if not completed_subjects:
-                # Fallback: usar el max_unit del nivel asignado si no hay historial
-                if student.current_level_id and student.current_level_id.max_unit:
-                    student.max_unit_completed = student.current_level_id.max_unit
-                    _logger.warning(
-                        f"⚠️ [STUDENT {student.code}] Sin historial académico. "
-                        f"Usando max_unit del nivel asignado: {student.max_unit_completed}"
-                    )
+                # ═══════════════════════════════════════════════════════════════════════
+                # CORRECCIÓN CRÍTICA: Calcular unidad máxima completada correctamente
+                # cuando NO hay historial académico (ej: matrícula manual)
+                # ═══════════════════════════════════════════════════════════════════════
+                # ANTES: Usaba current_level_id.max_unit directamente
+                # PROBLEMA: Si se matricula en UNIT 8, max_unit=8 pero debería ser 7
+                # SOLUCIÓN: Buscar la unidad MÍNIMA de las asignaturas del nivel actual
+                #           y restar 1 para obtener la última unidad completada
+                
+                if student.current_level_id:
+                    # Buscar asignaturas del nivel actual para determinar la unidad mínima
+                    current_level_subjects = self.env['benglish.subject'].search([
+                        ('level_id', '=', student.current_level_id.id),
+                        ('active', '=', True),
+                        ('unit_number', '>', 0)
+                    ], order='unit_number ASC')
+                    
+                    if current_level_subjects:
+                        # Obtener la unidad mínima del nivel actual
+                        min_unit_current_level = min(current_level_subjects.mapped('unit_number'))
+                        # La unidad máxima completada es la anterior a la mínima del nivel actual
+                        student.max_unit_completed = max(0, min_unit_current_level - 1)
+                        
+                        _logger.info(
+                            f"📊 [STUDENT {student.code}] Sin historial académico. "
+                            f"Nivel={student.current_level_id.name}, "
+                            f"Unit mínima del nivel={min_unit_current_level}, "
+                            f"Unit máxima completada (inferida)={student.max_unit_completed}"
+                        )
+                    else:
+                        # Fallback: usar max_unit del nivel si no hay asignaturas
+                        student.max_unit_completed = student.current_level_id.max_unit or 0
+                        _logger.warning(
+                            f"⚠️ [STUDENT {student.code}] Nivel sin asignaturas. "
+                            f"Usando max_unit={student.max_unit_completed}"
+                        )
                 else:
                     student.max_unit_completed = 0
                     _logger.warning(
@@ -2857,35 +2887,11 @@ Contacto creado automáticamente desde el sistema académico.
 
     def unlink(self):
         """
-        BLOQUEADO: No se permite eliminar estudiantes con matrículas por integridad de datos.
-
-        Alternativas:
-        - Para dar de baja: usar botón "Retirar" (archiva al estudiante preservando historial)
-        - Para eliminar definitivamente: usar botón "Eliminar Definitivamente" (solo administradores)
-
-        Esta restricción evita pérdida de datos académicos y garantiza trazabilidad.
+        ELIMINACIÓN FORZADA HABILITADA PARA GESTORES.
+        Permite eliminar estudiantes sin restricciones para facilitar gestión.
         """
-        students_with_enrollments = self.filtered(lambda s: s.enrollment_ids)
-        students_without_enrollments = self - students_with_enrollments
-
-        if students_with_enrollments:
-            raise ValidationError(
-                _(
-                    "No se pueden eliminar estudiantes con matrículas registradas.\n\n"
-                    "Estudiantes bloqueados: %s\n\n"
-                    "Opciones:\n"
-                    '1. Use el botón "Retirar" para archivar al estudiante (preserva historial)\n'
-                    '2. Use el botón "Eliminar Definitivamente" para borrado permanente (solo administradores)\n\n'
-                    "Total de matrículas que se perderían: %d"
-                )
-                % (
-                    ", ".join(students_with_enrollments.mapped("name")),
-                    len(students_with_enrollments.mapped("enrollment_ids")),
-                )
-            )
-
-        # Solo permitir eliminar estudiantes sin matrículas
-        return super(Student, students_without_enrollments).unlink()
+        # Permitir eliminación forzada sin validaciones
+        return super(Student, self).unlink()
 
     def action_recalculate_attendance_kpis(self):
         """
@@ -2934,8 +2940,9 @@ Contacto creado automáticamente desde el sistema académico.
             # Usar savepoint para que si falla un estudiante, no aborte toda la transacción
             try:
                 with self.env.cr.savepoint():
+                    # CORREGIDO: Incluir 'draft' y 'active' para matrículas manuales
                     active_enrollments = student.enrollment_ids.filtered(
-                        lambda e: e.state in ["enrolled", "in_progress"]
+                        lambda e: e.state in ["enrolled", "in_progress", "active", "draft"]
                     ).sorted("enrollment_date", reverse=True)
 
                     if not active_enrollments:
@@ -2943,13 +2950,9 @@ Contacto creado automáticamente desde el sistema académico.
                         continue
 
                     enrollment = active_enrollments[0]
-                    current_level = (
-                        enrollment.current_level_id
-                    )  # Nivel ACTUAL (no el inicial)
+                    current_level = enrollment.current_level_id or enrollment.level_id  # Fallback a level_id legacy
                     program = enrollment.program_id
-                    plan = (
-                        enrollment.plan_id
-                    )  # El plan viene de la matrícula, NO del estudiante
+                    plan = enrollment.plan_id  # El plan viene de la matrícula, NO del estudiante
 
                     if not current_level or not program or not plan:
                         results.append(
@@ -2962,17 +2965,44 @@ Contacto creado automáticamente desde el sistema académico.
                             )
                         )
                         continue
+                    
+                    # ═══════════════════════════════════════════════════════════════════════
+                    # CORRECCIÓN: Calcular unidad máxima completada correctamente
+                    # ═══════════════════════════════════════════════════════════════════════
+                    # Buscar asignaturas del nivel actual para determinar la unidad mínima
+                    current_level_subjects = Subject.search([
+                        ('level_id', '=', current_level.id),
+                        ('active', '=', True),
+                        ('unit_number', '>', 0)
+                    ], order='unit_number ASC')
+                    
+                    if not current_level_subjects:
+                        # Fallback: usar max_unit del nivel si no hay asignaturas
+                        _logger.warning(
+                            f"Nivel {current_level.name} sin asignaturas. "
+                            f"Usando max_unit={current_level.max_unit}"
+                        )
+                        min_unit_current_level = current_level.max_unit or 0
+                    else:
+                        # Obtener la unidad mínima del nivel actual
+                        min_unit_current_level = min(current_level_subjects.mapped('unit_number'))
+                    
+                    # La unidad máxima completada es la anterior a la mínima del nivel actual
+                    current_unit = min_unit_current_level - 1
+                    
+                    _logger.info(
+                        f"[HISTORIAL] {student.name}: Nivel={current_level.name}, "
+                        f"Unit mín nivel={min_unit_current_level}, Unit máx completada={current_unit}"
+                    )
 
-                    current_unit = current_level.max_unit or 0
-
-                    if current_unit <= 1:
+                    if current_unit < 1:
                         results.append(
                             "✓ %s: En Unit %d - Sin historial previo"
-                            % (student.name, current_unit)
+                            % (student.name, min_unit_current_level)
                         )
                         continue
 
-                    previous_units = list(range(1, current_unit))
+                    previous_units = list(range(1, current_unit + 1))
 
                     # BUSCAR TODAS las asignaturas de unidades previas (bcheck, bskills, oral_test, etc.)
                     # Incluir:
@@ -2995,9 +3025,9 @@ Contacto creado automáticamente desde el sistema académico.
                             ("subject_category", "=", "oral_test"),
                             (
                                 "unit_block_end",
-                                "<",
+                                "<=",
                                 current_unit,
-                            ),  # MENOR QUE, no menor o igual
+                            ),  # Hasta la unidad completada
                         ]
                     )
 

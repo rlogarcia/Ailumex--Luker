@@ -862,11 +862,11 @@
                                         </h3>
                                     </div>
                                     <p style="color: #78350f; font-size: 14px; margin: 12px 0;">
-                                        <strong>Debes agendar PRIMERO el prerrequisito (BCheck)</strong> antes de poder agregar otras clases a tu semana.
+                                        <strong>Debes agendar PRIMERO el B-check</strong> antes de poder agregar cualquier otra clase a tu semana.
                                     </p>
                                     <p style="color: #78350f; font-size: 13px;">
                                         El BCheck es una clase obligatoria de evaluación inicial que debe estar en tu agenda antes que cualquier otra sesión. 
-                                        Busca el prerrequisito marcado con ⚡ en la lista de abajo y agrégalo primero.
+                                        Busca el B-check marcado con ⚡ en la lista de abajo y agrégalo primero.
                                     </p>
                                 </div>
                             </t>
@@ -876,7 +876,7 @@
                                     <h3><i class="fa fa-magic" aria-hidden="true"></i> Construye tu semana</h3>
                                 </div>
                                 <p class="ps-session-meta">
-                                    Selecciona las asignaturas que deseas agendar. Cada asignatura muestra múltiples opciones de horario disponibles. Validamos prerrequisitos automáticamente y evitamos solapes en tu agenda.
+                                    Selecciona las asignaturas que deseas agendar. Cada asignatura muestra múltiples opciones de horario disponibles. <strong>Importante:</strong> Debes agendar primero el B-check antes de poder programar cualquier otra clase.
                                 </p>
                                 
                                 <!-- MENSAJE: Sin filtro de sede seleccionado -->
@@ -986,7 +986,7 @@
                                                                     <div class="ps-week-session-action">
                                                                         <t t-if="session.id not in bookable_session_ids">
                                                                             <span class="ps-tag-warning ps-tag-warning-compact" style="background: #eef2ff; border-color: #c7d2fe; color: #3730a3;">
-                                                                                Hora pasada
+                                                                                Agendada
                                                                             </span>
                                                                         </t>
                                                                         <button class="ps-button ps-button-xs"
@@ -1866,9 +1866,9 @@
                                         <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
                                     </span>
                                     <div>
-                                        <h4 id="ps-remove-confirm-title" class="ps-confirm-title">Cancelar prerrequisito</h4>
+                                        <h4 id="ps-remove-confirm-title" class="ps-confirm-title">Cancelar B-check</h4>
                                         <p id="ps-remove-confirm-text" class="ps-confirm-text">
-                                            Si cancelas este prerrequisito se eliminaran las clases dependientes de tu agenda.
+                                            Si cancelas este B-check se eliminarán todas las demás clases de tu agenda semanal.
                                         </p>
                                     </div>
                                 </div>
@@ -2087,10 +2087,10 @@
                             var count = meta.dependentCount || 0;
                             var label = count === 1 ? '1 clase' : (count + ' clases');
                             if (removeConfirmTitle) {
-                                removeConfirmTitle.textContent = 'Cancelar B-check y Skills dependientes';
+                                removeConfirmTitle.textContent = 'Cancelar B-check y clases dependientes';
                             }
                             if (removeConfirmText) {
-                                removeConfirmText.textContent = '⚠️ Al cancelar el B-check también se eliminarán automáticamente ' + label + ' dependiente(s), ya que el B-check es un prerrequisito obligatorio para las skills.';
+                                removeConfirmText.textContent = '⚠️ Al cancelar el B-check también se eliminarán automáticamente ' + label + ' dependiente(s), ya que el B-check es un prerrequisito obligatorio para todas las demás clases de la semana.';
                             }
                             if (removeConfirmCount) {
                                 removeConfirmCount.textContent = label;
@@ -2245,7 +2245,7 @@
                                                             <h5 t-esc="plan_block.get('plan').name"/>
                                                             <p class="ps-session-meta" t-esc="plan_block.get('plan').description or ''"/>
                                                         </div>
-                                                        <span class="ps-pill-soft">Plan</span>
+                                                        <span class="ps-pill ps-pill-info">Plan Asignado</span>
                                                     </div>
                                                     <div class="ps-plan-body">
                                                         <t t-foreach="plan_block.get('phases')" t-as="phase_block">
@@ -2261,21 +2261,45 @@
                                                                             <strong t-esc="level_block.get('level').name"/>
                                                                         </div>
                                                                         
-                                                                        <!-- Mostrar solo modalidad si hay asignaturas -->
+                                                                        <!-- Mostrar modalidad si hay asignaturas matriculadas -->
                                                                         <t t-if="level_block.get('subject_details')">
-                                                                            <t t-set="delivery_modes" t-value="set([s['delivery_mode'] for s in level_block.get('subject_details') if s['delivery_mode']])"/>
-                                                                            <t t-if="delivery_modes">
-                                                                                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 8px;">
+                                                                            <t t-set="has_enrollments" t-value="any(s.get('enrollment') for s in level_block.get('subject_details'))"/>
+                                                                            
+                                                                            <t t-if="has_enrollments">
+                                                                                <t t-set="delivery_modes" t-value="set([s['delivery_mode'] for s in level_block.get('subject_details') if s['delivery_mode']])"/>
+                                                                                <t t-if="delivery_modes">
+                                                                                    <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 8px;">
+                                                                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                                                            <i class="fa fa-desktop" style="color: #64748b;"></i>
+                                                                                            <span style="font-weight: 600; color: #334155;">Modalidad:</span>
+                                                                                            <t t-foreach="delivery_modes" t-as="mode">
+                                                                                                <span class="ps-pill ps-pill-xs" style="margin-left: 0.25rem;">
+                                                                                                    <t t-if="mode in ['presential', 'presencial']">Presencial</t>
+                                                                                                    <t t-elif="mode == 'virtual'">Virtual</t>
+                                                                                                    <t t-elif="mode == 'hybrid'">Híbrido</t>
+                                                                                                </span>
+                                                                                            </t>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </t>
+                                                                            </t>
+                                                                            <t t-else="">
+                                                                                <!-- Mostrar modalidad preferida del estudiante si no hay matrículas -->
+                                                                                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
                                                                                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                                                                        <i class="fa fa-desktop" style="color: #64748b;"></i>
-                                                                                        <span style="font-weight: 600; color: #334155;">Modalidad:</span>
-                                                                                        <t t-foreach="delivery_modes" t-as="mode">
-                                                                                            <span class="ps-pill ps-pill-xs" style="margin-left: 0.25rem;">
-                                                                                                <t t-if="mode in ['presential', 'presencial']">Presencial</t>
-                                                                                                <t t-elif="mode == 'virtual'">Virtual</t>
-                                                                                                <t t-elif="mode == 'hybrid'">Híbrido</t>
-                                                                                            </span>
-                                                                                        </t>
+                                                                                        <i class="fa fa-info-circle" style="color: #3b82f6;"></i>
+                                                                                        <span style="font-weight: 600; color: #1e40af;">Información del Programa:</span>
+                                                                                    </div>
+                                                                                    <p style="margin: 0.5rem 0 0; color: #1e40af; font-size: 0.9rem;">
+                                                                                        Este es tu programa asignado. Para ver el detalle de asignaturas y horarios específicos, necesitas matricularte en al menos una asignatura.
+                                                                                    </p>
+                                                                                    <div style="margin-top: 0.5rem;">
+                                                                                        <span style="font-weight: 600; color: #1e40af;">Modalidad Preferida:</span>
+                                                                                        <span class="ps-pill ps-pill-xs" style="margin-left: 0.25rem; background: #3b82f6; color: white;">
+                                                                                            <t t-if="student.preferred_delivery_mode == 'virtual'">Virtual</t>
+                                                                                            <t t-elif="student.preferred_delivery_mode == 'hybrid'">Híbrido</t>
+                                                                                            <t t-else="">Presencial</t>
+                                                                                        </span>
                                                                                     </div>
                                                                                 </div>
                                                                             </t>
@@ -2297,13 +2321,16 @@
                                 <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.9;">
                                     <i class="fa fa-graduation-cap" aria-hidden="true"></i>
                                 </div>
-                                <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: white;">Estructura Académica</h3>
+                                <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: white;">No hay programa asignado</h3>
                                 <p style="font-size: 1.1rem; opacity: 0.95; max-width: 500px; margin: 0 auto; line-height: 1.6;">
-                                    Aún no hay información de programa disponible. Una vez que estés matriculado en alguna asignatura, podrás ver aquí la estructura completa de tu programa académico.
+                                    Aún no tienes un programa académico asignado o no hay matrículas activas. Por favor contacta al equipo académico para obtener información sobre tu programa de estudio.
                                 </p>
                                 <div style="margin-top: 2rem;">
-                                    <a href="/my/student/agenda" class="btn btn-light" style="padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-block;">
+                                    <a href="/my/student/agenda" class="btn btn-light" style="padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-block; margin-right: 1rem;">
                                         <i class="fa fa-calendar" aria-hidden="true"></i> Ver Horarios
+                                    </a>
+                                    <a href="/my/student/info" class="btn btn-outline-light" style="padding: 0.75rem 2rem; border: 2px solid white; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-block; color: white;">
+                                        <i class="fa fa-user" aria-hidden="true"></i> Mi Información
                                     </a>
                                 </div>
                             </div>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- NOTA: No eliminar etapas ni equipos para evitar conflictos con marketing_pipeline_data.xml -->
+        
+        <!-- Restaurar etapas predeterminadas de Odoo -->
+        <function model="crm.stage" name="write">
+            <value eval="[
+                ref('crm.stage_lead1'),
+                ref('crm.stage_lead2'),
+                ref('crm.stage_lead3'),
+                ref('crm.stage_lead4')
+            ]"/>
+            <value eval="{'fold': False, 'sequence': 10}"/>
+        </function>
+        
+        <!-- Restaurar equipo de ventas predeterminado -->
+        <function model="crm.team" name="write">
+            <value eval="[ref('sales_team.salesteam_website_sales')]"/>
+            <value eval="{'sequence': 1}"/>
+        </function>
+    </data>
+</odoo>

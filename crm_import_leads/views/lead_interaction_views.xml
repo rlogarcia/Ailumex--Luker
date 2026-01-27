@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Vista de árbol (lista) de interacciones -->
+    <record id="view_lead_interaction_list" model="ir.ui.view">
+        <field name="name">lead.interaction.list</field>
+        <field name="model">lead.interaction</field>
+        <field name="arch" type="xml">
+            <list string="Interacciones" sample="1">
+                <field name="date"/>
+                <field name="lead_id"/>
+                <field name="type_display"/>
+                <field name="result_display"/>
+                <field name="notes"/>
+                <field name="user_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de formulario de interacciones -->
+    <record id="view_lead_interaction_form" model="ir.ui.view">
+        <field name="name">lead.interaction.form</field>
+        <field name="model">lead.interaction</field>
+        <field name="arch" type="xml">
+            <form string="Interacción">
+                <header>
+                    <button name="action_view_lead" string="Ver Lead" type="object" class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="type_display" readonly="1"/></h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Información General">
+                            <field name="lead_id" required="1" modifiers="{'readonly': [('lead_id', '!=', False)]}"/>
+                            <field name="date"/>
+                            <field name="user_id" readonly="1"/>
+                        </group>
+                        
+                        <group string="Detalles">
+                            <field name="type"/>
+                            <field name="result"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Observaciones" name="notes">
+                            <field name="notes" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista de búsqueda/filtros de interacciones -->
+    <record id="view_lead_interaction_search" model="ir.ui.view">
+        <field name="name">lead.interaction.search</field>
+        <field name="model">lead.interaction</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Interacciones">
+                <field name="lead_id" string="Lead"/>
+                <field name="type" string="Tipo de Contacto"/>
+                <field name="result" string="Resultado"/>
+                <field name="user_id" string="Registrado por"/>
+                <field name="notes" string="Observaciones"/>
+                <separator/>
+                <filter string="Hoy" name="today" domain="[('date', '&gt;=', context_today().strftime('%Y-%m-%d')), ('date', '&lt;', (context_today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Esta semana" name="week" domain="[('date', '&gt;=', (context_today() - datetime.timedelta(days=context_today().weekday())).strftime('%Y-%m-%d'))]"/>
+                <filter string="Sin respuesta" name="no_answer" domain="[('result', '=', 'no_answer')]"/>
+                <filter string="Requiere seguimiento" name="follow_up" domain="[('result', 'in', ['follow_up', 'callback'])]"/>
+                <separator/>
+                <filter string="Llamadas" name="calls" domain="[('type', '=', 'call')]"/>
+                <filter string="Correos" name="emails" domain="[('type', '=', 'email')]"/>
+                <filter string="Reuniones" name="meetings" domain="[('type', '=', 'meeting')]"/>
+                <group expand="1" string="Agrupar por">
+                    <filter string="Tipo" name="group_by_type" context="{'group_by': 'type'}"/>
+                    <filter string="Resultado" name="group_by_result" context="{'group_by': 'result'}"/>
+                    <filter string="Lead" name="group_by_lead" context="{'group_by': 'lead_id'}"/>
+                    <filter string="Usuario" name="group_by_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Fecha" name="group_by_date" context="{'group_by': 'date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción para abrir todas las interacciones -->
+    <record id="action_lead_interactions" model="ir.actions.act_window">
+        <field name="name">Interacciones con Leads</field>
+        <field name="res_model">lead.interaction</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_lead_interaction_search"/>
+        <field name="context">{"search_default_today": 1}</field>
+    </record>
+
+    <!-- Menú para acceder a interacciones -->
+    <menuitem id="menu_lead_interactions" name="Interacciones" parent="crm.crm_menu_root" action="action_lead_interactions" sequence="15"/>
+</odoo>

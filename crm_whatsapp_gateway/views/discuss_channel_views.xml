@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extender vista form de discuss.channel -->
+    <record id="view_discuss_channel_form_whatsapp" model="ir.ui.view">
+        <field name="name">discuss.channel.form.whatsapp</field>
+        <field name="model">discuss.channel</field>
+        <field name="inherit_id" ref="mail.discuss_channel_view_form" />
+        <field name="arch" type="xml">
+
+            <!-- Agregar botón para ver lead -->
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <button name="action_view_lead"
+                        string="Ver Lead"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="not lead_id or channel_type != 'gateway'" />
+                </header>
+            </xpath>
+
+            <!-- Agregar campos después del nombre -->
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="lead_id"
+                    invisible="channel_type != 'gateway'"
+                    readonly="1" />
+                <field name="lead_count" invisible="1" />
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- Vista de lista de canales WhatsApp MEJORADA -->
+    <record id="view_discuss_channel_list_whatsapp" model="ir.ui.view">
+        <field name="name">discuss.channel.list.whatsapp</field>
+        <field name="model">discuss.channel</field>
+        <field name="arch" type="xml">
+            <list string="Conversaciones WhatsApp" default_order="write_date desc"
+                decoration-info="lead_id != False"
+                decoration-muted="lead_id == False">
+                <field name="name" string="Contacto"/>
+                <field name="gateway_channel_token" string="Teléfono" />
+                <field name="lead_id" string="Lead Vinculado"/>
+                <field name="write_date" string="Última actividad"/>
+                <field name="create_date" string="Inicio" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Acción de ventana: WhatsApp Inbox - MEJORADA -->
+    <record id="action_whatsapp_inbox" model="ir.actions.act_window">
+        <field name="name">WhatsApp Inbox</field>
+        <field name="res_model">discuss.channel</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('gateway_id', '!=', False)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_discuss_channel_list_whatsapp')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay conversaciones de WhatsApp
+            </p>
+            <p>
+                Las conversaciones de WhatsApp aparecerán aquí cuando los clientes
+                envíen mensajes a la línea configurada.
+            </p>
+        </field>
+    </record>
+
+    <!-- Filtro personalizado para WhatsApp Inbox -->
+    <record id="view_discuss_channel_search_whatsapp" model="ir.ui.view">
+        <field name="name">discuss.channel.search.whatsapp</field>
+        <field name="model">discuss.channel</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <search string="WhatsApp">
+                <field name="name" string="Conversación" />
+                <field name="gateway_channel_token" string="Número" />
+                <field name="lead_id" string="Lead" />
+
+                <filter string="Mis conversaciones"
+                    name="my_channels"
+                    domain="[('channel_member_ids.partner_id', '=', uid)]" />
+
+                <filter string="Sin lead vinculado"
+                    name="no_lead"
+                    domain="[('lead_id', '=', False)]" />
+
+                <filter string="Con lead"
+                    name="with_lead"
+                    domain="[('lead_id', '!=', False)]" />
+
+                <group expand="0" string="Agrupar por">
+                    <filter string="Lead" name="group_by_lead" context="{'group_by': 'lead_id'}" />
+                    <filter string="Fecha creación" name="group_by_date"
+                        context="{'group_by': 'create_date'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

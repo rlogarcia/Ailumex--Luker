@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 
+        NOTA: La vista principal del Inbox está en crm_whatsapp_gateway
+        Este archivo solo define vistas alternativas si ese módulo no está instalado
+    -->
+    
+    <!-- Vista simple de lista si no hay otra definida -->
+    <record id="view_discuss_channel_whatsapp_list_simple" model="ir.ui.view">
+        <field name="name">discuss.channel.whatsapp.list.simple</field>
+        <field name="model">discuss.channel</field>
+        <field name="priority">200</field>
+        <field name="arch" type="xml">
+            <list string="Conversaciones WhatsApp" default_order="write_date desc">
+                <field name="name" string="Contacto"/>
+                <field name="gateway_channel_token" string="Teléfono"/>
+                <field name="write_date" string="Última actividad"/>
+            </list>
+        </field>
+    </record>
+
+</odoo>

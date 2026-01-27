@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Demo WhatsApp Gateway -->
+        <record id="whatsapp_gateway_demo" model="whatsapp.gateway" forcecreate="False">
+            <field name="name">Demo Gateway (Twilio)</field>
+            <field name="provider">twilio</field>
+            <field name="api_url">https://api.twilio.com/2010-04-01/Accounts/YOUR_ACCOUNT_SID</field>
+            <field name="api_key">YOUR_ACCOUNT_SID</field>
+            <field name="api_secret">YOUR_AUTH_TOKEN</field>
+            <field name="phone_number">+14155238886</field>
+            <field name="active" eval="False"/>
+        </record>
+
+        <!-- WhatsApp Templates -->
+        <record id="whatsapp_template_welcome" model="whatsapp.template" forcecreate="False">
+            <field name="name">Bienvenida</field>
+            <field name="code">welcome</field>
+            <field name="template_type">welcome</field>
+            <field name="message">Hola {{name}}! 👋
+
+Gracias por tu interés en nuestros servicios. 
+
+Soy {{user}}, y estaré encantado/a de ayudarte.
+
+¿Cuándo sería un buen momento para conversar sobre cómo podemos ayudarte?</field>
+        </record>
+
+        <record id="whatsapp_template_followup" model="whatsapp.template" forcecreate="False">
+            <field name="name">Seguimiento</field>
+            <field name="code">followup</field>
+            <field name="template_type">followup</field>
+            <field name="message">Hola {{name}},
+
+Espero que estés bien. 
+
+Quería hacer seguimiento a nuestra conversación anterior.
+
+¿Hay algo en lo que pueda ayudarte?
+
+Saludos,
+{{user}}</field>
+        </record>
+
+        <record id="whatsapp_template_reminder" model="whatsapp.template" forcecreate="False">
+            <field name="name">Recordatorio de Reunión</field>
+            <field name="code">meeting_reminder</field>
+            <field name="template_type">reminder</field>
+            <field name="message">Hola {{name}},
+
+Te recuerdo nuestra reunión programada.
+
+Si necesitas reagendar, por favor avísame.
+
+Saludos,
+{{user}}</field>
+        </record>
+
+        <record id="whatsapp_template_quote" model="whatsapp.template" forcecreate="False">
+            <field name="name">Envío de Cotización</field>
+            <field name="code">quote</field>
+            <field name="template_type">custom</field>
+            <field name="message">Hola {{name}},
+
+He preparado una cotización especial para {{company}}.
+
+Te la enviaré por email a {{email}}.
+
+¿Tienes alguna pregunta que pueda responder?
+
+Saludos,
+{{user}}</field>
+        </record>
+
+        <record id="whatsapp_template_thanks" model="whatsapp.template" forcecreate="False">
+            <field name="name">Agradecimiento</field>
+            <field name="code">thanks</field>
+            <field name="template_type">custom</field>
+            <field name="message">Hola {{name}},
+
+Muchas gracias por tu confianza en nuestros servicios. 🎉
+
+Trabajaremos juntos para lograr los mejores resultados.
+
+Cualquier duda, estoy a tu disposición en {{phone}}.
+
+Saludos,
+{{user}}</field>
+        </record>
+    </data>
+</odoo>

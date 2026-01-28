@@ -33,7 +33,7 @@
         "crm",
         "l10n_latam_base",  # Para tipos de documento (l10n_latam.identification.type)
     ],
-    "post_init_hook": "post_init_sync_subject_classification",
+    # Post-init hook removed to avoid programmatic creation of records (campuses, agendas, etc.)
     "data": [
         # Seguridad
         "security/security.xml",
@@ -114,39 +114,14 @@
         # MENÚS (DEBEN CARGARSE AL FINAL - dependen de todas las acciones)
         "views/menus.xml",
         # Datos operacionales
-        "data/campus_real_data.xml",
         "data/student_profile_states_base.xml",
         # "data/student_lifecycle_transitions.xml",  # Evitar duplicados en upgrade
         "data/student_moodle_user_data.xml",
         "data/coach_portal_email_template.xml",  # Plantilla email acceso portal coach
         "data/email_template_password_reset_simple.xml",  # Plantilla email OTP recuperación de contraseña
         # Estructura curricular
-        "data/programs_data.xml",
-        "data/plans_beteens_data.xml",
-        "data/plans_benglish_data.xml",
-        # Fases compartidas (deben cargarse ANTES de las de cortesía)
-        "data/phases_beteens_shared.xml",
-        "data/phases_benglish_shared.xml",
-        # Niveles compartidos
-        "data/levels_beteens_shared.xml",
-        "data/levels_benglish_shared.xml",
-        "data/class_types_structured.xml",
-        # Asignaturas Benglish (126 compartidas)
-        "data/subjects_bchecks_benglish.xml",
-        "data/subjects_bskills_benglish.xml",
-        # "data/subjects_bskills_extra.xml",  # DESACTIVADO: Contiene bskill_number 5-7 incompatibles con sistema refactorizado (solo 1-4)
-        "data/subjects_oral_tests_benglish.xml",
-        # Asignaturas B teens (126 compartidas)
-        "data/subjects_bchecks_beteens.xml",
-        "data/subjects_bskills_beteens.xml",
-        # "data/subjects_bskills_extra_beteens.xml",  # DESACTIVADO: Contiene bskill_number 5-7 incompatibles con sistema refactorizado (solo 1-4)
-        "data/subjects_oral_tests_beteens.xml",
-        # Asignaturas complementarias
-        "data/subjects_sing_it.xml",  # ⭐ NUEVA: Asignatura SING IT
-        # Plantillas de agenda (deben cargarse DESPUÉS de las asignaturas)
-        "data/agenda_templates_data.xml",
-        # Placement Test - Asignaturas desactivadas (active=False) pero mantienen datos
-        "data/subjects_placement_test.xml",
+        # NOTE: Removed data files that create programs, plans, phases, levels, subjects, campuses and classrooms
+        # to ensure the module does not load any hardcoded (quemado) academic structure on install.
         "data/automation_placement_test.xml",
         "data/automation_student_password_sync.xml",  # Sincronización automática gestor de contraseñas
         # "data/email_template_password_reset.xml",  # Template de email para recuperación de contraseña - TEMPORAL

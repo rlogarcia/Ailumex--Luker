@@ -634,14 +634,6 @@
                                     <p class="ps-session-meta" style="font-size: 0.7rem;">Clases ya confirmadas</p>
                                 </div>
                             </div>
-                            <div class="ps-status-card" style="padding: 0.75rem 1rem;">
-                                <div class="ps-status-icon ps-status-icon-orange" style="width: 40px; height: 40px;"><i class="fa fa-clock-o"></i></div>
-                                <div>
-                                    <p class="ps-status-label" style="font-size: 0.7rem; margin-bottom: 0.2rem;">DISPONIBLES</p>
-                                    <h3 class="ps-status-value" style="font-size: 1.5rem; margin-bottom: 0.2rem;"><t t-esc="week.get('total_sessions') or 0"/></h3>
-                                    <p class="ps-session-meta" style="font-size: 0.7rem;">Publicadas para tus grupos</p>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- HU-E9: Selector de sede/ciudad -->

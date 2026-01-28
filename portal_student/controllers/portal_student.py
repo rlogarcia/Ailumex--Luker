@@ -1543,7 +1543,10 @@ class PortalStudentController(CustomerPortal):
         # Agrupar sedes por ciudad
         cities = {}
         for campus in available_campuses:
-            city = campus.city_name or 'Sin ciudad'
+            city = campus.city_name or 'Virtual'
+            # Normalizar "Sin ciudad" a "Virtual"
+            if city.lower() == 'sin ciudad':
+                city = 'Virtual'
             if city not in cities:
                 cities[city] = []
             cities[city].append(campus)
@@ -1706,7 +1709,7 @@ class PortalStudentController(CustomerPortal):
                 session,
                 student,
                 check_completed=True,
-                check_prereq=True,
+                check_prereq=False,  # NO verificar prerrequisitos al cargar - solo al agendar
             )
             if effective_subject:
                 effective_subject_by_session[session.id] = effective_subject
@@ -3053,7 +3056,7 @@ class PortalStudentController(CustomerPortal):
         # Agrupar por ciudad
         cities_data = {}
         for campus in campuses:
-            city = campus.city_name or "Sin ciudad"
+            city = campus.city_name or "Virtual"
             if city not in cities_data:
                 cities_data[city] = []
             campus_sessions = sessions.filtered(lambda s: s.campus_id.id == campus.id)

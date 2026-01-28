@@ -470,6 +470,13 @@ class Subject(models.Model):
     def check_prerequisites_completed(self, student_id):
         """
         Verifica si un estudiante ha completado todos los prerrequisitos de esta asignatura.
+        
+        REGLA DE NEGOCIO IMPORTANTE:
+        - B-checks: Se consideran válidos si están COMPLETADOS o AGENDADOS
+        - Skills: Se consideran válidos solo si están COMPLETADOS (attended)
+        
+        Esto permite que un estudiante agende skills de una unidad cuando ya tiene
+        el B-check de esa unidad agendado (no necesita esperar a completarlo).
 
         Args:
             student_id: ID del estudiante (benglish.student o res.partner)
@@ -519,10 +526,45 @@ class Subject(models.Model):
         
         # Obtener las asignaturas que ya completó
         completed_subjects = completed_history.mapped("subject_id")
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # REGLA ESPECIAL: B-checks AGENDADOS también cuentan como válidos
+        # ═══════════════════════════════════════════════════════════════════════
+        # Buscar B-checks que están agendados en el plan semanal del estudiante
+        scheduled_bcheck_subjects = self.env["benglish.subject"]
+        try:
+            PlanLine = self.env['portal.student.weekly.plan.line'].sudo()
+            # Obtener todos los B-checks agendados del estudiante
+            scheduled_bchecks = PlanLine.search([
+                ('plan_id.student_id', '=', student.id),
+            ])
+            
+            for line in scheduled_bchecks:
+                # Verificar si es un B-check por effective_subject_id o subject_id
+                eff_subject = line.effective_subject_id
+                base_subject = line.session_id.subject_id if line.session_id else False
+                
+                # Verificar effective_subject_id
+                if eff_subject and eff_subject.subject_category == 'bcheck':
+                    if eff_subject.id in self.prerequisite_ids.ids:
+                        scheduled_bcheck_subjects |= eff_subject
+                # Verificar subject_id de la sesión
+                elif base_subject and base_subject.subject_category == 'bcheck':
+                    if base_subject.id in self.prerequisite_ids.ids:
+                        scheduled_bcheck_subjects |= base_subject
+                        
+        except Exception as e:
+            # Si falla la búsqueda de agendados, continuar solo con completados
+            import logging
+            _logger = logging.getLogger(__name__)
+            _logger.warning(f"[PREREQ] Error buscando B-checks agendados: {e}")
 
-        # Calcular prerrequisitos faltantes
-        missing = self.prerequisite_ids - completed_subjects
-        completed = self.prerequisite_ids & completed_subjects
+        # Combinar completados + B-checks agendados
+        valid_subjects = completed_subjects | scheduled_bcheck_subjects
+
+        # Calcular prerrequisitos faltantes (excluyendo los agendados)
+        missing = self.prerequisite_ids - valid_subjects
+        completed = self.prerequisite_ids & valid_subjects
 
         if missing:
             # Agrupar prerrequisitos faltantes por unidad para mensaje más claro

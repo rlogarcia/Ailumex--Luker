@@ -2662,39 +2662,60 @@ class AcademicSession(models.Model):
             block_end = min(block_start + block_size - 1, max_unit or block_start)
             
             # ═══════════════════════════════════════════════════════════════════════
-            # VALIDACIÓN ESTRICTA DE PREREQUISITOS PARA ORAL TESTS
+            # VALIDACIÓN SIMPLIFICADA PARA ORAL TESTS
             # ═══════════════════════════════════════════════════════════════════════
-            # Oral Tests requieren que el estudiante haya completado:
-            # 1. TODOS los B-checks del bloque (asistido o no asistido)
-            # 2. TODAS las skills (4 slots) de cada unidad del bloque
-            # 
-            # Ejemplo para Oral Test 4 (bloque 1-4):
-            # - B-check Unit 1, 2, 3, 4: completados (4 B-checks)
-            # - Skills Unit 1: 4/4 slots, Unit 2: 4/4 slots, Unit 3: 4/4, Unit 4: 4/4
+            # Para agendar un Oral Test, el estudiante solo necesita:
+            # - Haber ASISTIDO al B-check de la ÚLTIMA UNIDAD del bloque (ej: Unit 16 para bloque 13-16)
+            # - NO es obligatorio completar las skills
             # ═══════════════════════════════════════════════════════════════════════
             if check_prereq and template.subject_category == "oral_test":
-                missing_items = []
+                # Solo validar el B-check de la última unidad del bloque
+                oral_test_unit = block_end  # Última unidad del bloque (ej: 16 para bloque 13-16)
                 
-                for unit in range(block_start, block_end + 1):
-                    # Validar B-check de la unidad
-                    unit_progress = self._get_unit_progress_details(student, unit)
-                    if not unit_progress['bcheck']:
-                        missing_items.append(f"B-check de la Unidad {unit}")
+                History = self.env['benglish.academic.history'].sudo()
+                
+                # Verificar si asistió al B-check de la unidad del Oral Test
+                bcheck_attended = History.search([
+                    ('student_id', '=', student.id),
+                    ('attendance_status', '=', 'attended'),  # ← DEBE haber asistido
+                    ('subject_id.subject_category', '=', 'bcheck'),
+                    ('subject_id.unit_number', '=', oral_test_unit),
+                    ('subject_id.program_id', '=', student.program_id.id if student.program_id else False)
+                ], limit=1)
+                
+                if not bcheck_attended:
+                    # Verificar si faltó al B-check para mensaje específico
+                    bcheck_absent = History.search([
+                        ('student_id', '=', student.id),
+                        ('attendance_status', '=', 'absent'),
+                        ('subject_id.subject_category', '=', 'bcheck'),
+                        ('subject_id.unit_number', '=', oral_test_unit),
+                        ('subject_id.program_id', '=', student.program_id.id if student.program_id else False)
+                    ], limit=1)
                     
-                    # Validar 4 skills completas de la unidad
-                    if len(unit_progress.get('completed_slots', [])) < 4:
-                        completed_count = len(unit_progress.get('completed_slots', []))
-                        missing_count = 4 - completed_count
-                        missing_items.append(f"Bskills de la Unidad {unit} ({missing_count} faltantes)")
-                
-                if missing_items:
                     if raise_on_error:
-                        missing_text = ", ".join(missing_items)
-                        raise UserError(
-                            _("No puedes agendar este Oral Test. Debes completar TODAS las skills y B-checks del bloque (Unidades %s-%s).\n\n"
-                              "Faltan: %s") % (block_start, block_end, missing_text)
-                        )
+                        if bcheck_absent:
+                            raise UserError(
+                                _("No puedes agendar este Oral Test.\n\n"
+                                  "Para presentar el Oral Test de la Unidad %s, debías haber ASISTIDO "
+                                  "al B-Check de esa unidad, pero faltaste.\n\n"
+                                  "✅ SOLUCIÓN:\n"
+                                  "1. Solicita que te habiliten un NUEVO B-Check de la Unidad %s\n"
+                                  "2. Asiste al B-Check de recuperación\n"
+                                  "3. Después podrás agendar el Oral Test") % (oral_test_unit, oral_test_unit)
+                            )
+                        else:
+                            raise UserError(
+                                _("No puedes agendar este Oral Test.\n\n"
+                                  "Para presentar el Oral Test de la Unidad %s, debes haber ASISTIDO "
+                                  "al B-Check de esa unidad.\n\n"
+                                  "✅ PRÓXIMOS PASOS:\n"
+                                  "1. Agenda el B-Check de la Unidad %s\n"
+                                  "2. Asiste al B-Check\n"
+                                  "3. Luego podrás agendar el Oral Test") % (oral_test_unit, oral_test_unit)
+                            )
                     return False
+                    
             domain = [
                 ("program_id", "=", program.id),
                 ("active", "=", True),

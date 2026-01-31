@@ -175,7 +175,7 @@
                             <field name="student_phone" widget="phone" />
                             <field name="enrollment_date" />
                         </group>
-                        <group name="academic_structure" string="Estructura Académica (HU1)"
+                        <group name="academic_structure" string="Estructura Académica"
                             readonly="state in ['finished', 'withdrawn', 'cancelled']">
                             <field name="program_id" />
                             <field name="plan_id" domain="[('program_id', '=', program_id)]" />
@@ -192,7 +192,7 @@
                             <field name="max_freeze_date" />
                             <field name="course_days" />
                         </group>
-                        <group name="group_info" string="Grupo y Ubicación (HU3)"
+                        <group name="group_info" string="Grupo y Ubicación"
                             invisible="not group_id">
                             <field name="group_id" required="0"
                                 domain="[('state', 'in', ['confirmed', 'in_progress'])]"
@@ -215,13 +215,13 @@
                     </group>
 
                     <group>
-                        <group name="modality" string="Modalidad de Asistencia (HU3 - Híbrido)">
+                        <group name="modality" string="Modalidad de Asistencia">
                             <field name="delivery_mode" widget="radio" required="1" />
                             <field name="attendance_type"
                                 invisible="delivery_mode != 'hybrid'"
                                 widget="radio" />
                         </group>
-                        <group name="schedule" string="Horarios (HU4)">
+                        <group name="schedule" string="Horarios">
                             <field name="start_date" readonly="1" />
                             <field name="end_date" readonly="1" />
                             <field name="schedule" readonly="1" />

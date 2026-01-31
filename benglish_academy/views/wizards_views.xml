@@ -168,7 +168,7 @@
                                 invisible="action_type != 'shift_time'" />
                         </group>
                     </group>
-                    <group string="📝 Motivo del Reemplazo (T22-HU6)"
+                    <group string="📝 Motivo del Reemplazo"
                         invisible="action_type != 'change_teacher'">
                         <field name="replacement_reason" nolabel="1"
                             placeholder="Indique el motivo: licencia médica, vacaciones, emergencia, etc."

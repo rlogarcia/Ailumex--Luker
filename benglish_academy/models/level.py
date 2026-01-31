@@ -2,6 +2,7 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
+import re
 
 
 class AcademicLevel(models.Model):
@@ -115,40 +116,41 @@ class AcademicLevel(models.Model):
         ),
     ]
 
+    def _next_unique_code(self, prefix, seq_code):
+        env = self.env
+        existing = self.search([("code", "ilike", f"{prefix}%")])
+        seq = env["ir.sequence"].search([("code", "=", seq_code)], limit=1)
+
+        if not existing:
+            if seq:
+                seq.number_next = 1
+            return f"{prefix}1"
+
+        max_n = 0
+        for rec in existing:
+            if not rec.code:
+                continue
+            m = re.search(r"(\d+)$", rec.code)
+            if m:
+                try:
+                    n = int(m.group(1))
+                except Exception:
+                    n = 0
+                if n > max_n:
+                    max_n = n
+
+        next_n = max_n + 1
+        if seq and (not seq.number_next or seq.number_next <= next_n):
+            seq.number_next = next_n + 1
+        return f"{prefix}{next_n}"
+
     @api.model_create_multi
     def create(self, vals_list):
         """Genera el código automáticamente según el tipo de programa."""
         for vals in vals_list:
+            # Unified simple sequence for levels
             if vals.get("code", "/") == "/":
-                phase_id = vals.get("phase_id")
-                if phase_id:
-                    phase = self.env["benglish.phase"].browse(phase_id)
-                    program_type = phase.program_id.program_type
-                    if program_type == "bekids":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code(
-                                "benglish.level.bekids"
-                            )
-                            or "/"
-                        )
-                    elif program_type == "bteens":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code(
-                                "benglish.level.bteens"
-                            )
-                            or "/"
-                        )
-                    elif program_type == "benglish":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code(
-                                "benglish.level.benglish"
-                            )
-                            or "/"
-                        )
-                    else:
-                        vals["code"] = (
-                            f"LEVEL-{self.env['ir.sequence'].next_by_code('benglish.level') or '001'}"
-                        )
+                vals["code"] = self._next_unique_code("N-", "benglish.level")
         return super().create(vals_list)
 
     @api.depends("name", "phase_id.complete_name")
@@ -201,4 +203,85 @@ class AcademicLevel(models.Model):
             "view_mode": "list,form",
             "domain": [("level_id", "=", self.id)],
             "context": {"default_level_id": self.id},
+        }
+
+    def compute_max_unit_from_subjects(self):
+        """
+        Calcula y escribe `max_unit` a partir de las asignaturas activas del nivel.
+        Si no hay asignaturas con `unit_number > 0`, deja `max_unit` en 0.
+        """
+        Subject = self.env["benglish.subject"].sudo()
+        for level in self:
+            subjects = Subject.search(
+                [("level_id", "=", level.id), ("active", "=", True), ("unit_number", ">", 0)]
+            )
+            if subjects:
+                max_unit = max(subjects.mapped("unit_number"))
+            else:
+                max_unit = 0
+            if level.max_unit != max_unit:
+                level.write({"max_unit": max_unit})
+
+    @api.model
+    def fill_missing_max_units(self):
+        """
+        Helper para poblar `max_unit` en todos los niveles que actualmente tienen 0.
+        - Calcula `max_unit` desde asignaturas del nivel.
+        - Si no encuentra asignaturas con unit_number en el nivel, intenta inferir
+          desde asignaturas del plan/phase/program asociadas.
+
+        Devuelve una acción cliente que notifica cuántos niveles se actualizaron.
+        """
+        Level = self.sudo()
+        levels = Level.search([("max_unit", "=", 0)])
+        updated = 0
+        Subject = self.env["benglish.subject"].sudo()
+
+        for lvl in levels:
+            # 1) Intentar desde asignaturas del mismo nivel
+            subjects = Subject.search(
+                [("level_id", "=", lvl.id), ("active", "=", True), ("unit_number", ">", 0)]
+            )
+            if subjects:
+                max_u = max(subjects.mapped("unit_number"))
+                if max_u and lvl.max_unit != max_u:
+                    lvl.write({"max_unit": max_u})
+                    updated += 1
+                    continue
+
+            # 2) Intentar desde la fase / programa: buscar asignaturas en niveles de la misma fase
+            if lvl.phase_id:
+                phase_levels = Level.search([("phase_id", "=", lvl.phase_id.id)])
+                subj_phase = Subject.search(
+                    [("level_id", "in", phase_levels.ids), ("active", "=", True), ("unit_number", ">", 0)]
+                )
+                if subj_phase:
+                    # tomar el máximo unit_number encontrado en la fase
+                    max_u = max(subj_phase.mapped("unit_number"))
+                    if max_u and lvl.max_unit != max_u:
+                        lvl.write({"max_unit": max_u})
+                        updated += 1
+                        continue
+
+            # 3) Intentar desde planes asociados al programa
+            if lvl.phase_id and lvl.phase_id.program_id:
+                program = lvl.phase_id.program_id
+                subj_prog = Subject.search(
+                    [("program_id", "=", program.id), ("active", "=", True), ("unit_number", ">", 0)]
+                )
+                if subj_prog:
+                    max_u = max(subj_prog.mapped("unit_number"))
+                    if max_u and lvl.max_unit != max_u:
+                        lvl.write({"max_unit": max_u})
+                        updated += 1
+
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Población de max_unit",
+                "message": _("Se actualizaron %d niveles") % updated,
+                "type": "success",
+                "sticky": False,
+            },
         }

@@ -2,6 +2,7 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
+import re
 
 
 class Subject(models.Model):
@@ -244,45 +245,50 @@ class Subject(models.Model):
                         % (record.name, record.code or 'Sin código', record.bskill_number)
                     )
 
+    def _next_unique_code(self, prefix, seq_code):
+        env = self.env
+        existing = self.search([("code", "ilike", f"{prefix}%")])
+        seq = env["ir.sequence"].search([("code", "=", seq_code)], limit=1)
+
+        if not existing:
+            if seq:
+                seq.number_next = 1
+            return f"{prefix}1"
+
+        max_n = 0
+        for rec in existing:
+            if not rec.code:
+                continue
+            m = re.search(r"(\d+)$", rec.code)
+            if m:
+                try:
+                    n = int(m.group(1))
+                except Exception:
+                    n = 0
+                if n > max_n:
+                    max_n = n
+
+        next_n = max_n + 1
+        if seq and (not seq.number_next or seq.number_next <= next_n):
+            seq.number_next = next_n + 1
+        return f"{prefix}{next_n}"
+
     @api.model_create_multi
     def create(self, vals_list):
-        """Genera el código automáticamente según el tipo de programa."""
+        """Genera el código automáticamente según la configuración; evita colisiones y permite código manual."""
         for vals in vals_list:
             # Ajustar evaluable=False automáticamente para B-checks y B-skills
             if vals.get('subject_category') in ['bcheck', 'bskills']:
                 vals['evaluable'] = False
-            
+
             if vals.get("code", "/") == "/":
-                level_id = vals.get("level_id")
-                if level_id:
-                    level = self.env["benglish.level"].browse(level_id)
-                    program_type = level.phase_id.program_id.program_type
-                    if program_type == "bekids":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code(
-                                "benglish.subject.bekids"
-                            )
-                            or "/"
-                        )
-                    elif program_type == "bteens":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code(
-                                "benglish.subject.bteens"
-                            )
-                            or "/"
-                        )
-                    elif program_type == "benglish":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code(
-                                "benglish.subject.benglish"
-                            )
-                            or "/"
-                        )
-                    else:
-                        vals["code"] = (
-                            f"SUBJECT-{self.env['ir.sequence'].next_by_code('benglish.subject') or '001'}"
-                        )
-        return super().create(vals_list)
+                # Use unified subject sequence A-1, A-2, ... unless manual code provided
+                vals["code"] = self._next_unique_code("A-", "benglish.subject")
+
+        records = super().create(vals_list)
+        # Ensure classification stays in sync after creation
+        records._sync_classification_with_category()
+        return records
     
     def write(self, vals):
         """Override write para ajustar evaluable automáticamente al cambiar subject_category."""
@@ -333,11 +339,7 @@ class Subject(models.Model):
             if target and subject.subject_classification != target:
                 subject.subject_classification = target
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        records = super().create(vals_list)
-        records._sync_classification_with_category()
-        return records
+    # (create is implemented above with robust sequence handling)
 
     def write(self, vals):
         res = super().write(vals)

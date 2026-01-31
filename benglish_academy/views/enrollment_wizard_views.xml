@@ -125,7 +125,7 @@
                         <!-- PASO 3: MODALIDAD DE ASISTENCIA -->
                         <page string="🌐 Paso 3: Modalidad" name="delivery_mode">
                             <group>
-                                <group string="Modalidad de Asistencia (HU3)">
+                                <group string="Modalidad de Asistencia">
                                     <field name="delivery_mode"
                                         widget="radio"
                                         required="1" />

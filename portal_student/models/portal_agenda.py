@@ -529,7 +529,9 @@ class PortalStudentWeeklyPlanLine(models.Model):
                 if enrollment and enrollment.effective_subject_id:
                     subject = enrollment.effective_subject_id
                 elif hasattr(session, "resolve_effective_subject"):
-                    subject = session.resolve_effective_subject(
+                    # Pasar el plan en el contexto para verificar B-checks agendados
+                    session_with_plan = session.with_context(current_plan=line.plan_id)
+                    subject = session_with_plan.resolve_effective_subject(
                         student,
                         check_completed=False,
                         raise_on_error=False,
@@ -627,7 +629,10 @@ class PortalStudentWeeklyPlanLine(models.Model):
                 return enrollment.effective_subject_id
         
         if student and hasattr(session, "resolve_effective_subject"):
-            return session.resolve_effective_subject(
+            # Pasar el plan en el contexto para verificar B-checks agendados
+            plan = self.plan_id if hasattr(self, 'plan_id') else None
+            session_with_plan = session.with_context(current_plan=plan) if plan else session
+            return session_with_plan.resolve_effective_subject(
                 student,
                 check_completed=check_completed,
                 raise_on_error=raise_on_error,
@@ -972,11 +977,20 @@ class PortalStudentWeeklyPlanLine(models.Model):
         # VALIDACIÓN B-CHECK / SKILLS POR UNIDAD (unit_number) - CORREGIDA
         # ═══════════════════════════════════════════════════════════════════════════════
         # LÓGICA CORREGIDA:
-        # - Skills de unidad N NO requieren B-Check como prerrequisito
+        # - Skills de unidad N requieren B-Check de esa unidad AGENDADO o COMPLETADO
         # - B-Check de unidad N+1 SÍ requiere que TODAS las Skills de unidad N estén completadas
         # - El B-Check es obligatorio para AVANZAR de unidad, no para ver skills
         # ═══════════════════════════════════════════════════════════════════════════════
-        subject_unit = subject.unit_number if subject else 0
+        
+        # Obtener la unidad: primero del subject, luego de la sesión
+        subject_unit = 0
+        if subject and hasattr(subject, 'unit_number') and subject.unit_number:
+            subject_unit = subject.unit_number
+        elif session and hasattr(session, 'audience_unit_to') and session.audience_unit_to:
+            subject_unit = session.audience_unit_to
+        elif session and hasattr(session, 'audience_unit_from') and session.audience_unit_from:
+            subject_unit = session.audience_unit_from
+        
         student = plan.student_id.sudo()
         History = self.env['benglish.academic.history'].sudo()
         Subject = self.env['benglish.subject'].sudo()
@@ -1089,17 +1103,47 @@ class PortalStudentWeeklyPlanLine(models.Model):
             
             # Verificar si está AGENDADO en esta semana
             bcheck_scheduled = False
-            if not bcheck_completed:
-                for line in plan.line_ids:
-                    line_subject = line.effective_subject_id or line._get_effective_subject(
-                        check_completed=False,
-                        check_prereq=False,
-                    )
-                    if (line_subject and 
-                        self._is_prerequisite_subject(line_subject) and
-                        line_subject.unit_number == subject_unit):
-                        bcheck_scheduled = True
-                        break
+            if not bcheck_completed and subject_unit > 0:
+                import logging
+                _logger = logging.getLogger(__name__)
+                _logger.info(f"[SKILL DEBUG] Buscando B-check agendado para Unidad {subject_unit}")
+                _logger.info(f"[SKILL DEBUG] Plan ID: {plan.id}, tiene {len(plan.line_ids)} líneas agendadas")
+                
+                # Buscar directamente en la base de datos las líneas del plan
+                PlanLine = self.env['portal.student.weekly.plan.line'].sudo()
+                all_plan_lines = PlanLine.search([('plan_id', '=', plan.id)])
+                _logger.info(f"[SKILL DEBUG] Líneas encontradas en BD: {len(all_plan_lines)}")
+                
+                for line in all_plan_lines:
+                    # Obtener el subject efectivo de la línea
+                    line_session = line.session_id
+                    line_subject = line.effective_subject_id
+                    
+                    # Si no tiene effective_subject_id, intentar obtenerlo de la sesión
+                    if not line_subject and line_session:
+                        line_subject = line_session.subject_id
+                    
+                    if line_subject:
+                        line_unit = getattr(line_subject, 'unit_number', 0) or 0
+                        line_category = getattr(line_subject, 'subject_category', '')
+                        _logger.info(f"[SKILL DEBUG] Línea {line.id}: {line_subject.name} - Categoría: {line_category} - Unidad: {line_unit}")
+                        
+                        if line_category == 'bcheck' and line_unit == subject_unit:
+                            _logger.info(f"[SKILL DEBUG] ✅ ENCONTRADO B-check agendado: {line_subject.name} Unit {line_unit}")
+                            bcheck_scheduled = True
+                            break
+                    elif line_session:
+                        # Verificar por template de la sesión
+                        template = line_session.template_id
+                        if template and template.subject_category == 'bcheck':
+                            session_unit = line_session.audience_unit_to or line_session.audience_unit_from or 0
+                            _logger.info(f"[SKILL DEBUG] Línea {line.id}: Template B-check - Unidad sesión: {session_unit}")
+                            if session_unit == subject_unit:
+                                _logger.info(f"[SKILL DEBUG] ✅ ENCONTRADO B-check (por template) agendado Unit {session_unit}")
+                                bcheck_scheduled = True
+                                break
+                
+                _logger.info(f"[SKILL DEBUG] Resultado final: bcheck_scheduled = {bcheck_scheduled}")
             
             # Si NO está completado NI agendado → ERROR
             if not bcheck_completed and not bcheck_scheduled:

@@ -198,6 +198,8 @@ class Student(models.Model):
             self.responsible_phone = False
             self.responsible_relationship = False
 
+    # Note: `city` is a Many2one to `res.city`. Keep the field name `city` as requested.
+
     #  INFORMACIÓN ACADÉMICA
     #
     # IMPORTANTE: Estos campos son INFORMATIVOS y de SOLO LECTURA.
@@ -1615,23 +1617,28 @@ Información Académica:
 
                 # Manejar ciudad: buscar en res.city o usar texto libre
                 if self.city:
-                    city_obj = self.env["res.city"].search(
-                        [
-                            ("name", "=ilike", self.city),
-                            (
-                                "state_id.country_id",
-                                "=",
-                                self.country_id.id if self.country_id else False,
-                            ),
-                        ],
-                        limit=1,
-                    )
+                    # Usar res.city solo si el modelo está disponible en la base
+                    if "res.city" in self.env:
+                        city_obj = self.env["res.city"].search(
+                            [
+                                ("name", "=ilike", self.city),
+                                (
+                                    "state_id.country_id",
+                                    "=",
+                                    self.country_id.id if self.country_id else False,
+                                ),
+                            ],
+                            limit=1,
+                        )
 
-                    if city_obj:
-                        partner_vals["city_id"] = city_obj.id
-                        partner_vals["city"] = city_obj.name
+                        if city_obj:
+                            partner_vals["city_id"] = city_obj.id
+                            partner_vals["city"] = city_obj.name
+                        else:
+                            # Si no existe en res.city, usar texto libre
+                            partner_vals["city"] = self.city
                     else:
-                        # Si no existe en res.city, usar texto libre
+                        # Modelo res.city no disponible -> usar texto libre
                         partner_vals["city"] = self.city
 
                 # Crear o actualizar partner
@@ -1906,23 +1913,26 @@ Información Académica:
 
         # Manejar ciudad: buscar en res.city o usar texto libre
         if self.city:
-            city_obj = self.env["res.city"].search(
-                [
-                    ("name", "=ilike", self.city),
-                    (
-                        "state_id.country_id",
-                        "=",
-                        self.country_id.id if self.country_id else False,
-                    ),
-                ],
-                limit=1,
-            )
+            if "res.city" in self.env:
+                city_obj = self.env["res.city"].search(
+                    [
+                        ("name", "=ilike", self.city),
+                        (
+                            "state_id.country_id",
+                            "=",
+                            self.country_id.id if self.country_id else False,
+                        ),
+                    ],
+                    limit=1,
+                )
 
-            if city_obj:
-                partner_vals["city_id"] = city_obj.id
-                partner_vals["city"] = city_obj.name
+                if city_obj:
+                    partner_vals["city_id"] = city_obj.id
+                    partner_vals["city"] = city_obj.name
+                else:
+                    # Si no existe en res.city, usar texto libre
+                    partner_vals["city"] = self.city
             else:
-                # Si no existe en res.city, usar texto libre
                 partner_vals["city"] = self.city
 
         # Actualizar el partner
@@ -2419,19 +2429,22 @@ Contacto creado automáticamente desde el sistema académico.
 
             # Manejar ciudad: buscar en res.city o usar texto libre
             if vals.get("city"):
-                city_obj = self.env["res.city"].search(
-                    [
-                        ("name", "=ilike", vals["city"]),
-                        ("state_id.country_id", "=", vals.get("country_id", False)),
-                    ],
-                    limit=1,
-                )
+                if "res.city" in self.env:
+                    city_obj = self.env["res.city"].search(
+                        [
+                            ("name", "=ilike", vals["city"]),
+                            ("state_id.country_id", "=", vals.get("country_id", False)),
+                        ],
+                        limit=1,
+                    )
 
-                if city_obj:
-                    partner_vals["city_id"] = city_obj.id
-                    partner_vals["city"] = city_obj.name
+                    if city_obj:
+                        partner_vals["city_id"] = city_obj.id
+                        partner_vals["city"] = city_obj.name
+                    else:
+                        # Si no existe en res.city, usar texto libre
+                        partner_vals["city"] = vals["city"]
                 else:
-                    # Si no existe en res.city, usar texto libre
                     partner_vals["city"] = vals["city"]
 
             # Limpiar SOLO valores None (NO eliminar strings vacíos válidos como '')
@@ -2966,75 +2979,249 @@ Contacto creado automáticamente desde el sistema académico.
                         )
                         continue
                     
-                    # ═══════════════════════════════════════════════════════════════════════
-                    # CORRECCIÓN: Calcular unidad máxima completada correctamente
-                    # ═══════════════════════════════════════════════════════════════════════
-                    # Buscar asignaturas del nivel actual para determinar la unidad mínima
-                    current_level_subjects = Subject.search([
-                        ('level_id', '=', current_level.id),
-                        ('active', '=', True),
-                        ('unit_number', '>', 0)
-                    ], order='unit_number ASC')
-                    
+                    # ═════════════════════════════════════════════════════════════════════
+                    # Calcular unidad máxima completada correctamente
+                    # - Obtener la unidad mínima definida en el nivel actual
+                    # - Si es posible, acumular las unidades máximas de niveles
+                    #   previos del mismo programa para derivar la unidad global
+                    #   (esto permite generar historial cuando el estudiante
+                    #    ingresa directamente a un nivel avanzado).
+                    # ═════════════════════════════════════════════════════════════════════
+                    current_level_subjects = Subject.search(
+                        [
+                            ("level_id", "=", current_level.id),
+                            ("active", "=", True),
+                            ("unit_number", ">", 0),
+                        ],
+                        order="unit_number ASC",
+                    )
+
                     if not current_level_subjects:
                         # Fallback: usar max_unit del nivel si no hay asignaturas
                         _logger.warning(
-                            f"Nivel {current_level.name} sin asignaturas. "
-                            f"Usando max_unit={current_level.max_unit}"
+                            f"Nivel {current_level.name} sin asignaturas. Usando max_unit={current_level.max_unit}"
                         )
                         min_unit_current_level = current_level.max_unit or 0
                     else:
                         # Obtener la unidad mínima del nivel actual
-                        min_unit_current_level = min(current_level_subjects.mapped('unit_number'))
-                    
-                    # La unidad máxima completada es la anterior a la mínima del nivel actual
-                    current_unit = min_unit_current_level - 1
-                    
+                        min_unit_current_level = min(current_level_subjects.mapped("unit_number"))
+
+                    # Intentar calcular la 'unidad global' acumulando unidades de
+                    # niveles previos dentro del mismo programa. Esto corrige el
+                    # caso en que el nivel actual comienza en unit 1 pero hay
+                    # niveles anteriores con unidades previas que deben considerarse.
+                    try:
+                        Level = self.env["benglish.level"].sudo()
+                        sum_prev_units = 0
+                        prev_levels = self.env["benglish.level"].browse()
+
+                        # Construir prev_levels respetando el orden de fases y niveles.
+                        # 1) Todas las fases del programa con sequence < current_phase.sequence
+                        # 2) Niveles de la misma fase con sequence < current_level.sequence
+                        Phase = self.env["benglish.phase"].sudo()
+                        current_phase = current_level.phase_id
+
+                        prev_levels = self.env["benglish.level"].browse()
+
+                        # Fases anteriores dentro del mismo programa
+                        prev_phases = Phase.search(
+                            [("program_id", "=", program.id), ("sequence", "<", current_phase.sequence)]
+                        ) if current_phase else Phase.search([])
+
+                        if prev_phases:
+                            prev_levels = Level.search([("phase_id", "in", prev_phases.ids)])
+
+                        # Niveles anteriores dentro de la misma fase (si aplica)
+                        same_phase_prev_levels = Level.search(
+                            [
+                                ("phase_id", "=", current_phase.id),
+                                ("sequence", "<", current_level.sequence),
+                            ]
+                        ) if current_phase else self.env["benglish.level"].browse()
+
+                        prev_levels = (prev_levels | same_phase_prev_levels).sorted(lambda r: (r.phase_id.sequence or 0, r.sequence or 0))
+
+                        # Calcular sum_prev_units usando max_unit si está disponible;
+                        # si no, inferir max_unit a partir de las asignaturas del nivel.
+                        sum_prev_units = 0
+                        for l in prev_levels:
+                            l_max = l.max_unit or 0
+                            if not l_max:
+                                # Inferir a partir de asignaturas (unit_number) en el mismo nivel
+                                lvl_subjects = Subject.search(
+                                    [
+                                        ("level_id", "=", l.id),
+                                        ("active", "=", True),
+                                        ("unit_number", ">", 0),
+                                    ],
+                                    order="unit_number DESC",
+                                    limit=1,
+                                )
+                                if lvl_subjects:
+                                    l_max = max(lvl_subjects.mapped("unit_number"))
+                                else:
+                                    l_max = 0
+                            sum_prev_units += l_max
+
+                        # Si no se obtuvo nada a partir de max_unit ni por nivel,
+                        # intentar inferir desde asignaturas del programa/plan
+                        if sum_prev_units == 0 and prev_levels:
+                            # 1) Buscar asignaturas de los prev_levels con unit_number
+                            subj_prev = Subject.search(
+                                [
+                                    ("level_id", "in", prev_levels.ids),
+                                    ("active", "=", True),
+                                    ("unit_number", ">", 0),
+                                ]
+                            )
+                            if subj_prev:
+                                # Sumar el máximo unit_number por nivel
+                                for lid in set(subj_prev.mapped("level_id").ids):
+                                    s_lv = subj_prev.filtered(lambda s: s.level_id.id == lid)
+                                    if s_lv:
+                                        sum_prev_units += max(s_lv.mapped("unit_number"))
+
+                        # Si aún no hay unidades, intentar buscar por plan (asignaturas del plan)
+                        # Nota: `plan_ids` en `benglish.subject` es compute store=False, por lo
+                        # que buscar por esa relación devuelve vacío. En su lugar, buscar
+                        # asignaturas por su nivel/programa (nivel->fase->program).
+                        if sum_prev_units == 0 and plan:
+                            subj_plan = Subject.search(
+                                [
+                                    ("level_id.phase_id.program_id", "=", program.id),
+                                    ("active", "=", True),
+                                    ("unit_number", ">", 0),
+                                ]
+                            )
+                            _logger.info(
+                                "[HISTORIAL-DEBUG] %s: subj_plan_count=%s (fallback search by program.level.phase)",
+                                student.name,
+                                len(subj_plan),
+                            )
+                            if subj_plan:
+                                # Sumar máximos por level encontrados en el plan/programa
+                                for lid in set(subj_plan.mapped("level_id").ids):
+                                    s_lv = subj_plan.filtered(lambda s: s.level_id.id == lid)
+                                    if s_lv:
+                                        sum_prev_units += max(s_lv.mapped("unit_number"))
+                        current_unit = sum_prev_units + (min_unit_current_level - 1)
+
+                        # Loguear detalles para debug si el resultado es inesperado
+                        _logger.info(
+                            "[HISTORIAL-DEBUG] %s: current_level_id=%s, sequence_exists=%s, prev_levels=%s, sum_prev_units=%s",
+                            student.name,
+                            current_level.id,
+                            ("sequence" in current_level._fields),
+                            prev_levels.ids,
+                            sum_prev_units,
+                        )
+                    except Exception as ex:
+                        _logger.exception(
+                            "[HISTORIAL-ERROR] Error calculando niveles previos para %s: %s",
+                            student.name,
+                            ex,
+                        )
+                        # En caso de cualquier fallo al consultar niveles, volver
+                        # al cálculo sencillo para evitar bloquear el proceso.
+                        current_unit = min_unit_current_level - 1
+
                     _logger.info(
                         f"[HISTORIAL] {student.name}: Nivel={current_level.name}, "
                         f"Unit mín nivel={min_unit_current_level}, Unit máx completada={current_unit}"
                     )
 
                     if current_unit < 1:
+                        # Añadir información de depuración en la notificación para
+                        # que el usuario vea por qué no se generan entradas.
+                        try:
+                            prev_levels_ids = prev_levels.ids if prev_levels else []
+                        except Exception:
+                            prev_levels_ids = []
+
+                        debug_msg = (
+                            "DEBUG: prev_levels_ids=%s, sum_prev_units=%s, min_unit_current_level=%s, current_level_max_unit=%s"
+                            % (
+                                prev_levels_ids,
+                                sum_prev_units,
+                                min_unit_current_level,
+                                getattr(current_level, "max_unit", None),
+                            )
+                        )
+
                         results.append(
-                            "✓ %s: En Unit %d - Sin historial previo"
-                            % (student.name, min_unit_current_level)
+                            "✓ %s: En Unit %d - Sin historial previo\n%s"
+                            % (student.name, min_unit_current_level, debug_msg)
                         )
                         continue
 
                     previous_units = list(range(1, current_unit + 1))
 
                     # BUSCAR TODAS las asignaturas de unidades previas (bcheck, bskills, oral_test, etc.)
-                    # Incluir:
-                    # 1. Asignaturas con unit_number en previous_units (B-checks, B-skills 1-4 únicamente)
-                    # 2. Oral Tests cuyo unit_block_end < current_unit (NO incluir el del nivel actual)
-                    # NOTA: Para bskills solo generar 1-4 (curriculares), no las extras (5-6-7)
-                    subjects_to_complete = Subject.search(
-                        [
-                            ("program_id", "=", program.id),
-                            ("active", "=", True),
-                            "|",
-                            "&",
-                            ("unit_number", "in", previous_units),
-                            "|",
-                            ("subject_category", "!=", "bskills"),  # Incluir todas las no-bskills
-                            "&",
-                            ("subject_category", "=", "bskills"),
-                            ("bskill_number", "<=", 4),  # Solo bskills 1-4
-                            "&",
-                            ("subject_category", "=", "oral_test"),
-                            (
-                                "unit_block_end",
-                                "<=",
-                                current_unit,
-                            ),  # Hasta la unidad completada
-                        ]
+                    # La construcción del dominio con operadores |/& anidados resultaba incorrecta
+                    # y podía devolver vacío. En lugar de construir un dominio complejo,
+                    # traemos las asignaturas del programa y filtramos en Python con la
+                    # lógica esperada:
+                    # - Para categorías no 'bskills': unit_number in previous_units
+                    # - Para 'bskills': unit_number in previous_units and bskill_number <= 4
+                    # - Para 'oral_test': unit_block_end <= current_unit
+                    all_program_subjects = Subject.search(
+                        [("program_id", "=", program.id), ("active", "=", True)]
                     )
 
+                    # Debug: show how many subjects we found for the program and a small sample
+                    try:
+                        sample = [
+                            (s.id, s.unit_number, s.subject_category, s.level_id.id)
+                            for s in list(all_program_subjects)[:10]
+                        ]
+                    except Exception:
+                        sample = []
+                    _logger.info(
+                        "[HISTORIAL-DEBUG] %s: all_program_subjects_count=%s, sample=%s",
+                        student.name,
+                        len(all_program_subjects),
+                        sample,
+                    )
+
+                    def _subject_should_be_completed(s):
+                        try:
+                            # Explicit cases first
+                            if s.subject_category == "oral_test":
+                                return bool(s.unit_block_end and s.unit_block_end <= current_unit)
+                            if s.subject_category == "bskills":
+                                return bool(
+                                    s.unit_number
+                                    and s.unit_number in previous_units
+                                    and (not s.bskill_number or s.bskill_number <= 4)
+                                )
+
+                            # If unit_number is present, use it
+                            if s.unit_number:
+                                return bool(s.unit_number in previous_units)
+
+                            # FALLBACK: some subjects in this dataset have unit_number=0 or unset.
+                            # If the subject belongs to one of the previous levels, include it
+                            # as part of the retroactive history (we assume levels map to
+                            # previous units when unit_number is missing).
+                            try:
+                                if prev_levels and s.level_id and s.level_id.id in prev_levels.ids:
+                                    return True
+                            except Exception:
+                                pass
+
+                            return False
+                        except Exception:
+                            return False
+
+                    subjects_to_complete = all_program_subjects.filtered(_subject_should_be_completed)
+
+                    # Debug counts: how many subjects selected and how many of them lack unit_number
+                    fallback_included_count = len([s for s in subjects_to_complete if not s.unit_number])
                     _logger.info(
                         f"Estudiante {student.name}: Unit actual={current_unit}, "
                         f"Units previas={previous_units}, "
-                        f"Asignaturas encontradas={len(subjects_to_complete)}"
+                        f"Asignaturas encontradas={len(subjects_to_complete)}, "
+                        f"fallback_included_count={fallback_included_count}"
                     )
 
                     if not subjects_to_complete:

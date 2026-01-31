@@ -221,6 +221,66 @@ class AcademicSession(models.Model):
         readonly=True,
     )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """
+        Al crear sesiones desde el wizard o la vista, asegurar que siempre exista
+        un `subject_id` cuando se especifique una `template_id` en los valores.
+
+        Comportamiento:
+        - Si la plantilla tiene `fixed_subject_id`, se usa esa.
+        - Si no, se busca cualquier `benglish.subject` activo del mismo programa
+          y con la misma `subject_category` de la plantilla.
+        - Como último recurso se asigna cualquier `benglish.subject` activo disponible.
+
+        Esto evita el error de "campo obligatorio" cuando la plantilla no tiene
+        una asignatura exactamente mapeada al plan del cliente.
+        """
+        for vals in vals_list:
+            try:
+                if not vals.get("subject_id") and vals.get("template_id"):
+                    template = self.env["benglish.agenda.template"].browse(
+                        vals.get("template_id")
+                    )
+                    # 1) plantilla con asignatura fija
+                    if template and template.fixed_subject_id:
+                        vals["subject_id"] = template.fixed_subject_id.id
+                        continue
+
+                    # 2) intentar obtener programa (priorizar vals, luego plantilla)
+                    program_to_search = vals.get("program_id") or (
+                        template.program_id.id if template and template.program_id else False
+                    )
+
+                    # 3) buscar subject activo por programa y categoría de plantilla
+                    domain = [("active", "=", True)]
+                    if program_to_search:
+                        domain.append(("program_id", "=", program_to_search))
+                    if template and template.subject_category:
+                        domain.append(("subject_category", "=", template.subject_category))
+
+                    Subject = self.env["benglish.subject"].sudo()
+                    subject = Subject.search(domain, limit=1)
+                    if subject:
+                        vals["subject_id"] = subject.id
+                        _logger.info(
+                            "[ACADEMIC_SESSION] Asignando subject_id %s (fallback por plantilla)",
+                            subject.id,
+                        )
+                    else:
+                        # último recurso: cualquier subject activo
+                        any_subject = Subject.search([("active", "=", True)], limit=1)
+                        if any_subject:
+                            vals["subject_id"] = any_subject.id
+                            _logger.info(
+                                "[ACADEMIC_SESSION] Asignando subject_id %s (fallback general)",
+                                any_subject.id,
+                            )
+            except Exception:
+                _logger.exception("Error determinando subject_id en create() de academic.session")
+
+        return super(AcademicSession, self).create(vals_list)
+
     template_id = fields.Many2one(
         comodel_name="benglish.agenda.template",
         string="Plantilla",
@@ -2467,12 +2527,66 @@ class AcademicSession(models.Model):
                 # Obtener progreso detallado de la unidad objetivo
                 unit_progress = self._get_unit_progress_details(student, unit_target)
                 
-                # Validar que el B-check esté completado
-                if not unit_progress['bcheck']:
+                # ═══════════════════════════════════════════════════════════════════════
+                # VALIDACIÓN PARA SKILLS: B-check AGENDADO o COMPLETADO
+                # ═══════════════════════════════════════════════════════════════════════
+                # Para agendar Skills, el estudiante puede:
+                # 1. Haber ASISTIDO al B-check (unit_progress['bcheck'] = True) O
+                # 2. Tener el B-check AGENDADO en cualquier plan de la semana
+                # ═══════════════════════════════════════════════════════════════════════
+                bcheck_ok = unit_progress['bcheck']  # Asistió al B-check
+                
+                # Si no asistió, verificar si tiene B-check agendado en CUALQUIER plan
+                if not bcheck_ok:
+                    import logging
+                    _logger = logging.getLogger(__name__)
+                    _logger.info(f"[SKILL VALIDATION] Buscando B-check agendado para Unit {unit_target}, Student {student.id}")
+                    
+                    # Buscar DIRECTAMENTE en la base de datos si hay un B-check agendado
+                    PlanLine = self.env['portal.student.weekly.plan.line'].sudo()
+                    Subject = self.env['benglish.subject'].sudo()
+                    
+                    # Buscar subjects de tipo B-check para esta unidad y programa
+                    bcheck_subjects = Subject.search([
+                        ('subject_category', '=', 'bcheck'),
+                        ('unit_number', '=', unit_target),
+                        ('program_id', '=', program.id)
+                    ])
+                    
+                    _logger.info(f"[SKILL VALIDATION] B-check subjects encontrados: {bcheck_subjects.ids}")
+                    
+                    if bcheck_subjects:
+                        # Buscar si hay alguna línea de plan con sesiones de B-check para este estudiante
+                        bcheck_lines = PlanLine.search([
+                            ('plan_id.student_id', '=', student.id),
+                            ('session_id.template_id.subject_category', '=', 'bcheck'),
+                        ])
+                        
+                        _logger.info(f"[SKILL VALIDATION] Líneas de B-check encontradas: {len(bcheck_lines)}")
+                        
+                        for line in bcheck_lines:
+                            # Verificar si la sesión es para la unidad correcta
+                            session = line.session_id
+                            if session:
+                                # Verificar audience_unit_from y audience_unit_to
+                                unit_from = session.audience_unit_from or 0
+                                unit_to = session.audience_unit_to or 0
+                                _logger.info(f"[SKILL VALIDATION] Sesión {session.id}: unit_from={unit_from}, unit_to={unit_to}, target={unit_target}")
+                                
+                                if unit_from <= unit_target <= unit_to or unit_from == unit_target or unit_to == unit_target:
+                                    bcheck_ok = True
+                                    _logger.info(f"[SKILL VALIDATION] ✅ B-check encontrado agendado!")
+                                    break
+                
+                # Si no tiene B-check completado ni agendado → ERROR
+                if not bcheck_ok:
                     if raise_on_error:
                         raise UserError(
-                            _("Debes completar el B-check de la unidad %s antes de tomar skills.") 
-                            % unit_target
+                            _("Para agendar Skills de la Unidad %s, debes tener el B-check de esa unidad:\n"
+                              "• Completado (ya asististe) O\n"
+                              "• Agendado en tu horario semanal\n\n"
+                              "📚 ACCIÓN: Agenda el B-check de la Unidad %s primero") 
+                            % (unit_target, unit_target)
                         )
                     return False
                 
@@ -2485,11 +2599,33 @@ class AcademicSession(models.Model):
                         unit_target += 1
                         unit_progress = self._get_unit_progress_details(student, unit_target)
                         
-                        # Verificar B-check de nueva unidad
-                        if not unit_progress['bcheck']:
+                        # ═══════════════════════════════════════════════════════════════════════
+                        # VALIDACIÓN PARA NUEVA UNIDAD: B-check AGENDADO o COMPLETADO
+                        # ═══════════════════════════════════════════════════════════════════════
+                        bcheck_new_unit_ok = unit_progress['bcheck']  # Asistió al B-check
+                        
+                        # Si no asistió, buscar directamente en BD
+                        if not bcheck_new_unit_ok:
+                            PlanLine = self.env['portal.student.weekly.plan.line'].sudo()
+                            bcheck_lines = PlanLine.search([
+                                ('plan_id.student_id', '=', student.id),
+                                ('session_id.template_id.subject_category', '=', 'bcheck'),
+                            ])
+                            for line in bcheck_lines:
+                                session = line.session_id
+                                if session:
+                                    unit_from = session.audience_unit_from or 0
+                                    unit_to = session.audience_unit_to or 0
+                                    if unit_from <= unit_target <= unit_to or unit_from == unit_target or unit_to == unit_target:
+                                        bcheck_new_unit_ok = True
+                                        break
+                        
+                        if not bcheck_new_unit_ok:
                             if raise_on_error:
                                 raise UserError(
-                                    _("Has completado la unidad %s. Debes agendar el B-check de la unidad %s antes de continuar.") 
+                                    _("Has completado la unidad %s. Para continuar con la Unidad %s, debes tener el B-check:\n"
+                                      "• Completado (ya asististe) O\n"
+                                      "• Agendado en tu horario semanal") 
                                     % (unit_target - 1, unit_target)
                                 )
                             return False

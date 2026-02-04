@@ -470,6 +470,8 @@
                             <group string="Otras Opciones">
                                 <field name="copy_published_state" />
                                 <field name="validate_campus_schedule" />
+                                <field name="copy_publications" />
+                                <field name="copy_elective_pools" />
                             </group>
                         </group>
 
@@ -519,30 +521,30 @@
                             <field name="destination_session_id"
                                 options="{'no_create': True}"
                                 placeholder="Selecciona la clase destino..." />
-                            <separator string="Detalles de la Clase Destino" colspan="2" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_session_code" readonly="1" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_subject_id" readonly="1" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_date" readonly="1" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_time_start_label" readonly="1" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_time_end_label" readonly="1" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_campus_id" readonly="1" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_teacher_id" readonly="1" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_enrolled_count" readonly="1" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_available_spots" readonly="1" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_state" widget="badge" readonly="1" 
-                                invisible="not destination_session_id"/>
-                            <field name="destination_is_published" readonly="1" 
-                                invisible="not destination_session_id"/>
+                            <separator string="Detalles de la Clase Destino" colspan="2"
+                                invisible="not destination_session_id" />
+                            <field name="destination_session_code" readonly="1"
+                                invisible="not destination_session_id" />
+                            <field name="destination_subject_id" readonly="1"
+                                invisible="not destination_session_id" />
+                            <field name="destination_date" readonly="1"
+                                invisible="not destination_session_id" />
+                            <field name="destination_time_start_label" readonly="1"
+                                invisible="not destination_session_id" />
+                            <field name="destination_time_end_label" readonly="1"
+                                invisible="not destination_session_id" />
+                            <field name="destination_campus_id" readonly="1"
+                                invisible="not destination_session_id" />
+                            <field name="destination_teacher_id" readonly="1"
+                                invisible="not destination_session_id" />
+                            <field name="destination_enrolled_count" readonly="1"
+                                invisible="not destination_session_id" />
+                            <field name="destination_available_spots" readonly="1"
+                                invisible="not destination_session_id" />
+                            <field name="destination_state" widget="badge" readonly="1"
+                                invisible="not destination_session_id" />
+                            <field name="destination_is_published" readonly="1"
+                                invisible="not destination_session_id" />
                         </group>
                     </group>
 

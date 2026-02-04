@@ -3,6 +3,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 import re
+from ..utils.normalizers import normalize_to_uppercase
 
 
 class Subject(models.Model):
@@ -30,9 +31,10 @@ class Subject(models.Model):
     code = fields.Char(
         string="Código",
         copy=False,
+        readonly=True,
         default="/",
         tracking=True,
-        help="Código único identificador de la asignatura (generado automáticamente o manual)",
+        help="Código único identificador de la asignatura (generado automáticamente)",
     )
     sequence = fields.Integer(
         string="Secuencia",
@@ -277,6 +279,10 @@ class Subject(models.Model):
     def create(self, vals_list):
         """Genera el código automáticamente según la configuración; evita colisiones y permite código manual."""
         for vals in vals_list:
+            # Normalizar nombre a MAYÚSCULAS
+            if "name" in vals and vals["name"]:
+                vals["name"] = normalize_to_uppercase(vals["name"])
+            
             # Ajustar evaluable=False automáticamente para B-checks y B-skills
             if vals.get('subject_category') in ['bcheck', 'bskills']:
                 vals['evaluable'] = False
@@ -292,6 +298,10 @@ class Subject(models.Model):
     
     def write(self, vals):
         """Override write para ajustar evaluable automáticamente al cambiar subject_category."""
+        # Normalizar nombre a MAYÚSCULAS
+        if "name" in vals and vals["name"]:
+            vals["name"] = normalize_to_uppercase(vals["name"])
+        
         # Si cambian la categoría a bcheck/bskills, forzar evaluable=False
         if vals.get('subject_category') in ['bcheck', 'bskills']:
             vals['evaluable'] = False

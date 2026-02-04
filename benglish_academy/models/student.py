@@ -94,6 +94,7 @@ class Student(models.Model):
         string="Código de Estudiante",
         required=True,
         copy=False,
+        default="/",
         tracking=True,
         help="Código único identificador del estudiante (ej: EST-2025-001)",
     )
@@ -1314,7 +1315,8 @@ class Student(models.Model):
     def _check_code_unique(self):
         """Valida que el código del estudiante sea único"""
         for student in self:
-            if student.code:
+            # Ignorar validación si el código es el valor por defecto '/'
+            if student.code and student.code != "/":
                 domain = [("code", "=", student.code), ("id", "!=", student.id)]
                 if self.search_count(domain) > 0:
                     raise ValidationError(
@@ -2319,102 +2321,103 @@ Información Académica:
 
         return True, _("El estudiante cumple con los requisitos")
 
-    @api.model
-    def create(self, vals):
+    @api.model_create_multi
+    def create(self, vals_list):
         """Sobrescribe create para auto-generar código si no se proporciona y crear/vincular partner"""
-        vals = self._apply_virtual_campus_default(vals)
-        if not vals.get("code"):
-            # Generar código automático: EST-YYYY-NNNN
-            year = fields.Date.context_today(self).year
-            sequence = (
-                self.env["ir.sequence"].next_by_code("benglish.student") or "0001"
-            )
-            vals["code"] = f"EST-{year}-{sequence}"
+        for vals in vals_list:
+            vals = self._apply_virtual_campus_default(vals)
+            # Generar código automático si no tiene código o es '/'
+            if not vals.get("code") or vals.get("code") == "/":
+                # Generar código automático: EST-YYYY-NNNN
+                sequence = self.env["ir.sequence"].next_by_code("benglish.student")
+                if not sequence:
+                    raise ValidationError(_("No se pudo generar el código del estudiante. Verifique que la secuencia 'benglish.student' esté configurada."))
+                vals["code"] = sequence
 
-        # Calcular nombre completo desde campos desagregados para uso en partner
-        name_parts = []
-        if vals.get("first_name"):
-            name_parts.append(vals["first_name"])
-        if vals.get("second_name"):
-            name_parts.append(vals["second_name"])
-        if vals.get("first_last_name"):
-            name_parts.append(vals["first_last_name"])
-        if vals.get("second_last_name"):
-            name_parts.append(vals["second_last_name"])
-        computed_name = " ".join(name_parts) if name_parts else "Estudiante sin nombre"
+            # Calcular nombre completo desde campos desagregados para uso en partner
+            name_parts = []
+            if vals.get("first_name"):
+                name_parts.append(vals["first_name"])
+            if vals.get("second_name"):
+                name_parts.append(vals["second_name"])
+            if vals.get("first_last_name"):
+                name_parts.append(vals["first_last_name"])
+            if vals.get("second_last_name"):
+                name_parts.append(vals["second_last_name"])
+            computed_name = " ".join(name_parts) if name_parts else "Estudiante sin nombre"
 
-        # Crear partner automáticamente si no existe
-        if not vals.get("partner_id"):
-            # Calcular tipo de documento
-            # PRIORIDAD: usar el tipo de documento proporcionado en vals,
-            # sino calcular según edad
-            identification_type_id = False
-            if vals.get("id_type_id"):
-                # Usar el tipo de documento proporcionado
-                identification_type_id = vals.get("id_type_id")
-            elif vals.get("birth_date"):
-                # Fallback: calcular según edad si no hay tipo de documento
-                from datetime import date
+            # Crear partner automáticamente si no existe
+            if not vals.get("partner_id"):
+                # Calcular tipo de documento
+                # PRIORIDAD: usar el tipo de documento proporcionado en vals,
+                # sino calcular según edad
+                identification_type_id = False
+                if vals.get("id_type_id"):
+                    # Usar el tipo de documento proporcionado
+                    identification_type_id = vals.get("id_type_id")
+                elif vals.get("birth_date"):
+                    # Fallback: calcular según edad si no hay tipo de documento
+                    from datetime import date
 
-                birth_date = fields.Date.from_string(vals.get("birth_date"))
-                today = date.today()
-                age = (
-                    today.year
-                    - birth_date.year
-                    - ((today.month, today.day) < (birth_date.month, birth_date.day))
-                )
-
-                # Buscar tipo de documento según edad
-                IdentificationType = self.env["l10n_latam.identification.type"]
-                if age >= 18:
-                    # Cedula de ciudadania
-                    id_type = IdentificationType.search(
-                        [("name", "=", "Cedula de ciudadania")], limit=1
-                    )
-                else:
-                    # Tarjeta de identidad
-                    id_type = IdentificationType.search(
-                        [("name", "=", "Tarjeta de identidad")], limit=1
+                    birth_date = fields.Date.from_string(vals.get("birth_date"))
+                    today = date.today()
+                    age = (
+                        today.year
+                        - birth_date.year
+                        - ((today.month, today.day) < (birth_date.month, birth_date.day))
                     )
 
-                if id_type:
-                    identification_type_id = id_type.id
+                    # Buscar tipo de documento según edad
+                    IdentificationType = self.env["l10n_latam.identification.type"]
+                    if age >= 18:
+                        # Cedula de ciudadania
+                        id_type = IdentificationType.search(
+                            [("name", "=", "Cedula de ciudadania")], limit=1
+                        )
+                    else:
+                        # Tarjeta de identidad
+                        id_type = IdentificationType.search(
+                            [("name", "=", "Tarjeta de identidad")], limit=1
+                        )
 
-            # Mapear género del estudiante al formato de res.partner (OX)
-            # Estudiante: male/female/other → Partner OX: masculino/femenino
-            genero_partner = False
-            if vals.get("gender") == "male":
-                genero_partner = "masculino"
-            elif vals.get("gender") == "female":
-                genero_partner = "femenino"
-            # Si es 'other', dejar en False (no hay equivalente directo en OX)
+                    if id_type:
+                        identification_type_id = id_type.id
 
-            partner_vals = {
-                "name": computed_name,
-                "email": vals.get("email"),
-                "phone": vals.get("phone"),
-                "mobile": vals.get("mobile"),
-                "street": vals.get("address"),
-                "country_id": vals.get("country_id"),
-                "image_1920": vals.get("image_1920"),  # Foto del estudiante
-                # Campos de nombre desagregados (extensión colombiana OX)
-                "primer_nombre": vals.get("first_name"),
-                "otros_nombres": vals.get("second_name"),
-                "primer_apellido": vals.get("first_last_name"),
-                "segundo_apellido": vals.get("second_last_name"),
-                # Documento de identidad
-                "ref": vals.get("student_id_number")
-                or "",  # Campo estándar de identificación
-                "vat": vals.get("student_id_number"),  # Campo NIT/VAT
-                "l10n_latam_identification_type_id": identification_type_id,
-                # Información personal adicional (campos OX)
-                "fecha_nacimiento": vals.get("birth_date"),  # Fecha de nacimiento (OX)
-                "genero": genero_partner,  # Género (OX)
-                "sexo_biologico": genero_partner,  # Sexo biológico (OX)
-                # Tipo de persona
-                "is_company": False,
-                "company_type": "person",
-                "comment": f"""Información del Estudiante:
+                # Mapear género del estudiante al formato de res.partner (OX)
+                # Estudiante: male/female/other → Partner OX: masculino/femenino
+                genero_partner = False
+                if vals.get("gender") == "male":
+                    genero_partner = "masculino"
+                elif vals.get("gender") == "female":
+                    genero_partner = "femenino"
+                # Si es 'other', dejar en False (no hay equivalente directo en OX)
+
+                partner_vals = {
+                    "name": computed_name,
+                    "email": vals.get("email"),
+                    "phone": vals.get("phone"),
+                    "mobile": vals.get("mobile"),
+                    "street": vals.get("address"),
+                    "country_id": vals.get("country_id"),
+                    "image_1920": vals.get("image_1920"),  # Foto del estudiante
+                    # Campos de nombre desagregados (extensión colombiana OX)
+                    "primer_nombre": vals.get("first_name"),
+                    "otros_nombres": vals.get("second_name"),
+                    "primer_apellido": vals.get("first_last_name"),
+                    "segundo_apellido": vals.get("second_last_name"),
+                    # Documento de identidad
+                    "ref": vals.get("student_id_number")
+                    or "",  # Campo estándar de identificación
+                    "vat": vals.get("student_id_number"),  # Campo NIT/VAT
+                    "l10n_latam_identification_type_id": identification_type_id,
+                    # Información personal adicional (campos OX)
+                    "fecha_nacimiento": vals.get("birth_date"),  # Fecha de nacimiento (OX)
+                    "genero": genero_partner,  # Género (OX)
+                    "sexo_biologico": genero_partner,  # Sexo biológico (OX)
+                    # Tipo de persona
+                    "is_company": False,
+                    "company_type": "person",
+                    "comment": f"""Información del Estudiante:
 - Código: {vals.get("code", "N/A")}
 - Documento: {vals.get("student_id_number") or "N/A"}
 
@@ -2425,73 +2428,71 @@ Contacto de Emergencia:
 
 Contacto creado automáticamente desde el sistema académico.
 """,
-            }
+                }
 
-            # Manejar ciudad: buscar en res.city o usar texto libre
-            if vals.get("city"):
-                if "res.city" in self.env:
-                    city_obj = self.env["res.city"].search(
-                        [
-                            ("name", "=ilike", vals["city"]),
-                            ("state_id.country_id", "=", vals.get("country_id", False)),
-                        ],
-                        limit=1,
-                    )
+                # Manejar ciudad: buscar en res.city o usar texto libre
+                if vals.get("city"):
+                    if "res.city" in self.env:
+                        city_obj = self.env["res.city"].search(
+                            [
+                                ("name", "=ilike", vals["city"]),
+                                ("state_id.country_id", "=", vals.get("country_id", False)),
+                            ],
+                            limit=1,
+                        )
 
-                    if city_obj:
-                        partner_vals["city_id"] = city_obj.id
-                        partner_vals["city"] = city_obj.name
+                        if city_obj:
+                            partner_vals["city_id"] = city_obj.id
+                            partner_vals["city"] = city_obj.name
+                        else:
+                            # Si no existe en res.city, usar texto libre
+                            partner_vals["city"] = vals["city"]
                     else:
-                        # Si no existe en res.city, usar texto libre
                         partner_vals["city"] = vals["city"]
-                else:
-                    partner_vals["city"] = vals["city"]
 
-            # Limpiar SOLO valores None (NO eliminar strings vacíos válidos como '')
-            partner_vals = {k: v for k, v in partner_vals.items() if v is not None}
-            partner_vals = self._filter_partner_vals(partner_vals)
+                # Limpiar SOLO valores None (NO eliminar strings vacíos válidos como '')
+                partner_vals = {k: v for k, v in partner_vals.items() if v is not None}
+                partner_vals = self._filter_partner_vals(partner_vals)
 
-            try:
-                partner = self.env["res.partner"].sudo().create(partner_vals)
-                vals["partner_id"] = partner.id
-                _logger.info(
-                    f"✓ Partner creado automáticamente ID={partner.id} para estudiante {computed_name}"
-                )
-            except Exception as e:
-                _logger.warning(f"No se pudo crear partner automáticamente: {e}")
+                try:
+                    partner = self.env["res.partner"].sudo().create(partner_vals)
+                    vals["partner_id"] = partner.id
+                    _logger.info(
+                        f"✓ Partner creado automáticamente ID={partner.id} para estudiante {computed_name}"
+                    )
+                except Exception as e:
+                    _logger.warning(f"No se pudo crear partner automáticamente: {e}")
 
-        result = super(Student, self).create(vals)
+        results = super(Student, self).create(vals_list)
 
         # Marcar el partner como estudiante si existe
-        if result.partner_id:
-            result.partner_id.sudo().write({"is_student": True})
-            _logger.info(
-                f"✓ Partner ID={result.partner_id.id} marcado como is_student=True"
-            )
+        for result in results:
+            if result.partner_id:
+                result.partner_id.sudo().write({"is_student": True})
+                _logger.info(
+                    f"✓ Partner ID={result.partner_id.id} marcado como is_student=True"
+                )
 
-        # Mejora 1: Registrar estado inicial si se asignó
-        if vals.get("profile_state_id"):
-            estado_nuevo = self.env["benglish.student.profile.state"].browse(
-                vals["profile_state_id"]
-            )
-            self.env["benglish.student.state.history"].registrar_cambio(
-                student=result,
-                estado_anterior=False,
-                estado_nuevo=estado_nuevo,
-                motivo="Asignación inicial al crear estudiante",
-                origen="manual",
-            )
+            # Mejora 1: Registrar estado inicial si se asignó
+            if result.profile_state_id:
+                self.env["benglish.student.state.history"].registrar_cambio(
+                    student=result,
+                    estado_anterior=False,
+                    estado_nuevo=result.profile_state_id,
+                    motivo="Asignación inicial al crear estudiante",
+                    origen="manual",
+                )
 
-        if vals.get("state") or result.state:
-            self.env["benglish.student.lifecycle.history"].registrar_cambio(
-                student=result,
-                estado_anterior=False,
-                estado_nuevo=result.state,
-                motivo="Asignación inicial al crear estudiante",
-                origen=self.env.context.get("origen_cambio_estado") or "manual",
-            )
+            if result.state:
+                self.env["benglish.student.lifecycle.history"].registrar_cambio(
+                    student=result,
+                    estado_anterior=False,
+                    estado_nuevo=result.state,
+                    motivo="Asignación inicial al crear estudiante",
+                    origen=self.env.context.get("origen_cambio_estado") or "manual",
+                )
 
-        return result
+        return results
 
     def write(self, vals):
         """
@@ -3462,4 +3463,43 @@ Contacto creado automáticamente desde el sistema académico.
                 "type": "success",
                 "sticky": True,
             },
+        }
+
+    def fix_student_codes(self):
+        """
+        Método para corregir códigos de estudiantes que tienen '/'.
+        Puede ejecutarse manualmente o desde un botón de acción.
+        """
+        students_with_slash = self.search([('code', '=', '/')])
+        if not students_with_slash:
+            _logger.info("No hay estudiantes con código '/' para corregir")
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Sin cambios'),
+                    'message': _('No hay estudiantes con código "/" para corregir.'),
+                    'type': 'info',
+                    'sticky': False,
+                }
+            }
+        
+        count = 0
+        for student in students_with_slash:
+            sequence = self.env["ir.sequence"].next_by_code("benglish.student")
+            if sequence:
+                # Usar sudo para evitar validaciones durante la corrección
+                student.sudo().write({'code': sequence})
+                count += 1
+                _logger.info(f"Código actualizado para estudiante {student.id}: {sequence}")
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Códigos Actualizados'),
+                'message': _('%d estudiante(s) actualizado(s) correctamente.') % count,
+                'type': 'success',
+                'sticky': False,
+            }
         }

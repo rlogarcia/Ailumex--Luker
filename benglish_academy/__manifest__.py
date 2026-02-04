@@ -107,6 +107,8 @@
         "views/agenda_log_views.xml",
         "views/session_transfer_log_views.xml",
         "views/academic_history_views.xml",
+        # Vistas - FASE 2: Pools de Electivas
+        "views/elective_pool_views.xml",
         # Vistas - Configuración
         "views/class_booking_settings_views.xml",
         "views/student_password_manager_views.xml",
@@ -115,6 +117,8 @@
         "views/menus.xml",
         # Secuencias simples para códigos (PRG-/P-/F-/N-/A-/SE-/AU-)
         "data/ir_sequence_data.xml",
+        # Secuencia para Pool de Electivas (FASE 2)
+        "data/ir_sequence_elective_pool.xml",
     ],
     "assets": {
         "web.assets_backend": [

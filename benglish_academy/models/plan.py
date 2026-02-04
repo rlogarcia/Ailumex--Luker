@@ -30,9 +30,10 @@ class StudyPlan(models.Model):
         string="Código",
         required=True,
         copy=False,
+        readonly=True,
         default="/",
         tracking=True,
-        help="Código único identificador del plan (generado automáticamente o manual)",
+        help="Código único identificador del plan (generado automáticamente)",
     )
     sequence = fields.Integer(
         string="Secuencia", default=10, help="Orden de visualización"
@@ -268,6 +269,12 @@ class StudyPlan(models.Model):
                 subjects = self.env["benglish.subject"].search([("level_id", "in", levels.ids)])
                 rec.subject_ids = subjects
         return records
+
+    def write(self, vals):
+        """Sobrescribe write para normalizar datos a MAYÚSCULAS automáticamente."""
+        if "name" in vals and vals["name"]:
+            vals["name"] = normalize_to_uppercase(vals["name"])
+        return super().write(vals)
 
     @api.depends("name", "program_id.name")
     def _compute_complete_name(self):

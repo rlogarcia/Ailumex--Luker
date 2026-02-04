@@ -3,8 +3,8 @@
     <!-- Acción de Servidor para Generar Historial Retroactivo -->
     <record id="action_server_generate_historical_progress" model="ir.actions.server">
         <field name="name">🔄 Generar Historial Retroactivo</field>
-        <field name="model_id" ref="benglish_academy.model_benglish_student" />
-        <field name="binding_model_id" ref="benglish_academy.model_benglish_student" />
+        <field name="model_id" ref="benglish_academy.model_benglish_student"/>
+        <field name="binding_model_id" ref="benglish_academy.model_benglish_student"/>
         <field name="binding_view_types">list</field>
         <field name="state">code</field>
         <field name="code">action = records.action_generate_historical_progress()</field>

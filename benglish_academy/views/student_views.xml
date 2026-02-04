@@ -63,7 +63,7 @@
                     <button name="action_set_active" type="object" string="Activar"
                         invisible="state in ['active', 'graduated', 'withdrawn'] or not enrollment_ids"
                         groups="benglish_academy.group_academic_assistant" />
-
+                    
                     <!-- Botón para matricular con wizard paso a paso -->
                     <button name="%(action_enrollment_wizard_from_student)d" type="action"
                         string="Matricular"
@@ -76,12 +76,12 @@
                         class="btn-primary"
                         invisible="user_id"
                         groups="benglish_academy.group_academic_assistant,base.group_system" />
-
+                    
                     <button name="action_open_lifecycle_state_wizard" type="object"
                         string="Cambiar Estado"
                         class="oe_highlight"
                         groups="benglish_academy.group_academic_coordinator,benglish_academy.group_academic_manager" />
-
+                    
                     <button name="action_fix_portal_access"
                         type="object"
                         string="Corregir Acceso Portal"
@@ -95,7 +95,7 @@
                         invisible="not partner_id"
                         groups="benglish_academy.group_academic_assistant,base.group_system"
                         help="Actualiza el contacto con toda la información del estudiante" />
-
+                    
                     <!-- ⭐ Botón para recalcular KPIs de asistencia -->
                     <button name="action_recalculate_attendance_kpis" type="object"
                         string="🔄 Recalcular Asistencia"
@@ -206,21 +206,20 @@
                             string="Información de Contacto / Preferencias académicas">
                             <field name="email" widget="email" />
                             <field name="mobile" widget="phone" />
-                            <field name="city" placeholder="Ciudad" options="{'no_create': True}" />
+                            <field name="city" placeholder="Ciudad" />
                             <field name="country_id" placeholder="País" />
                             <field name="address" placeholder="Calle, número, barrio..." />
                         </group>
                         <group name="academic_info" string="Información del Plan">
-                            <field name="program_id" string="Programa"
+                            <field name="program_id" string="Programa" 
                                 placeholder="Selecciona el programa del estudiante"
                                 options="{'no_create': True}" />
-                            <field name="plan_id" string="Plan de Estudio"
+                            <field name="plan_id" string="Plan de Estudio" 
                                 placeholder="Selecciona el plan de estudio"
                                 options="{'no_create': True}"
                                 domain="[('program_id', '=', program_id)]" />
                             <field name="preferred_campus_id" string="Sede Principal" />
-                            <field name="preferred_delivery_mode" string="Modalidad Preferida"
-                                widget="radio"
+                            <field name="preferred_delivery_mode" string="Modalidad Preferida" widget="radio"
                                 options="{'horizontal': true}" />
                             <field name="enrollment_date" string="Fecha de Ingreso" />
                         </group>

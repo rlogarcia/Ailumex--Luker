@@ -669,15 +669,6 @@ class PortalStudentWeeklyPlanLine(models.Model):
             if not subject:
                 continue
             
-            import logging
-            _logger = logging.getLogger(__name__)
-            _logger.info(
-                f"🔍 [CONSTRAINT] Sesión {session.id} - "
-                f"elective_pool_id: {session.elective_pool_id.id if session.elective_pool_id else 'NO TIENE'}, "
-                f"subject_id: {subject.id} ({subject.name}), "
-                f"student: {student.id} ({student.name})"
-            )
-            
             # ═══════════════════════════════════════════════════════════════════════
             # VALIDACIÓN DE DUPLICADOS
             # ═══════════════════════════════════════════════════════════════════════
@@ -688,98 +679,25 @@ class PortalStudentWeeklyPlanLine(models.Model):
             # EXCEPCIÓN PARA B-CHECKS: Si el estudiante tiene un B-check con 'absent'
             # (no asistió), PUEDE agendar una NUEVA sesión de ese mismo B-check.
             # Esto permite "recuperar" un B-check al que no asistió.
-            #
-            # POOLS DE ELECTIVAS: Determinar la asignatura efectiva del estudiante
-            # según su nivel antes de validar si está completada.
             # ═══════════════════════════════════════════════════════════════════════
             History = self.env['benglish.academic.history'].sudo()
             is_bcheck = self._is_prerequisite_subject(subject)
             
-        # Determinar la asignatura a validar en el historial
-        subject_to_check = subject
-        
-        # Si la sesión tiene pool de electivas, determinar la asignatura efectiva del estudiante
-        if session.elective_pool_id and session.elective_pool_id.subject_ids:
-            import logging
-            _logger = logging.getLogger(__name__)
-            _logger.info(
-                f"🟢 [ELECTIVE-POOL CONSTRAINT] Sesión {session.id} tiene pool: "
-                f"{session.elective_pool_id.name} con {len(session.elective_pool_id.subject_ids)} asignaturas"
-            )
-            
-            # Buscar la asignatura del pool que corresponde al nivel del estudiante
-            # Considera tanto el nivel como las asignaturas ya completadas
-            if student and student.current_level_id:
-                # Filtrar asignaturas del pool que son del nivel del estudiante
-                pool_subjects_same_level = session.elective_pool_id.subject_ids.filtered(
-                    lambda s: s.level_id == student.current_level_id
-                )
-                
-                _logger.info(
-                    f"📚 [ELECTIVE-POOL CONSTRAINT] Asignaturas del pool para nivel {student.current_level_id.name}: "
-                    f"{[(s.code, s.name) for s in pool_subjects_same_level]}"
-                )
-                
-                if pool_subjects_same_level:
-                    # Buscar cuáles YA completó el estudiante
-                    completed_subject_ids = History.search([
-                        ('student_id', '=', student.id),
-                        ('subject_id', 'in', pool_subjects_same_level.ids),
-                        ('attendance_status', '=', 'attended')
-                    ]).mapped('subject_id').ids
-                    
-                    _logger.info(
-                        f"✅ [ELECTIVE-POOL CONSTRAINT] Asignaturas del pool ya completadas: {completed_subject_ids}"
-                    )
-                    
-                    # Filtrar asignaturas NO completadas del pool
-                    pending_pool_subjects = pool_subjects_same_level.filtered(
-                        lambda s: s.id not in completed_subject_ids
-                    )
-                    
-                    if pending_pool_subjects:
-                        # Ordenar por secuencia/código y tomar la primera pendiente
-                        subject_to_check = pending_pool_subjects.sorted(
-                            key=lambda s: (s.sequence or 0, s.code or '')
-                        )[0]
-                        _logger.info(
-                            f"🎯 [ELECTIVE-POOL CONSTRAINT] Asignatura pendiente del pool: "
-                            f"{subject_to_check.code} - {subject_to_check.name} (ID: {subject_to_check.id})"
-                        )
-                    else:
-                        # Todas las asignaturas del nivel ya están completadas
-                        # Usar la última del nivel (ya completada)
-                        subject_to_check = pool_subjects_same_level.sorted(
-                            key=lambda s: (s.sequence or 0, s.code or '')
-                        )[-1]
-                        _logger.warning(
-                            f"⚠️ [ELECTIVE-POOL CONSTRAINT] Todas las asignaturas del nivel ya completadas. "
-                            f"Validando contra la última: {subject_to_check.name}"
-                        )
-                else:
-                    _logger.warning(
-                        f"⚠️ [ELECTIVE-POOL CONSTRAINT] No se encontraron asignaturas para nivel {student.current_level_id.name}. "
-                        f"Usando asignatura base: {subject_to_check.name}"
-                    )
-            else:
-                _logger.warning(
-                    f"⚠️ [ELECTIVE-POOL CONSTRAINT] Estudiante sin nivel definido. "
-                    f"Usando asignatura: {subject_to_check.name}"
-                )            # Verificar si ya asistió (attended) - NO puede volver a programar
+            # Verificar si ya asistió (attended) - NO puede volver a programar
             has_attended = History.search_count([
                 ('student_id', '=', student.id),
-                ('subject_id', '=', subject_to_check.id),
+                ('subject_id', '=', subject.id),
                 ('attendance_status', '=', 'attended')
             ])
             
             if has_attended > 0:
-                unit_info = f" (Unit {subject_to_check.unit_number})" if subject_to_check.unit_number else ""
+                unit_info = f" (Unit {subject.unit_number})" if subject.unit_number else ""
                 raise ValidationError(
                     _("❌ No puedes programar esta clase.\n\n"
                       "Ya tienes la asignatura '%(subject)s%(unit)s' completada en tu historial académico.\n\n"
                       "Un estudiante no puede programar la misma clase dos veces. "
                       "Esta clase no debería aparecer en tu lista de clases disponibles.") % {
-                        'subject': subject_to_check.alias or subject_to_check.name,
+                        'subject': subject.alias or subject.name,
                         'unit': unit_info
                     }
                 )
@@ -789,18 +707,18 @@ class PortalStudentWeeklyPlanLine(models.Model):
             if not is_bcheck:
                 has_absent = History.search_count([
                     ('student_id', '=', student.id),
-                    ('subject_id', '=', subject_to_check.id),
+                    ('subject_id', '=', subject.id),
                     ('attendance_status', '=', 'absent')
                 ])
                 
                 if has_absent > 0:
-                    unit_info = f" (Unit {subject_to_check.unit_number})" if subject_to_check.unit_number else ""
+                    unit_info = f" (Unit {subject.unit_number})" if subject.unit_number else ""
                     raise ValidationError(
                         _("❌ No puedes programar esta clase.\n\n"
                           "Ya tienes la asignatura '%(subject)s%(unit)s' en tu historial académico (no asististe).\n\n"
                           "Un estudiante no puede programar la misma clase dos veces. "
                           "Esta clase no debería aparecer en tu lista de clases disponibles.") % {
-                            'subject': subject_to_check.alias or subject_to_check.name,
+                            'subject': subject.alias or subject.name,
                             'unit': unit_info
                         }
                     )
@@ -898,15 +816,6 @@ class PortalStudentWeeklyPlanLine(models.Model):
             add_error("missing_data", _("Falta información de plan o sesión."))
             return result
 
-        import logging
-        _logger = logging.getLogger(__name__)
-        _logger.info(
-            f"🔍 [VALIDATE-CAN-SCHEDULE] Sesión {session.id} - "
-            f"elective_pool_id: {session.elective_pool_id.id if session.elective_pool_id else None}, "
-            f"subject_id: {session.subject_id.id if session.subject_id else None}, "
-            f"session_type: {session.session_type}"
-        )
-
         policy = self._get_class_booking_policy()
         minutos_agendar = max(0, int(policy.get("minutos_anticipacion_agendar", 0) or 0))
 
@@ -938,85 +847,13 @@ class PortalStudentWeeklyPlanLine(models.Model):
         
         # VALIDACIÓN: Verificar si el estudiante ya tiene esta asignatura en su historial
         # EXCEPCIÓN: Para B-Checks con 'absent', permitir agendar nuevo (recuperación)
-        # POOLS DE ELECTIVAS: Determinar la asignatura efectiva del estudiante según su nivel
         History = self.env['benglish.academic.history'].sudo()
         is_bcheck = self._is_prerequisite_subject(subject)
-        
-        # Determinar la asignatura a validar en el historial
-        subject_to_check = subject
-        
-        # Si la sesión tiene pool de electivas, determinar la asignatura efectiva del estudiante
-        if session.elective_pool_id and session.elective_pool_id.subject_ids:
-            import logging
-            _logger = logging.getLogger(__name__)
-            _logger.info(
-                f"🟢 [ELECTIVE-POOL VALIDATION] Sesión {session.id} tiene pool: "
-                f"{session.elective_pool_id.name} con {len(session.elective_pool_id.subject_ids)} asignaturas"
-            )
-            
-            # Buscar la asignatura del pool que corresponde al nivel del estudiante
-            # Considera tanto el nivel como las asignaturas ya completadas
-            if student and student.current_level_id:
-                # Filtrar asignaturas del pool que son del nivel del estudiante
-                pool_subjects_same_level = session.elective_pool_id.subject_ids.filtered(
-                    lambda s: s.level_id == student.current_level_id
-                )
-                
-                _logger.info(
-                    f"📚 [ELECTIVE-POOL VALIDATION] Asignaturas del pool para nivel {student.current_level_id.name}: "
-                    f"{[(s.code, s.name) for s in pool_subjects_same_level]}"
-                )
-                
-                if pool_subjects_same_level:
-                    # Buscar cuáles YA completó el estudiante
-                    completed_subject_ids = History.search([
-                        ('student_id', '=', student.id),
-                        ('subject_id', 'in', pool_subjects_same_level.ids),
-                        ('attendance_status', '=', 'attended')
-                    ]).mapped('subject_id').ids
-                    
-                    _logger.info(
-                        f"✅ [ELECTIVE-POOL VALIDATION] Asignaturas del pool ya completadas: {completed_subject_ids}"
-                    )
-                    
-                    # Filtrar asignaturas NO completadas del pool
-                    pending_pool_subjects = pool_subjects_same_level.filtered(
-                        lambda s: s.id not in completed_subject_ids
-                    )
-                    
-                    if pending_pool_subjects:
-                        # Ordenar por secuencia/código y tomar la primera pendiente
-                        subject_to_check = pending_pool_subjects.sorted(
-                            key=lambda s: (s.sequence or 0, s.code or '')
-                        )[0]
-                        _logger.info(
-                            f"🎯 [ELECTIVE-POOL VALIDATION] Asignatura pendiente del pool: "
-                            f"{subject_to_check.code} - {subject_to_check.name} (ID: {subject_to_check.id})"
-                        )
-                    else:
-                        # Todas las asignaturas del nivel ya están completadas
-                        _logger.warning(
-                            f"⚠️ [ELECTIVE-POOL VALIDATION] Todas las asignaturas del nivel ya completadas. "
-                            f"Estudiante no debería agendar esta sesión."
-                        )
-                        add_error("all_completed", 
-                                 _("Ya has completado todas las asignaturas de este nivel en el pool de electivas."))
-                        return result
-                else:
-                    _logger.warning(
-                        f"⚠️ [ELECTIVE-POOL VALIDATION] No se encontraron asignaturas para nivel {student.current_level_id.name}. "
-                        f"Usando asignatura base: {subject_to_check.name}"
-                    )
-            else:
-                _logger.warning(
-                    f"⚠️ [ELECTIVE-POOL VALIDATION] Estudiante sin nivel definido. "
-                    f"Usando asignatura: {subject_to_check.name}"
-                )
         
         # Si ya ASISTIÓ (attended) → NO puede programar de nuevo
         has_attended = History.search_count([
             ('student_id', '=', plan.student_id.id),
-            ('subject_id', '=', subject_to_check.id if subject_to_check else False),
+            ('subject_id', '=', subject.id if subject else False),
             ('attendance_status', '=', 'attended')
         ])
         if has_attended > 0:
@@ -1027,7 +864,7 @@ class PortalStudentWeeklyPlanLine(models.Model):
         if not is_bcheck:
             has_absent = History.search_count([
                 ('student_id', '=', plan.student_id.id),
-                ('subject_id', '=', subject_to_check.id if subject_to_check else False),
+                ('subject_id', '=', subject.id if subject else False),
                 ('attendance_status', '=', 'absent')
             ])
             if has_absent > 0:
@@ -1233,112 +1070,28 @@ class PortalStudentWeeklyPlanLine(models.Model):
             # ═══════════════════════════════════════════════════════════════════════
             # Las skills se pueden VER y AGENDAR libremente en su unidad correspondiente
             # El B-check es obligatorio para AVANZAR de unidad, no para acceder a skills
-            
-            import logging
-            _logger = logging.getLogger(__name__)
-            _logger.info(f"🔍 [BCHECK-SEARCH] Buscando B-Check para Skill: {subject.name}")
-            _logger.info(f"🔍 [BCHECK-SEARCH] subject_unit={subject_unit}, program_id={subject.program_id.id if subject.program_id else None}")
-            _logger.info(f"🔍 [BCHECK-SEARCH] subject.level_id={subject.level_id.name if subject.level_id else None}")
+            pass
             
             # ═══════════════════════════════════════════════════════════════════
             # PASO 2: Buscar B-Check de la MISMA UNIDAD que la skill
-            # AMPLIADO: También buscar por nivel (level_id) si unit_number no está definido
             # ═══════════════════════════════════════════════════════════════════
+            bcheck_same_unit = Subject.search([
+                ('subject_category', '=', 'bcheck'),
+                ('unit_number', '=', subject_unit),
+                ('program_id', '=', subject.program_id.id)
+            ], limit=1)
             
-            # Estrategia de búsqueda múltiple para B-Checks:
-            # 1. Primero por unit_number (si existe)
-            # 2. Luego por level_id (nivel) si no hay unit_number
-            # 3. Finalmente por nombre que contenga "B-Check" o "BCheck"
-            
-            bcheck_same_unit = Subject.browse()
-            
-            # Estrategia 1: Buscar por unit_number exacto
-            if subject_unit and subject_unit > 0:
-                bcheck_same_unit = Subject.search([
-                    ('subject_category', '=', 'bcheck'),
-                    ('unit_number', '=', subject_unit),
-                    ('program_id', '=', subject.program_id.id)
-                ], limit=1)
-                _logger.info(f"🔍 [BCHECK-SEARCH] Estrategia 1 (unit_number={subject_unit}): {bcheck_same_unit.name if bcheck_same_unit else 'NO ENCONTRADO'}")
-            
-            # Estrategia 2: Buscar por level_id si la skill tiene nivel
-            if not bcheck_same_unit and subject.level_id:
-                bcheck_same_unit = Subject.search([
-                    ('subject_category', '=', 'bcheck'),
-                    ('level_id', '=', subject.level_id.id),
-                    ('program_id', '=', subject.program_id.id)
-                ], limit=1)
-                _logger.info(f"🔍 [BCHECK-SEARCH] Estrategia 2 (level_id={subject.level_id.name}): {bcheck_same_unit.name if bcheck_same_unit else 'NO ENCONTRADO'}")
-            
-            # Estrategia 3: Buscar por subject_classification = 'prerequisite'
-            if not bcheck_same_unit and subject_unit and subject_unit > 0:
-                bcheck_same_unit = Subject.search([
-                    ('subject_classification', '=', 'prerequisite'),
-                    ('unit_number', '=', subject_unit),
-                    ('program_id', '=', subject.program_id.id)
-                ], limit=1)
-                _logger.info(f"🔍 [BCHECK-SEARCH] Estrategia 3 (classification=prerequisite, unit={subject_unit}): {bcheck_same_unit.name if bcheck_same_unit else 'NO ENCONTRADO'}")
-            
-            # Estrategia 4: Buscar por level_id y classification
-            if not bcheck_same_unit and subject.level_id:
-                bcheck_same_unit = Subject.search([
-                    ('subject_classification', '=', 'prerequisite'),
-                    ('level_id', '=', subject.level_id.id),
-                    ('program_id', '=', subject.program_id.id)
-                ], limit=1)
-                _logger.info(f"🔍 [BCHECK-SEARCH] Estrategia 4 (classification=prerequisite, level={subject.level_id.name}): {bcheck_same_unit.name if bcheck_same_unit else 'NO ENCONTRADO'}")
-            
-            # ═══════════════════════════════════════════════════════════════════
-            # ESTRATEGIA 5 (NUEVA): Buscar B-Check del estudiante en el historial
-            # directamente - sin depender de la configuración del subject
-            # Busca cualquier B-Check que haya completado el estudiante
-            # para el mismo nivel/unidad
-            # ═══════════════════════════════════════════════════════════════════
+            # Verificar si está COMPLETADO en historial
+            # IMPORTANTE: Solo cuenta como "completado" si ASISTIÓ (attended)
+            # Si faltó (absent), NO puede agendar Skills - debe agendar nuevo B-Check
             bcheck_completed = False
-            bcheck_absent = False
-            
-            if not bcheck_same_unit:
-                _logger.info(f"🔍 [BCHECK-SEARCH] Estrategia 5: Buscar en historial por nivel/unidad del estudiante")
-                
-                # Buscar TODOS los B-Checks completados del estudiante en el programa
-                all_bcheck_history = History.search([
-                    ('student_id', '=', student.id),
-                    ('attendance_status', '=', 'attended')
-                ])
-                
-                for hist in all_bcheck_history:
-                    hist_subject = hist.subject_id
-                    if hist_subject:
-                        is_hist_bcheck = (
-                            hist_subject.subject_category == 'bcheck' or
-                            hist_subject.subject_classification == 'prerequisite' or
-                            'bcheck' in (hist_subject.name or '').lower() or
-                            'b-check' in (hist_subject.name or '').lower()
-                        )
-                        if is_hist_bcheck:
-                            hist_unit = hist_subject.unit_number or 0
-                            hist_level = hist_subject.level_id
-                            _logger.info(f"📜 [BCHECK-HISTORY] Encontrado: {hist_subject.name} (unit={hist_unit}, level={hist_level.name if hist_level else None})")
-                            
-                            # Verificar si coincide con el nivel/unidad de la skill
-                            match_by_unit = (hist_unit and hist_unit == subject_unit)
-                            match_by_level = (hist_level and subject.level_id and hist_level.id == subject.level_id.id)
-                            
-                            if match_by_unit or match_by_level:
-                                _logger.info(f"✅ [BCHECK-HISTORY] MATCH! B-Check {hist_subject.name} para Skill {subject.name}")
-                                bcheck_same_unit = hist_subject
-                                bcheck_completed = True
-                                break
-            
-            # Si encontramos bcheck_same_unit por las estrategias 1-4, verificar historial
-            if bcheck_same_unit and not bcheck_completed:
-                _logger.info(f"🔍 [BCHECK-SEARCH] Verificando historial para B-Check: {bcheck_same_unit.name} (ID: {bcheck_same_unit.id})")
+            bcheck_absent = False  # Para dar mensaje específico
+            if bcheck_same_unit:
                 bcheck_completed = History.search_count([
                     ('student_id', '=', student.id),
                     ('subject_id', '=', bcheck_same_unit.id),
-                    ('attendance_status', '=', 'attended')
+                    ('attendance_status', '=', 'attended')  # Solo 'attended', NO 'absent'
                 ]) > 0
-                _logger.info(f"🔍 [BCHECK-SEARCH] bcheck_completed={bcheck_completed}")
                 
                 # Verificar si tiene 'absent' para mensaje específico
                 if not bcheck_completed:
@@ -1347,18 +1100,19 @@ class PortalStudentWeeklyPlanLine(models.Model):
                         ('subject_id', '=', bcheck_same_unit.id),
                         ('attendance_status', '=', 'absent')
                     ]) > 0
-                    _logger.info(f"🔍 [BCHECK-SEARCH] bcheck_absent={bcheck_absent}")
             
             # Verificar si está AGENDADO en esta semana
             bcheck_scheduled = False
-            if not bcheck_completed and (subject_unit > 0 or subject.level_id):
-                _logger.info(f"🔍 [BCHECK-SCHEDULED] Buscando B-check agendado")
-                _logger.info(f"🔍 [BCHECK-SCHEDULED] Plan ID: {plan.id}, subject_unit={subject_unit}, level={subject.level_id.name if subject.level_id else None}")
+            if not bcheck_completed and subject_unit > 0:
+                import logging
+                _logger = logging.getLogger(__name__)
+                _logger.info(f"[SKILL DEBUG] Buscando B-check agendado para Unidad {subject_unit}")
+                _logger.info(f"[SKILL DEBUG] Plan ID: {plan.id}, tiene {len(plan.line_ids)} líneas agendadas")
                 
                 # Buscar directamente en la base de datos las líneas del plan
                 PlanLine = self.env['portal.student.weekly.plan.line'].sudo()
                 all_plan_lines = PlanLine.search([('plan_id', '=', plan.id)])
-                _logger.info(f"🔍 [BCHECK-SCHEDULED] Líneas en plan: {len(all_plan_lines)}")
+                _logger.info(f"[SKILL DEBUG] Líneas encontradas en BD: {len(all_plan_lines)}")
                 
                 for line in all_plan_lines:
                     # Obtener el subject efectivo de la línea
@@ -1371,41 +1125,25 @@ class PortalStudentWeeklyPlanLine(models.Model):
                     
                     if line_subject:
                         line_unit = getattr(line_subject, 'unit_number', 0) or 0
-                        line_level = getattr(line_subject, 'level_id', None)
                         line_category = getattr(line_subject, 'subject_category', '')
-                        line_classification = getattr(line_subject, 'subject_classification', '')
-                        line_name = line_subject.name or ''
+                        _logger.info(f"[SKILL DEBUG] Línea {line.id}: {line_subject.name} - Categoría: {line_category} - Unidad: {line_unit}")
                         
-                        # Verificar si es B-Check por múltiples criterios
-                        is_line_bcheck = (
-                            line_category == 'bcheck' or
-                            line_classification == 'prerequisite' or
-                            'bcheck' in line_name.lower() or
-                            'b-check' in line_name.lower()
-                        )
-                        
-                        _logger.info(f"🔍 [BCHECK-SCHEDULED] Línea {line.id}: {line_name} - bcheck={is_line_bcheck}, unit={line_unit}, level={line_level.name if line_level else None}")
-                        
-                        if is_line_bcheck:
-                            # Verificar match por unidad O por nivel
-                            match_by_unit = (line_unit and subject_unit and line_unit == subject_unit)
-                            match_by_level = (line_level and subject.level_id and line_level.id == subject.level_id.id)
-                            
-                            if match_by_unit or match_by_level:
-                                _logger.info(f"✅ [BCHECK-SCHEDULED] ENCONTRADO B-check agendado: {line_name} (match_unit={match_by_unit}, match_level={match_by_level})")
+                        if line_category == 'bcheck' and line_unit == subject_unit:
+                            _logger.info(f"[SKILL DEBUG] ✅ ENCONTRADO B-check agendado: {line_subject.name} Unit {line_unit}")
+                            bcheck_scheduled = True
+                            break
+                    elif line_session:
+                        # Verificar por template de la sesión
+                        template = line_session.template_id
+                        if template and template.subject_category == 'bcheck':
+                            session_unit = line_session.audience_unit_to or line_session.audience_unit_from or 0
+                            _logger.info(f"[SKILL DEBUG] Línea {line.id}: Template B-check - Unidad sesión: {session_unit}")
+                            if session_unit == subject_unit:
+                                _logger.info(f"[SKILL DEBUG] ✅ ENCONTRADO B-check (por template) agendado Unit {session_unit}")
                                 bcheck_scheduled = True
                                 break
                 
-                _logger.info(f"🔍 [BCHECK-SCHEDULED] Resultado final: bcheck_scheduled = {bcheck_scheduled}")
-            
-            # ═══════════════════════════════════════════════════════════════════
-            # RESUMEN FINAL DE VALIDACIÓN
-            # ═══════════════════════════════════════════════════════════════════
-            _logger.info(f"📊 [BCHECK-VALIDATION] Resumen para Skill '{subject.name}':")
-            _logger.info(f"📊 [BCHECK-VALIDATION]   - bcheck_same_unit encontrado: {bcheck_same_unit.name if bcheck_same_unit else 'NO'}")
-            _logger.info(f"📊 [BCHECK-VALIDATION]   - bcheck_completed: {bcheck_completed}")
-            _logger.info(f"📊 [BCHECK-VALIDATION]   - bcheck_scheduled: {bcheck_scheduled}")
-            _logger.info(f"📊 [BCHECK-VALIDATION]   - bcheck_absent: {bcheck_absent}")
+                _logger.info(f"[SKILL DEBUG] Resultado final: bcheck_scheduled = {bcheck_scheduled}")
             
             # Si NO está completado NI agendado → ERROR
             if not bcheck_completed and not bcheck_scheduled:
@@ -1879,16 +1617,6 @@ class PortalStudentWeeklyPlanLine(models.Model):
                 # Obtener el número de unidad del B-check
                 bcheck_unit = getattr(subject, 'unit_number', None)
                 if not bcheck_unit:
-                    # EXCEPCIÓN: Si la sesión tiene pool de electivas, no auto-eliminar
-                    # porque el pool maneja asignaturas dinámicamente
-                    session = line.session_id
-                    if session and session.elective_pool_id:
-                        _logger.info(
-                            f"[AUTO-DELETE] B-check {subject.name} no tiene unit_number pero pertenece "
-                            f"a pool de electivas {session.elective_pool_id.name} - NO se auto-elimina"
-                        )
-                        continue
-                    
                     _logger.warning(
                         f"[AUTO-DELETE] B-check {subject.name} no tiene unit_number definido"
                     )

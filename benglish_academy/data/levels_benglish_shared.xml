@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- ============================================ -->
+        <!-- NIVELES ACADÉMICOS COMPARTIDOS - BENGLISH -->
+        <!-- ============================================ -->
+        <!-- 30 niveles compartidos por todos los planes del programa Benglish -->
+
+        <!-- ========================================== -->
+        <!-- FASE BASIC (10 niveles) -->
+        <!-- ========================================== -->
+
+        <record id="level_benglish_basic_unit1" model="benglish.level">
+            <field name="name">UNIT 1</field>
+            <field name="code">BE-L-001</field>
+            <field name="phase_id" ref="phase_benglish_basic" />
+            <field name="sequence">10</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">1</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_basic_unit2" model="benglish.level">
+            <field name="name">UNIT 2</field>
+            <field name="code">BE-L-002</field>
+            <field name="phase_id" ref="phase_benglish_basic" />
+            <field name="sequence">20</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">2</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_basic_unit3" model="benglish.level">
+            <field name="name">UNIT 3</field>
+            <field name="code">BE-L-003</field>
+            <field name="phase_id" ref="phase_benglish_basic" />
+            <field name="sequence">30</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">3</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_basic_unit4" model="benglish.level">
+            <field name="name">UNIT 4</field>
+            <field name="code">BE-L-004</field>
+            <field name="phase_id" ref="phase_benglish_basic" />
+            <field name="sequence">40</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">4</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_basic_oral_test_1_4" model="benglish.level">
+            <field name="name">ORAL TEST (1-4)</field>
+            <field name="code">BE-L-005</field>
+            <field name="phase_id" ref="phase_benglish_basic" />
+            <field name="sequence">50</field>
+            <field name="duration_weeks">1</field>
+            <field name="total_hours">2</field>
+            <field name="max_unit">4</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_basic_unit5" model="benglish.level">
+            <field name="name">UNIT 5</field>
+            <field name="code">BE-L-006</field>
+            <field name="phase_id" ref="phase_benglish_basic" />
+            <field name="sequence">60</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">5</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_basic_unit6" model="benglish.level">
+            <field name="name">UNIT 6</field>
+            <field name="code">BE-L-007</field>
+            <field name="phase_id" ref="phase_benglish_basic" />
+            <field name="sequence">70</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">6</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_basic_unit7" model="benglish.level">
+            <field name="name">UNIT 7</field>
+            <field name="code">BE-L-008</field>
+            <field name="phase_id" ref="phase_benglish_basic" />
+            <field name="sequence">80</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">7</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_basic_unit8" model="benglish.level">
+            <field name="name">UNIT 8</field>
+            <field name="code">BE-L-009</field>
+            <field name="phase_id" ref="phase_benglish_basic" />
+            <field name="sequence">90</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">8</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_basic_oral_test_5_8" model="benglish.level">
+            <field name="name">ORAL TEST (5-8)</field>
+            <field name="code">BE-L-010</field>
+            <field name="phase_id" ref="phase_benglish_basic" />
+            <field name="sequence">100</field>
+            <field name="duration_weeks">1</field>
+            <field name="total_hours">2</field>
+            <field name="max_unit">8</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- ========================================== -->
+        <!-- FASE INTERMEDIATE (10 niveles) -->
+        <!-- ========================================== -->
+
+        <record id="level_benglish_intermediate_unit9" model="benglish.level">
+            <field name="name">UNIT 9</field>
+            <field name="code">BE-L-011</field>
+            <field name="phase_id" ref="phase_benglish_intermediate" />
+            <field name="sequence">110</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">9</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_intermediate_unit10" model="benglish.level">
+            <field name="name">UNIT 10</field>
+            <field name="code">BE-L-012</field>
+            <field name="phase_id" ref="phase_benglish_intermediate" />
+            <field name="sequence">120</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">10</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_intermediate_unit11" model="benglish.level">
+            <field name="name">UNIT 11</field>
+            <field name="code">BE-L-013</field>
+            <field name="phase_id" ref="phase_benglish_intermediate" />
+            <field name="sequence">130</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">11</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_intermediate_unit12" model="benglish.level">
+            <field name="name">UNIT 12</field>
+            <field name="code">BE-L-014</field>
+            <field name="phase_id" ref="phase_benglish_intermediate" />
+            <field name="sequence">140</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">12</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_intermediate_oral_test_9_12" model="benglish.level">
+            <field name="name">ORAL TEST (9-12)</field>
+            <field name="code">BE-L-015</field>
+            <field name="phase_id" ref="phase_benglish_intermediate" />
+            <field name="sequence">150</field>
+            <field name="duration_weeks">1</field>
+            <field name="total_hours">2</field>
+            <field name="max_unit">12</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_intermediate_unit13" model="benglish.level">
+            <field name="name">UNIT 13</field>
+            <field name="code">BE-L-016</field>
+            <field name="phase_id" ref="phase_benglish_intermediate" />
+            <field name="sequence">160</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">13</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_intermediate_unit14" model="benglish.level">
+            <field name="name">UNIT 14</field>
+            <field name="code">BE-L-017</field>
+            <field name="phase_id" ref="phase_benglish_intermediate" />
+            <field name="sequence">170</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">14</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_intermediate_unit15" model="benglish.level">
+            <field name="name">UNIT 15</field>
+            <field name="code">BE-L-018</field>
+            <field name="phase_id" ref="phase_benglish_intermediate" />
+            <field name="sequence">180</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">15</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_intermediate_unit16" model="benglish.level">
+            <field name="name">UNIT 16</field>
+            <field name="code">BE-L-019</field>
+            <field name="phase_id" ref="phase_benglish_intermediate" />
+            <field name="sequence">190</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">16</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_intermediate_oral_test_13_16" model="benglish.level">
+            <field name="name">ORAL TEST (13-16)</field>
+            <field name="code">BE-L-020</field>
+            <field name="phase_id" ref="phase_benglish_intermediate" />
+            <field name="sequence">200</field>
+            <field name="duration_weeks">1</field>
+            <field name="total_hours">2</field>
+            <field name="max_unit">16</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <!-- ========================================== -->
+        <!-- FASE ADVANCED (10 niveles) -->
+        <!-- ========================================== -->
+
+        <record id="level_benglish_advanced_unit17" model="benglish.level">
+            <field name="name">UNIT 17</field>
+            <field name="code">BE-L-021</field>
+            <field name="phase_id" ref="phase_benglish_advanced" />
+            <field name="sequence">210</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">17</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_advanced_unit18" model="benglish.level">
+            <field name="name">UNIT 18</field>
+            <field name="code">BE-L-022</field>
+            <field name="phase_id" ref="phase_benglish_advanced" />
+            <field name="sequence">220</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">18</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_advanced_unit19" model="benglish.level">
+            <field name="name">UNIT 19</field>
+            <field name="code">BE-L-023</field>
+            <field name="phase_id" ref="phase_benglish_advanced" />
+            <field name="sequence">230</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">19</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_advanced_unit20" model="benglish.level">
+            <field name="name">UNIT 20</field>
+            <field name="code">BE-L-024</field>
+            <field name="phase_id" ref="phase_benglish_advanced" />
+            <field name="sequence">240</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">20</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_advanced_oral_test_17_20" model="benglish.level">
+            <field name="name">ORAL TEST (17-20)</field>
+            <field name="code">BE-L-025</field>
+            <field name="phase_id" ref="phase_benglish_advanced" />
+            <field name="sequence">250</field>
+            <field name="duration_weeks">1</field>
+            <field name="total_hours">2</field>
+            <field name="max_unit">20</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_advanced_unit21" model="benglish.level">
+            <field name="name">UNIT 21</field>
+            <field name="code">BE-L-026</field>
+            <field name="phase_id" ref="phase_benglish_advanced" />
+            <field name="sequence">260</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">21</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_advanced_unit22" model="benglish.level">
+            <field name="name">UNIT 22</field>
+            <field name="code">BE-L-027</field>
+            <field name="phase_id" ref="phase_benglish_advanced" />
+            <field name="sequence">270</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">22</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_advanced_unit23" model="benglish.level">
+            <field name="name">UNIT 23</field>
+            <field name="code">BE-L-028</field>
+            <field name="phase_id" ref="phase_benglish_advanced" />
+            <field name="sequence">280</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">23</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_advanced_unit24" model="benglish.level">
+            <field name="name">UNIT 24</field>
+            <field name="code">BE-L-029</field>
+            <field name="phase_id" ref="phase_benglish_advanced" />
+            <field name="sequence">290</field>
+            <field name="duration_weeks">4</field>
+            <field name="total_hours">20</field>
+            <field name="max_unit">24</field>
+            <field name="active" eval="True" />
+        </record>
+
+        <record id="level_benglish_advanced_oral_test_21_24" model="benglish.level">
+            <field name="name">ORAL TEST (21-24)</field>
+            <field name="code">BE-L-030</field>
+            <field name="phase_id" ref="phase_benglish_advanced" />
+            <field name="sequence">300</field>
+            <field name="duration_weeks">1</field>
+            <field name="total_hours">2</field>
+            <field name="max_unit">24</field>
+            <field name="active" eval="True" />
+        </record>
+
+    </data>
+</odoo>

@@ -309,135 +309,18 @@ class SessionEnrollment(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """
-        Validaciones al crear inscripción.
-        
-        NUEVO: Maneja pools de electivas - asigna automáticamente la asignatura efectiva
-        desde el pool según las unidades de audiencia de la sesión.
-        """
-        import logging
-        _logger = logging.getLogger(__name__)
-        
-        # Preprocesar vals_list para asignar effective_subject_id en sesiones con pool de electivas
-        for vals in vals_list:
-            session_id = vals.get('session_id')
-            if session_id:
-                session = self.env['benglish.academic.session'].browse(session_id)
-                
-                # Si la sesión tiene pool de electivas configurado
-                if session.elective_pool_id and session.elective_pool_id.subject_ids:
-                    _logger.info(
-                        f"🟢 [ELECTIVE-POOL] Sesión {session.id} tiene pool de electivas: "
-                        f"{session.elective_pool_id.name} con {len(session.elective_pool_id.subject_ids)} asignaturas"
-                    )
-                    
-                    # Obtener el estudiante para determinar su nivel actual
-                    student_id = vals.get('student_id')
-                    student = self.env['benglish.student'].browse(student_id) if student_id else None
-                    
-                    # Obtener el rango de unidades de audiencia de la sesión
-                    unit_from = session.audience_unit_from or 0
-                    unit_to = session.audience_unit_to or 0
-                    
-                    _logger.info(
-                        f"📊 [ELECTIVE-POOL] Rango de unidades: {unit_from} - {unit_to}, "
-                        f"Estudiante: {student.name if student else 'N/A'}"
-                    )
-                    
-                    # Asignar asignatura efectiva basada en el nivel del estudiante
-                    if not vals.get('effective_subject_id'):
-                        effective_subject = None
-                        
-                        # OPCIÓN 1: Si el estudiante tiene nivel actual definido
-                        if student and student.current_level_id:
-                            # Filtrar asignaturas del pool que son del nivel del estudiante
-                            pool_subjects_same_level = session.elective_pool_id.subject_ids.filtered(
-                                lambda s: s.level_id == student.current_level_id
-                            )
-                            
-                            _logger.info(
-                                f"📚 [ELECTIVE-POOL] Asignaturas del pool para nivel {student.current_level_id.name}: "
-                                f"{[(s.code, s.name) for s in pool_subjects_same_level]}"
-                            )
-                            
-                            if pool_subjects_same_level:
-                                # Buscar cuáles YA completó el estudiante
-                                History = self.env['benglish.academic.history'].sudo()
-                                completed_subject_ids = History.search([
-                                    ('student_id', '=', student.id),
-                                    ('subject_id', 'in', pool_subjects_same_level.ids),
-                                    ('attendance_status', '=', 'attended')
-                                ]).mapped('subject_id').ids
-                                
-                                _logger.info(
-                                    f"✅ [ELECTIVE-POOL] Asignaturas del pool ya completadas: {completed_subject_ids}"
-                                )
-                                
-                                # Filtrar asignaturas NO completadas del pool
-                                pending_pool_subjects = pool_subjects_same_level.filtered(
-                                    lambda s: s.id not in completed_subject_ids
-                                )
-                                
-                                if pending_pool_subjects:
-                                    # Ordenar por secuencia/código y tomar la primera pendiente
-                                    effective_subject = pending_pool_subjects.sorted(
-                                        key=lambda s: (s.sequence or 0, s.code or '')
-                                    )[0]
-                                    _logger.info(
-                                        f"🎯 [ELECTIVE-POOL] Asignatura pendiente asignada: "
-                                        f"{effective_subject.code} - {effective_subject.name} (ID: {effective_subject.id})"
-                                    )
-                                else:
-                                    # Todas completadas, usar la primera como fallback
-                                    effective_subject = pool_subjects_same_level.sorted(
-                                        key=lambda s: (s.sequence or 0, s.code or '')
-                                    )[0]
-                                    _logger.warning(
-                                        f"⚠️ [ELECTIVE-POOL] Todas las asignaturas del nivel completadas. "
-                                        f"Usando primera como fallback: {effective_subject.name}"
-                                    )
-                        
-                        # OPCIÓN 2: Si no se encontró por nivel, usar la primera del pool
-                        if not effective_subject and session.elective_pool_id.subject_ids:
-                            effective_subject = session.elective_pool_id.subject_ids[0]
-                            _logger.warning(
-                                f"⚠️ [ELECTIVE-POOL] No se encontró asignatura para el nivel del estudiante. "
-                                f"Usando primera del pool: {effective_subject.name}"
-                            )
-                        
-                        if effective_subject:
-                            vals['effective_subject_id'] = effective_subject.id
-                            vals['effective_unit_number'] = unit_to  # Usar la unidad final como referencia
-                            
-                            _logger.info(
-                                f"✅ [ELECTIVE-POOL] Asignada asignatura efectiva: {effective_subject.name} "
-                                f"(ID: {effective_subject.id}) para unidad {unit_to}"
-                            )
-                else:
-                    # Si NO tiene pool de electivas, la asignatura efectiva es la misma de la sesión
-                    if not vals.get('effective_subject_id') and session.subject_id:
-                        vals['effective_subject_id'] = session.subject_id.id
-                        _logger.info(
-                            f"📝 [STANDARD-SESSION] Asignada asignatura efectiva desde sesión: "
-                            f"{session.subject_id.name} (ID: {session.subject_id.id})"
-                        )
-        
+        """Validaciones al crear inscripción."""
         enrollments = super(SessionEnrollment, self).create(vals_list)
 
         for enrollment in enrollments:
             # Registrar en el chatter de la sesión
-            subject_info = ""
-            if enrollment.effective_subject_id and enrollment.effective_subject_id != enrollment.subject_id:
-                subject_info = f" (Asignatura efectiva: {enrollment.effective_subject_id.name})"
-            
             enrollment.session_id.message_post(
-                body=_("Estudiante inscrito: %(student)s [%(state)s]%(subject)s")
+                body=_("Estudiante inscrito: %(student)s [%(state)s]")
                 % {
                     "student": enrollment.student_id.name,
                     "state": dict(enrollment._fields["state"].selection).get(
                         enrollment.state
                     ),
-                    "subject": subject_info,
                 },
                 subject=_("Nueva Inscripción"),
             )

@@ -126,6 +126,24 @@ class DuplicateAgendaWizard(models.TransientModel):
         )
     )
 
+    copy_publications = fields.Boolean(
+        string='Copiar Publicaciones',
+        default=True,
+        help=(
+            'Si está marcado, se copiarán las publicaciones de las sesiones '
+            '(asignaturas publicadas, pares de prerrequisitos).'
+        )
+    )
+
+    copy_elective_pools = fields.Boolean(
+        string='Copiar Asociaciones a Pools Electivos',
+        default=True,
+        help=(
+            'Si está marcado, se copiarán las asociaciones a pools de electivas '
+            'de las sesiones originales.'
+        )
+    )
+
     validate_campus_schedule = fields.Boolean(
         string='Validar Horarios de Sede',
         default=True,
@@ -462,251 +480,331 @@ class DuplicateAgendaWizard(models.TransientModel):
             len(self.source_agenda_id.session_ids)
         )
 
-        # ==========================================
-        # PASO 1: CREAR NUEVA AGENDA
-        # ==========================================
-
-        source = self.source_agenda_id
-
-        new_agenda_vals = {
-            'location_city': source.location_city,
-            'campus_id': source.campus_id.id,
-            'date_start': self.new_date_start,
-            'date_end': self.new_date_end,
-            'time_start': source.time_start,
-            'time_end': source.time_end,
-            'description': _(
-                'Agenda duplicada desde %s (%s)\n'
-                'Periodo original: %s al %s\n'
-                'Duplicada el: %s por %s'
-            ) % (
-                source.code,
-                source.display_name,
-                source.date_start,
-                source.date_end,
-                fields.Date.today(),
-                self.env.user.name
-            ),
-            'state': 'draft',
-            'active': True,
-            # El código se genera automáticamente por secuencia
-        }
-
-        # Si existe periodo académico, agregarlo
-        # if self.new_academic_period_id:
-        #     new_agenda_vals['academic_period_id'] = self.new_academic_period_id.id
-
-        new_agenda = self.env['benglish.academic.agenda'].create(new_agenda_vals)
-
-        _logger.info(
-            "Nueva agenda creada: %s (ID: %s)",
-            new_agenda.code,
-            new_agenda.id
-        )
-
-        # ==========================================
-        # PASO 2: DUPLICAR SESIONES
-        # ==========================================
-
+        # Variables para acumular resultados
+        new_agenda = None
         created_sessions = self.env['benglish.academic.session']
         skipped_sessions = []
-        
-        for original_session in source.session_ids:
-            # Calcular nuevas fechas para esta sesión
-            new_dates = self._calculate_new_dates_for_session(
-                original_session,
-                self.new_date_start,
-                self.new_date_end
+
+        try:
+            # ==========================================
+            # PASO 1: CREAR NUEVA AGENDA
+            # ==========================================
+
+            source = self.source_agenda_id
+
+            new_agenda_vals = {
+                'location_city': source.location_city,
+                'campus_id': source.campus_id.id,
+                'date_start': self.new_date_start,
+                'date_end': self.new_date_end,
+                'time_start': source.time_start,
+                'time_end': source.time_end,
+                'description': _(
+                    'Agenda duplicada desde %s (%s)\n'
+                    'Periodo original: %s al %s\n'
+                    'Duplicada el: %s por %s'
+                ) % (
+                    source.code,
+                    source.display_name,
+                    source.date_start,
+                    source.date_end,
+                    fields.Date.today(),
+                    self.env.user.name
+                ),
+                'state': 'draft',
+                'active': True,
+                # El código se genera automáticamente por secuencia
+            }
+
+            # Si existe periodo académico, agregarlo
+            # if self.new_academic_period_id:
+            #     new_agenda_vals['academic_period_id'] = self.new_academic_period_id.id
+
+            new_agenda = self.env['benglish.academic.agenda'].create(new_agenda_vals)
+
+            _logger.info(
+                "Nueva agenda creada: %s (ID: %s)",
+                new_agenda.code,
+                new_agenda.id
             )
 
-            if not new_dates:
-                _logger.warning(
-                    "No se encontraron fechas válidas para sesión %s (día: %s)",
-                    original_session.id,
-                    original_session.weekday
-                )
-                continue
-
-            # Para cada fecha calculada, intentar crear sesión
-            for new_date in new_dates:
-                # ==========================================
-                # VALIDAR DISPONIBILIDAD
-                # ==========================================
-
-                teacher_available, teacher_reason = self._check_teacher_availability(
-                    original_session.teacher_id.id if original_session.teacher_id else None,
-                    new_date,
-                    original_session.time_start,
-                    original_session.time_end
+            # ==========================================
+            # PASO 2: DUPLICAR SESIONES
+            # ==========================================
+            
+            for original_session in source.session_ids:
+                # Calcular nuevas fechas para esta sesión
+                new_dates = self._calculate_new_dates_for_session(
+                    original_session,
+                    self.new_date_start,
+                    self.new_date_end
                 )
 
-                classroom_available, classroom_reason = self._check_classroom_availability(
-                    original_session.subcampus_id.id if original_session.subcampus_id else None,
-                    new_date,
-                    original_session.time_start,
-                    original_session.time_end
-                )
+                if not new_dates:
+                    _logger.warning(
+                        "No se encontraron fechas válidas para sesión %s (día: %s)",
+                        original_session.id,
+                        original_session.weekday
+                    )
+                    continue
 
-                # Si hay conflictos, decidir qué hacer
-                if not teacher_available or not classroom_available:
-                    conflict_info = {
-                        'original_session_id': original_session.id,
-                        'original_date': original_session.date,
-                        'new_date': new_date,
-                        'time_start': original_session.time_start,
-                        'time_end': original_session.time_end,
-                        'subject': original_session.subject_id.name if original_session.subject_id else 'Sin asignatura',
-                        'teacher_conflict': not teacher_available,
-                        'classroom_conflict': not classroom_available,
-                        'teacher_reason': teacher_reason,
-                        'classroom_reason': classroom_reason,
-                    }
+                # Para cada fecha calculada, intentar crear sesión
+                for new_date in new_dates:
+                    # ==========================================
+                    # VALIDAR DISPONIBILIDAD
+                    # ==========================================
 
-                    if self.skip_conflicts:
-                        skipped_sessions.append(conflict_info)
-                        _logger.warning(
-                            "Sesión omitida por conflicto: %s en %s - Razón: %s",
-                            conflict_info['subject'],
+                    teacher_available = True
+                    teacher_reason = None
+                    classroom_available = True
+                    classroom_reason = None
+
+                    try:
+                        teacher_available, teacher_reason = self._check_teacher_availability(
+                            original_session.teacher_id.id if original_session.teacher_id else None,
                             new_date,
-                            teacher_reason or classroom_reason
+                            original_session.time_start,
+                            original_session.time_end
                         )
-                        continue
-                    else:
-                        # Abortar todo el proceso
-                        new_agenda.unlink()  # Eliminar agenda creada
-                        raise UserError(
-                            _(
-                                'Conflicto detectado al duplicar sesión:\n\n'
-                                '📅 Fecha: %s\n'
-                                '🕐 Hora: %s - %s\n'
-                                '📚 Asignatura: %s\n\n'
-                                '❌ Motivo:\n%s\n\n'
-                                'Active "Omitir Sesiones con Conflictos" para continuar '
-                                'omitiendo las sesiones problemáticas.'
-                            ) % (
-                                new_date,
-                                self._format_time(original_session.time_start),
-                                self._format_time(original_session.time_end),
+                    except Exception as check_error:
+                        _logger.warning("Error al verificar disponibilidad del docente: %s", str(check_error))
+                        teacher_available = True  # Asumir disponible si falla la verificación
+
+                    try:
+                        classroom_available, classroom_reason = self._check_classroom_availability(
+                            original_session.subcampus_id.id if original_session.subcampus_id else None,
+                            new_date,
+                            original_session.time_start,
+                            original_session.time_end
+                        )
+                    except Exception as check_error:
+                        _logger.warning("Error al verificar disponibilidad del aula: %s", str(check_error))
+                        classroom_available = True  # Asumir disponible si falla la verificación
+                    
+                    # Si hay conflictos, decidir qué hacer
+                    if not teacher_available or not classroom_available:
+                        conflict_info = {
+                            'original_session_id': original_session.id,
+                            'original_date': original_session.date,
+                            'new_date': new_date,
+                            'time_start': original_session.time_start,
+                            'time_end': original_session.time_end,
+                            'subject': original_session.subject_id.name if original_session.subject_id else 'Sin asignatura',
+                            'teacher_conflict': not teacher_available,
+                            'classroom_conflict': not classroom_available,
+                            'teacher_reason': teacher_reason,
+                            'classroom_reason': classroom_reason,
+                        }
+
+                        if self.skip_conflicts:
+                            skipped_sessions.append(conflict_info)
+                            _logger.warning(
+                                "Sesión omitida por conflicto: %s en %s - Razón: %s",
                                 conflict_info['subject'],
+                                new_date,
                                 teacher_reason or classroom_reason
                             )
+                            continue
+                        else:
+                            # Abortar todo el proceso
+                            new_agenda.unlink()  # Eliminar agenda creada
+                            raise UserError(
+                                _(
+                                    'Conflicto detectado al duplicar sesión:\n\n'
+                                    '📅 Fecha: %s\n'
+                                    '🕐 Hora: %s - %s\n'
+                                    '📚 Asignatura: %s\n\n'
+                                    '❌ Motivo:\n%s\n\n'
+                                    'Active "Omitir Sesiones con Conflictos" para continuar '
+                                    'omitiendo las sesiones problemáticas.'
+                                ) % (
+                                    new_date,
+                                    self._format_time(original_session.time_start),
+                                    self._format_time(original_session.time_end),
+                                    conflict_info['subject'],
+                                    teacher_reason or classroom_reason
+                                )
+                            )
+
+                    # ==========================================
+                    # CREAR SESIÓN
+                    # ==========================================
+
+                    try:
+                        session_vals = {
+                            'agenda_id': new_agenda.id,
+                            'date': new_date,
+                            'time_start': original_session.time_start,
+                            'time_end': original_session.time_end,
+                            'subject_id': original_session.subject_id.id if original_session.subject_id else False,
+                            'program_id': original_session.program_id.id if original_session.program_id else False,
+                            'teacher_id': original_session.teacher_id.id if original_session.teacher_id else False,
+                            'subcampus_id': original_session.subcampus_id.id if original_session.subcampus_id else False,
+                            'delivery_mode': original_session.delivery_mode,
+                            'session_type': original_session.session_type,
+                            'max_capacity': original_session.max_capacity,
+                            'meeting_link': original_session.meeting_link,
+                            # NO copiar inscripciones (student_ids)
+                            # NO copiar ID de sesión original
+                        }
+
+                        # Copiar estado de publicación si se solicita
+                        if self.copy_published_state:
+                            session_vals['is_published'] = original_session.is_published
+                            session_vals['state'] = original_session.state
+
+                        new_session = self.env['benglish.academic.session'].create(session_vals)
+                        created_sessions |= new_session
+                        _logger.debug(
+                            "Sesión creada: %s en %s",
+                            new_session.subject_id.name if new_session.subject_id else 'N/A',
+                            new_date
                         )
+                        
+                        # ==========================================
+                        # COPIAR PUBLICACIONES
+                        # ==========================================
+                        if self.copy_publications and original_session.publication_ids:
+                            for pub in original_session.publication_ids:
+                                try:
+                                    self.env['benglish.session.publication'].create({
+                                        'session_id': new_session.id,
+                                        'agenda_id': new_agenda.id,
+                                        'subject_id': pub.subject_id.id,
+                                        'state': pub.state if self.copy_published_state else 'draft',
+                                    })
+                                    _logger.debug(
+                                        "Publicación copiada: Sesión %s → Asignatura %s",
+                                        new_session.id,
+                                        pub.subject_id.name
+                                    )
+                                except Exception as pub_error:
+                                    _logger.warning(
+                                        "Error al copiar publicación: %s",
+                                        str(pub_error)
+                                    )
+                    
+                        # ==========================================
+                        # COPIAR ASOCIACIÓN A POOLS
+                        # ==========================================
+                        if self.copy_elective_pools and original_session.elective_pool_ids:
+                            try:
+                                new_session.write({
+                                    'elective_pool_ids': [(4, pool.id) for pool in original_session.elective_pool_ids]
+                                })
+                                _logger.debug(
+                                    "Pools copiados: %s pools asociados a sesión %s",
+                                    len(original_session.elective_pool_ids),
+                                    new_session.id
+                                )
+                            except Exception as pool_error:
+                                _logger.warning(
+                                    "Error al copiar asociación a pools: %s",
+                                    str(pool_error)
+                                )
+                        
+                    except Exception as e:
+                        _logger.error(
+                            "Error al crear sesión: %s",
+                            str(e)
+                        )
+                        if self.skip_conflicts:
+                            skipped_sessions.append({
+                                'original_session_id': original_session.id,
+                                'new_date': new_date,
+                                'subject': 'N/A',
+                                'error': str(e)
+                            })
+                        else:
+                            if new_agenda:
+                                new_agenda.unlink()
+                            raise
 
-                # ==========================================
-                # CREAR SESIÓN
-                # ==========================================
+            # ==========================================
+            # PASO 3: PREPARAR MENSAJE DE RESULTADO
+            # ==========================================
 
-                session_vals = {
-                    'agenda_id': new_agenda.id,
-                    'date': new_date,
-                    'time_start': original_session.time_start,
-                    'time_end': original_session.time_end,
-                    'subject_id': original_session.subject_id.id if original_session.subject_id else False,
-                    'program_id': original_session.program_id.id if original_session.program_id else False,
-                    'teacher_id': original_session.teacher_id.id if original_session.teacher_id else False,
-                    'subcampus_id': original_session.subcampus_id.id if original_session.subcampus_id else False,
-                    'delivery_mode': original_session.delivery_mode,
-                    'session_type': original_session.session_type,
-                    'max_capacity': original_session.max_capacity,
-                    'meeting_link': original_session.meeting_link,
-                    # NO copiar inscripciones (student_ids)
-                    # NO copiar ID de sesión original
-                }
+            _logger.info(
+                "Duplicación completada: %s sesiones creadas, %s omitidas",
+                len(created_sessions),
+                len(skipped_sessions)
+            )
 
-                # Copiar estado de publicación si se solicita
-                if self.copy_published_state:
-                    session_vals['is_published'] = original_session.is_published
-                    session_vals['state'] = original_session.state
+            # Contar publicaciones y pools copiados
+            total_publications = sum(len(s.publication_ids) for s in created_sessions)
+            total_pools = sum(len(s.elective_pool_ids) for s in created_sessions)
 
-                try:
-                    new_session = self.env['benglish.academic.session'].create(session_vals)
-                    created_sessions |= new_session
-                    _logger.debug(
-                        "Sesión creada: %s en %s",
-                        new_session.subject_id.name if new_session.subject_id else 'N/A',
-                        new_date
+            # Crear mensaje detallado
+            message_title = _('✅ Agenda Duplicada Exitosamente')
+            message_lines = [
+                _('Nueva agenda: %s') % new_agenda.code,
+                _('Periodo: %s al %s') % (new_agenda.date_start, new_agenda.date_end),
+                '',
+                _('📊 Resumen de duplicación:'),
+                _('  • Sesiones creadas: %s') % len(created_sessions),
+                _('  • Publicaciones copiadas: %s') % total_publications,
+                _('  • Asociaciones a pools: %s') % total_pools,
+            ]
+
+            if skipped_sessions:
+                message_lines.append(_('  • Sesiones omitidas: %s') % len(skipped_sessions))
+                message_lines.append('')
+                message_lines.append(_('⚠️ Sesiones omitidas por conflictos:'))
+                
+                # Limitar a 10 primeras sesiones omitidas para no saturar la notificación
+                for i, skip_info in enumerate(skipped_sessions[:10]):
+                    if i >= 10:
+                        message_lines.append(_('  ... y %s más') % (len(skipped_sessions) - 10))
+                        break
+                    message_lines.append(
+                        _('  • %s en %s: %s') % (
+                            skip_info.get('subject', 'N/A'),
+                            skip_info.get('new_date', 'N/A'),
+                            skip_info.get('teacher_reason') or skip_info.get('classroom_reason') or skip_info.get('error', 'Error desconocido')
+                        )
                     )
-                except Exception as e:
-                    _logger.error(
-                        "Error al crear sesión: %s",
-                        str(e)
-                    )
-                    if self.skip_conflicts:
-                        skipped_sessions.append({
-                            'original_session_id': original_session.id,
-                            'new_date': new_date,
-                            'subject': original_session.subject_id.name if original_session.subject_id else 'N/A',
-                            'error': str(e)
-                        })
-                    else:
-                        new_agenda.unlink()
-                        raise
 
-        # ==========================================
-        # PASO 3: PREPARAR MENSAJE DE RESULTADO
-        # ==========================================
+            message_body = '\n'.join(message_lines)
 
-        _logger.info(
-            "Duplicación completada: %s sesiones creadas, %s omitidas",
-            len(created_sessions),
-            len(skipped_sessions)
-        )
+            # Registrar en chatter de la nueva agenda
+            new_agenda.message_post(
+                body=message_body,
+                subject=_('Agenda Duplicada'),
+                message_type='notification'
+            )
 
-        # Crear mensaje detallado
-        message_title = _('✅ Agenda Duplicada Exitosamente')
-        message_lines = [
-            _('Nueva agenda: %s') % new_agenda.code,
-            _('Periodo: %s al %s') % (new_agenda.date_start, new_agenda.date_end),
-            '',
-            _('📊 Resumen de duplicación:'),
-            _('  • Sesiones creadas: %s') % len(created_sessions),
-        ]
+            # ==========================================
+            # PASO 4: RETORNAR VISTA DE NUEVA AGENDA
+            # ==========================================
 
-        if skipped_sessions:
-            message_lines.append(_('  • Sesiones omitidas: %s') % len(skipped_sessions))
-            message_lines.append('')
-            message_lines.append(_('⚠️ Sesiones omitidas por conflictos:'))
-            
-            # Limitar a 10 primeras sesiones omitidas para no saturar la notificación
-            for i, skip_info in enumerate(skipped_sessions[:10]):
-                if i >= 10:
-                    message_lines.append(_('  ... y %s más') % (len(skipped_sessions) - 10))
-                    break
-                message_lines.append(
-                    _('  • %s en %s: %s') % (
-                        skip_info.get('subject', 'N/A'),
-                        skip_info.get('new_date', 'N/A'),
-                        skip_info.get('teacher_reason') or skip_info.get('classroom_reason') or skip_info.get('error', 'Error desconocido')
-                    )
-                )
-
-        message_body = '\n'.join(message_lines)
-
-        # Registrar en chatter de la nueva agenda
-        new_agenda.message_post(
-            body=message_body,
-            subject=_('Agenda Duplicada'),
-            message_type='notification'
-        )
-
-        # ==========================================
-        # PASO 4: RETORNAR VISTA DE NUEVA AGENDA
-        # ==========================================
-
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Agenda Duplicada: %s') % new_agenda.code,
-            'res_model': 'benglish.academic.agenda',
-            'res_id': new_agenda.id,
-            'view_mode': 'form',
-            'view_type': 'form',
-            'target': 'current',
-            'context': {
-                'default_notification': {
-                    'type': 'success' if not skipped_sessions else 'warning',
-                    'title': message_title,
-                    'message': message_body,
-                    'sticky': bool(skipped_sessions),
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Agenda Duplicada: %s') % new_agenda.code,
+                'res_model': 'benglish.academic.agenda',
+                'res_id': new_agenda.id,
+                'view_mode': 'form',
+                'view_type': 'form',
+                'target': 'current',
+                'context': {
+                    'default_notification': {
+                        'type': 'success' if not skipped_sessions else 'warning',
+                        'title': message_title,
+                        'message': message_body,
+                        'sticky': bool(skipped_sessions),
+                    }
                 }
             }
-        }
+
+        except Exception as e:
+            # Manejar cualquier error no capturado
+            _logger.error("Error crítico durante la duplicación de agenda: %s", str(e), exc_info=True)
+            if new_agenda:
+                try:
+                    new_agenda.unlink()
+                except:
+                    pass  # Si falla al eliminar, ignorar
+            
+            # Re-lanzar la excepción para que el usuario la vea
+            raise UserError(
+                _('Error al duplicar la agenda:\n\n%s\n\nPor favor, contacte al administrador del sistema.') % str(e)
+            )

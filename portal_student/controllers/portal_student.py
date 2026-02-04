@@ -2121,6 +2121,17 @@ class PortalStudentController(CustomerPortal):
             f"[AGENDA DEBUG] Session subject_category: {effective_subject.subject_category if effective_subject else (session.subject_id.subject_category if session.subject_id else 'N/A')}"
         )
         
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # LOG ESPECIAL PARA POOLS DE ELECTIVAS
+        # ═══════════════════════════════════════════════════════════════════════════════
+        if session.elective_pool_id:
+            _logger.info(f"🟢 [ELECTIVE-POOL] Sesión {session.id} tiene pool de electivas:")
+            _logger.info(f"🟢 [ELECTIVE-POOL]   - Pool ID: {session.elective_pool_id.id}")
+            _logger.info(f"🟢 [ELECTIVE-POOL]   - Pool nombre: {session.elective_pool_id.display_name}")
+            _logger.info(f"🟢 [ELECTIVE-POOL]   - Asignaturas en pool: {len(session.elective_pool_id.subject_ids)}")
+            _logger.info(f"🟢 [ELECTIVE-POOL]   - Nivel estudiante: {student.current_level_id.name if student.current_level_id else 'N/A'}")
+            _logger.info(f"🟢 [ELECTIVE-POOL]   - Asignatura efectiva resuelta: {effective_subject.name if effective_subject else 'NINGUNA'}")
+        
         # Verificar matrículas del estudiante
         enrollments = student.enrollment_ids.filtered(lambda e: e.state in ["enrolled", "in_progress"])
         _logger.info(f"[AGENDA DEBUG] Matrículas activas: {len(enrollments)}")

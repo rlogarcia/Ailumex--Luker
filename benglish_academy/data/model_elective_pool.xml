@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- 
+            Registro explícito del modelo benglish.elective.pool
+            Esto garantiza que el ID externo model_benglish_elective_pool exista
+            antes de cargar ir.model.access.csv
+        -->
+        <record id="model_benglish_elective_pool" model="ir.model">
+            <field name="name">benglish.elective.pool</field>
+            <field name="model">benglish.elective.pool</field>
+            <field name="info">Pool de Electivas por Fase - Agrupa asignaturas electivas ofertadas
+                para una fase específica del programa académico</field>
+        </record>
+    </data>
+</odoo>

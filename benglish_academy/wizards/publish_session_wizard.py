@@ -98,13 +98,56 @@ class PublishSessionWizard(models.TransientModel):
         self.audience_unit_from = min(levels.mapped("max_unit"))
         self.audience_unit_to = max(levels.mapped("max_unit"))
 
+    @api.onchange("teacher_id")
+    def _onchange_teacher_id(self):
+        """Autocompleta el enlace de reunión desde el docente seleccionado."""
+        if self.teacher_id and self.teacher_id.meeting_link:
+            self.meeting_link = self.teacher_id.meeting_link
+
+    @api.onchange("delivery_mode")
+    def _onchange_delivery_mode(self):
+        """Limpia el aula si la modalidad es virtual."""
+        if self.delivery_mode == "virtual":
+            self.subcampus_id = False
+
     def action_publish(self):
         self.ensure_one()
 
+        # Validación: Template debe corresponder al programa
         if self.template_id.program_id and self.template_id.program_id != self.program_id:
             raise UserError(
                 _("La plantilla seleccionada no corresponde al programa indicado.")
             )
+
+        # Validación: Modalidad presencial/híbrida requiere aula
+        if self.delivery_mode in ("presential", "hybrid") and not self.subcampus_id:
+            raise UserError(
+                _("El aula es obligatoria para clases presenciales o híbridas.")
+            )
+
+        # Validación: Modalidad virtual/híbrida requiere enlace de reunión
+        if self.delivery_mode in ("virtual", "hybrid"):
+            # Aceptar meeting_link del wizard o del docente (teacher_meeting_link)
+            teacher_link = self.teacher_id.meeting_link if self.teacher_id else False
+            
+            if not self.meeting_link and not teacher_link:
+                raise UserError(
+                    _("El enlace de reunión es obligatorio para clases virtuales o híbridas.\n\n"
+                      "Puedes:\n"
+                      "• Proporcionar un enlace de reunión\n"
+                      "• Seleccionar un docente que tenga configurado su enlace de reunión")
+                )
+
+        # Validación: Oral Tests requieren ID de reunión del docente
+        if self.template_id.subject_category == "oral_test":
+            teacher_meeting_id = self.teacher_id.meeting_id if self.teacher_id else False
+            
+            if not teacher_meeting_id:
+                raise UserError(
+                    _("Para plantillas de tipo Oral Test, el docente debe tener configurado su ID de reunión.\n\n"
+                      "Docente seleccionado: %s\n"
+                      "Por favor, configura el ID de reunión en la ficha del docente.") % self.teacher_id.name
+                )
 
         vals = {
             "agenda_id": self.agenda_id.id,

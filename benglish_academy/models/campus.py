@@ -3,6 +3,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from ..utils.normalizers import normalize_to_uppercase, normalize_codigo
+import re
 
 
 class Campus(models.Model):
@@ -28,8 +29,9 @@ class Campus(models.Model):
         string="Código",
         required=True,
         copy=False,
+        default='/',
         tracking=True,
-        help="Código único identificador de la sede",
+        help="Código único identificador de la sede (generado automáticamente)",
     )
     sequence = fields.Integer(
         string="Secuencia", default=10, help="Orden de visualización"
@@ -791,6 +793,54 @@ class Campus(models.Model):
             },
         }
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Genera código automático para sedes si no se proporciona y normaliza campos."""
+        for vals in vals_list:
+            if "name" in vals and vals["name"]:
+                vals["name"] = normalize_to_uppercase(vals["name"])
+            if "city_name" in vals and vals["city_name"]:
+                vals["city_name"] = normalize_to_uppercase(vals["city_name"])
+            if "department_name" in vals and vals["department_name"]:
+                vals["department_name"] = normalize_to_uppercase(
+                    vals["department_name"]
+                )
+
+            if vals.get("code", "/") in (None, "", "/"):
+                vals["code"] = self._next_unique_code("SE-", "benglish.campus")
+            else:
+                vals["code"] = normalize_codigo(vals["code"])
+
+        return super(Campus, self).create(vals_list)
+
+    def _next_unique_code(self, prefix, seq_code):
+        env = self.env
+        existing = self.search([("code", "ilike", f"{prefix}%")])
+        seq = env["ir.sequence"].search([("code", "=", seq_code)], limit=1)
+
+        if not existing:
+            if seq:
+                seq.number_next = 1
+            return f"{prefix}1"
+
+        max_n = 0
+        for rec in existing:
+            if not rec.code:
+                continue
+            m = re.search(r"(\d+)$", rec.code)
+            if m:
+                try:
+                    n = int(m.group(1))
+                except Exception:
+                    n = 0
+                if n > max_n:
+                    max_n = n
+
+        next_n = max_n + 1
+        if seq and (not seq.number_next or seq.number_next <= next_n):
+            seq.number_next = next_n + 1
+        return f"{prefix}{next_n}"
+
 
 class SubCampus(models.Model):
     """
@@ -810,7 +860,7 @@ class SubCampus(models.Model):
         help="Nombre del aula o sub-sede (ej: Aula 101, Sala Virtual A)",
     )
     code = fields.Char(
-        string="Código", required=True, copy=False, help="Código único identificador"
+        string="Código", required=True, copy=False, default='/', help="Código único identificador"
     )
     sequence = fields.Integer(
         string="Secuencia", default=10, help="Orden de visualización"
@@ -879,6 +929,20 @@ class SubCampus(models.Model):
         ),
     ]
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Genera código automático para sub-sedes/aulas si no se proporciona y normaliza nombre."""
+        for vals in vals_list:
+            if "name" in vals and vals["name"]:
+                vals["name"] = normalize_to_uppercase(vals["name"])
+            if vals.get("code", "/") in (None, "", "/"):
+                # Use AU- sequence for subcampus
+                vals["code"] = self.env["ir.sequence"].next_by_code("benglish.subcampus") or self._next_unique_code("AU-", "benglish.subcampus")
+            else:
+                vals["code"] = normalize_codigo(vals["code"])
+
+        return super(SubCampus, self).create(vals_list)
+
     @api.depends("name", "campus_id.name")
     def _compute_complete_name(self):
         """Calcula el nombre completo incluyendo la sede principal."""
@@ -908,7 +972,7 @@ class SubCampus(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Sobrescribe create para normalizar datos a MAYÚSCULAS automáticamente."""
+        """Sobrescribe create para normalizar datos y generar código automático si no se proporciona."""
         for vals in vals_list:
             if "name" in vals and vals["name"]:
                 vals["name"] = normalize_to_uppercase(vals["name"])
@@ -918,7 +982,12 @@ class SubCampus(models.Model):
                 vals["department_name"] = normalize_to_uppercase(
                     vals["department_name"]
                 )
-            if "code" in vals and vals["code"]:
+
+            # If no manual code provided, generate using sequence SE-1, SE-2 ...
+            if vals.get("code", "/") in (None, "", "/"):
+                vals["code"] = self.env["ir.sequence"].next_by_code("benglish.campus") or "/"
+            else:
+                # normalize provided code
                 vals["code"] = normalize_codigo(vals["code"])
 
         return super(Campus, self).create(vals_list)
@@ -935,3 +1004,5 @@ class SubCampus(models.Model):
             vals["code"] = normalize_codigo(vals["code"])
 
         return super(Campus, self).write(vals)
+
+    # Subcampus create is implemented in SubCampus class below; keep definitions separate

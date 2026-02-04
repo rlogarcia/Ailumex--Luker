@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import models, fields, api, _
+import re
 from odoo.exceptions import ValidationError
 from ..utils.normalizers import normalize_to_uppercase, normalize_codigo
 
@@ -29,9 +30,10 @@ class StudyPlan(models.Model):
         string="Código",
         required=True,
         copy=False,
+        readonly=True,
         default="/",
         tracking=True,
-        help="Código único identificador del plan (generado automáticamente o manual)",
+        help="Código único identificador del plan (generado automáticamente)",
     )
     sequence = fields.Integer(
         string="Secuencia", default=10, help="Orden de visualización"
@@ -167,11 +169,7 @@ class StudyPlan(models.Model):
         column1="plan_id",
         column2="phase_id",
         string="Fases",
-        compute="_compute_phase_ids",
-        inverse="_inverse_phase_ids",
-        store=False,
-        readonly=False,
-        help="Fases compartidas del programa (todos los planes comparten las mismas fases)",
+        help="Fases asociadas al plan (pueden ser una selección de las fases del programa)",
     )
 
     level_ids = fields.Many2many(
@@ -180,11 +178,7 @@ class StudyPlan(models.Model):
         column1="plan_id",
         column2="level_id",
         string="Niveles",
-        compute="_compute_level_ids",
-        inverse="_inverse_level_ids",
-        store=False,
-        readonly=False,
-        help="Niveles compartidos del programa (todos los planes comparten los mismos niveles)",
+        help="Niveles asociados al plan (pueden ser una selección de los niveles del programa)",
     )
 
     subject_ids = fields.Many2many(
@@ -193,11 +187,7 @@ class StudyPlan(models.Model):
         column1="plan_id",
         column2="subject_id",
         string="Asignaturas",
-        compute="_compute_subject_ids",
-        inverse="_inverse_subject_ids",
-        store=False,
-        readonly=False,
-        help="Asignaturas compartidas del programa (todos los planes comparten las mismas asignaturas)",
+        help="Asignaturas asociadas al plan (pueden ser una selección de las asignaturas del programa)",
     )
 
     # Campos computados
@@ -230,6 +220,34 @@ class StudyPlan(models.Model):
         ),
     ]
 
+    def _next_unique_code(self, prefix, seq_code):
+        env = self.env
+        existing = self.search([("code", "ilike", f"{prefix}%")])
+        seq = env["ir.sequence"].search([("code", "=", seq_code)], limit=1)
+
+        if not existing:
+            if seq:
+                seq.number_next = 1
+            return f"{prefix}1"
+
+        max_n = 0
+        for rec in existing:
+            if not rec.code:
+                continue
+            m = re.search(r"(\d+)$", rec.code)
+            if m:
+                try:
+                    n = int(m.group(1))
+                except Exception:
+                    n = 0
+                if n > max_n:
+                    max_n = n
+
+        next_n = max_n + 1
+        if seq and (not seq.number_next or seq.number_next <= next_n):
+            seq.number_next = next_n + 1
+        return f"{prefix}{next_n}"
+
     @api.model_create_multi
     def create(self, vals_list):
         """Genera el código automáticamente según el tipo de programa y normaliza nombre."""
@@ -237,34 +255,26 @@ class StudyPlan(models.Model):
             # Normalizar nombre a MAYÚSCULAS
             if "name" in vals and vals["name"]:
                 vals["name"] = normalize_to_uppercase(vals["name"])
-
+            # If no manual code provided, use unified simple sequence but ensure uniqueness
             if vals.get("code", "/") == "/":
-                program_id = vals.get("program_id")
-                if program_id:
-                    program = self.env["benglish.program"].browse(program_id)
-                    program_type = program.program_type
-                    if program_type == "bekids":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code("benglish.plan.bekids")
-                            or "/"
-                        )
-                    elif program_type == "bteens":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code("benglish.plan.bteens")
-                            or "/"
-                        )
-                    elif program_type == "benglish":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code(
-                                "benglish.plan.benglish"
-                            )
-                            or "/"
-                        )
-                    else:
-                        vals["code"] = (
-                            f"PLAN-{self.env['ir.sequence'].next_by_code('benglish.plan') or '001'}"
-                        )
-        return super().create(vals_list)
+                vals["code"] = self._next_unique_code("P-", "benglish.plan")
+        records = super().create(vals_list)
+        # Poblamos las relaciones iniciales con las fases/niveles/asignaturas del programa
+        for rec in records:
+            if rec.program_id:
+                phases = self.env["benglish.phase"].search([("program_id", "=", rec.program_id.id)])
+                rec.phase_ids = phases
+                levels = self.env["benglish.level"].search([("phase_id", "in", phases.ids)])
+                rec.level_ids = levels
+                subjects = self.env["benglish.subject"].search([("level_id", "in", levels.ids)])
+                rec.subject_ids = subjects
+        return records
+
+    def write(self, vals):
+        """Sobrescribe write para normalizar datos a MAYÚSCULAS automáticamente."""
+        if "name" in vals and vals["name"]:
+            vals["name"] = normalize_to_uppercase(vals["name"])
+        return super().write(vals)
 
     @api.depends("name", "program_id.name")
     def _compute_complete_name(self):
@@ -275,47 +285,10 @@ class StudyPlan(models.Model):
             else:
                 plan.complete_name = plan.name
 
-    @api.depends("program_id")
-    def _compute_phase_ids(self):
-        """Obtiene las fases compartidas del programa."""
-        for plan in self:
-            if plan.program_id:
-                plan.phase_ids = self.env["benglish.phase"].search(
-                    [("program_id", "=", plan.program_id.id)]
-                )
-            else:
-                plan.phase_ids = False
-
-    @api.depends("program_id")
-    def _compute_level_ids(self):
-        """Obtiene los niveles compartidos del programa."""
-        for plan in self:
-            if plan.program_id:
-                phases = self.env["benglish.phase"].search(
-                    [("program_id", "=", plan.program_id.id)]
-                )
-                plan.level_ids = self.env["benglish.level"].search(
-                    [("phase_id", "in", phases.ids)]
-                )
-            else:
-                plan.level_ids = False
-
-    @api.depends("program_id")
-    def _compute_subject_ids(self):
-        """Obtiene las asignaturas compartidas del programa."""
-        for plan in self:
-            if plan.program_id:
-                phases = self.env["benglish.phase"].search(
-                    [("program_id", "=", plan.program_id.id)]
-                )
-                levels = self.env["benglish.level"].search(
-                    [("phase_id", "in", phases.ids)]
-                )
-                plan.subject_ids = self.env["benglish.subject"].search(
-                    [("level_id", "in", levels.ids)]
-                )
-            else:
-                plan.subject_ids = False
+    # Nota: las relaciones phase_ids/level_ids/subject_ids ahora son almacenadas
+    # Many2many por plan. Se inicializan al crear el plan copiando la estructura
+    # compartida del programa, y desde entonces se pueden editar manualmente
+    # sin afectar al catálogo del programa.
 
     @api.depends("phase_ids")
     def _compute_phase_count(self):
@@ -335,23 +308,8 @@ class StudyPlan(models.Model):
         for plan in self:
             plan.subject_count = len(plan.subject_ids)
 
-    def _inverse_phase_ids(self):
-        """Permite editar fases desde el plan. Las fases se asocian automáticamente al programa."""
-        # No hacer nada: las fases se gestionan a través del programa
-        # Este método inverse permite la edición en línea pero no persiste cambios
-        pass
-
-    def _inverse_level_ids(self):
-        """Permite editar niveles desde el plan. Los niveles se asocian automáticamente al programa."""
-        # No hacer nada: los niveles se gestionan a través del programa
-        # Este método inverse permite la edición en línea pero no persiste cambios
-        pass
-
-    def _inverse_subject_ids(self):
-        """Permite editar asignaturas desde el plan. Las asignaturas se asocian automáticamente al programa."""
-        # No hacer nada: las asignaturas se gestionan a través del programa
-        # Este método inverse permite la edición en línea pero no persiste cambios
-        pass
+    # Los antiguos métodos inverses han sido eliminados porque ahora las
+    # relaciones pertenecen al plan directamente y se persisten.
 
     @api.constrains("code")
     def _check_code_format(self):

@@ -2,6 +2,8 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
+import re
+from ..utils.normalizers import normalize_to_uppercase
 
 
 class AcademicPhase(models.Model):
@@ -27,9 +29,10 @@ class AcademicPhase(models.Model):
         string="Código",
         required=True,
         copy=False,
+        readonly=True,
         default="/",
         tracking=True,
-        help="Código único identificador de la fase (generado automáticamente o manual)",
+        help="Código único identificador de la fase (generado automáticamente)",
     )
     sequence = fields.Integer(
         string="Secuencia",
@@ -103,41 +106,52 @@ class AcademicPhase(models.Model):
         # El orden se maneja mediante el campo sequence pero no se restringe.
     ]
 
+    def _next_unique_code(self, prefix, seq_code):
+        env = self.env
+        existing = self.search([("code", "ilike", f"{prefix}%")])
+        seq = env["ir.sequence"].search([("code", "=", seq_code)], limit=1)
+
+        if not existing:
+            if seq:
+                seq.number_next = 1
+            return f"{prefix}1"
+
+        max_n = 0
+        for rec in existing:
+            if not rec.code:
+                continue
+            m = re.search(r"(\d+)$", rec.code)
+            if m:
+                try:
+                    n = int(m.group(1))
+                except Exception:
+                    n = 0
+                if n > max_n:
+                    max_n = n
+
+        next_n = max_n + 1
+        if seq and (not seq.number_next or seq.number_next <= next_n):
+            seq.number_next = next_n + 1
+        return f"{prefix}{next_n}"
+
     @api.model_create_multi
     def create(self, vals_list):
         """Genera el código automáticamente según el tipo de programa."""
         for vals in vals_list:
+            # Normalizar nombre a MAYÚSCULAS
+            if "name" in vals and vals["name"]:
+                vals["name"] = normalize_to_uppercase(vals["name"])
+            
+            # Use a single simple sequence for phases unless manual code provided
             if vals.get("code", "/") == "/":
-                program_id = vals.get("program_id")
-                if program_id:
-                    program = self.env["benglish.program"].browse(program_id)
-                    program_type = program.program_type
-                    if program_type == "bekids":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code(
-                                "benglish.phase.bekids"
-                            )
-                            or "/"
-                        )
-                    elif program_type == "bteens":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code(
-                                "benglish.phase.bteens"
-                            )
-                            or "/"
-                        )
-                    elif program_type == "benglish":
-                        vals["code"] = (
-                            self.env["ir.sequence"].next_by_code(
-                                "benglish.phase.benglish"
-                            )
-                            or "/"
-                        )
-                    else:
-                        vals["code"] = (
-                            f"PHASE-{self.env['ir.sequence'].next_by_code('benglish.phase') or '001'}"
-                        )
+                vals["code"] = self._next_unique_code("F-", "benglish.phase")
         return super().create(vals_list)
+
+    def write(self, vals):
+        """Sobrescribe write para normalizar datos a MAYÚSCULAS automáticamente."""
+        if "name" in vals and vals["name"]:
+            vals["name"] = normalize_to_uppercase(vals["name"])
+        return super().write(vals)
 
     @api.depends("name", "program_id.name")
     def _compute_complete_name(self):

@@ -3,6 +3,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 import re
+from ..utils.normalizers import normalize_to_uppercase
 
 
 class AcademicPhase(models.Model):
@@ -28,9 +29,10 @@ class AcademicPhase(models.Model):
         string="Código",
         required=True,
         copy=False,
+        readonly=True,
         default="/",
         tracking=True,
-        help="Código único identificador de la fase (generado automáticamente o manual)",
+        help="Código único identificador de la fase (generado automáticamente)",
     )
     sequence = fields.Integer(
         string="Secuencia",
@@ -136,10 +138,20 @@ class AcademicPhase(models.Model):
     def create(self, vals_list):
         """Genera el código automáticamente según el tipo de programa."""
         for vals in vals_list:
+            # Normalizar nombre a MAYÚSCULAS
+            if "name" in vals and vals["name"]:
+                vals["name"] = normalize_to_uppercase(vals["name"])
+            
             # Use a single simple sequence for phases unless manual code provided
             if vals.get("code", "/") == "/":
                 vals["code"] = self._next_unique_code("F-", "benglish.phase")
         return super().create(vals_list)
+
+    def write(self, vals):
+        """Sobrescribe write para normalizar datos a MAYÚSCULAS automáticamente."""
+        if "name" in vals and vals["name"]:
+            vals["name"] = normalize_to_uppercase(vals["name"])
+        return super().write(vals)
 
     @api.depends("name", "program_id.name")
     def _compute_complete_name(self):

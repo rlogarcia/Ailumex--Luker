@@ -51,7 +51,7 @@
             <field name="name">Código Sede (SE)</field>
             <field name="code">benglish.campus</field>
             <field name="prefix">SE-</field>
-            <field name="padding">0</field>
+            <field name="padding">1</field>
             <field name="number_next">1</field>
             <field name="implementation">standard</field>
         </record>
@@ -60,7 +60,7 @@
             <field name="name">Código Aula/Subsede (AU)</field>
             <field name="code">benglish.subcampus</field>
             <field name="prefix">AU-</field>
-            <field name="padding">0</field>
+            <field name="padding">1</field>
             <field name="number_next">1</field>
             <field name="implementation">standard</field>
         </record>
@@ -104,6 +104,17 @@
             <field name="code">benglish.academic.agenda</field>
             <field name="prefix">PL-</field>
             <field name="padding">3</field>
+            <field name="number_increment">1</field>
+            <field name="number_next">1</field>
+            <field name="implementation">standard</field>
+        </record>
+
+        <!-- Secuencia para códigos de Sesión Académica (Clases) -->
+        <record id="sequence_academic_session" model="ir.sequence">
+            <field name="name">Código de Sesión Académica</field>
+            <field name="code">benglish.academic.session</field>
+            <field name="prefix">SES-</field>
+            <field name="padding">5</field>
             <field name="number_increment">1</field>
             <field name="number_next">1</field>
             <field name="implementation">standard</field>

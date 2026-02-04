@@ -31,7 +31,7 @@ class Campus(models.Model):
         copy=False,
         default='/',
         tracking=True,
-        help="Código único identificador de la sede (manual o generado)",
+        help="Código único identificador de la sede (generado automáticamente)",
     )
     sequence = fields.Integer(
         string="Secuencia", default=10, help="Orden de visualización"

@@ -3,6 +3,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from ..utils.normalizers import normalize_to_uppercase, normalize_codigo
+import re
 
 
 class SubCampus(models.Model):
@@ -29,8 +30,9 @@ class SubCampus(models.Model):
         string="Código",
         required=True,
         copy=False,
+        default="/",
         tracking=True,
-        help="Código único identificador del aula",
+        help="Código único identificador del aula (generado automáticamente)",
     )
     sequence = fields.Integer(
         string="Secuencia", default=10, help="Orden de visualización dentro de la sede"
@@ -446,13 +448,57 @@ class SubCampus(models.Model):
 
     # NORMALIZACIÓN AUTOMÁTICA
 
+    def _next_unique_code(self, prefix, seq_code):
+        """Calcula el siguiente código libre con prefijo.
+
+        Lógica:
+        - Si no hay registros existentes con el prefijo, forzar inicio en 1 y ajustar la secuencia.
+        - Si hay registros, tomar el mayor sufijo numérico y devolver prefix+(max+1), y ajustar la secuencia si hace falta.
+        """
+        env = self.env
+        # Buscar registros existentes con el prefijo
+        existing = self.search([("code", "ilike", f"{prefix}%")])
+        seq = env["ir.sequence"].search([("code", "=", seq_code)], limit=1)
+
+        if not existing:
+            # No hay códigos existentes: iniciar desde 1
+            if seq:
+                seq.number_next = 1
+            return f"{prefix}1"
+
+        # Si hay existentes, calcular el mayor sufijo numérico
+        max_n = 0
+        for rec in existing:
+            if not rec.code:
+                continue
+            m = re.search(r"(\d+)$", rec.code)
+            if m:
+                try:
+                    n = int(m.group(1))
+                except Exception:
+                    n = 0
+                if n > max_n:
+                    max_n = n
+
+        next_n = max_n + 1
+        # Ajustar secuencia para evitar que next_by_code genere un número menor
+        if seq and (not seq.number_next or seq.number_next <= next_n):
+            seq.number_next = next_n + 1
+
+        return f"{prefix}{next_n}"
+
     @api.model_create_multi
     def create(self, vals_list):
-        """Sobrescribe create para normalizar datos a MAYÚSCULAS automáticamente."""
+        """Sobrescribe create para generar código automático y normalizar datos a MAYÚSCULAS."""
         for vals in vals_list:
+            # Generar código automático si no se proporciona o es '/'
+            if vals.get("code", "/") == "/":
+                vals["code"] = self._next_unique_code("AU-", "benglish.subcampus")
+            
+            # Normalizar datos a mayúsculas
             if "name" in vals and vals["name"]:
                 vals["name"] = normalize_to_uppercase(vals["name"])
-            if "code" in vals and vals["code"]:
+            if "code" in vals and vals["code"] and vals["code"] != "/":
                 vals["code"] = normalize_codigo(vals["code"])
 
         return super(SubCampus, self).create(vals_list)

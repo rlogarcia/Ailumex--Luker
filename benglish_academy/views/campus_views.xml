@@ -66,9 +66,10 @@
                                 <field name="name" placeholder="Ej: Sede Norte" />
                             </h1>
                             <div class="o_row">
-                                <label for="code" class="fw-bold me-2">Código:</label>
-                                <field name="code" readonly="1" class="fw-bold text-primary"
-                                    style="min-width: 100px; display: inline-block;" />
+                                <span class="badge text-bg-secondary">
+                                    <i class="fa fa-tag" />
+                                    <field name="code" placeholder="Código" />
+                                </span>
                                 <field name="campus_type" widget="badge"
                                     decoration-success="campus_type == 'main'"
                                     decoration-info="campus_type == 'branch'"
@@ -133,8 +134,7 @@
                                             class="text-muted font-italic" />
                                         <field name="default_session_duration"
                                             help="Duración estándar en horas para las sesiones" />
-                                        <field name="class_duration_text"
-                                            placeholder="Ej: 50' cada una" />
+                                        <field name="class_duration_text" placeholder="Ej: 50' cada una" />
                                         <field name="schedule_text"
                                             placeholder="Lunes: 11 am - 1pm&#10;Martes - Viernes: 8 am - 1 pm / 3pm - 9pm" />
                                     </group>
@@ -464,29 +464,18 @@
                             invisible="not is_available or not active" />
                         <div class="oe_title">
                             <label for="name" class="oe_edit_only" />
+                            <h1>
+                                <field name="name" placeholder="Ej: Aula 101 - Sala Principal" />
+                            </h1>
                             <div class="o_row">
-                                <group>
-                                    <h1>
-                                        <field name="name"
-                                            placeholder="Ej: Aula 101 - Sala Principal" />
-                                    </h1>
-                                </group>
-                                <group>
-                                    <span class="badge text-bg-primary ms-2"
-                                        invisible="modality != 'presential'">Aula Presencial</span>
-                                    <span class="badge text-bg-warning ms-2"
-                                        invisible="modality != 'virtual'">Aula Virtual</span>
-                                    <span class="badge text-bg-info ms-2"
-                                        invisible="modality != 'hybrid'">Aula Híbrida</span>
-                                </group>
-                            </div>
-
-                            <div class="o_row">
-                                <label for="code" class="fw-bold me-2">Código:</label>
-                                <field name="code" readonly="1" class="fw-bold text-primary"
-                                    style="min-width: 100px; display: inline-block;" />
-                                <field name="modality" invisible="1" />
-
+                                <span class="badge text-bg-dark">
+                                    <i class="fa fa-tag" />
+                                    <field name="code" placeholder="Código" />
+                                </span>
+                                <field name="subcampus_type" widget="badge"
+                                    decoration-primary="subcampus_type == 'classroom'"
+                                    decoration-info="subcampus_type == 'lab'"
+                                    decoration-warning="subcampus_type == 'virtual'" />
                                 <field name="campus_id" options="{'no_create': True}"
                                     placeholder="Seleccione Sede" />
                             </div>
@@ -504,20 +493,18 @@
                                 <field name="active" widget="boolean_toggle" />
                             </group>
                         </group>
-                        <group string="🎯 Modalidad y Configuración">
-                            <group>
+                        <group string="🎯 Modalidad y Configuración">                            <group>
                                 <field name="modality" widget="radio" />
                             </group>
                             <group>
-                                <field name="virtual_capacity"
+                                <field name="virtual_capacity" 
                                     invisible="modality == 'presential'"
                                     string="Capacidad Virtual" />
                             </group>
                         </group>
-                        <div class="alert alert-info" role="alert"
-                            invisible="modality == 'presential'">
-                            <strong>ℹ️ Información:</strong> Para clases virtuales o híbridas, el
-                            enlace de reunión se toma del docente asignado a cada sesión. </div>
+                        <div class="alert alert-info" role="alert" invisible="modality == 'presential'">
+                            <strong>ℹ️ Información:</strong> Para clases virtuales o híbridas, el enlace de reunión se toma del docente asignado a cada sesión.
+                        </div>
                         <group string="🛠️ Equipamiento y Recursos">
                             <group string="Tecnología">
                                 <field name="has_projector" string="📹 Proyector / Video Beam" />
@@ -655,7 +642,6 @@
                     <field name="code" />
                     <field name="campus_id" />
                     <field name="subcampus_type" />
-                    <field name="modality" />
                     <field name="capacity" />
                     <field name="is_available" />
                     <field name="has_projector" />
@@ -704,22 +690,14 @@
                                         <t t-if="record.floor.raw_value"> - Piso <field name="floor" /></t>
                                     </div>
                                     <div class="mt-2">
-                                        <!-- Badge según modalidad del aula -->
-                                        <span t-if="record.modality.raw_value == 'presential'"
-                                            class="badge text-bg-primary">Aula Presencial</span>
-                                        <span t-if="record.modality.raw_value == 'virtual'"
-                                            class="badge text-bg-warning">Aula Virtual</span>
-                                        <span t-if="record.modality.raw_value == 'hybrid'"
-                                            class="badge text-bg-info">Aula Híbrida</span>
-
-                                        <!-- Badge según tipo de espacio -->
                                         <span t-if="record.subcampus_type.raw_value == 'classroom'"
-                                            class="badge text-bg-light text-dark ms-1">Salón</span>
+                                            class="badge text-bg-primary">Aula Física</span>
                                         <span t-if="record.subcampus_type.raw_value == 'lab'"
-                                            class="badge text-bg-light text-dark ms-1">Laboratorio</span>
+                                            class="badge text-bg-info">Laboratorio</span>
+                                        <span t-if="record.subcampus_type.raw_value == 'virtual'"
+                                            class="badge text-bg-warning">Virtual</span>
                                         <span t-if="record.subcampus_type.raw_value == 'auditorium'"
-                                            class="badge text-bg-light text-dark ms-1">Auditorio</span>
-
+                                            class="badge text-bg-secondary">Auditorio</span>
                                         <span class="badge text-bg-light text-dark ms-1">
                                             <i class="fa fa-users" />
                                             <field name="capacity" />

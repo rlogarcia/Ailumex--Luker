@@ -96,51 +96,32 @@
                         <group string="Información Académica">
                             <group>
                                 <field name="program_id" required="1" options="{'no_create': True}" />
-
-                                <!-- Plantilla: visible solo cuando NO es tipo electiva -->
                                 <field name="template_id"
                                     domain="['|', ('program_id', '=', False), ('program_id', '=', program_id)]"
-                                    options="{'no_create': True}"
-                                    invisible="session_type == 'elective'" />
-
-                                <!-- Pool de Electivas: visible solo cuando ES tipo electiva -->
-                                <field name="elective_pool_id"
-                                    domain="[('state', '=', 'active'), ('program_id', '=', program_id)]"
-                                    options="{'no_create': True}"
-                                    invisible="session_type != 'elective'"
-                                    required="session_type == 'elective'" />
-
-                                <field name="is_oral_test_template" invisible="1" />
-
-                                <!-- Fase Audiencia: NO visible para electivas -->
+                                    options="{'no_create': True}" />
+                                <field name="is_oral_test_template" invisible="1"/>
                                 <field name="audience_phase_id"
                                     domain="[('program_id', '=', program_id), ('active', '=', True)]"
                                     options="{'no_create': True}"
-                                    invisible="not template_id or session_type == 'elective'" />
-
-                                <!-- Para Oral Tests: solo mostrar audience_unit_to (unidad
-                                objetivo) -->
+                                    invisible="not template_id"/>
+                                
+                                <!-- Para Oral Tests: solo mostrar audience_unit_to (unidad objetivo) -->
                                 <field name="audience_unit_to"
                                     string="Unidad"
-                                    invisible="not is_oral_test_template or session_type == 'elective'"
-                                    placeholder="Ej: 4 (para bloque 1-4), 8 (para bloque 5-8)" />
-
-                                <!-- Para otras plantillas (B-checks, Skills) y Electivas: mostrar
-                                rango desde-hasta -->
+                                    invisible="not is_oral_test_template"
+                                    placeholder="Ej: 4 (para bloque 1-4), 8 (para bloque 5-8)"/>
+                                
+                                <!-- Para otras plantillas (B-checks, Skills): mostrar rango desde-hasta -->
                                 <field name="audience_unit_from"
-                                    invisible="is_oral_test_template or (not template_id and session_type != 'elective')"
-                                    placeholder="Unidad inicial (1-24)" />
+                                    invisible="is_oral_test_template"/>
                                 <field name="audience_unit_to"
-                                    invisible="is_oral_test_template or (not template_id and session_type != 'elective')"
-                                    placeholder="Unidad final (1-24)" />
+                                    invisible="is_oral_test_template"/>
                             </group>
                             <group>
                                 <field name="session_type" required="1" />
-                                <field name="elective_pool_id" invisible="1" />
                                 <field name="subject_id"
-                                    readonly="template_id or elective_pool_id"
-                                    force_save="1"
-                                    required="1"
+                                    readonly="1"
+                                    invisible="template_id"
                                     domain="[('program_id', '=', program_id), ('active', '=', True)]"
                                     options="{'no_create': True}" />
                             </group>
@@ -186,12 +167,12 @@
                         </group>
                         <group string="Capacidad">
                             <group>
-                                <field name="max_capacity" required="1"
+                                <field name="max_capacity" required="1" 
                                     invisible="delivery_mode == 'hybrid'" />
-                                <field name="max_capacity_presential"
+                                <field name="max_capacity_presential" 
                                     invisible="delivery_mode != 'hybrid'"
                                     required="delivery_mode == 'hybrid'" />
-                                <field name="max_capacity_virtual"
+                                <field name="max_capacity_virtual" 
                                     invisible="delivery_mode != 'hybrid'"
                                     required="delivery_mode == 'hybrid'" />
                                 <field name="enrolled_count" readonly="1" />

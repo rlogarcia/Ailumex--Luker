@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import models, fields, api, _
-import re
 from odoo.exceptions import ValidationError
-from ..utils.normalizers import normalize_to_uppercase
 
 
 class AcademicProgram(models.Model):
@@ -29,10 +27,9 @@ class AcademicProgram(models.Model):
         string="Código",
         required=True,
         copy=False,
-        readonly=True,
         default="/",
         tracking=True,
-        help="Código único identificador del programa (generado automáticamente)",
+        help="Código único identificador del programa (generado automáticamente o manual)",
     )
     program_type = fields.Selection(
         selection=[
@@ -80,63 +77,34 @@ class AcademicProgram(models.Model):
         ("code_unique", "UNIQUE(code)", "El código del programa debe ser único."),
     ]
 
-    def _next_unique_code(self, prefix, seq_code):
-        """Calcula el siguiente código libre con prefijo.
-
-        Lógica:
-        - Si no hay registros existentes con el prefijo, forzar inicio en 1 y ajustar la secuencia.
-        - Si hay registros, tomar el mayor sufijo numérico y devolver prefix+(max+1), y ajustar la secuencia si hace falta.
-        """
-        env = self.env
-        # Buscar registros existentes con el prefijo
-        existing = self.search([("code", "ilike", f"{prefix}%")])
-        seq = env["ir.sequence"].search([("code", "=", seq_code)], limit=1)
-
-        if not existing:
-            # No hay códigos existentes: iniciar desde 1
-            if seq:
-                seq.number_next = 1
-            return f"{prefix}1"
-
-        # Si hay existentes, calcular el mayor sufijo numérico
-        max_n = 0
-        for rec in existing:
-            if not rec.code:
-                continue
-            m = re.search(r"(\d+)$", rec.code)
-            if m:
-                try:
-                    n = int(m.group(1))
-                except Exception:
-                    n = 0
-                if n > max_n:
-                    max_n = n
-
-        next_n = max_n + 1
-        # Ajustar secuencia para evitar que next_by_code genere un número menor
-        if seq and (not seq.number_next or seq.number_next <= next_n):
-            seq.number_next = next_n + 1
-
-        return f"{prefix}{next_n}"
-
     @api.model_create_multi
     def create(self, vals_list):
-        """Genera el código automáticamente según el tipo de programa, evitando colisiones."""
+        """Genera el código automáticamente según el tipo de programa."""
         for vals in vals_list:
-            # Normalizar nombre a MAYÚSCULAS
-            if "name" in vals and vals["name"]:
-                vals["name"] = normalize_to_uppercase(vals["name"])
-            
-            # If no manual code provided, use unified simple sequence but ensure uniqueness
             if vals.get("code", "/") == "/":
-                vals["code"] = self._next_unique_code("PRG-", "benglish.program")
+                program_type = vals.get("program_type", "other")
+                if program_type == "bekids":
+                    vals["code"] = (
+                        self.env["ir.sequence"].next_by_code("benglish.program.bekids")
+                        or "/"
+                    )
+                elif program_type == "bteens":
+                    vals["code"] = (
+                        self.env["ir.sequence"].next_by_code("benglish.program.bteens")
+                        or "/"
+                    )
+                elif program_type == "benglish":
+                    vals["code"] = (
+                        self.env["ir.sequence"].next_by_code(
+                            "benglish.program.benglish"
+                        )
+                        or "/"
+                    )
+                else:
+                    vals["code"] = (
+                        f"PROG-{self.env['ir.sequence'].next_by_code('benglish.program') or '001'}"
+                    )
         return super().create(vals_list)
-
-    def write(self, vals):
-        """Sobrescribe write para normalizar datos a MAYÚSCULAS automáticamente."""
-        if "name" in vals and vals["name"]:
-            vals["name"] = normalize_to_uppercase(vals["name"])
-        return super().write(vals)
 
     @api.depends("plan_ids")
     def _compute_plan_count(self):

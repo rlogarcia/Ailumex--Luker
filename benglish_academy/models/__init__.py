@@ -39,7 +39,6 @@ from . import student_import_log
 from . import academic_agenda
 from . import agenda_template
 from . import academic_session
-from . import elective_pool  # FASE 2: Pools de electivas por fase
 from . import academic_history
 from . import placement_test
 from . import placement_test_prospect

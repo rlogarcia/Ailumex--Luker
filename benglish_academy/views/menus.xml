@@ -103,13 +103,6 @@
                   sequence="25"
                   groups="group_academic_coordinator,group_academic_manager" />
 
-            <menuitem id="menu_elective_pool"
-                  name="Pools de Electivas"
-                  parent="menu_academic_agenda_root"
-                  action="action_elective_pool"
-                  sequence="35"
-                  groups="group_academic_coordinator,group_academic_manager" />
-
 
             <!-- Submenú: Matrícula (HU5) -->
             <menuitem id="menu_benglish_enrollment_root"

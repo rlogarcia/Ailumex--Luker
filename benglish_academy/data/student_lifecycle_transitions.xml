@@ -2,98 +2,91 @@
 <odoo>
     <data noupdate="0">
         <!-- Transiciones base del ciclo de vida del estudiante -->
-        <record id="lifecycle_transition_prospect_to_enrolled"
-            model="benglish.student.lifecycle.transition" forcecreate="False">
+        <record id="lifecycle_transition_prospect_to_enrolled" model="benglish.student.lifecycle.transition" forcecreate="False">
             <field name="state_from">prospect</field>
             <field name="state_to">enrolled</field>
-            <field name="requires_reason" eval="False" />
+            <field name="requires_reason" eval="False"/>
             <field name="sequence">10</field>
             <field name="description">Primer ingreso del estudiante a matrícula.</field>
-            <field name="profile_state_id" ref="profile_state_active" />
+            <field name="profile_state_id" ref="profile_state_active"/>
         </record>
 
-        <record id="lifecycle_transition_prospect_to_active"
-            model="benglish.student.lifecycle.transition" forcecreate="False">
+        <record id="lifecycle_transition_prospect_to_active" model="benglish.student.lifecycle.transition" forcecreate="False">
             <field name="state_from">prospect</field>
             <field name="state_to">active</field>
-            <field name="requires_reason" eval="False" />
+            <field name="requires_reason" eval="False"/>
             <field name="sequence">15</field>
             <field name="description">Activación directa del estudiante desde prospecto.</field>
-            <field name="profile_state_id" ref="profile_state_active" />
+            <field name="profile_state_id" ref="profile_state_active"/>
         </record>
 
+        <record id="lifecycle_transition_enrolled_to_active" model="benglish.student.lifecycle.transition" forcecreate="False">
+            <field name="state_from">enrolled</field>
+            <field name="state_to">active</field>
+            <field name="requires_reason" eval="False"/>
+            <field name="sequence">20</field>
+            <field name="description">Inicio de clases activas.</field>
+            <field name="profile_state_id" ref="profile_state_active"/>
+        </record>
 
-        <record id="lifecycle_transition_active_to_inactive"
-            model="benglish.student.lifecycle.transition" forcecreate="False">
+        <record id="lifecycle_transition_active_to_inactive" model="benglish.student.lifecycle.transition" forcecreate="False">
             <field name="state_from">active</field>
             <field name="state_to">inactive</field>
-            <field name="requires_reason" eval="True" />
+            <field name="requires_reason" eval="True"/>
             <field name="sequence">30</field>
             <field name="confirmation_message">El estudiante quedará inactivo en el sistema.</field>
-            <field name="group_ids"
-                eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]" />
-            <field name="profile_state_id" ref="profile_state_temp_inactive" />
+            <field name="group_ids" eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]"/>
+            <field name="profile_state_id" ref="profile_state_temp_inactive"/>
         </record>
 
-        <record id="lifecycle_transition_inactive_to_active"
-            model="benglish.student.lifecycle.transition" forcecreate="False">
+        <record id="lifecycle_transition_inactive_to_active" model="benglish.student.lifecycle.transition" forcecreate="False">
             <field name="state_from">inactive</field>
             <field name="state_to">active</field>
-            <field name="requires_reason" eval="True" />
+            <field name="requires_reason" eval="True"/>
             <field name="sequence">40</field>
             <field name="confirmation_message">Se reactivará el estudiante y sus procesos.</field>
-            <field name="group_ids"
-                eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]" />
-            <field name="profile_state_id" ref="profile_state_active" />
+            <field name="group_ids" eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]"/>
+            <field name="profile_state_id" ref="profile_state_active"/>
         </record>
 
-        <record id="lifecycle_transition_active_to_withdrawn"
-            model="benglish.student.lifecycle.transition" forcecreate="False">
+        <record id="lifecycle_transition_active_to_withdrawn" model="benglish.student.lifecycle.transition" forcecreate="False">
             <field name="state_from">active</field>
             <field name="state_to">withdrawn</field>
-            <field name="requires_reason" eval="True" />
+            <field name="requires_reason" eval="True"/>
             <field name="sequence">50</field>
-            <field name="confirmation_message">El estudiante será retirado y no podrá reingresar sin
-                revisión.</field>
-            <field name="group_ids"
-                eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]" />
-            <field name="profile_state_id" ref="profile_state_retraction" />
+            <field name="confirmation_message">El estudiante será retirado y no podrá reingresar sin revisión.</field>
+            <field name="group_ids" eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]"/>
+            <field name="profile_state_id" ref="profile_state_retraction"/>
         </record>
 
-        <record id="lifecycle_transition_inactive_to_withdrawn"
-            model="benglish.student.lifecycle.transition" forcecreate="False">
+        <record id="lifecycle_transition_inactive_to_withdrawn" model="benglish.student.lifecycle.transition" forcecreate="False">
             <field name="state_from">inactive</field>
             <field name="state_to">withdrawn</field>
-            <field name="requires_reason" eval="True" />
+            <field name="requires_reason" eval="True"/>
             <field name="sequence">60</field>
             <field name="confirmation_message">El estudiante será retirado definitivamente.</field>
-            <field name="group_ids"
-                eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]" />
-            <field name="profile_state_id" ref="profile_state_retraction" />
+            <field name="group_ids" eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]"/>
+            <field name="profile_state_id" ref="profile_state_retraction"/>
         </record>
 
-        <record id="lifecycle_transition_enrolled_to_withdrawn"
-            model="benglish.student.lifecycle.transition" forcecreate="False">
+        <record id="lifecycle_transition_enrolled_to_withdrawn" model="benglish.student.lifecycle.transition" forcecreate="False">
             <field name="state_from">enrolled</field>
             <field name="state_to">withdrawn</field>
-            <field name="requires_reason" eval="True" />
+            <field name="requires_reason" eval="True"/>
             <field name="sequence">70</field>
             <field name="confirmation_message">Se cancelará la matrícula del estudiante.</field>
-            <field name="group_ids"
-                eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]" />
-            <field name="profile_state_id" ref="profile_state_retraction" />
+            <field name="group_ids" eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]"/>
+            <field name="profile_state_id" ref="profile_state_retraction"/>
         </record>
 
-        <record id="lifecycle_transition_active_to_graduated"
-            model="benglish.student.lifecycle.transition" forcecreate="False">
+        <record id="lifecycle_transition_active_to_graduated" model="benglish.student.lifecycle.transition" forcecreate="False">
             <field name="state_from">active</field>
             <field name="state_to">graduated</field>
-            <field name="requires_reason" eval="False" />
+            <field name="requires_reason" eval="False"/>
             <field name="sequence">80</field>
             <field name="confirmation_message">El estudiante será marcado como graduado.</field>
-            <field name="group_ids"
-                eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]" />
-            <field name="profile_state_id" ref="profile_state_completed" />
+            <field name="group_ids" eval="[(4, ref('benglish_academy.group_academic_coordinator')), (4, ref('benglish_academy.group_academic_manager'))]"/>
+            <field name="profile_state_id" ref="profile_state_completed"/>
         </record>
     </data>
 </odoo>

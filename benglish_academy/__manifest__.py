@@ -33,14 +33,22 @@
         "crm",
         "l10n_latam_base",  # Para tipos de documento (l10n_latam.identification.type)
     ],
+    "post_init_hook": "post_init_sync_subject_classification",
     "data": [
         # Seguridad
         "security/security.xml",
-        "security/teacher_security.xml",
-        "security/academic_history_security.xml",
+        "security/teacher_security.xml",  # Seguridad para gestión de docentes
+        # "security/crm_security.xml",  # Seguridad CRM - COMENTADO: archivo no existe
+        "security/academic_history_security.xml",  # Seguridad para historial académico
         "security/ir.model.access.csv",
-
-        # VISTAS Y ACCIONES (solo vistas, sin carga de datos operativos)
+        # Secuencias
+        "data/ir_sequence_data.xml",
+        # Datos CRM - Pipelines y Automatizaciones
+        # "data/crm_pipelines_data.xml",  # COMENTADO: archivo no existe
+        # "data/crm_automations_data.xml",  # COMENTADO: archivo no existe
+        # ============================================================
+        # VISTAS Y ACCIONES (cargar en orden de dependencias)
+        # ============================================================
         # Vistas - Diseño Curricular (acciones base)
         "views/program_views.xml",
         "views/plan_views.xml",
@@ -51,25 +59,14 @@
         "views/campus_views.xml",
         # Vistas - Empleados/Docentes
         "views/hr_employee_teacher_views.xml",
+        # "views/hr_employee_sales_views.xml",  # COMENTADO: archivo no existe
         # Vistas - Institucional (Coaches)
         "views/coach_views.xml",
         # Wizards base
         "views/wizards_views.xml",
         "views/freeze_request_wizard_views.xml",
         "wizards/generate_historical_progress_wizard_views.xml",
-        # Server actions
-        "data/server_actions_historical_progress.xml",
-        "data/server_actions_password_manager.xml",
-        "data/automation_student_password_sync.xml",
-        "data/automation_placement_test.xml",
-        "data/email_template_password_reset_simple.xml",
-        # Cron jobs
-        "data/cron_agenda_state.xml",
-        "data/cron_password_reset_cleanup.xml",
-        "data/cron_session_management.xml",
         # Vistas - Estados de Perfil y Congelamiento
-        "data/student_profile_states_base.xml",
-        "data/student_lifecycle_transitions.xml",
         "views/student_profile_state_views.xml",
         "views/freeze_reason_views.xml",
         "views/plan_freeze_config_views.xml",
@@ -107,18 +104,62 @@
         "views/agenda_log_views.xml",
         "views/session_transfer_log_views.xml",
         "views/academic_history_views.xml",
-        # Vistas - FASE 2: Pools de Electivas
-        "views/elective_pool_views.xml",
+        # Vistas - CRM
+        # "views/crm_lead_views.xml",  # COMENTADO: archivo no existe
         # Vistas - Configuración
         "views/class_booking_settings_views.xml",
-        "views/student_password_manager_views.xml",
-        "views/teacher_password_manager_views.xml",
+        "views/student_password_manager_views.xml",  # Gestión de contraseñas de estudiantes
+        "views/teacher_password_manager_views.xml",  # Gestión de contraseñas de docentes
+        # "views/portal_password_reset_template.xml",  # Modal de recuperación - DESACTIVADO: conflicto XML validador Odoo 18
         # MENÚS (DEBEN CARGARSE AL FINAL - dependen de todas las acciones)
         "views/menus.xml",
-        # Secuencias simples para códigos (PRG-/P-/F-/N-/A-/SE-/AU-)
-        "data/ir_sequence_data.xml",
-        # Secuencia para Pool de Electivas (FASE 2)
-        "data/ir_sequence_elective_pool.xml",
+        # Datos operacionales
+        "data/campus_real_data.xml",
+        "data/student_profile_states_base.xml",
+        # "data/student_lifecycle_transitions.xml",  # Evitar duplicados en upgrade
+        "data/student_moodle_user_data.xml",
+        "data/coach_portal_email_template.xml",  # Plantilla email acceso portal coach
+        "data/email_template_password_reset_simple.xml",  # Plantilla email OTP recuperación de contraseña
+        # Estructura curricular
+        "data/programs_data.xml",
+        "data/plans_beteens_data.xml",
+        "data/plans_benglish_data.xml",
+        # Fases compartidas (deben cargarse ANTES de las de cortesía)
+        "data/phases_beteens_shared.xml",
+        "data/phases_benglish_shared.xml",
+        # Niveles compartidos
+        "data/levels_beteens_shared.xml",
+        "data/levels_benglish_shared.xml",
+        "data/class_types_structured.xml",
+        # Asignaturas Benglish (126 compartidas)
+        "data/subjects_bchecks_benglish.xml",
+        "data/subjects_bskills_benglish.xml",
+        # "data/subjects_bskills_extra.xml",  # DESACTIVADO: Contiene bskill_number 5-7 incompatibles con sistema refactorizado (solo 1-4)
+        "data/subjects_oral_tests_benglish.xml",
+        # Asignaturas B teens (126 compartidas)
+        "data/subjects_bchecks_beteens.xml",
+        "data/subjects_bskills_beteens.xml",
+        # "data/subjects_bskills_extra_beteens.xml",  # DESACTIVADO: Contiene bskill_number 5-7 incompatibles con sistema refactorizado (solo 1-4)
+        "data/subjects_oral_tests_beteens.xml",
+        # Asignaturas complementarias
+        # Plantillas de agenda (deben cargarse DESPUÉS de las asignaturas)
+        "data/agenda_templates_data.xml",
+        # Placement Test - Asignaturas desactivadas (active=False) pero mantienen datos
+        "data/subjects_placement_test.xml",
+        "data/automation_placement_test.xml",
+        "data/automation_student_password_sync.xml",  # Sincronización automática gestor de contraseñas
+        # "data/email_template_password_reset.xml",  # Template de email para recuperación de contraseña - TEMPORAL
+        # Vistas Placement Test - DESACTIVADO TEMPORALMENTE
+        # "views/placement_test_views.xml",
+        # Menú Placement Test - DESACTIVADO TEMPORALMENTE
+        # "views/placement_test_menu.xml",
+        # Procesos automáticos (Cron Jobs)
+        "data/cron_session_management.xml",  # Cierre automático de sesiones y limpieza de agenda
+        "data/cron_agenda_state.xml",  # Actualización automática de estado de agendas a ejecutadas
+        # "data/cron_password_reset_cleanup.xml",  # Limpieza de OTPs expirados - TEMPORAL
+        # Acciones de servidor
+        "data/server_actions_historical_progress.xml",  # Generar historial retroactivo
+        "data/server_actions_password_manager.xml",  # Inicialización y sincronización gestor de contraseñas
     ],
     "assets": {
         "web.assets_backend": [

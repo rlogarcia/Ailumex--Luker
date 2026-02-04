@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
-
+        
         <!-- ===================================================================
              CRON JOB: Auto-Start Sessions
              Inicia automáticamente las sesiones cuya hora de inicio ya llegó
@@ -9,16 +9,16 @@
         =================================================================== -->
         <record id="ir_cron_auto_start_sessions" model="ir.cron">
             <field name="name">Iniciar Sesiones Automáticamente</field>
-            <field name="model_id" ref="model_benglish_academic_session" />
+            <field name="model_id" ref="model_benglish_academic_session"/>
             <field name="state">code</field>
             <field name="code">model._cron_auto_start_sessions()</field>
             <field name="interval_number">15</field>
             <field name="interval_type">minutes</field>
-            <field name="active" eval="True" />
+            <field name="active" eval="True"/>
             <field name="priority">10</field>
-            <field name="user_id" ref="base.user_admin" />
+            <field name="user_id" ref="base.user_admin"/>
         </record>
-
+        
         <!-- ===================================================================
              CRON JOB: Auto-Close Finished Sessions
              Cierra automáticamente las sesiones que ya pasaron su hora de fin
@@ -27,15 +27,35 @@
         =================================================================== -->
         <record id="ir_cron_auto_close_sessions" model="ir.cron">
             <field name="name">Cerrar Sesiones Finalizadas</field>
-            <field name="model_id" ref="model_benglish_academic_session" />
+            <field name="model_id" ref="model_benglish_academic_session"/>
             <field name="state">code</field>
             <field name="code">model._cron_auto_close_finished_sessions()</field>
             <field name="interval_number">30</field>
             <field name="interval_type">minutes</field>
-            <field name="active" eval="True" />
+            <field name="active" eval="True"/>
             <field name="priority">5</field>
-            <field name="user_id" ref="base.user_admin" />
+            <field name="user_id" ref="base.user_admin"/>
         </record>
+        
+        <!-- ===================================================================
+             CRON JOB: Clean Finished Sessions from Student Schedule
+             Limpia las líneas de horario que referencian sesiones dictadas
+             Ejecutar cada 1 hora
+             NOTA: Requiere módulo portal_student instalado
+        =================================================================== -->
+        <!--
+        <record id="ir_cron_clean_student_agenda" model="ir.cron">
+            <field name="name">Limpiar Horario de Clases Dictadas</field>
+            <field name="model_id" ref="portal_student.model_portal_student_weekly_plan_line"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_clean_finished_sessions_from_agenda()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">hours</field>
+            <field name="active" eval="True"/>
+            <field name="priority">8</field>
+            <field name="user_id" ref="base.user_admin"/>
+        </record>
+        -->
 
     </data>
 </odoo>

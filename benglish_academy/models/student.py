@@ -684,19 +684,22 @@ class Student(models.Model):
 
     @api.depends("first_name", "second_name", "first_last_name", "second_last_name")
     def _compute_name(self):
-        """Calcula el nombre completo concatenando los nombres desagregados"""
+        """
+        Calcula el nombre completo concatenando los nombres desagregados.
+        IMPORTANTE: El nombre completo se convierte a MAYÚSCULAS.
+        """
         for student in self:
             name_parts = []
             if student.first_name:
-                name_parts.append(student.first_name)
+                name_parts.append(normalize_to_uppercase(student.first_name))
             if student.second_name:
-                name_parts.append(student.second_name)
+                name_parts.append(normalize_to_uppercase(student.second_name))
             if student.first_last_name:
-                name_parts.append(student.first_last_name)
+                name_parts.append(normalize_to_uppercase(student.first_last_name))
             if student.second_last_name:
-                name_parts.append(student.second_last_name)
+                name_parts.append(normalize_to_uppercase(student.second_last_name))
 
-            student.name = " ".join(name_parts) if name_parts else "Sin Nombre"
+            student.name = " ".join(name_parts) if name_parts else "SIN NOMBRE"
 
     @api.depends("plan_id", "plan_id.subject_ids")
     def _compute_subject_ids(self):

@@ -641,6 +641,9 @@ class AcademicAgenda(models.Model):
         """
         Publica la agenda y todas sus clases.
         Las clases pasan a estar disponibles para inscripciones.
+        
+        IMPORTANTE: Las clases ya dictadas (estado 'done') mantienen su estado
+        y solo se marca is_published=True para mantenerlas visibles.
         """
         self.ensure_one()
         if self.state != "active":
@@ -658,6 +661,10 @@ class AcademicAgenda(models.Model):
         # Validar que todas las clases tengan los campos obligatorios
         incomplete_sessions = []
         for s in self.session_ids:
+            # Solo validar sesiones que NO estén ya dictadas o canceladas
+            if s.state in ['done', 'cancelled']:
+                continue
+                
             # Campos básicos obligatorios
             required_fields = [
                 s.subject_id,
@@ -684,10 +691,25 @@ class AcademicAgenda(models.Model):
             )
 
         # Marcar todas las clases como publicadas
-        # Determinar estado de cada sesión: si tiene inscripciones confirmadas hechas desde portal,
-        # marcarla como 'with_enrollment', si no, como 'active'.
+        # IMPORTANTE: Preservar el estado de clases ya dictadas ('done') o canceladas
         for s in self.session_ids:
-            s_is_published = True
+            # Clases ya dictadas: solo publicar, NO cambiar estado
+            if s.state == 'done':
+                s.write({"is_published": True})
+                _logger.info(
+                    f"[PUBLISH] Sesión {s.id} ya dictada - preservando estado 'done', marcando is_published=True"
+                )
+                continue
+            
+            # Clases canceladas: solo publicar, NO cambiar estado
+            if s.state == 'cancelled':
+                s.write({"is_published": True})
+                _logger.info(
+                    f"[PUBLISH] Sesión {s.id} cancelada - preservando estado 'cancelled', marcando is_published=True"
+                )
+                continue
+            
+            # Clases pendientes: determinar nuevo estado
             # Buscar inscripciones confirmadas hechas desde el portal
             portal_confirmed = s.enrollment_ids.filtered(
                 lambda e: e.state == "confirmed"
@@ -695,7 +717,7 @@ class AcademicAgenda(models.Model):
                 and e.enrolled_by_id.share
             )
             new_state = "with_enrollment" if portal_confirmed else "active"
-            s.write({"is_published": s_is_published, "state": new_state})
+            s.write({"is_published": True, "state": new_state})
 
         self.state = "published"
         self.message_post(

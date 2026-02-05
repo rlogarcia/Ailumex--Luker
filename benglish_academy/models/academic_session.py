@@ -3950,3 +3950,281 @@ class AcademicSession(models.Model):
             "errors": error_count,
             "total": len(sessions_to_start),
         }
+
+    # ==========================================
+    # RESOLUCIÓN DE ASIGNATURA EFECTIVA (POOL DE ELECTIVAS)
+    # ==========================================
+
+    def _get_completed_subject_ids(self, student):
+        """
+        Obtiene los IDs de asignaturas que el estudiante ya completó (attended).
+        
+        Args:
+            student: Registro del estudiante (benglish.student)
+            
+        Returns:
+            set: Conjunto de IDs de asignaturas completadas
+        """
+        if not student:
+            return set()
+        
+        History = self.env['benglish.academic.history'].sudo()
+        completed_history = History.search([
+            ('student_id', '=', student.id),
+            ('attendance_status', '=', 'attended'),
+            ('subject_id', '!=', False)
+        ])
+        
+        return set(completed_history.mapped('subject_id').ids)
+
+    def _resolve_elective_pool_subject(self, student, check_completed=True, raise_on_error=True):
+        """
+        Resuelve la asignatura efectiva para un estudiante desde un Pool de Electivas.
+        
+        LÓGICA DE NEGOCIO (HU-POOL):
+        1. Obtener todas las asignaturas del pool de electivas
+        2. Filtrar por el nivel actual del estudiante (current_level_id)
+        3. Excluir asignaturas que el estudiante ya completó (attended)
+        4. Retornar la primera asignatura pendiente que cumpla los requisitos
+        
+        Args:
+            student: Estudiante para quien resolver la asignatura
+            check_completed: Si verificar asignaturas ya completadas (default: True)
+            raise_on_error: Si levantar error cuando no hay asignatura (default: True)
+        
+        Returns:
+            benglish.subject: La asignatura efectiva para el estudiante, o False si no hay
+        
+        Raises:
+            UserError: Si no hay asignaturas disponibles y raise_on_error=True
+        """
+        self.ensure_one()
+        
+        pool = self.elective_pool_id
+        if not pool or not pool.subject_ids:
+            _logger.warning(
+                "[ELECTIVE-POOL] Sesión %s (ID: %s) tiene pool sin asignaturas o pool no configurado. "
+                "pool_id=%s, state=%s",
+                self.display_name, self.id,
+                pool.id if pool else None,
+                pool.state if pool else None
+            )
+            if raise_on_error:
+                raise UserError(
+                    _("El pool de electivas de esta sesión no tiene asignaturas configuradas.\n\n"
+                      "Contacte al administrador para configurar el pool '%s'.") 
+                    % (pool.display_name if pool else "No configurado")
+                )
+            return False
+        
+        _logger.info(
+            "🟢 [ELECTIVE-POOL] Resolviendo asignatura para estudiante %s (ID: %s) "
+            "desde pool '%s' (ID: %s, %d asignaturas)",
+            student.name, student.id,
+            pool.display_name, pool.id, len(pool.subject_ids)
+        )
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # PASO 1: Obtener asignaturas del pool
+        # ═══════════════════════════════════════════════════════════════════════════════
+        pool_subjects = pool.subject_ids.filtered(lambda s: s.active)
+        
+        _logger.info(
+            "🟢 [ELECTIVE-POOL] Asignaturas activas en pool: %d - IDs: %s",
+            len(pool_subjects),
+            pool_subjects.ids
+        )
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # PASO 2: Filtrar por nivel del estudiante
+        # ═══════════════════════════════════════════════════════════════════════════════
+        student_level = student.current_level_id
+        
+        if student_level:
+            _logger.info(
+                "🟢 [ELECTIVE-POOL] Nivel del estudiante: %s (ID: %s)",
+                student_level.name, student_level.id
+            )
+            
+            # Filtrar asignaturas del pool que son del nivel del estudiante
+            level_filtered_subjects = pool_subjects.filtered(
+                lambda s: s.level_id == student_level
+            )
+            
+            _logger.info(
+                "🟢 [ELECTIVE-POOL] Asignaturas del nivel %s: %d - %s",
+                student_level.name,
+                len(level_filtered_subjects),
+                [s.name for s in level_filtered_subjects]
+            )
+            
+            if not level_filtered_subjects:
+                # Intentar con asignaturas del mismo programa
+                student_program = student.program_id
+                if student_program:
+                    level_filtered_subjects = pool_subjects.filtered(
+                        lambda s: s.program_id.id == student_program.id
+                    )
+                    _logger.info(
+                        "🟡 [ELECTIVE-POOL] Asignaturas del programa %s: %d",
+                        student_program.name, len(level_filtered_subjects)
+                    )
+            
+            pool_subjects = level_filtered_subjects if level_filtered_subjects else pool_subjects
+        else:
+            _logger.warning(
+                "🟡 [ELECTIVE-POOL] Estudiante %s no tiene nivel asignado. "
+                "Usando todas las asignaturas del pool.",
+                student.name
+            )
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # PASO 3: Excluir asignaturas ya completadas
+        # ═══════════════════════════════════════════════════════════════════════════════
+        if check_completed:
+            completed_ids = self._get_completed_subject_ids(student)
+            
+            _logger.info(
+                "🟢 [ELECTIVE-POOL] Asignaturas completadas por el estudiante: %d - IDs: %s",
+                len(completed_ids), list(completed_ids)
+            )
+            
+            # Filtrar para excluir las completadas
+            pending_subjects = pool_subjects.filtered(
+                lambda s: s.id not in completed_ids
+            )
+            
+            _logger.info(
+                "🟢 [ELECTIVE-POOL] Asignaturas pendientes (no completadas): %d - %s",
+                len(pending_subjects),
+                [s.name for s in pending_subjects]
+            )
+        else:
+            pending_subjects = pool_subjects
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # PASO 4: Ordenar y seleccionar la primera asignatura pendiente
+        # ═══════════════════════════════════════════════════════════════════════════════
+        if not pending_subjects:
+            _logger.warning(
+                "🔴 [ELECTIVE-POOL] No hay asignaturas pendientes para el estudiante %s "
+                "en el pool '%s'. Todas las asignaturas del pool ya fueron completadas.",
+                student.name, pool.display_name
+            )
+            if raise_on_error:
+                raise UserError(
+                    _("¡Felicidades! Has completado todas las asignaturas electivas "
+                      "disponibles en este pool.\n\n"
+                      "Pool: %s\n"
+                      "Asignaturas en el pool: %d\n\n"
+                      "Consulta con tu asesor académico para conocer tus siguientes opciones.")
+                    % (pool.display_name, len(pool.subject_ids))
+                )
+            return False
+        
+        # Ordenar por secuencia y nombre para consistencia
+        pending_subjects = pending_subjects.sorted(
+            key=lambda s: (s.sequence or 0, s.code or '', s.name or '')
+        )
+        
+        selected_subject = pending_subjects[0]
+        
+        _logger.info(
+            "✅ [ELECTIVE-POOL] Asignatura seleccionada para estudiante %s: "
+            "'%s' (ID: %s, Nivel: %s, Categoría: %s)",
+            student.name,
+            selected_subject.name,
+            selected_subject.id,
+            selected_subject.level_id.name if selected_subject.level_id else "N/A",
+            selected_subject.subject_category or "N/A"
+        )
+        
+        return selected_subject
+
+    def resolve_effective_subject(self, student, check_completed=True, raise_on_error=True, check_prereq=True):
+        """
+        Resuelve la asignatura efectiva para un estudiante en esta sesión.
+        
+        LÓGICA CORRECTA REFACTORIZADA:
+        - El slot asignado depende EXCLUSIVAMENTE del progreso del estudiante
+        - NO depende del skill_number de la plantilla
+        - Las skills son REPETIBLES: pueden tomarse múltiples veces
+        - Cada skill completa el SIGUIENTE SLOT disponible (1, 2, 3 o 4)
+        
+        ELECTIVE POOLS (HU-POOL):
+        - Si la sesión tiene elective_pool_id, resolver del pool
+        - Filtrar asignaturas por nivel del estudiante
+        - Excluir asignaturas ya completadas
+        - Retornar la primera asignatura pendiente del pool
+        
+        Args:
+            student: Estudiante para quien resolver la asignatura
+            check_completed: Si verificar asignaturas ya completadas
+            raise_on_error: Si levantar error cuando hay problemas
+            check_prereq: Si verificar prerrequisitos
+            
+        Returns:
+            benglish.subject: La asignatura efectiva para el estudiante
+        """
+        self.ensure_one()
+
+        if not student:
+            if raise_on_error:
+                raise UserError(_("Estudiante inválido para homologación."))
+            return False
+
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # NUEVA LÓGICA: Sesiones con ELECTIVE POOL
+        # ═══════════════════════════════════════════════════════════════════════════════
+        if self.session_type == 'elective' and self.elective_pool_id:
+            return self._resolve_elective_pool_subject(
+                student, 
+                check_completed=check_completed, 
+                raise_on_error=raise_on_error
+            )
+
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # Sesiones legacy: usar subject_id directo
+        # ═══════════════════════════════════════════════════════════════════════════════
+        subject = self.subject_id
+        
+        if not subject:
+            _logger.warning(
+                "[RESOLVE] Sesión %s sin subject_id configurado",
+                self.id
+            )
+            if raise_on_error:
+                raise UserError(_("Esta sesión no tiene asignatura configurada."))
+            return False
+        
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # VALIDACIÓN DE ASIGNATURA COMPLETADA
+        # ═══════════════════════════════════════════════════════════════════════════════
+        if check_completed:
+            History = self.env['benglish.academic.history'].sudo()
+            
+            # Verificar si ya completó esta asignatura
+            has_attended = History.search_count([
+                ('student_id', '=', student.id),
+                ('subject_id', '=', subject.id),
+                ('attendance_status', '=', 'attended')
+            ])
+            
+            if has_attended > 0:
+                # B-Checks permiten re-agendar si tuvo 'absent'
+                is_bcheck = subject.subject_category == 'bcheck'
+                
+                if not is_bcheck:
+                    _logger.info(
+                        "[RESOLVE] Estudiante %s ya completó la asignatura %s",
+                        student.name, subject.name
+                    )
+                    if raise_on_error:
+                        raise UserError(
+                            _("Ya completaste esta asignatura (%s). "
+                              "No puedes programar la misma clase dos veces.")
+                            % subject.name
+                        )
+                    return False
+        
+        return subject

@@ -83,6 +83,11 @@
                         class="oe_highlight"
                         groups="benglish_academy.group_academic_coordinator"
                         confirm="¿Está seguro de homologar esta matrícula?" />
+                    <button name="action_advance_level" type="object" string="⬆️ Avanzar Nivel"
+                        invisible="state not in ['active', 'in_progress']"
+                        class="btn-success"
+                        groups="benglish_academy.group_academic_coordinator"
+                        confirm="¿Está seguro de avanzar al estudiante al siguiente nivel? Se verificará que todos los requisitos del nivel actual estén completados." />
 
                     <field name="state" widget="statusbar"
                         statusbar_visible="draft,pending,active,finished,homologated" />
@@ -328,6 +333,55 @@
                                     <field name="approved_by" readonly="1" />
                                 </group>
                             </group>
+                        </page>
+
+                        <!-- Página de Requisitos del Nivel Actual -->
+                        <page name="requirements" string="✅ Requisitos Académicos"
+                            invisible="state in ['draft', 'pending', 'cancelled']">
+                            <div class="alert alert-info mb-3" role="alert">
+                                <i class="fa fa-info-circle" />
+                                <strong> Estado de requisitos del
+                                nivel actual.</strong> Los requisitos se generan automáticamente
+                                según la configuración del plan. Complete todos los requisitos para
+                                poder avanzar al siguiente nivel. </div>
+                            <field name="requirement_status_ids" readonly="1">
+                                <list decoration-muted="state == 'locked'"
+                                    decoration-info="state == 'pending'"
+                                    decoration-warning="state == 'in_progress'"
+                                    decoration-success="state == 'completed'">
+                                    <field name="level_id" />
+                                    <field name="requirement_type" />
+                                    <field name="subject_id" />
+                                    <field name="state" widget="badge"
+                                        decoration-muted="state == 'locked'"
+                                        decoration-info="state == 'pending'"
+                                        decoration-warning="state == 'in_progress'"
+                                        decoration-success="state == 'completed'" />
+                                    <field name="completed_count" />
+                                    <field name="min_selection" string="Requerido" />
+                                    <field name="progress_percentage" widget="progressbar" />
+                                    <field name="completed_date" />
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Página de Cumplimiento Académico -->
+                        <page name="compliance" string="📋 Cumplimiento"
+                            invisible="state in ['draft', 'pending', 'cancelled']">
+                            <field name="compliance_ids" readonly="1">
+                                <list decoration-success="compliance_type == 'class_attended'"
+                                    decoration-info="compliance_type == 'elective_completed'"
+                                    decoration-warning="compliance_type == 'choice_fulfilled'">
+                                    <field name="subject_id" />
+                                    <field name="compliance_type" widget="badge"
+                                        decoration-success="compliance_type == 'class_attended'"
+                                        decoration-info="compliance_type == 'elective_completed'"
+                                        decoration-warning="compliance_type == 'choice_fulfilled'" />
+                                    <field name="class_execution_id" />
+                                    <field name="compliance_date" />
+                                    <field name="notes" optional="hide" />
+                                </list>
+                            </field>
                         </page>
 
                         <!-- Página de Homologación -->

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- CUMPLIMIENTO ACADÉMICO DEL ESTUDIANTE                          -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- LIST VIEW (Odoo 18 usa 'list' en lugar de 'tree') -->
+    <record id="view_student_compliance_tree" model="ir.ui.view">
+        <field name="name">benglish.student.compliance.list</field>
+        <field name="model">benglish.student.compliance</field>
+        <field name="arch" type="xml">
+            <list string="Cumplimiento Académico"
+                decoration-success="compliance_type == 'class_attended'"
+                decoration-info="compliance_type == 'elective_completed'"
+                decoration-warning="compliance_type == 'choice_fulfilled'"
+                create="false">
+                <field name="student_id" />
+                <field name="enrollment_id" />
+                <field name="requirement_status_id" />
+                <field name="subject_id" />
+                <field name="class_execution_id" optional="show" />
+                <field name="compliance_type"
+                    widget="badge"
+                    decoration-success="compliance_type == 'class_attended'"
+                    decoration-info="compliance_type == 'elective_completed'"
+                    decoration-warning="compliance_type == 'choice_fulfilled'" />
+                <field name="compliance_date" />
+                <field name="notes" optional="hide" />
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_student_compliance_form" model="ir.ui.view">
+        <field name="name">benglish.student.compliance.form</field>
+        <field name="model">benglish.student.compliance</field>
+        <field name="arch" type="xml">
+            <form string="Registro de Cumplimiento" create="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <span>Cumplimiento: </span>
+                            <field name="student_id" readonly="1" class="oe_inline" />
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Estudiante">
+                            <field name="student_id" />
+                            <field name="enrollment_id" />
+                            <field name="compliance_date" />
+                        </group>
+                        <group string="Requisito Cumplido">
+                            <field name="requirement_status_id" />
+                            <field name="subject_id" />
+                            <field name="compliance_type" />
+                            <field name="class_execution_id" />
+                        </group>
+                    </group>
+                    <group>
+                        <field name="notes" />
+                    </group>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+    <record id="view_student_compliance_search" model="ir.ui.view">
+        <field name="name">benglish.student.compliance.search</field>
+        <field name="model">benglish.student.compliance</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Cumplimiento">
+                <field name="student_id" />
+                <field name="enrollment_id" />
+                <field name="subject_id" />
+                <field name="class_execution_id" />
+                <separator />
+                <filter name="filter_class_attended" string="Clase Asistida"
+                    domain="[('compliance_type', '=', 'class_attended')]" />
+                <filter name="filter_elective" string="Electiva Cumplida"
+                    domain="[('compliance_type', '=', 'elective_completed')]" />
+                <filter name="filter_choice" string="Opción Cumplida"
+                    domain="[('compliance_type', '=', 'choice_fulfilled')]" />
+                <separator />
+                <filter name="filter_today" string="Hoy"
+                    domain="[('compliance_date', '=', context_today().strftime('%%Y-%%m-%%d'))]" />
+                <filter name="filter_this_month" string="Este Mes"
+                    domain="[('compliance_date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%%Y-%%m-%%d')),
+                                 ('compliance_date', '&lt;=', (context_today() + relativedelta(day=31)).strftime('%%Y-%%m-%%d'))]" />
+                <separator />
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_student" string="Estudiante"
+                        context="{'group_by': 'student_id'}" />
+                    <filter name="group_enrollment" string="Inscripción"
+                        context="{'group_by': 'enrollment_id'}" />
+                    <filter name="group_subject" string="Asignatura"
+                        context="{'group_by': 'subject_id'}" />
+                    <filter name="group_type" string="Tipo"
+                        context="{'group_by': 'compliance_type'}" />
+                    <filter name="group_date" string="Fecha"
+                        context="{'group_by': 'compliance_date:month'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_student_compliance" model="ir.actions.act_window">
+        <field name="name">Cumplimiento Académico</field>
+        <field name="res_model">benglish.student.compliance</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_student_compliance_search" />
+        <field name="context">{'search_default_group_student': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay registros de cumplimiento
+            </p>
+            <p>
+                Los registros de cumplimiento se generan automáticamente
+                al cerrar una ejecución de clase y registrar la asistencia.
+            </p>
+        </field>
+    </record>
+
+</odoo>

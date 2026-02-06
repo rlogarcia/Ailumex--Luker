@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Benglish - Gestión Académica",
-    "version": "18.0.1.6.0",
+    "version": "18.0.1.7.0",
     "category": "Education",
     "summary": "Sistema de gestión académica para academia de inglés",
     "description": """
@@ -19,6 +19,9 @@
         - Publicación de agenda académica
         - Estados de perfil de estudiante
         - Congelamiento de matrículas
+        - Requisitos académicos por nivel y plan
+        - Ejecución y asistencia de clases
+        - Cumplimiento académico y avance de nivel
     """,
     "author": "Ailumex",
     "website": "https://www.benglish.com",
@@ -44,6 +47,8 @@
         "security/ir.model.access.csv",
 
         # VISTAS Y ACCIONES (solo vistas, sin carga de datos operativos)
+        # Vistas - Requisitos (DEBE cargarse ANTES de plan_views porque plan_views referencia action_plan_requirement)
+        "views/plan_requirement_views.xml",
         # Vistas - Diseño Curricular (acciones base)
         "views/program_views.xml",
         "views/plan_views.xml",
@@ -112,6 +117,10 @@
         "views/academic_history_views.xml",
         # Vistas - FASE 2: Pools de Electivas
         "views/elective_pool_views.xml",
+        # Vistas - FASE 2: Requisitos, Ejecución, Cumplimiento (plan_requirement_views ya cargado arriba)
+        "views/student_requirement_status_views.xml",
+        "views/student_compliance_views.xml",
+        "views/class_execution_views.xml",
         # Vistas - Configuración
         "views/class_booking_settings_views.xml",
         "views/student_password_manager_views.xml",
@@ -122,6 +131,8 @@
         "data/ir_sequence_data.xml",
         # Secuencia para Pool de Electivas (FASE 2)
         "data/ir_sequence_elective_pool.xml",
+        # Secuencia para Ejecución de Clases
+        "data/ir_sequence_class_execution.xml",
     ],
     "assets": {
         "web.assets_backend": [

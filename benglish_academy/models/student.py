@@ -3506,3 +3506,31 @@ Contacto creado automáticamente desde el sistema académico.
                 'sticky': False,
             }
         }
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Sobrescribe create para normalizar nombres a MAYÚSCULAS."""
+        for vals in vals_list:
+            # Normalizar nombres a mayúsculas
+            if "first_name" in vals and vals["first_name"]:
+                vals["first_name"] = normalize_to_uppercase(vals["first_name"])
+            if "second_name" in vals and vals["second_name"]:
+                vals["second_name"] = normalize_to_uppercase(vals["second_name"])
+            if "first_surname" in vals and vals["first_surname"]:
+                vals["first_surname"] = normalize_to_uppercase(vals["first_surname"])
+            if "second_surname" in vals and vals["second_surname"]:
+                vals["second_surname"] = normalize_to_uppercase(vals["second_surname"])
+        return super().create(vals_list)
+
+    def write(self, vals):
+        """Sobrescribe write para normalizar nombres a MAYÚSCULAS."""
+        # Normalizar nombres a mayúsculas
+        if "first_name" in vals and vals["first_name"]:
+            vals["first_name"] = normalize_to_uppercase(vals["first_name"])
+        if "second_name" in vals and vals["second_name"]:
+            vals["second_name"] = normalize_to_uppercase(vals["second_name"])
+        if "first_surname" in vals and vals["first_surname"]:
+            vals["first_surname"] = normalize_to_uppercase(vals["first_surname"])
+        if "second_surname" in vals and vals["second_surname"]:
+            vals["second_surname"] = normalize_to_uppercase(vals["second_surname"])
+        return super().write(vals)

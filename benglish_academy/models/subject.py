@@ -764,3 +764,21 @@ class Subject(models.Model):
         except Exception:
             # Evitar que errores aquí bloqueen la carga del módulo
             pass
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Sobrescribe create para normalizar nombre y alias a MAYÚSCULAS."""
+        for vals in vals_list:
+            if "name" in vals and vals["name"]:
+                vals["name"] = normalize_to_uppercase(vals["name"])
+            if "alias" in vals and vals["alias"]:
+                vals["alias"] = normalize_to_uppercase(vals["alias"])
+        return super().create(vals_list)
+
+    def write(self, vals):
+        """Sobrescribe write para normalizar nombre y alias a MAYÚSCULAS."""
+        if "name" in vals and vals["name"]:
+            vals["name"] = normalize_to_uppercase(vals["name"])
+        if "alias" in vals and vals["alias"]:
+            vals["alias"] = normalize_to_uppercase(vals["alias"])
+        return super().write(vals)

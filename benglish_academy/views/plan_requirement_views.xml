@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- REQUISITOS ACADÉMICOS POR NIVEL Y PLAN                         -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- LIST VIEW (Odoo 18 usa 'list' en lugar de 'tree') -->
+    <record id="view_plan_requirement_tree" model="ir.ui.view">
+        <field name="name">benglish.plan.requirement.list</field>
+        <field name="model">benglish.plan.requirement</field>
+        <field name="arch" type="xml">
+            <list string="Requisitos Académicos"
+                decoration-info="requirement_type == 'electives'"
+                decoration-warning="requirement_type == 'choice'"
+                decoration-success="requirement_type == 'course'"
+                decoration-danger="requirement_type == 'unlockable'">
+                <field name="sequence" widget="handle" />
+                <field name="plan_id" />
+                <field name="level_id" />
+                <field name="phase_id" />
+                <field name="requirement_type" />
+                <field name="subject_id" />
+                <field name="min_selection" />
+                <field name="max_selection" />
+                <field name="option_count" string="Opciones" />
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_plan_requirement_form" model="ir.ui.view">
+        <field name="name">benglish.plan.requirement.form</field>
+        <field name="model">benglish.plan.requirement</field>
+        <field name="arch" type="xml">
+            <form string="Requisito Académico">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="display_name" readonly="1" />
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Contexto Académico">
+                            <field name="plan_id" />
+                            <field name="program_id" />
+                            <field name="level_id" domain="[('program_id', '=', program_id)]" />
+                            <field name="phase_id" />
+                        </group>
+                        <group string="Configuración del Requisito">
+                            <field name="requirement_type" />
+                            <field name="subject_id"
+                                invisible="requirement_type not in ('course', 'unlockable')"
+                                required="requirement_type in ('course', 'unlockable')" />
+                            <field name="min_selection"
+                                invisible="requirement_type not in ('electives', 'choice')" />
+                            <field name="max_selection"
+                                invisible="requirement_type not in ('electives', 'choice')" />
+                            <field name="unlock_prerequisite_id"
+                                invisible="requirement_type != 'unlockable'"
+                                domain="[('plan_id', '=', plan_id), ('level_id', '=', level_id), ('requirement_type', '=', 'course')]" />
+                            <field name="sequence" />
+                            <field name="active" />
+                        </group>
+                    </group>
+
+                    <!-- Opciones (solo para CHOICE) -->
+                    <notebook invisible="requirement_type != 'choice'">
+                        <page string="Opciones" name="options">
+                            <field name="option_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="subject_id" />
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+
+                    <group>
+                        <field name="description" />
+                    </group>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+    <record id="view_plan_requirement_search" model="ir.ui.view">
+        <field name="name">benglish.plan.requirement.search</field>
+        <field name="model">benglish.plan.requirement</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Requisitos">
+                <field name="plan_id" />
+                <field name="level_id" />
+                <field name="subject_id" />
+                <field name="requirement_type" />
+                <separator />
+                <filter name="filter_course" string="COURSE"
+                    domain="[('requirement_type', '=', 'course')]" />
+                <filter name="filter_electives" string="ELECTIVES"
+                    domain="[('requirement_type', '=', 'electives')]" />
+                <filter name="filter_choice" string="CHOICE"
+                    domain="[('requirement_type', '=', 'choice')]" />
+                <filter name="filter_unlockable" string="UNLOCKABLE"
+                    domain="[('requirement_type', '=', 'unlockable')]" />
+                <separator />
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_plan" string="Plan" context="{'group_by': 'plan_id'}" />
+                    <filter name="group_level" string="Nivel" context="{'group_by': 'level_id'}" />
+                    <filter name="group_phase" string="Fase" context="{'group_by': 'phase_id'}" />
+                    <filter name="group_type" string="Tipo"
+                        context="{'group_by': 'requirement_type'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_plan_requirement" model="ir.actions.act_window">
+        <field name="name">Requisitos Académicos</field>
+        <field name="res_model">benglish.plan.requirement</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_plan_requirement_search" />
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configure los requisitos académicos por nivel
+            </p>
+            <p>
+                Defina prerrequisitos (COURSE), electivas requeridas (ELECTIVES),
+                grupos de opciones (CHOICE) y asignaturas desbloqueables (UNLOCKABLE)
+                para cada nivel de cada plan de estudios.
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- OPCIONES DE REQUISITO                                          -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_plan_requirement_option_tree" model="ir.ui.view">
+        <field name="name">benglish.plan.requirement.option.list</field>
+        <field name="model">benglish.plan.requirement.option</field>
+        <field name="arch" type="xml">
+            <list string="Opciones de Requisito" editable="bottom">
+                <field name="sequence" widget="handle" />
+                <field name="requirement_id" />
+                <field name="subject_id" />
+                <field name="plan_id" />
+                <field name="level_id" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_plan_requirement_option_form" model="ir.ui.view">
+        <field name="name">benglish.plan.requirement.option.form</field>
+        <field name="model">benglish.plan.requirement.option</field>
+        <field name="arch" type="xml">
+            <form string="Opción de Requisito">
+                <sheet>
+                    <group>
+                        <field name="requirement_id" />
+                        <field name="subject_id" />
+                        <field name="plan_id" />
+                        <field name="level_id" />
+                        <field name="sequence" />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

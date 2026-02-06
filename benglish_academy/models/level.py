@@ -297,3 +297,17 @@ class AcademicLevel(models.Model):
                 "sticky": False,
             },
         }
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Sobrescribe create para normalizar nombre a MAYÚSCULAS."""
+        for vals in vals_list:
+            if "name" in vals and vals["name"]:
+                vals["name"] = normalize_to_uppercase(vals["name"])
+        return super().create(vals_list)
+
+    def write(self, vals):
+        """Sobrescribe write para normalizar nombre a MAYÚSCULAS."""
+        if "name" in vals and vals["name"]:
+            vals["name"] = normalize_to_uppercase(vals["name"])
+        return super().write(vals)

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- ESTADO DE REQUISITOS DEL ESTUDIANTE                            -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- LIST VIEW (Odoo 18 usa 'list' en lugar de 'tree') -->
+    <record id="view_student_requirement_status_tree" model="ir.ui.view">
+        <field name="name">benglish.student.requirement.status.list</field>
+        <field name="model">benglish.student.requirement.status</field>
+        <field name="arch" type="xml">
+            <list string="Estado de Requisitos"
+                decoration-muted="state == 'locked'"
+                decoration-info="state == 'pending'"
+                decoration-warning="state == 'in_progress'"
+                decoration-success="state == 'completed'">
+                <field name="student_id" />
+                <field name="enrollment_id" />
+                <field name="level_id" />
+                <field name="requirement_id" />
+                <field name="requirement_type" optional="show" />
+                <field name="subject_id" />
+                <field name="state"
+                    decoration-muted="state == 'locked'"
+                    decoration-info="state == 'pending'"
+                    decoration-warning="state == 'in_progress'"
+                    decoration-success="state == 'completed'"
+                    widget="badge" />
+                <field name="completed_count" optional="show" />
+                <field name="min_selection" string="Requerido" optional="show" />
+                <field name="progress_percentage" widget="progressbar" />
+                <field name="completed_date" optional="show" />
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_student_requirement_status_form" model="ir.ui.view">
+        <field name="name">benglish.student.requirement.status.form</field>
+        <field name="model">benglish.student.requirement.status</field>
+        <field name="arch" type="xml">
+            <form string="Estado de Requisito">
+                <header>
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="locked,pending,in_progress,completed" />
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="display_name" readonly="1" />
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Contexto del Estudiante">
+                            <field name="student_id" />
+                            <field name="enrollment_id" />
+                            <field name="plan_id" />
+                            <field name="level_id" />
+                        </group>
+                        <group string="Requisito">
+                            <field name="requirement_id" />
+                            <field name="requirement_type" />
+                            <field name="subject_id" />
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Progreso">
+                            <field name="completed_count" />
+                            <field name="min_selection" />
+                            <field name="progress_percentage" widget="progressbar" />
+                        </group>
+                        <group string="Completado">
+                            <field name="completed_date" />
+                            <field name="completed_by_session_id" />
+                        </group>
+                    </group>
+                    <group>
+                        <field name="notes" />
+                    </group>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+    <record id="view_student_requirement_status_search" model="ir.ui.view">
+        <field name="name">benglish.student.requirement.status.search</field>
+        <field name="model">benglish.student.requirement.status</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Estado de Requisitos">
+                <field name="student_id" />
+                <field name="enrollment_id" />
+                <field name="level_id" />
+                <field name="subject_id" />
+                <separator />
+                <filter name="filter_locked" string="Bloqueado"
+                    domain="[('state', '=', 'locked')]" />
+                <filter name="filter_pending" string="Pendiente"
+                    domain="[('state', '=', 'pending')]" />
+                <filter name="filter_in_progress" string="En Progreso"
+                    domain="[('state', '=', 'in_progress')]" />
+                <filter name="filter_completed" string="Completado"
+                    domain="[('state', '=', 'completed')]" />
+                <separator />
+                <filter name="filter_course" string="COURSE"
+                    domain="[('requirement_type', '=', 'course')]" />
+                <filter name="filter_electives" string="ELECTIVES"
+                    domain="[('requirement_type', '=', 'electives')]" />
+                <filter name="filter_choice" string="CHOICE"
+                    domain="[('requirement_type', '=', 'choice')]" />
+                <filter name="filter_unlockable" string="UNLOCKABLE"
+                    domain="[('requirement_type', '=', 'unlockable')]" />
+                <separator />
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_student" string="Estudiante"
+                        context="{'group_by': 'student_id'}" />
+                    <filter name="group_enrollment" string="Inscripción"
+                        context="{'group_by': 'enrollment_id'}" />
+                    <filter name="group_level" string="Nivel"
+                        context="{'group_by': 'level_id'}" />
+                    <filter name="group_state" string="Estado"
+                        context="{'group_by': 'state'}" />
+                    <filter name="group_type" string="Tipo"
+                        context="{'group_by': 'requirement_type'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_student_requirement_status" model="ir.actions.act_window">
+        <field name="name">Estado de Requisitos</field>
+        <field name="res_model">benglish.student.requirement.status</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_student_requirement_status_search" />
+        <field name="context">{'search_default_group_student': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay estados de requisitos registrados
+            </p>
+            <p>
+                Los estados de requisitos se generan automáticamente al
+                crear o avanzar una inscripción de estudiante.
+            </p>
+        </field>
+    </record>
+
+</odoo>

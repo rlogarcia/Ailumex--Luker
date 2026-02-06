@@ -50,6 +50,13 @@
                                 style="background-color: #6c757d; color: white;">
                                 <field name="subject_count" widget="statinfo" string="Asignaturas" />
                             </button>
+                            <button name="%(benglish_academy.action_plan_requirement)d"
+                                type="action"
+                                class="oe_stat_button" icon="fa-check-square-o"
+                                context="{'search_default_plan_id': id}">
+                                <field name="requirement_count" widget="statinfo"
+                                    string="Requisitos" />
+                            </button>
                         </div>
                         <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger"
                             invisible="active" />
@@ -168,6 +175,39 @@
                                         options="{'no_create': False}" />
                                     <field name="hours" />
                                     <field name="active" widget="boolean_toggle" />
+                                </list>
+                            </field>
+                        </group>
+
+                        <group string="📋 Requisitos Académicos por Nivel">
+                            <p class="text-muted">
+                                Configure los requisitos que los estudiantes deben cumplir en cada
+                                nivel:
+                                COURSE (asignaturas obligatorias), ELECTIVES (electivas requeridas),
+                                CHOICE (elegir entre opciones) y UNLOCKABLE (desbloqueables al
+                                completar un COURSE).
+                            </p>
+                            <field name="requirement_ids" nolabel="1"
+                                context="{'default_plan_id': id, 'default_program_id': program_id}">
+                                <list editable="bottom"
+                                    decoration-success="requirement_type == 'course'"
+                                    decoration-info="requirement_type == 'electives'"
+                                    decoration-warning="requirement_type == 'choice'"
+                                    decoration-danger="requirement_type == 'unlockable'">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="level_id"
+                                        domain="[('program_id', '=', parent.program_id)]" />
+                                    <field name="requirement_type" />
+                                    <field name="subject_id"
+                                        invisible="requirement_type not in ('course', 'unlockable')" />
+                                    <field name="min_selection"
+                                        invisible="requirement_type not in ('electives', 'choice')" />
+                                    <field name="max_selection"
+                                        invisible="requirement_type not in ('electives', 'choice')" />
+                                    <field name="option_count" string="Opciones"
+                                        invisible="requirement_type != 'choice'" />
+                                    <field name="plan_id" invisible="1" />
+                                    <field name="program_id" invisible="1" />
                                 </list>
                             </field>
                         </group>

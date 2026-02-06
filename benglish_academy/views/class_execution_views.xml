@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- EJECUCIÓN DE CLASES                                            -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- LIST VIEW (Odoo 18 usa 'list' en lugar de 'tree') -->
+    <record id="view_class_execution_tree" model="ir.ui.view">
+        <field name="name">benglish.class.execution.list</field>
+        <field name="model">benglish.class.execution</field>
+        <field name="arch" type="xml">
+            <list string="Ejecuciones de Clase"
+                decoration-success="execution_state == 'taught' and is_closed"
+                decoration-warning="execution_state == 'taught' and not is_closed"
+                decoration-danger="execution_state in ('cancelled', 'no_show')"
+                decoration-muted="is_closed">
+                <field name="display_name" string="Clase" />
+                <field name="session_id" />
+                <field name="execution_date" />
+                <field name="teacher_id" optional="show" />
+                <field
+                    name="subject_id" optional="show" />
+                <field name="execution_state"
+                    widget="badge"
+                    decoration-success="execution_state == 'taught'"
+                    decoration-danger="execution_state in ('cancelled', 'no_show')" />
+                <field
+                    name="total_students" string="Estudiantes" />
+                <field name="present_count"
+                    string="Presentes" optional="show" />
+                <field name="is_closed"
+                    widget="boolean_toggle" />
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_class_execution_form" model="ir.ui.view">
+        <field name="name">benglish.class.execution.form</field>
+        <field name="model">benglish.class.execution</field>
+        <field name="arch" type="xml">
+            <form string="Ejecución de Clase">
+                <header>
+                    <button name="action_populate_attendance"
+                        string="Poblar Asistencia"
+                        type="object"
+                        class="btn-primary"
+                        invisible="is_closed or total_students > 0" />
+                    <button name="action_close_execution"
+                        string="Cerrar Ejecución"
+                        type="object"
+                        class="btn-primary"
+                        invisible="is_closed or execution_state != 'taught'"
+                        confirm="¿Está seguro de cerrar esta ejecución? Se generarán los registros de cumplimiento." />
+                    <button name="action_reopen"
+                        string="Reabrir"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="not is_closed"
+                        groups="benglish_academy.group_academic_coordinator" />
+                    <field name="is_closed" widget="statusbar"
+                        statusbar_visible="0,1"
+                        statusbar_labels="Abierta,Cerrada" />
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(action_student_compliance)d"
+                            type="action"
+                            class="oe_stat_button"
+                            icon="fa-check-circle"
+                            invisible="not is_closed"
+                            context="{'search_default_class_execution_id': id}">
+                            <field name="compliance_count" widget="statinfo" string="Cumplimientos" />
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="display_name" readonly="1" />
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Sesión Académica">
+                            <field name="session_id" />
+                            <field name="subject_id" />
+                            <field name="teacher_id" />
+                            <field name="execution_date" />
+                        </group>
+                        <group string="Estado de la Clase">
+                            <field name="execution_state"
+                                readonly="is_closed" />
+                            <field name="time_start" widget="float_time"
+                                invisible="execution_state != 'taught'" />
+                            <field name="time_end" widget="float_time"
+                                invisible="execution_state != 'taught'" />
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- Pestaña de Asistencia -->
+                        <page string="Asistencia" name="attendance">
+                            <field name="attendance_ids" readonly="is_closed">
+                                <list editable="bottom"
+                                    decoration-success="attendance_state == 'present'"
+                                    decoration-danger="attendance_state == 'absent'">
+                                    <field name="student_id" />
+                                    <field name="attendance_state"
+                                        widget="badge"
+                                        decoration-success="attendance_state == 'present'"
+                                        decoration-danger="attendance_state == 'absent'" />
+                                    <field name="notes" optional="show" />
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Pestaña de Bitácora / Incidentes -->
+                        <page string="Bitácora" name="logbook">
+                            <group>
+                                <group>
+                                    <field name="incident_type" />
+                                </group>
+                                <group>
+                                    <field name="total_students" readonly="1" />
+                                    <field name="present_count" readonly="1" />
+                                    <field name="absent_count" readonly="1" />
+                                </group>
+                            </group>
+                            <group>
+                                <field name="incident_notes"
+                                    placeholder="Registre observaciones, incidentes o novedades de la clase..." />
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" />
+                    <field name="activity_ids" />
+                    <field name="message_ids" />
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+    <record id="view_class_execution_search" model="ir.ui.view">
+        <field name="name">benglish.class.execution.search</field>
+        <field name="model">benglish.class.execution</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Ejecuciones">
+                <field name="display_name" string="Clase" />
+                <field name="session_id" />
+                <field name="teacher_id" />
+                <field name="subject_id" />
+                <separator />
+                <filter name="filter_taught" string="Dictada"
+                    domain="[('execution_state', '=', 'taught')]" />
+                <filter name="filter_cancelled" string="Cancelada"
+                    domain="[('execution_state', '=', 'cancelled')]" />
+                <filter name="filter_no_show" string="No Show"
+                    domain="[('execution_state', '=', 'no_show')]" />
+                <separator />
+                <filter name="filter_open" string="Abiertas"
+                    domain="[('is_closed', '=', False)]" />
+                <filter name="filter_closed" string="Cerradas"
+                    domain="[('is_closed', '=', True)]" />
+                <separator />
+                <filter name="filter_today" string="Hoy"
+                    domain="[('execution_date', '=', context_today().strftime('%%Y-%%m-%%d'))]" />
+                <filter name="filter_this_week" string="Esta Semana"
+                    domain="[('execution_date', '&gt;=', (context_today() - relativedelta(weekday=0, weeks=1)).strftime('%%Y-%%m-%%d')),
+                                 ('execution_date', '&lt;=', (context_today() + relativedelta(weekday=6)).strftime('%%Y-%%m-%%d'))]" />
+                <separator />
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_session" string="Sesión"
+                        context="{'group_by': 'session_id'}" />
+                    <filter name="group_teacher" string="Profesor"
+                        context="{'group_by': 'teacher_id'}" />
+                    <filter name="group_subject" string="Asignatura"
+                        context="{'group_by': 'subject_id'}" />
+                    <filter name="group_state" string="Estado"
+                        context="{'group_by': 'execution_state'}" />
+                    <filter name="group_date" string="Fecha"
+                        context="{'group_by': 'execution_date:week'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_class_execution" model="ir.actions.act_window">
+        <field name="name">Ejecuciones de Clase</field>
+        <field name="res_model">benglish.class.execution</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_class_execution_search" />
+        <field name="context">{'search_default_filter_open': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registre la ejecución de una clase
+            </p>
+            <p>
+                Registre si la clase fue dictada, cancelada o si hubo no-show.
+                Tome asistencia y cierre la ejecución para generar
+                los registros de cumplimiento académico.
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- ASISTENCIA A CLASE (standalone for reference)                  -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_class_execution_attendance_tree" model="ir.ui.view">
+        <field name="name">benglish.class.execution.attendance.list</field>
+        <field name="model">benglish.class.execution.attendance</field>
+        <field name="arch" type="xml">
+            <list string="Asistencia"
+                decoration-success="attendance_state == 'present'"
+                decoration-danger="attendance_state == 'absent'">
+                <field name="execution_id" />
+                <field name="student_id" />
+                <field name="attendance_state"
+                    widget="badge"
+                    decoration-success="attendance_state == 'present'"
+                    decoration-danger="attendance_state == 'absent'" />
+                <field name="notes" optional="show" />
+            </list>
+        </field>
+    </record>
+
+</odoo>

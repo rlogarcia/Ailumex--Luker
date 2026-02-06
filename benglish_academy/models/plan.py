@@ -190,6 +190,26 @@ class StudyPlan(models.Model):
         help="Asignaturas asociadas al plan (pueden ser una selección de las asignaturas del programa)",
     )
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # REQUISITOS ACADÉMICOS POR NIVEL
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    requirement_ids = fields.One2many(
+        comodel_name="benglish.plan.requirement",
+        inverse_name="plan_id",
+        string="Requisitos Académicos",
+        help="Requisitos académicos configurados por nivel para este plan. "
+             "Definen prerrequisitos (COURSE), electivas (ELECTIVES), "
+             "opciones (CHOICE) y desbloqueables (UNLOCKABLE) por nivel.",
+    )
+
+    requirement_count = fields.Integer(
+        string="Número de Requisitos",
+        compute="_compute_requirement_count",
+        store=True,
+        help="Total de requisitos académicos configurados en el plan",
+    )
+
     # Campos computados
     phase_count = fields.Integer(
         string="Número de Fases", compute="_compute_phase_count", store=True
@@ -307,6 +327,12 @@ class StudyPlan(models.Model):
         """Calcula el número de asignaturas asociadas."""
         for plan in self:
             plan.subject_count = len(plan.subject_ids)
+
+    @api.depends("requirement_ids")
+    def _compute_requirement_count(self):
+        """Calcula el número de requisitos académicos configurados."""
+        for plan in self:
+            plan.requirement_count = len(plan.requirement_ids)
 
     # Los antiguos métodos inverses han sido eliminados porque ahora las
     # relaciones pertenecen al plan directamente y se persisten.

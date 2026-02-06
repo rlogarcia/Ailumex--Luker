@@ -363,6 +363,26 @@ class Enrollment(models.Model):
         help="Detalle del progreso del estudiante en cada asignatura del plan. "
         "Cada registro representa el estado en una asignatura específica.",
     )
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # ESTADO DE REQUISITOS ACADÉMICOS
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    requirement_status_ids = fields.One2many(
+        comodel_name="benglish.student.requirement.status",
+        inverse_name="enrollment_id",
+        string="Estado de Requisitos",
+        help="Estado de cumplimiento de los requisitos académicos del plan "
+        "para este estudiante. Generados automáticamente desde los requisitos del plan.",
+    )
+
+    compliance_ids = fields.One2many(
+        comodel_name="benglish.student.compliance",
+        inverse_name="enrollment_id",
+        string="Cumplimientos Académicos",
+        help="Registro de cumplimientos académicos del estudiante.",
+    )
+
     total_subjects = fields.Integer(
         string="Total de Asignaturas",
         compute="_compute_progress_statistics",
@@ -1069,6 +1089,7 @@ class Enrollment(models.Model):
         """
         Genera registros de progreso para todas las asignaturas del plan.
         Se ejecuta automáticamente al crear una matrícula nueva.
+        También genera los estados de requisitos académicos (R22).
         """
         self.ensure_one()
 
@@ -1107,6 +1128,127 @@ class Enrollment(models.Model):
                 f"[ENROLLMENT] Generados {len(progress_vals)} registros de progreso "
                 f"para matrícula {self.code} - Plan: {self.plan_id.name}"
             )
+
+        # R22: Generar estados de requisitos para el nivel actual
+        self._generate_requirement_statuses()
+
+    def _generate_requirement_statuses(self, level=None):
+        """
+        Genera los estados de requisitos académicos para la matrícula (R22).
+        Se basa en los requisitos configurados en el plan de estudios.
+
+        Args:
+            level: Si se especifica, genera solo para ese nivel.
+                   Si no, genera para el nivel actual de la matrícula.
+        """
+        self.ensure_one()
+        RequirementStatus = self.env["benglish.student.requirement.status"]
+        target_level = level or self.current_level_id
+
+        if not target_level:
+            _logger.info(
+                f"[ENROLLMENT] No hay nivel para generar requisitos en matrícula {self.code}"
+            )
+            return
+
+        created = RequirementStatus.generate_for_enrollment(self, target_level)
+        if created:
+            self.message_post(
+                body=_(
+                    "Se generaron %d estados de requisitos para el nivel %s."
+                ) % (len(created), target_level.name),
+                subject=_("Requisitos Generados"),
+            )
+
+    def action_advance_level(self):
+        """
+        Avanza manualmente el nivel del estudiante (RF5 Día 2 Parte 2).
+        
+        Reglas:
+        - Actualiza Progreso (current_level_id, current_phase_id).
+        - Genera nuevos requisitos del nivel destino.
+        - No elimina ni modifica requisitos históricos.
+        """
+        self.ensure_one()
+
+        if not self.current_level_id:
+            raise ValidationError(
+                _("No hay nivel actual definido. No se puede avanzar.")
+            )
+
+        # Buscar siguiente nivel en la misma fase
+        next_level = self.env["benglish.level"].search(
+            [
+                ("phase_id", "=", self.current_phase_id.id),
+                ("sequence", ">", self.current_level_id.sequence),
+            ],
+            order="sequence ASC",
+            limit=1,
+        )
+
+        if not next_level:
+            # Buscar siguiente fase del programa
+            next_phase = self.env["benglish.phase"].search(
+                [
+                    ("program_id", "=", self.plan_id.program_id.id),
+                    ("sequence", ">", self.current_phase_id.sequence),
+                ],
+                order="sequence ASC",
+                limit=1,
+            )
+
+            if next_phase:
+                next_level = self.env["benglish.level"].search(
+                    [("phase_id", "=", next_phase.id)],
+                    order="sequence ASC",
+                    limit=1,
+                )
+                if next_level:
+                    self.write({
+                        "current_phase_id": next_phase.id,
+                        "current_level_id": next_level.id,
+                    })
+                else:
+                    raise ValidationError(
+                        _("La siguiente fase '%s' no tiene niveles configurados.")
+                        % next_phase.name
+                    )
+            else:
+                raise ValidationError(
+                    _("El estudiante ha completado todos los niveles del plan. "
+                      "No hay más niveles disponibles.")
+                )
+        else:
+            self.write({"current_level_id": next_level.id})
+
+        # Generar requisitos para el nuevo nivel (sin afectar los anteriores)
+        self._generate_requirement_statuses(level=next_level)
+
+        # Buscar primera asignatura del nuevo nivel
+        first_subject = self.env["benglish.subject"].search(
+            [("level_id", "=", next_level.id)],
+            order="sequence ASC",
+            limit=1,
+        )
+        if first_subject:
+            self.write({"current_subject_id": first_subject.id})
+
+        self.message_post(
+            body=_("Estudiante avanzado al nivel %s (fase %s).")
+            % (next_level.name, next_level.phase_id.name),
+            subject=_("Avance de Nivel"),
+        )
+
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Nivel Avanzado"),
+                "message": _("El estudiante ha avanzado al nivel %s.") % next_level.name,
+                "type": "success",
+                "sticky": False,
+            },
+        }
 
     def action_advance_to_next_subject(self):
         """

@@ -392,20 +392,6 @@ class Campus(models.Model):
             subcampus_capacity = sum(campus.subcampus_ids.mapped("capacity"))
             campus.total_capacity = (campus.capacity or 0) + subcampus_capacity
 
-    @api.constrains("code")
-    def _check_code_format(self):
-        """Valida el formato del código de la sede."""
-        for campus in self:
-            if (
-                campus.code
-                and not campus.code.replace("_", "").replace("-", "").isalnum()
-            ):
-                raise ValidationError(
-                    _(
-                        "El código de la sede solo puede contener letras, números, guiones y guiones bajos."
-                    )
-                )
-
     @api.constrains("schedule_start_time", "schedule_end_time")
     def _check_schedule_times(self):
         """

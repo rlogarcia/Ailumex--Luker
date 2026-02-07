@@ -190,20 +190,6 @@ class AcademicPhase(models.Model):
         for phase in self:
             phase.level_count = len(phase.level_ids)
 
-    @api.constrains("code")
-    def _check_code_format(self):
-        """Valida el formato del código de la fase."""
-        for phase in self:
-            if (
-                phase.code
-                and not phase.code.replace("_", "").replace("-", "").isalnum()
-            ):
-                raise ValidationError(
-                    _(
-                        "El código de la fase solo puede contener letras, números, guiones y guiones bajos."
-                    )
-                )
-
     def action_view_levels(self):
         """Acción para ver los niveles de la fase."""
         self.ensure_one()
@@ -254,17 +240,3 @@ class AcademicPhase(models.Model):
             _logger.info("⏭️  No se encontraron fases duplicadas para desactivar")
         
         return True
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Sobrescribe create para normalizar nombre a MAYÚSCULAS."""
-        for vals in vals_list:
-            if "name" in vals and vals["name"]:
-                vals["name"] = normalize_to_uppercase(vals["name"])
-        return super().create(vals_list)
-
-    def write(self, vals):
-        """Sobrescribe write para normalizar nombre a MAYÚSCULAS."""
-        if "name" in vals and vals["name"]:
-            vals["name"] = normalize_to_uppercase(vals["name"])
-        return super().write(vals)

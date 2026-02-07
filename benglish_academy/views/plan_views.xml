@@ -76,34 +76,22 @@
                         </div>
                         <group>
                             <group>
-                                <div>
-                                    <label for="name" class="oe_edit_only" />
-                                    <h2>
-                                        <field name="name" placeholder="Ej: Plan 2025" />
-                                    </h2>
-                                </div>
+                                <h2>
+                                    <field name="name" placeholder="Ej: Plan 2025" />
+                                </h2>
                             </group>
                             <group>
-                                <div>
-                                    <label for="modality" />
-                                    <field name="modality" widget="radio"
-                                        options="{'horizontal': true}" />
-                                </div>
+                                <field name="modality" widget="radio"
+                                    options="{'horizontal': true}" />
                             </group>
                         </group>
                         <group>
                             <group>
-                                <div>
-                                    <label for="program_id" />
-                                    <field name="program_id" options="{'no_create': True}"
-                                        placeholder="Seleccione Programa" />
-                                </div>
+                                <field name="program_id" options="{'no_create': True}"
+                                    placeholder="Seleccione Programa" />
                             </group>
                             <group>
-                                <div>
-                                    <label for="credits_value" />
-                                    <field name="credits_value" placeholder="Creditos" />
-                                </div>
+                                <field name="credits_value" placeholder="Creditos" />
                             </group>
                         </group>
                         <group string="📋 Control de Versiones">
@@ -180,13 +168,15 @@
                         </group>
 
                         <group string="📋 Requisitos Académicos por Nivel">
-                            <p class="text-muted">
-                                Configure los requisitos que los estudiantes deben cumplir en cada
-                                nivel:
-                                COURSE (asignaturas obligatorias), ELECTIVES (electivas requeridas),
-                                CHOICE (elegir entre opciones) y UNLOCKABLE (desbloqueables al
-                                completar un COURSE).
-                            </p>
+                            <group>
+                                <p>
+                                    Configure los requisitos que los estudiantes deben cumplir en
+                                    cada nivel:
+                                    COURSE (asignaturas obligatorias), ELECTIVES (electivas
+                                    requeridas), CHOICE (elegir entre opciones) y UNLOCKABLE
+                                    (desbloqueables al completar un COURSE).
+                                </p>
+                            </group>
                             <field name="requirement_ids" nolabel="1"
                                 context="{'default_plan_id': id, 'default_program_id': program_id}">
                                 <list editable="bottom"

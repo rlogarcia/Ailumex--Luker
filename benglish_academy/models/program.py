@@ -144,20 +144,6 @@ class AcademicProgram(models.Model):
         for program in self:
             program.plan_count = len(program.plan_ids)
 
-    @api.constrains("code")
-    def _check_code_format(self):
-        """Valida el formato del código del programa."""
-        for program in self:
-            if (
-                program.code
-                and not program.code.replace("_", "").replace("-", "").isalnum()
-            ):
-                raise ValidationError(
-                    _(
-                        "El código del programa solo puede contener letras, números, guiones y guiones bajos."
-                    )
-                )
-
     def action_view_plans(self):
         """Acción para ver los planes de estudio del programa."""
         self.ensure_one()

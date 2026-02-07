@@ -209,20 +209,6 @@ class ClassType(models.Model):
         ("code_unique", "UNIQUE(code)", "El código de la clase debe ser único."),
     ]
 
-    @api.constrains("code")
-    def _check_code_format(self):
-        """Valida el formato del código"""
-        for record in self:
-            if (
-                record.code
-                and not record.code.replace("-", "").replace("_", "").isalnum()
-            ):
-                raise ValidationError(
-                    _(
-                        "El código debe contener solo letras, números, guiones y guiones bajos."
-                    )
-                )
-
     @api.constrains("category", "bcheck_subcategory")
     def _check_bcheck_subcategory(self):
         """Valida que las clases B Check tengan subcategoría"""

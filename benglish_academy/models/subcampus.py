@@ -284,20 +284,6 @@ class SubCampus(models.Model):
         return result
 
     # Validaciones
-    @api.constrains("code")
-    def _check_code_format(self):
-        """Valida el formato del código del aula."""
-        for subcampus in self:
-            if (
-                subcampus.code
-                and not subcampus.code.replace("_", "").replace("-", "").isalnum()
-            ):
-                raise ValidationError(
-                    _(
-                        "El código del aula solo puede contener letras, números, guiones y guiones bajos."
-                    )
-                )
-
     @api.constrains("capacity")
     def _check_capacity(self):
         """Valida que la capacidad sea positiva."""

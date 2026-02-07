@@ -191,20 +191,6 @@ class AcademicLevel(models.Model):
             else:
                 level.plan_ids = False
 
-    @api.constrains("code")
-    def _check_code_format(self):
-        """Valida el formato del código del nivel."""
-        for level in self:
-            if (
-                level.code
-                and not level.code.replace("_", "").replace("-", "").isalnum()
-            ):
-                raise ValidationError(
-                    _(
-                        "El código del nivel solo puede contener letras, números, guiones y guiones bajos."
-                    )
-                )
-
     def action_view_subjects(self):
         """Acción para ver las asignaturas del nivel."""
         self.ensure_one()
@@ -297,17 +283,3 @@ class AcademicLevel(models.Model):
                 "sticky": False,
             },
         }
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Sobrescribe create para normalizar nombre a MAYÚSCULAS."""
-        for vals in vals_list:
-            if "name" in vals and vals["name"]:
-                vals["name"] = normalize_to_uppercase(vals["name"])
-        return super().create(vals_list)
-
-    def write(self, vals):
-        """Sobrescribe write para normalizar nombre a MAYÚSCULAS."""
-        if "name" in vals and vals["name"]:
-            vals["name"] = normalize_to_uppercase(vals["name"])
-        return super().write(vals)

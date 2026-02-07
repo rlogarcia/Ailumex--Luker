@@ -281,9 +281,12 @@ class EnrollmentWizard(models.TransientModel):
 
     @api.onchange("program_id")
     def _onchange_program_id(self):
-        """Limpia plan y asignatura al cambiar programa"""
-        self.plan_id = False
-        self.subject_id = False
+        """Limpia plan y asignatura al cambiar programa (solo si el plan no corresponde al nuevo programa)"""
+        if self.plan_id and self.plan_id.program_id != self.program_id:
+            self.plan_id = False
+            self.subject_id = False
+        elif not self.plan_id:
+            self.subject_id = False
 
     @api.onchange("plan_id")
     def _onchange_plan_id(self):

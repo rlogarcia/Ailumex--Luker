@@ -3507,10 +3507,43 @@ Contacto creado automáticamente desde el sistema académico.
             }
         }
 
+    def _next_unique_code(self, prefix, seq_code):
+        """Genera el siguiente código único basado en el prefijo y la secuencia."""
+        env = self.env
+        existing = self.search([("code", "ilike", f"{prefix}%")])
+        seq = env["ir.sequence"].search([("code", "=", seq_code)], limit=1)
+
+        if not existing:
+            if seq:
+                seq.number_next = 1
+            return f"{prefix}1"
+
+        max_n = 0
+        for rec in existing:
+            if not rec.code:
+                continue
+            m = re.search(r"(\d+)$", rec.code)
+            if m:
+                try:
+                    n = int(m.group(1))
+                except Exception:
+                    n = 0
+                if n > max_n:
+                    max_n = n
+
+        next_n = max_n + 1
+        if seq and (not seq.number_next or seq.number_next <= next_n):
+            seq.number_next = next_n + 1
+        return f"{prefix}{next_n}"
+
     @api.model_create_multi
     def create(self, vals_list):
-        """Sobrescribe create para normalizar nombres a MAYÚSCULAS."""
+        """Sobrescribe create para normalizar nombres a MAYÚSCULAS y generar código automático."""
         for vals in vals_list:
+            # Generar código automático si no se proporciona
+            if vals.get("code", "/") == "/":
+                vals["code"] = self._next_unique_code("EST-", "benglish.student")
+            
             # Normalizar nombres a mayúsculas
             if "first_name" in vals and vals["first_name"]:
                 vals["first_name"] = normalize_to_uppercase(vals["first_name"])

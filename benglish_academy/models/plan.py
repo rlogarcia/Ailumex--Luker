@@ -337,17 +337,6 @@ class StudyPlan(models.Model):
     # Los antiguos métodos inverses han sido eliminados porque ahora las
     # relaciones pertenecen al plan directamente y se persisten.
 
-    @api.constrains("code")
-    def _check_code_format(self):
-        """Valida el formato del código del plan."""
-        for plan in self:
-            if plan.code and not plan.code.replace("_", "").replace("-", "").isalnum():
-                raise ValidationError(
-                    _(
-                        "El código del plan solo puede contener letras, números, guiones y guiones bajos."
-                    )
-                )
-
     def action_view_phases(self):
         """Acción para ver las fases compartidas del programa."""
         self.ensure_one()

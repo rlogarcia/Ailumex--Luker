@@ -377,15 +377,6 @@ class Group(models.Model):
     #         else:
     #             record.next_session_datetime = False
     
-    @api.constrains('code')
-    def _check_code_format(self):
-        """Valida el formato del código"""
-        for record in self:
-            if record.code and not record.code.replace('-', '').replace('_', '').isalnum():
-                raise ValidationError(_(
-                    'El código debe contener solo letras, números, guiones y guiones bajos.'
-                ))
-    
     @api.constrains('start_date', 'end_date')
     def _check_dates(self):
         """Valida que la fecha de finalización sea posterior a la de inicio"""

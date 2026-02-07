@@ -43,12 +43,13 @@
                   action="action_benglish_subject"
                   sequence="50" />
 
-            <menuitem id="menu_plan_requirements"
+            <!--<menuitem
+            id="menu_plan_requirements"
                   name="Requisitos Académicos"
                   parent="menu_benglish_curricular"
                   action="action_plan_requirement"
                   sequence="60"
-                  groups="group_academic_coordinator,group_academic_manager" />
+                  groups="group_academic_coordinator,group_academic_manager" />-->
 
             <!-- Submenú: Institucional -->
             <menuitem id="menu_benglish_institutional"

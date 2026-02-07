@@ -384,20 +384,6 @@ class Subject(models.Model):
             else:
                 subject.plan_ids = False
 
-    @api.constrains("code")
-    def _check_code_format(self):
-        """Valida el formato del código de la asignatura."""
-        for subject in self:
-            if (
-                subject.code
-                and not subject.code.replace("_", "").replace("-", "").isalnum()
-            ):
-                raise ValidationError(
-                    _(
-                        "El código de la asignatura solo puede contener letras, números, guiones y guiones bajos."
-                    )
-                )
-
     @api.constrains("prerequisite_ids")
     def _check_prerequisite_recursion(self):
         """
@@ -764,21 +750,3 @@ class Subject(models.Model):
         except Exception:
             # Evitar que errores aquí bloqueen la carga del módulo
             pass
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Sobrescribe create para normalizar nombre y alias a MAYÚSCULAS."""
-        for vals in vals_list:
-            if "name" in vals and vals["name"]:
-                vals["name"] = normalize_to_uppercase(vals["name"])
-            if "alias" in vals and vals["alias"]:
-                vals["alias"] = normalize_to_uppercase(vals["alias"])
-        return super().create(vals_list)
-
-    def write(self, vals):
-        """Sobrescribe write para normalizar nombre y alias a MAYÚSCULAS."""
-        if "name" in vals and vals["name"]:
-            vals["name"] = normalize_to_uppercase(vals["name"])
-        if "alias" in vals and vals["alias"]:
-            vals["alias"] = normalize_to_uppercase(vals["alias"])
-        return super().write(vals)

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- ═══════════════════════════════════════════════════════════════════════════
+             DATOS DE EJEMPLO - PLANES COMERCIALES
+             Basados en la reunión del 11 de febrero 2026
+             ═══════════════════════════════════════════════════════════════════════════ -->
+
+        <!-- 
+            IMPORTANTE: Estos son datos de ejemplo que puedes personalizar.
+            Se crean con noupdate="0" para que se puedan actualizar en cada instalación.
+            Cambia a noupdate="1" si quieres que sean datos iniciales que no se sobreescriban.
+        -->
+
+        <!-- ═══════════════════════════════════════════════════════════════════════════
+             PLAN PLUS - 78 asignaturas
+             Selección: 1 por nivel = 24
+             Oral Test: 1 cada 4 niveles = 6
+             Electivas: 2 por nivel = 48
+             Total: 78
+             ═══════════════════════════════════════════════════════════════════════════ -->
+        <!-- 
+        <record id="commercial_plan_plus" model="benglish.commercial.plan">
+            <field name="name">PLAN PLUS</field>
+            <field name="code">CP-001</field>
+            <field name="commercial_value">1</field>
+            <field name="level_start">1</field>
+            <field name="level_end">24</field>
+            <field name="description">Plan básico con 78 asignaturas. Incluye 24 selecciones (1 por nivel), 6
+        oral tests (1 cada 4 niveles) y 48 electivas (2 por nivel).</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="commercial_plan_plus_line_selection" model="benglish.commercial.plan.line">
+            <field name="plan_id" ref="commercial_plan_plus"/>
+            <field name="subject_type">selection</field>
+            <field name="calculation_mode">per_level</field>
+            <field name="quantity_per_level">1</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <record id="commercial_plan_plus_line_oral" model="benglish.commercial.plan.line">
+            <field name="plan_id" ref="commercial_plan_plus"/>
+            <field name="subject_type">oral_test</field>
+            <field name="calculation_mode">per_x_levels</field>
+            <field name="levels_interval">4</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <record id="commercial_plan_plus_line_elective" model="benglish.commercial.plan.line">
+            <field name="plan_id" ref="commercial_plan_plus"/>
+            <field name="subject_type">elective</field>
+            <field name="calculation_mode">per_level</field>
+            <field name="quantity_per_level">2</field>
+            <field name="use_phase_pool">True</field>
+            <field name="sequence">30</field>
+        </record>
+        -->
+
+        <!-- ═══════════════════════════════════════════════════════════════════════════
+             PLAN GOLD - 126 asignaturas
+             Selección: 1 por nivel = 24
+             Oral Test: 1 cada 4 niveles = 6
+             Electivas: 4 por nivel = 96
+             Total: 126
+             ═══════════════════════════════════════════════════════════════════════════ -->
+        <!--
+        <record id="commercial_plan_gold" model="benglish.commercial.plan">
+            <field name="name">PLAN GOLD</field>
+            <field name="code">CP-002</field>
+            <field name="commercial_value">3</field>
+            <field name="level_start">1</field>
+            <field name="level_end">24</field>
+            <field name="description">Plan premium con 126 asignaturas. Incluye 24 selecciones (1 por nivel), 6
+        oral tests (1 cada 4 niveles) y 96 electivas (4 por nivel).</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="commercial_plan_gold_line_selection" model="benglish.commercial.plan.line">
+            <field name="plan_id" ref="commercial_plan_gold"/>
+            <field name="subject_type">selection</field>
+            <field name="calculation_mode">per_level</field>
+            <field name="quantity_per_level">1</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <record id="commercial_plan_gold_line_oral" model="benglish.commercial.plan.line">
+            <field name="plan_id" ref="commercial_plan_gold"/>
+            <field name="subject_type">oral_test</field>
+            <field name="calculation_mode">per_x_levels</field>
+            <field name="levels_interval">4</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <record id="commercial_plan_gold_line_elective" model="benglish.commercial.plan.line">
+            <field name="plan_id" ref="commercial_plan_gold"/>
+            <field name="subject_type">elective</field>
+            <field name="calculation_mode">per_level</field>
+            <field name="quantity_per_level">4</field>
+            <field name="use_phase_pool">True</field>
+            <field name="sequence">30</field>
+        </record>
+        -->
+
+        <!-- ═══════════════════════════════════════════════════════════════════════════
+             MÓDULO - 42 asignaturas (8 niveles)
+             Selección: 1 por nivel = 8
+             Oral Test: 1 cada 4 niveles = 2
+             Electivas: 4 por nivel = 32
+             Total: 42
+             ═══════════════════════════════════════════════════════════════════════════ -->
+        <!--
+        <record id="commercial_plan_modulo" model="benglish.commercial.plan">
+            <field name="name">MÓDULO</field>
+            <field name="code">CP-003</field>
+            <field name="commercial_value">1</field>
+            <field name="level_start">1</field>
+            <field name="level_end">8</field>
+            <field name="description">Plan modular con 42 asignaturas en 8 niveles. Incluye 8 selecciones (1
+        por nivel), 2 oral tests (1 cada 4 niveles) y 32 electivas (4 por nivel).</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="commercial_plan_modulo_line_selection" model="benglish.commercial.plan.line">
+            <field name="plan_id" ref="commercial_plan_modulo"/>
+            <field name="subject_type">selection</field>
+            <field name="calculation_mode">per_level</field>
+            <field name="quantity_per_level">1</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <record id="commercial_plan_modulo_line_oral" model="benglish.commercial.plan.line">
+            <field name="plan_id" ref="commercial_plan_modulo"/>
+            <field name="subject_type">oral_test</field>
+            <field name="calculation_mode">per_x_levels</field>
+            <field name="levels_interval">4</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <record id="commercial_plan_modulo_line_elective" model="benglish.commercial.plan.line">
+            <field name="plan_id" ref="commercial_plan_modulo"/>
+            <field name="subject_type">elective</field>
+            <field name="calculation_mode">per_level</field>
+            <field name="quantity_per_level">4</field>
+            <field name="use_phase_pool">True</field>
+            <field name="sequence">30</field>
+        </record>
+        -->
+
+    </data>
+</odoo>

@@ -82,7 +82,11 @@
                         </div>
                         <group>
                             <group string="Estudiante">
-                                <field name="student_id" required="1" options="{'no_create': True}" />
+                                <!-- Campo invisible para calcular estudiantes disponibles -->
+                                <field name="available_student_ids" invisible="1" />
+                                <field name="student_id" required="1"
+                                    domain="[('id', 'in', available_student_ids)]"
+                                    options="{'no_create': True}" />
                                 <field name="student_name" readonly="1" />
                                 <field name="student_email" readonly="1" />
                             </group>

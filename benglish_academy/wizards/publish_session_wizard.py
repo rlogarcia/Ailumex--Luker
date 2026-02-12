@@ -5,8 +5,14 @@ from odoo.exceptions import UserError
 
 
 class PublishSessionWizard(models.TransientModel):
+    """
+    Wizard para crear sesiones académicas rápidamente.
+    
+    NOTA: El campo template_id fue eliminado junto con el modelo benglish.agenda.template.
+    Ahora se usa subject_id directamente para especificar la asignatura de la sesión.
+    """
     _name = "benglish.publish.session.wizard"
-    _description = "Publicar Clase por Tipo"
+    _description = "Publicar Clase"
 
     agenda_id = fields.Many2one(
         comodel_name="benglish.academic.agenda",
@@ -19,11 +25,12 @@ class PublishSessionWizard(models.TransientModel):
         string="Programa",
         required=True,
     )
-    template_id = fields.Many2one(
-        comodel_name="benglish.agenda.template",
-        string="Plantilla",
+    subject_id = fields.Many2one(
+        comodel_name="benglish.subject",
+        string="Asignatura",
         required=True,
-        domain="['|', ('program_id', '=', False), ('program_id', '=', program_id)]",
+        domain="[('program_id', '=', program_id), ('active', '=', True)]",
+        help="Asignatura para esta sesión",
     )
     audience_phase_id = fields.Many2one(
         comodel_name="benglish.phase",
@@ -113,10 +120,10 @@ class PublishSessionWizard(models.TransientModel):
     def action_publish(self):
         self.ensure_one()
 
-        # Validación: Template debe corresponder al programa
-        if self.template_id.program_id and self.template_id.program_id != self.program_id:
+        # Validación: Asignatura debe corresponder al programa
+        if self.subject_id.program_id and self.subject_id.program_id != self.program_id:
             raise UserError(
-                _("La plantilla seleccionada no corresponde al programa indicado.")
+                _("La asignatura seleccionada no corresponde al programa indicado.")
             )
 
         # Validación: Modalidad presencial/híbrida requiere aula
@@ -127,7 +134,7 @@ class PublishSessionWizard(models.TransientModel):
 
         # Validación: Modalidad virtual/híbrida requiere enlace de reunión
         if self.delivery_mode in ("virtual", "hybrid"):
-            # Aceptar meeting_link del wizard o del docente (teacher_meeting_link)
+            # Aceptar meeting_link del wizard o del docente
             teacher_link = self.teacher_id.meeting_link if self.teacher_id else False
             
             if not self.meeting_link and not teacher_link:
@@ -138,21 +145,10 @@ class PublishSessionWizard(models.TransientModel):
                       "• Seleccionar un docente que tenga configurado su enlace de reunión")
                 )
 
-        # Validación: Oral Tests requieren ID de reunión del docente
-        if self.template_id.subject_category == "oral_test":
-            teacher_meeting_id = self.teacher_id.meeting_id if self.teacher_id else False
-            
-            if not teacher_meeting_id:
-                raise UserError(
-                    _("Para plantillas de tipo Oral Test, el docente debe tener configurado su ID de reunión.\n\n"
-                      "Docente seleccionado: %s\n"
-                      "Por favor, configura el ID de reunión en la ficha del docente.") % self.teacher_id.name
-                )
-
         vals = {
             "agenda_id": self.agenda_id.id,
             "program_id": self.program_id.id,
-            "template_id": self.template_id.id,
+            "subject_id": self.subject_id.id,
             "audience_phase_id": self.audience_phase_id.id if self.audience_phase_id else False,
             "audience_unit_from": self.audience_unit_from or False,
             "audience_unit_to": self.audience_unit_to or False,

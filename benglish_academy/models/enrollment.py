@@ -90,18 +90,103 @@ class Enrollment(models.Model):
     program_id = fields.Many2one(
         comodel_name="benglish.program",
         string="Programa",
+        required=True,  # ✅ OBLIGATORIO: Define la estructura curricular
         tracking=True,
-        help="Programa académico del estudiante",
+        help="Programa académico del estudiante. Define la estructura curricular "
+        "(fases, niveles, asignaturas) que el estudiante puede cursar.",
     )
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PLAN COMERCIAL (NUEVA LÓGICA - Feb 2026)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # El Plan Comercial define la ESTRUCTURA de asignaturas que el estudiante
+    # debe ver (cantidades por tipo), NO una lista fija de asignaturas.
+    # El progreso del estudiante se calcula dinámicamente según lo que realmente cursa.
+    # 
+    # REEMPLAZA a benglish.plan como el mecanismo principal de "qué ve el estudiante"
+
+    commercial_plan_id = fields.Many2one(
+        comodel_name="benglish.commercial.plan",
+        string="Plan Comercial",
+        domain="[('program_id', '=', program_id), ('active', '=', True)]",
+        required=True,  # ✅ OBLIGATORIO: Define qué ve el estudiante
+        tracking=True,
+        index=True,
+        help="Plan comercial que define la estructura de asignaturas que el estudiante "
+        "debe cursar (cantidades por tipo: selección, electivas, oral tests, etc.). "
+        "Define CUÁNTAS asignaturas de cada tipo debe ver el estudiante por nivel. "
+        "Ejemplos: Plan Plus (78), Plan Gold (126), Módulo (42).",
+    )
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PLAN DE ESTUDIOS (LEGACY - Mantener para compatibilidad)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # DEPRECADO: Usar commercial_plan_id para nuevas matrículas
+    # Se mantiene para matrículas existentes que aún no migran al nuevo modelo
+
     plan_id = fields.Many2one(
         comodel_name="benglish.plan",
-        string="Plan de Estudios",
+        string="Plan de Estudios (Legacy)",
         domain="[('program_id', '=', program_id)]",
-        required=True,  # ✅ OBLIGATORIO: La matrícula ES al plan
+        required=False,  # ❌ YA NO OBLIGATORIO - Deprecado
         tracking=True,
-        help="Plan de estudios al que el estudiante está matriculado. "
-        "Este es el campo principal de la matrícula. "
-        "El plan se congela al momento de la matrícula y define todo el contenido académico.",
+        help="[DEPRECADO] Plan de estudios estático. "
+        "Para nuevas matrículas usar commercial_plan_id. "
+        "Se mantiene para compatibilidad con datos existentes.",
+    )
+
+    # Campos computados desde el Plan Comercial
+    commercial_total_subjects = fields.Integer(
+        string="Total Asignaturas (Comercial)",
+        related="commercial_plan_id.total_subjects",
+        store=True,
+        help="Total de asignaturas que debe cursar según el plan comercial",
+    )
+
+    commercial_total_electives = fields.Integer(
+        string="Total Electivas (Comercial)",
+        related="commercial_plan_id.total_electives",
+        store=True,
+        help="Total de electivas según el plan comercial",
+    )
+
+    commercial_total_oral_tests = fields.Integer(
+        string="Total Oral Tests (Comercial)",
+        related="commercial_plan_id.total_oral_test",
+        store=True,
+        help="Total de oral tests según el plan comercial",
+    )
+
+    # Relación con los registros de progreso por nivel (Plan Comercial)
+    commercial_progress_ids = fields.One2many(
+        comodel_name="benglish.student.commercial.progress",
+        inverse_name="enrollment_id",
+        string="Progreso por Nivel (Plan Comercial)",
+        help="Detalle del progreso del estudiante por cada nivel según el plan comercial. "
+        "Se genera automáticamente cuando se asigna un plan comercial.",
+    )
+
+    # Totales consolidados del progreso comercial
+    commercial_total_expected = fields.Integer(
+        string="Total Esperado (Comercial)",
+        compute="_compute_commercial_progress_totals",
+        store=True,
+        help="Total de asignaturas esperadas según el plan comercial",
+    )
+
+    commercial_total_completed = fields.Integer(
+        string="Total Completado (Comercial)",
+        compute="_compute_commercial_progress_totals",
+        store=True,
+        help="Total de asignaturas completadas",
+    )
+
+    commercial_progress_percentage = fields.Float(
+        string="% Avance (Comercial)",
+        compute="_compute_commercial_progress_totals",
+        store=True,
+        digits=(5, 2),
+        help="Porcentaje de avance según el plan comercial",
     )
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -680,6 +765,24 @@ class Enrollment(models.Model):
                 enrollment.failed_subjects = 0
                 enrollment.completion_percentage = 0.0
 
+    @api.depends("commercial_progress_ids.expected_total", "commercial_progress_ids.completed_total")
+    def _compute_commercial_progress_totals(self):
+        """
+        Calcula los totales consolidados del progreso según el plan comercial.
+        Este progreso es DINÁMICO: se actualiza según las clases realmente cumplidas.
+        """
+        for enrollment in self:
+            total_expected = sum(enrollment.commercial_progress_ids.mapped('expected_total'))
+            total_completed = sum(enrollment.commercial_progress_ids.mapped('completed_total'))
+            
+            enrollment.commercial_total_expected = total_expected
+            enrollment.commercial_total_completed = total_completed
+            
+            if total_expected > 0:
+                enrollment.commercial_progress_percentage = (total_completed / total_expected) * 100
+            else:
+                enrollment.commercial_progress_percentage = 0.0
+
     @api.depends("student_id", "subject_id", "student_id.approved_subject_ids")
     def _compute_prerequisites_met(self):
         """
@@ -1033,20 +1136,41 @@ class Enrollment(models.Model):
         if enrollment.group_id:
             enrollment._update_group_student_count()
 
-        # Auto-generar registros de progreso para todas las asignaturas del plan
+        # Auto-generar registros de progreso para todas las asignaturas del plan (legacy)
         if enrollment.plan_id and not enrollment.enrollment_progress_ids:
             enrollment._generate_progress_records()
+
+        # ═══════════════════════════════════════════════════════════════════════
+        # GENERACIÓN AUTOMÁTICA DE PROGRESO COMERCIAL (Feb 2026)
+        # ═══════════════════════════════════════════════════════════════════════
+        if enrollment.commercial_plan_id and not enrollment.commercial_progress_ids:
+            enrollment._generate_commercial_progress()
 
         return enrollment
 
     def write(self, vals):
-        """Actualiza contadores al modificar estado"""
+        """Actualiza contadores al modificar estado y regenera progreso comercial si cambia el plan."""
+        # Guardar los planes comerciales anteriores para comparar
+        old_commercial_plans = {rec.id: rec.commercial_plan_id.id for rec in self}
+        
         result = super(Enrollment, self).write(vals)
 
         # Si cambia el estado, actualizar contadores
         if "state" in vals or "attendance_type" in vals:
             for enrollment in self:
                 enrollment._update_group_student_count()
+
+        # ═══════════════════════════════════════════════════════════════════════
+        # REGENERAR PROGRESO COMERCIAL SI CAMBIA EL PLAN (Feb 2026)
+        # ═══════════════════════════════════════════════════════════════════════
+        if "commercial_plan_id" in vals:
+            for enrollment in self:
+                old_plan_id = old_commercial_plans.get(enrollment.id)
+                new_plan_id = enrollment.commercial_plan_id.id if enrollment.commercial_plan_id else False
+                
+                # Solo regenerar si el plan realmente cambió
+                if old_plan_id != new_plan_id and new_plan_id:
+                    enrollment._generate_commercial_progress()
 
         return result
 
@@ -1090,6 +1214,9 @@ class Enrollment(models.Model):
         Genera registros de progreso para todas las asignaturas del plan.
         Se ejecuta automáticamente al crear una matrícula nueva.
         También genera los estados de requisitos académicos (R22).
+        
+        NUEVO (Feb 2026): También genera registros de progreso del Plan Comercial
+        si la matrícula tiene un plan comercial asignado.
         """
         self.ensure_one()
 
@@ -1131,6 +1258,9 @@ class Enrollment(models.Model):
 
         # R22: Generar estados de requisitos para el nivel actual
         self._generate_requirement_statuses()
+        
+        # NUEVO (Feb 2026): Generar progreso del Plan Comercial
+        self._generate_commercial_progress()
 
     def _generate_requirement_statuses(self, level=None):
         """
@@ -1158,6 +1288,85 @@ class Enrollment(models.Model):
                     "Se generaron %d estados de requisitos para el nivel %s."
                 ) % (len(created), target_level.name),
                 subject=_("Requisitos Generados"),
+            )
+
+    def _generate_commercial_progress(self):
+        """
+        Genera los registros de progreso del Plan Comercial para la matrícula.
+        Se ejecuta automáticamente al crear la matrícula si tiene plan comercial.
+        
+        NUEVA LÓGICA (Feb 2026):
+        - Usa el modelo benglish.student.commercial.progress
+        - Crea un registro por cada nivel del plan comercial
+        - Define las cantidades esperadas según la configuración del plan
+        """
+        self.ensure_one()
+        
+        if not self.commercial_plan_id:
+            _logger.debug(
+                f"No se genera progreso comercial para matrícula {self.code}: "
+                "no tiene plan comercial asignado"
+            )
+            return
+        
+        CommercialProgress = self.env["benglish.student.commercial.progress"]
+        commercial_plan = self.commercial_plan_id
+        
+        # Obtener los niveles del plan comercial
+        levels = commercial_plan.level_ids
+        
+        if not levels:
+            _logger.warning(
+                f"Plan comercial {commercial_plan.name} no tiene niveles configurados"
+            )
+            return
+        
+        progress_records = []
+        
+        for idx, level in enumerate(levels, start=commercial_plan.level_start):
+            # Obtener requisitos para este nivel desde el plan comercial
+            requirements = commercial_plan.get_requirements_for_level(idx)
+            
+            # Verificar si ya existe un registro de progreso para este nivel
+            existing = CommercialProgress.search([
+                ("enrollment_id", "=", self.id),
+                ("level_id", "=", level.id),
+            ], limit=1)
+            
+            if existing:
+                # Actualizar los valores esperados si cambiaron
+                existing.write({
+                    'expected_selection': requirements.get('selection', 0),
+                    'expected_oral_test': requirements.get('oral_test', 0),
+                    'expected_electives': requirements.get('elective', 0),
+                    'expected_regular': requirements.get('regular', 0),
+                    'expected_bskills': requirements.get('bskills', 0),
+                })
+            else:
+                # Crear nuevo registro de progreso
+                progress_records.append({
+                    'enrollment_id': self.id,
+                    'level_id': level.id,
+                    'expected_selection': requirements.get('selection', 0),
+                    'expected_oral_test': requirements.get('oral_test', 0),
+                    'expected_electives': requirements.get('elective', 0),
+                    'expected_regular': requirements.get('regular', 0),
+                    'expected_bskills': requirements.get('bskills', 0),
+                })
+        
+        if progress_records:
+            CommercialProgress.create(progress_records)
+            _logger.info(
+                f"[ENROLLMENT] Generados {len(progress_records)} registros de progreso comercial "
+                f"para matrícula {self.code} - Plan Comercial: {commercial_plan.name}"
+            )
+            
+            self.message_post(
+                body=_(
+                    "Se generaron %d registros de progreso para el Plan Comercial '%s' "
+                    "(Total asignaturas: %d)"
+                ) % (len(progress_records), commercial_plan.name, commercial_plan.total_subjects),
+                subject=_("Progreso Comercial Generado"),
             )
 
     def action_advance_level(self):
@@ -2029,5 +2238,47 @@ class Enrollment(models.Model):
             },
         }
 
+    def action_view_commercial_progress(self):
+        """
+        Abre la vista de progreso comercial del estudiante por nivel.
+        Muestra el detalle de asignaturas esperadas vs completadas.
+        """
+        self.ensure_one()
+        if not self.commercial_plan_id:
+            raise ValidationError(_("Esta matrícula no tiene un plan comercial asignado."))
+        
+        return {
+            "name": _("Progreso Comercial: %s") % self.student_id.name,
+            "type": "ir.actions.act_window",
+            "res_model": "benglish.student.commercial.progress",
+            "view_mode": "list,form",
+            "domain": [("enrollment_id", "=", self.id)],
+            "context": {
+                "default_enrollment_id": self.id,
+                "create": False,
+            },
+        }
+
+    def action_regenerate_commercial_progress(self):
+        """
+        Regenera los registros de progreso comercial para esta matrícula.
+        Útil si el plan comercial cambió o si hay inconsistencias.
+        """
+        self.ensure_one()
+        if not self.commercial_plan_id:
+            raise ValidationError(_("Esta matrícula no tiene un plan comercial asignado."))
+        
+        self._generate_commercial_progress()
+        
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Progreso Regenerado"),
+                "message": _("Se regeneraron los registros de progreso comercial."),
+                "type": "success",
+                "sticky": False,
+            }
+        }
 
 

@@ -84,18 +84,9 @@ class AcademicLevel(models.Model):
         string="Programa",
         related="phase_id.program_id",
         store=True,
-        help="Programa asociado (a través de la fase) - compartido por todos los planes",
+        help="Programa asociado (a través de la fase)",
     )
-    plan_ids = fields.Many2many(
-        comodel_name="benglish.plan",
-        relation="benglish_level_plan_rel",
-        column1="level_id",
-        column2="plan_id",
-        string="Planes de Estudio",
-        compute="_compute_plan_ids",
-        store=False,
-        help="Planes que usan este nivel (todos los del programa)",
-    )
+
     subject_ids = fields.One2many(
         comodel_name="benglish.subject",
         inverse_name="level_id",
@@ -111,11 +102,8 @@ class AcademicLevel(models.Model):
     # Restricciones SQL
     _sql_constraints = [
         ("code_unique", "UNIQUE(code)", "El código del nivel debe ser único."),
-        (
-            "sequence_phase_unique",
-            "UNIQUE(phase_id, sequence)",
-            "La secuencia debe ser única dentro de la fase.",
-        ),
+        # NOTA: Se elimina la restricción de secuencia única para dar flexibilidad
+        # El campo sequence es solo para ordenar, no necesita ser único
     ]
 
     def _next_unique_code(self, prefix, seq_code):
@@ -179,17 +167,6 @@ class AcademicLevel(models.Model):
         """Calcula el número de asignaturas asociadas."""
         for level in self:
             level.subject_count = len(level.subject_ids)
-
-    @api.depends("phase_id.program_id")
-    def _compute_plan_ids(self):
-        """Calcula los planes que usan este nivel (todos los del programa)."""
-        for level in self:
-            if level.phase_id and level.phase_id.program_id:
-                level.plan_ids = self.env["benglish.plan"].search(
-                    [("program_id", "=", level.phase_id.program_id.id)]
-                )
-            else:
-                level.plan_ids = False
 
     def action_view_subjects(self):
         """Acción para ver las asignaturas del nivel."""

@@ -148,9 +148,27 @@ class Student(models.Model):
     address = fields.Text(
         string="Dirección", help="Dirección de residencia del estudiante"
     )
-    city = fields.Char(string="Ciudad", help="Ciudad de residencia")
+    # Campos de ubicación con filtros en cascada: País -> Departamento -> Ciudad
     country_id = fields.Many2one(
-        comodel_name="res.country", string="País", help="País de residencia"
+        comodel_name="res.country",
+        string="País",
+        help="País de residencia",
+    )
+    state_id = fields.Many2one(
+        comodel_name="res.country.state",
+        string="Departamento/Estado",
+        domain="[('country_id', '=', country_id)]",
+        help="Departamento o estado del país de residencia",
+    )
+    city_id = fields.Many2one(
+        comodel_name="res.city",
+        string="Ciudad",
+        domain="[('state_id', '=', state_id)]",
+        help="Ciudad de residencia",
+    )
+    city = fields.Char(
+        string="Barrio/Zona",
+        help="Barrio o zona específica dentro de la ciudad",
     )
 
     #  CONTACTO DE EMERGENCIA
@@ -199,7 +217,19 @@ class Student(models.Model):
             self.responsible_phone = False
             self.responsible_relationship = False
 
-    # Note: `city` is a Many2one to `res.city`. Keep the field name `city` as requested.
+    # Onchange para filtros en cascada: País -> Departamento -> Ciudad
+    @api.onchange("country_id")
+    def _onchange_country_id(self):
+        """Limpia el departamento y ciudad cuando cambia el país."""
+        if self.state_id and self.state_id.country_id != self.country_id:
+            self.state_id = False
+            self.city_id = False
+
+    @api.onchange("state_id")
+    def _onchange_state_id(self):
+        """Limpia la ciudad cuando cambia el departamento."""
+        if self.city_id and self.city_id.state_id != self.state_id:
+            self.city_id = False
 
     #  INFORMACIÓN ACADÉMICA
     #
@@ -216,14 +246,30 @@ class Student(models.Model):
         help="Programa académico en el que está inscrito el estudiante. "
         "Se actualiza automáticamente al aprobar una matrícula.",
     )
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PLAN COMERCIAL (NUEVO - Feb 2026)
+    # ═══════════════════════════════════════════════════════════════════════════
+    commercial_plan_id = fields.Many2one(
+        comodel_name="benglish.commercial.plan",
+        string="Plan Comercial",
+        readonly=False,
+        tracking=True,
+        domain="[('program_id', '=', program_id), ('state', '=', 'active')]",
+        help="Plan comercial que define las cantidades de asignaturas que debe cursar. "
+        "Se actualiza automáticamente al aprobar una matrícula.",
+    )
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PLAN DE ESTUDIOS (LEGACY - Deprecado Feb 2026)
+    # ═══════════════════════════════════════════════════════════════════════════
     plan_id = fields.Many2one(
         comodel_name="benglish.plan",
-        string="Plan de Estudio Actual",
-        readonly=False,  # Editable para pre-selección
+        string="Plan de Estudio (Legacy)",
+        readonly=False,
         tracking=True,
         domain="[('program_id', '=', program_id)]",
-        help="Plan de estudio que cursa el estudiante. "
-        "Se actualiza automáticamente al aprobar una matrícula.",
+        help="[DEPRECADO] Plan de estudio legacy. Usar commercial_plan_id para nuevos registros.",
     )
 
     # Nivel actual (computado desde la última matrícula activa)
@@ -302,9 +348,13 @@ class Student(models.Model):
 
     @api.onchange("program_id")
     def _onchange_program_id(self):
-        """Limpia el plan si cambia el programa."""
-        if self.program_id and self.plan_id:
-            if self.plan_id.program_id != self.program_id:
+        """Limpia los planes si cambia el programa."""
+        if self.program_id:
+            # Limpiar plan comercial si no corresponde al programa
+            if self.commercial_plan_id and self.commercial_plan_id.program_id != self.program_id:
+                self.commercial_plan_id = False
+            # Limpiar plan legacy si no corresponde al programa
+            if self.plan_id and self.plan_id.program_id != self.program_id:
                 self.plan_id = False
 
     def _apply_virtual_campus_default(self, vals):

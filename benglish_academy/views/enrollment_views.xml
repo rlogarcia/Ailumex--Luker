@@ -16,6 +16,7 @@
                 <field name="code" optional="show" />
                 <field name="enrollment_date" optional="show" />
                 <field name="student_id" widget="many2one_avatar_user" />
+                <field name="commercial_plan_id" optional="show" />
                 <field name="group_id" />
                 <field name="campus_id" optional="show" />
                 <field name="delivery_mode" widget="badge" optional="show"
@@ -28,6 +29,7 @@
                 <field name="end_date" optional="hide" />
                 <field name="prerequisites_met" invisible="1" />
                 <field name="group_available_seats" optional="show" />
+                <field name="commercial_progress_percentage" widget="progressbar" optional="show" />
                 <field name="final_grade" optional="show" />
                 <field name="is_approved" optional="show" />
                 <field name="state" widget="badge"
@@ -158,6 +160,12 @@
                             <field name="total_sessions" widget="statinfo"
                                 string="Sesiones" />
                         </button>
+                        <button name="action_view_commercial_progress" type="object"
+                            class="oe_stat_button" icon="fa-line-chart"
+                            invisible="not commercial_plan_id">
+                            <field name="commercial_progress_percentage" widget="percentpie" />
+                            <span class="o_stat_text">Avance Comercial</span>
+                        </button>
                     </div>
 
                     <div class="oe_title">
@@ -182,10 +190,29 @@
                         </group>
                         <group name="academic_structure" string="Estructura Académica"
                             readonly="state in ['finished', 'withdrawn', 'cancelled']">
-                            <field name="program_id" />
-                            <field name="plan_id" domain="[('program_id', '=', program_id)]" />
+                            <field name="program_id" required="1" />
+                            <field name="commercial_plan_id"
+                                domain="[('program_id', '=', program_id), ('active', '=', True)]"
+                                required="1"
+                                options="{'no_create': True}" />
                             <field name="current_phase_id" />
                             <field name="current_level_id" />
+                        </group>
+                    </group>
+
+                    <!-- Plan Comercial - Información -->
+                    <group string="📊 Información del Plan Comercial"
+                        invisible="not commercial_plan_id">
+                        <group>
+                            <field name="commercial_total_subjects" readonly="1" />
+                            <field name="commercial_total_electives" readonly="1" />
+                            <field name="commercial_total_oral_tests" readonly="1" />
+                        </group>
+                        <group>
+                            <field name="commercial_total_expected" readonly="1" />
+                            <field name="commercial_total_completed" readonly="1" />
+                            <field name="commercial_progress_percentage" widget="progressbar"
+                                readonly="1" />
                         </group>
                     </group>
 
@@ -384,6 +411,58 @@
                             </field>
                         </page>
 
+                        <!-- Página de Progreso Plan Comercial -->
+                        <page name="commercial_progress" string="📈 Progreso Comercial"
+                            invisible="not commercial_plan_id or state in ['draft', 'pending', 'cancelled']">
+                            <div class="alert alert-info mb-3" role="alert">
+                                <i class="fa fa-chart-line" />
+                                <strong> Progreso según el Plan
+                                Comercial.</strong> Muestra el avance del estudiante por nivel según
+                                las cantidades configuradas en el plan comercial (selecciones,
+                                electivas, oral tests, etc.). </div>
+                            <field name="commercial_progress_ids" readonly="1">
+                                <list decoration-success="progress_percentage >= 100"
+                                    decoration-info="progress_percentage >= 50 and progress_percentage &lt; 100"
+                                    decoration-warning="progress_percentage &gt; 0 and progress_percentage &lt; 50"
+                                    decoration-muted="progress_percentage == 0">
+                                    <field name="level_sequence" string="Nivel" />
+                                    <field name="level_id" optional="hide" />
+                                    <field name="expected_selection" string="Selección Esperada" />
+                                    <field name="completed_selection" string="Selección Completada" />
+                                    <field name="expected_oral_test" string="Oral Test Esperado" />
+                                    <field name="completed_oral_test" string="Oral Test Completado" />
+                                    <field name="expected_electives" string="Electivas Esperadas" />
+                                    <field name="completed_electives" string="Electivas Completadas" />
+                                    <field name="expected_regular" string="Regular Esperado"
+                                        optional="hide" />
+                                    <field name="completed_regular" string="Regular Completado"
+                                        optional="hide" />
+                                    <field name="expected_bskills" string="B-Skills Esperado"
+                                        optional="hide" />
+                                    <field name="completed_bskills" string="B-Skills Completado"
+                                        optional="hide" />
+                                    <field name="expected_total" string="Total Esperado" />
+                                    <field name="completed_total" string="Total Completado" />
+                                    <field name="progress_percentage" widget="progressbar"
+                                        string="% Avance" />
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Página de Configuración Legacy -->
+                        <page name="legacy_plan" string="⚙️ Plan Legacy"
+                            groups="benglish_academy.group_academic_manager"
+                            invisible="not plan_id">
+                            <div class="alert alert-warning mb-3" role="alert">
+                                <i class="fa fa-exclamation-triangle" />
+                                <strong> Configuración
+                                Legacy.</strong> Este campo pertenece al modelo anterior de planes
+                                de estudio. Para nuevas matrículas, usar el Plan Comercial. </div>
+                            <group>
+                                <field name="plan_id" readonly="1" />
+                            </group>
+                        </page>
+
                         <!-- Página de Homologación -->
                         <page name="homologation" string="🎓 Homologación"
                             invisible="state != 'homologated'"
@@ -478,6 +557,7 @@
                 <!-- Búsqueda -->
                 <field name="code" />
                 <field name="student_id" />
+                <field name="commercial_plan_id" />
                 <field name="group_id" />
                 <field name="campus_id" />
                 <field name="coach_id" />
@@ -525,6 +605,8 @@
                 <group expand="0" string="Agrupar Por">
                     <filter name="group_student" string="Estudiante"
                         context="{'group_by': 'student_id'}" />
+                    <filter name="group_commercial_plan" string="Plan Comercial"
+                        context="{'group_by': 'commercial_plan_id'}" />
                     <filter name="group_group" string="Grupo"
                         context="{'group_by': 'group_id'}" />
                     <filter name="group_campus" string="Sede"

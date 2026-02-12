@@ -199,10 +199,6 @@ class SubCampus(models.Model):
         help="El aula cuenta con aire acondicionado",
     )
 
-    # Información adicional
-    floor = fields.Char(string="Piso", help="Piso o nivel donde se ubica el aula")
-    building = fields.Char(string="Edificio", help="Edificio donde se ubica el aula")
-
     # Notas
     notes = fields.Text(string="Notas", help="Notas adicionales sobre el aula")
 

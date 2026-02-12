@@ -56,7 +56,7 @@
                                     <field name="student_code" readonly="1" />
                                     <field name="student_email" widget="email" readonly="1" />
                                     <field name="student_program_id" readonly="1" />
-                                    <field name="student_plan_id" readonly="1" />
+                                    <field name="student_commercial_plan_id" readonly="1" />
                                 </group>
                                 <group string="Información de Matrícula">
                                     <field name="enrollment_date" />
@@ -68,40 +68,43 @@
                             </group>
                         </page>
 
-                        <!-- PASO 2: ESTRUCTURA ACADÉMICA (ASIGNATURA AUTOMÁTICA) -->
-                        <page string="📚 Paso 2: Plan" name="academic_structure">
+                        <!-- PASO 2: ESTRUCTURA ACADÉMICA -->
+                        <page string="📚 Paso 2: Plan Comercial" name="academic_structure">
                             <div class="alert alert-info mb-3" role="alert">
-                                <strong>ℹ️ Información Académica Opcional</strong>
-                                <p class="mb-0"> Los campos de Programa y Plan son <strong>
-                                    opcionales</strong>. Si no los completa, se derivarán
-                                    automáticamente desde la asignatura al aprobar la matrícula. </p>
+                                <strong>ℹ️ Plan Comercial</strong>
+                                <p class="mb-0">El Plan Comercial define cuántas asignaturas de cada
+                                    tipo debe cursar el estudiante (selección, electivas, oral
+                                    tests).</p>
                             </div>
                             <group>
-                                <group string="Programa y Plan (Opcional)">
+                                <group string="Programa y Plan Comercial">
                                     <field name="program_id"
+                                        required="1"
                                         options="{'no_create': True}"
-                                        placeholder="Opcional - se deriva de la asignatura" />
-                                    <field name="plan_id"
-                                        domain="[('program_id', '=', program_id)]"
+                                        placeholder="Seleccione el programa" />
+                                    <field name="commercial_plan_id"
+                                        required="1"
+                                        domain="[('program_id', '=', program_id), ('state', '=', 'active')]"
                                         options="{'no_create': True}"
-                                        placeholder="Opcional - se deriva de la asignatura" />
+                                        placeholder="Seleccione el plan comercial" />
                                     <field name="phase_id" readonly="1" />
                                     <field name="level_id" readonly="1" />
                                 </group>
-                                <group string="Asignatura a Matricular">
+                                <group string="Asignatura Inicial (Opcional)">
                                     <field name="subject_id"
-                                        required="1"
+                                        required="0"
                                         readonly="0"
-                                        domain="[('program_id', '!=', False)]"
+                                        domain="[('program_id', '=', program_id)]"
                                         options="{'no_create': True}"
-                                        placeholder="Seleccione la asignatura (obligatorio)" />
+                                        placeholder="Primera asignatura (opcional)" />
                                 </group>
                             </group>
                             <div class="alert alert-warning" role="alert">
-                                <p class="mb-0"> 📌 <strong>IMPORTANTE:</strong> La asignatura es el
-                                    único campo obligatorio. Programa y Plan se pueden seleccionar
-                                    opcionalmente, o se asignarán automáticamente desde la
-                                    asignatura al aprobar la matrícula. </p>
+                                <p class="mb-0"> 📌 <strong>IMPORTANTE:</strong> El Plan Comercial
+                                    es obligatorio. Define las cantidades que el estudiante debe
+                                    cursar: <br />• Plan Plus: 78 asignaturas (24 niveles) <br />•
+                                    Plan Gold: 126 asignaturas (24 niveles) <br />• Módulo: 42
+                                    asignaturas (6 niveles) </p>
                             </div>
 
                             <!-- Prerrequisitos -->

@@ -8,7 +8,7 @@
             <field name="model">benglish.phase</field>
             <field name="arch" type="xml">
                 <list string="Fases Académicas" default_order="program_id, sequence, name"
-                    decoration-muted="not active" create="false">
+                    decoration-muted="not active">
                     <field name="sequence" widget="handle" />
                     <field name="code" />
                     <field name="name" />
@@ -28,7 +28,7 @@
             <field name="name">benglish.phase.form</field>
             <field name="model">benglish.phase</field>
             <field name="arch" type="xml">
-                <form string="Fase Académica" create="false">
+                <form string="Fase Académica">
                     <sheet>
                         <div class="oe_button_box" name="button_box">
                             <button name="action_view_levels" type="object"
@@ -63,15 +63,8 @@
                             </div>
                         </group>
                         <group>
-                            <div>
-                                <label for="plan_ids" string="Planes que usan esta fase" />
-                                <field name="plan_ids" widget="many2many_tags"
-                                    options="{'no_create': True}" />
-                            </div>
-                        </group>
-                        <group>
                             <group string="📚 Jerarquía Académica">
-                                <field name="program_id" readonly="1" />
+                                <field name="program_id" options="{'no_create': True}" />
                             </group>
                             <group string="⏱️ Duración">
                                 <!--<field
@@ -108,7 +101,7 @@
             <field name="name">benglish.phase.kanban</field>
             <field name="model">benglish.phase</field>
             <field name="arch" type="xml">
-                <kanban class="o_kanban_mobile" create="false">
+                <kanban class="o_kanban_mobile">
                     <field name="name" />
                     <field name="code" />
                     <field name="program_id" />

@@ -9,36 +9,35 @@ _logger = logging.getLogger(__name__)
 
 class EnrollmentWizard(models.TransientModel):
     """
-    Wizard para matricular estudiantes a un PLAN DE ESTUDIOS COMPLETO.
+    Wizard para matricular estudiantes a un PLAN COMERCIAL.
 
     ╔═══════════════════════════════════════════════════════════════════════════════╗
-    ║  CONCEPTO REFACTORIZADO (Odoo 18 - 2025)                                      ║
+    ║  CONCEPTO REFACTORIZADO (Feb 2026)                                            ║
     ║  ═══════════════════════════════════════════════════════════════════════════  ║
-    ║  ✅ CORRECTO: Matrícula al PLAN completo                                      ║
-    ║  ❌ DEPRECADO: Matrícula a asignatura individual (campo subject_id legacy)    ║
+    ║  ✅ CORRECTO: Matrícula al PLAN COMERCIAL                                     ║
+    ║  ❌ DEPRECADO: benglish.plan (Plan de Estudios Legacy)                        ║
     ║                                                                               ║
-    ║  El wizard sigue permitiendo seleccionar asignatura inicial por compatibilidad║
-    ║  pero la matrícula se crea AL PLAN, no a la asignatura.                       ║
+    ║  El wizard permite seleccionar el Plan Comercial que define las cantidades    ║
+    ║  de asignaturas por tipo que el estudiante debe cursar.                       ║
     ╚═══════════════════════════════════════════════════════════════════════════════╝
 
     FLUJO DEL WIZARD:
     =================
     1. Selección de estudiante
-    2. Selección de programa y plan de estudios
-    3. [OPCIONAL] Selección de asignatura inicial (primera del plan por defecto)
-    4. [OPCIONAL] Selección de grupo
-    5. Configuración de modalidad de asistencia
-    6. Confirmación y creación de matrícula
+    2. Selección de programa y PLAN COMERCIAL
+    3. [OPCIONAL] Selección de asignatura inicial
+    4. Configuración de modalidad de asistencia
+    5. Confirmación y creación de matrícula
 
     CREACIÓN DE MATRÍCULA:
     ======================
-    - Se crea UNA matrícula al plan completo
-    - Se auto-generan registros de progreso para todas las asignaturas del plan
-    - La asignatura seleccionada se marca como "current_subject_id" (asignatura actual)
+    - Se crea UNA matrícula con el Plan Comercial
+    - Se auto-genera el Progreso Comercial (por nivel)
+    - La asignatura seleccionada se marca como "current_subject_id"
     """
 
     _name = "benglish.enrollment.wizard"
-    _description = "Asistente de Matrícula de Estudiantes a Plan de Estudios"
+    _description = "Asistente de Matrícula de Estudiantes"
 
     # PASO 1: ESTUDIANTE
 
@@ -60,29 +59,43 @@ class EnrollmentWizard(models.TransientModel):
         readonly=True,
         string="Programa del Estudiante",
     )
+    student_commercial_plan_id = fields.Many2one(
+        comodel_name="benglish.commercial.plan",
+        related="student_id.commercial_plan_id",
+        readonly=True,
+        string="Plan Comercial del Estudiante",
+    )
+    # Legacy - mantener para compatibilidad
     student_plan_id = fields.Many2one(
         comodel_name="benglish.plan",
         related="student_id.plan_id",
         readonly=True,
-        string="Plan del Estudiante",
+        string="Plan Legacy del Estudiante",
     )
 
-    # PASO 2: PLAN DE ESTUDIOS (OBLIGATORIO EN MODELO NUEVO)
-    # El plan es el elemento principal de la matrícula
+    # PASO 2: PLAN COMERCIAL (OBLIGATORIO)
 
     program_id = fields.Many2one(
         comodel_name="benglish.program",
         string="Programa",
-        required=True,  # ✅ OBLIGATORIO en modelo nuevo
-        help="Programa académico al que pertenece el plan de estudios",
+        required=True,
+        help="Programa académico",
     )
+    commercial_plan_id = fields.Many2one(
+        comodel_name="benglish.commercial.plan",
+        string="Plan Comercial",
+        domain="[('program_id', '=', program_id), ('state', '=', 'active')]",
+        required=True,
+        help="Plan comercial que define las cantidades de asignaturas por tipo. "
+        "Ejemplos: Plan Plus (78 asig.), Plan Gold (126 asig.), Módulo (42 asig.)",
+    )
+    # Legacy - mantener para compatibilidad con matrículas antiguas
     plan_id = fields.Many2one(
         comodel_name="benglish.plan",
-        string="Plan de Estudios",
+        string="Plan de Estudios (Legacy)",
         domain="[('program_id', '=', program_id)]",
-        required=True,  # ✅ OBLIGATORIO - La matrícula ES al plan
-        help="Plan de estudios al que se matriculará el estudiante. "
-        "El estudiante quedará matriculado a ESTE PLAN COMPLETO.",
+        required=False,
+        help="[DEPRECADO] Solo para compatibilidad con datos antiguos.",
     )
 
     # PASO 3: ASIGNATURA INICIAL (OPCIONAL - COMPATIBILIDAD)
@@ -267,6 +280,9 @@ class EnrollmentWizard(models.TransientModel):
             # (pueden ser False si es un estudiante nuevo sin matrículas previas)
             if self.student_id.program_id:
                 self.program_id = self.student_id.program_id
+            if self.student_id.commercial_plan_id:
+                self.commercial_plan_id = self.student_id.commercial_plan_id
+            # Legacy
             if self.student_id.plan_id:
                 self.plan_id = self.student_id.plan_id
 
@@ -281,16 +297,26 @@ class EnrollmentWizard(models.TransientModel):
 
     @api.onchange("program_id")
     def _onchange_program_id(self):
-        """Limpia plan y asignatura al cambiar programa (solo si el plan no corresponde al nuevo programa)"""
+        """Limpia planes y asignatura al cambiar programa"""
+        if self.commercial_plan_id and self.commercial_plan_id.program_id != self.program_id:
+            self.commercial_plan_id = False
         if self.plan_id and self.plan_id.program_id != self.program_id:
             self.plan_id = False
+        if not self.commercial_plan_id:
             self.subject_id = False
-        elif not self.plan_id:
-            self.subject_id = False
+
+    @api.onchange("commercial_plan_id")
+    def _onchange_commercial_plan_id(self):
+        """Selecciona automáticamente la asignatura al cambiar plan comercial"""
+        if self.commercial_plan_id and self.commercial_plan_id.program_id:
+            # Asignar primera asignatura del programa
+            subject = self._get_default_subject_by_program(self.commercial_plan_id.program_id.id)
+            if subject:
+                self.subject_id = subject
 
     @api.onchange("plan_id")
     def _onchange_plan_id(self):
-        """Selecciona automáticamente la asignatura del plan"""
+        """Selecciona automáticamente la asignatura del plan (legacy)"""
         self._assign_default_subject()
 
     @api.onchange("delivery_mode")
@@ -308,26 +334,26 @@ class EnrollmentWizard(models.TransientModel):
 
     def action_create_enrollment(self):
         """
-        Crea la matrícula al PLAN DE ESTUDIOS COMPLETO.
+        Crea la matrícula con el PLAN COMERCIAL.
 
-        CAMBIO CONCEPTUAL:
-        ==================
-        - La matrícula se crea AL PLAN, no a la asignatura
+        CAMBIO CONCEPTUAL (Feb 2026):
+        =============================
+        - La matrícula usa el Plan Comercial que define cantidades por tipo
         - subject_id se usa solo como "current_subject_id" (punto de inicio)
-        - Se auto-generan registros de progreso para todas las asignaturas del plan
+        - Se auto-genera el Progreso Comercial por nivel
         """
         self.ensure_one()
 
-        # Validar que hay plan seleccionado (OBLIGATORIO en modelo nuevo)
-        if not self.plan_id:
+        # Validar que hay plan comercial seleccionado (OBLIGATORIO)
+        if not self.commercial_plan_id:
             raise ValidationError(
                 _(
-                    "Debe seleccionar un Plan de Estudios para la matrícula.\n\n"
-                    "💡 El plan de estudios es obligatorio en el nuevo modelo académico."
+                    "Debe seleccionar un Plan Comercial para la matrícula.\n\n"
+                    "💡 El Plan Comercial define cuántas asignaturas de cada tipo debe cursar el estudiante."
                 )
             )
 
-        # Si no hay asignatura inicial, asignar la primera del plan automáticamente
+        # Si no hay asignatura inicial, asignar la primera del programa automáticamente
         if not self.subject_id:
             first_subject = self.env["benglish.subject"].search(
                 [("program_id", "=", self.program_id.id)],
@@ -346,7 +372,7 @@ class EnrollmentWizard(models.TransientModel):
                 )
 
         # Validar consistencia académica
-        if self.subject_id.program_id != self.plan_id.program_id:
+        if self.subject_id.program_id != self.commercial_plan_id.program_id:
             raise ValidationError(
                 _(
                     'ERROR DE CONSISTENCIA: La asignatura "%s" pertenece al programa "%s", '
@@ -356,8 +382,8 @@ class EnrollmentWizard(models.TransientModel):
                 % (
                     self.subject_id.name,
                     self.subject_id.program_id.name,
-                    self.plan_id.name,
-                    self.plan_id.program_id.name,
+                    self.commercial_plan_id.name,
+                    self.commercial_plan_id.program_id.name,
                 )
             )
 
@@ -381,15 +407,17 @@ class EnrollmentWizard(models.TransientModel):
             )
 
         # ═══════════════════════════════════════════════════════════════════════
-        # CREAR MATRÍCULA AL PLAN COMPLETO
+        # CREAR MATRÍCULA CON PLAN COMERCIAL
         # ═══════════════════════════════════════════════════════════════════════
 
         enrollment_vals = {
             # Estudiante
             "student_id": self.student_id.id,
-            # PLAN (obligatorio - elemento principal)
+            # PLAN COMERCIAL (obligatorio - elemento principal)
             "program_id": self.program_id.id,
-            "plan_id": self.plan_id.id,
+            "commercial_plan_id": self.commercial_plan_id.id,
+            # Legacy: plan_id si se seleccionó
+            "plan_id": self.plan_id.id if self.plan_id else False,
             # Progresión actual (punto de inicio)
             "current_phase_id": (
                 self.subject_id.phase_id.id if self.subject_id else False
@@ -424,14 +452,14 @@ class EnrollmentWizard(models.TransientModel):
         _logger.info(
             f"[ENROLLMENT WIZARD] Matrícula creada: {enrollment.code}\n"
             f"  - Estudiante: {self.student_id.name}\n"
-            f"  - Plan: {self.plan_id.name}\n"
+            f"  - Plan Comercial: {self.commercial_plan_id.name}\n"
             f"  - Asignatura inicial: {self.subject_id.name if self.subject_id else 'N/A'}\n"
-            f"  - Progreso generado: {len(enrollment.enrollment_progress_ids)} asignaturas"
+            f"  - Progreso comercial generado: {len(enrollment.commercial_progress_ids)} niveles"
         )
 
         # Retornar acción para abrir la matrícula creada
         return {
-            "name": _("Matrícula al Plan de Estudios"),
+            "name": _("Matrícula"),
             "type": "ir.actions.act_window",
             "res_model": "benglish.enrollment",
             "res_id": enrollment.id,
@@ -447,23 +475,28 @@ class EnrollmentWizard(models.TransientModel):
 
     @api.model
     def default_get(self, fields_list):
-        """Precarga programa, plan, asignatura y modalidad desde el estudiante."""
+        """Precarga programa, plan comercial, asignatura y modalidad desde el estudiante."""
         res = super().default_get(fields_list)
 
         student_id = self.env.context.get("default_student_id")
         student = (
             self.env["benglish.student"].browse(student_id) if student_id else False
         )
-        plan = student.plan_id if student else False
+        
+        # Usar plan comercial del estudiante si existe
+        commercial_plan = student.commercial_plan_id if student else False
+        
+        if commercial_plan:
+            res["commercial_plan_id"] = commercial_plan.id
+            res["program_id"] = commercial_plan.program_id.id
+        elif student and student.program_id:
+            res["program_id"] = student.program_id.id
 
-        if plan:
-            res["plan_id"] = plan.id
-            res["program_id"] = plan.program_id.id
-
-        # Asignatura por plan
-        subject = self._get_default_subject(plan) if plan else False
-        if subject:
-            res["subject_id"] = subject.id
+        # Asignatura por programa
+        if res.get("program_id"):
+            subject = self._get_default_subject_by_program(res["program_id"])
+            if subject:
+                res["subject_id"] = subject.id
 
         # Modalidad preferida
         if student:
@@ -518,6 +551,19 @@ class EnrollmentWizard(models.TransientModel):
             self.env["benglish.subject"]
             .search([("level_id", "in", plan.level_ids.ids)])
             .sorted(key=lambda s: (s.level_id.sequence or 0, s.sequence or 0))
+        )
+
+        return subjects[0] if subjects else False
+
+    def _get_default_subject_by_program(self, program_id):
+        """Retorna la primera asignatura del programa (orden nivel/sequence)."""
+        if not program_id:
+            return False
+
+        subjects = self.env["benglish.subject"].search(
+            [("program_id", "=", program_id)],
+            order="level_id, sequence",
+            limit=1,
         )
 
         return subjects[0] if subjects else False

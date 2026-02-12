@@ -18,17 +18,15 @@
                             <field name="location_city" invisible="1" />
                             <field name="campus_id" invisible="1" />
                             <field name="program_id" required="1" options="{'no_create': True}" />
-                            <field name="template_id"
-                                domain="['|', ('program_id', '=', False), ('program_id', '=', program_id)]"
-                                options="{'no_create': True}" />
+                            <field name="subject_id"
+                                domain="[('program_id', '=', program_id), ('active', '=', True)]"
+                                options="{'no_create': True}"
+                                required="1" />
                             <field name="audience_phase_id"
                                 domain="[('program_id', '=', program_id)]"
-                                options="{'no_create': True}"
-                                invisible="not template_id" />
-                            <field name="audience_unit_from"
-                                invisible="not template_id" />
-                            <field name="audience_unit_to"
-                                invisible="not template_id" />
+                                options="{'no_create': True}" />
+                            <field name="audience_unit_from" />
+                            <field name="audience_unit_to" />
                             <field name="delivery_mode" widget="radio" required="1" />
                             <field name="subcampus_id"
                                 invisible="delivery_mode == 'virtual'"
@@ -41,11 +39,12 @@
                             <field name="time_start" widget="time_picker" required="1" />
                             <field name="time_end" widget="time_picker" required="1" />
                             <field name="duration_hours" invisible="1" />
-                            <field name="max_capacity" required="1" invisible="delivery_mode == 'hybrid'" />
-                            <field name="max_capacity_presential" 
+                            <field name="max_capacity" required="1"
+                                invisible="delivery_mode == 'hybrid'" />
+                            <field name="max_capacity_presential"
                                 invisible="delivery_mode != 'hybrid'"
                                 required="delivery_mode == 'hybrid'" />
-                            <field name="max_capacity_virtual" 
+                            <field name="max_capacity_virtual"
                                 invisible="delivery_mode != 'hybrid'"
                                 required="delivery_mode == 'hybrid'" />
                         </group>
@@ -58,12 +57,13 @@
                         </group>
                         <group invisible="not teacher_id or delivery_mode == 'presential'">
                             <label for="teacher_meeting_link" string="📋 Enlace del Docente" />
-                            <div class="alert alert-info" role="alert" style="padding: 8px; margin: 0;">
+                            <div class="alert alert-info" role="alert"
+                                style="padding: 8px; margin: 0;">
                                 <field name="teacher_meeting_link" widget="url" readonly="1"
-                                    nolabel="1" class="d-block" 
+                                    nolabel="1" class="d-block"
                                     style="font-size: 13px; word-break: break-all;" />
                                 <small class="text-muted">
-                                    <field name="teacher_meeting_id" nolabel="1" readonly="1"/>
+                                    <field name="teacher_meeting_id" nolabel="1" readonly="1" />
                                 </small>
                             </div>
                         </group>
@@ -181,7 +181,8 @@
                         </div>
                         <group>
                             <group string="Ubicación">
-                                <field name="location_city" placeholder="Opcional para sedes virtuales" />
+                                <field name="location_city"
+                                    placeholder="Opcional para sedes virtuales" />
                                 <field name="campus_id" required="1" />
                             </group>
                             <group string="Estado">
@@ -196,8 +197,8 @@
                                 <field name="duration_days" readonly="1" />
                             </group>
                             <group string="Horarios">
-                            <field name="time_start" widget="time_picker" required="1" />
-                            <field name="time_end" widget="time_picker" required="1" />
+                                <field name="time_start" widget="time_picker" required="1" />
+                                <field name="time_end" widget="time_picker" required="1" />
                                 <field name="duration_hours" readonly="1" />
                             </group>
                         </group>

@@ -13,7 +13,6 @@
                     <field name="code" />
                     <field name="name" />
                     <field name="phase_id" />
-                    <field name="plan_ids" widget="many2many_tags" />
                     <field name="max_unit" string="Unidad Máx" />
                     <field name="duration_weeks" string="Semanas" />
                     <field name="total_hours" string="Horas" />
@@ -73,7 +72,6 @@
                         </group>
                         <group>
                             <group string="🏛️ Jerarquía Curricular">
-                                <field name="plan_ids" widget="many2many_tags" readonly="1" />
                                 <field name="program_id" readonly="1" />
                             </group>
                             <group string="⏰ Carga Académica">
@@ -115,7 +113,7 @@
             <field name="name">benglish.level.kanban</field>
             <field name="model">benglish.level</field>
             <field name="arch" type="xml">
-                <kanban class="o_kanban_mobile" create="false">
+                <kanban class="o_kanban_mobile">
                     <field name="name" />
                     <field name="code" />
                     <field name="phase_id" />

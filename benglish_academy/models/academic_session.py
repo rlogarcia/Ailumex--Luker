@@ -233,8 +233,6 @@ class AcademicSession(models.Model):
         """
         if self.session_type != 'elective':
             self.elective_pool_id = False
-        else:
-            self.template_id = False
 
     @api.onchange('elective_pool_id')
     def _onchange_elective_pool_id(self):
@@ -271,19 +269,10 @@ class AcademicSession(models.Model):
     def create(self, vals_list):
         """
         Al crear sesiones desde el wizard o la vista, asegurar que siempre exista
-        un `subject_id` cuando se especifique una `template_id` en los valores.
+        un `subject_id`.
         
         ADEMÁS (R2 - FASE 1):
         Genera automáticamente el código único de sesión (session_code) usando secuencia.
-
-        Comportamiento:
-        - Si la plantilla tiene `fixed_subject_id`, se usa esa.
-        - Si no, se busca cualquier `benglish.subject` activo del mismo programa
-          y con la misma `subject_category` de la plantilla.
-        - Como último recurso se asigna cualquier `benglish.subject` activo disponible.
-
-        Esto evita el error de "campo obligatorio" cuando la plantilla no tiene
-        una asignatura exactamente mapeada al plan del cliente.
         """
         for vals in vals_list:
             # R2: Generar código único de sesión si no existe
@@ -292,8 +281,7 @@ class AcademicSession(models.Model):
                 _logger.info("[ACADEMIC_SESSION CREATE] Código de sesión generado: %s", vals['session_code'])
             
             _logger.info(
-                "[ACADEMIC_SESSION CREATE] Valores recibidos: template_id=%s, subject_id=%s, program_id=%s, agenda_id=%s",
-                vals.get("template_id"),
+                "[ACADEMIC_SESSION CREATE] Valores recibidos: subject_id=%s, program_id=%s, agenda_id=%s",
                 vals.get("subject_id"),
                 vals.get("program_id"),
                 vals.get("agenda_id"),
@@ -301,8 +289,6 @@ class AcademicSession(models.Model):
             
             try:
                 # Si NO hay subject_id, intentar asignarlo
-                # NOTA: Para sesiones tipo 'elective', el subject_id se maneja diferente
-                # (se selecciona del pool de electivas por el estudiante)
                 if not vals.get("subject_id"):
                     session_type = vals.get("session_type", "regular")
                     
@@ -329,62 +315,12 @@ class AcademicSession(models.Model):
                                 vals.get("elective_pool_id"),
                             )
                     
-                    # Si aún no hay subject_id, intentar asignar desde template
+                    # Si aún no hay subject_id, buscar por program_id
                     if not vals.get("subject_id"):
                         _logger.warning(
                             "[ACADEMIC_SESSION CREATE] subject_id no proporcionado, intentando asignar automáticamente..."
                         )
                         
-                        # Opción 1: Si hay template_id, usar su configuración
-                        if vals.get("template_id"):
-                            template = self.env["benglish.agenda.template"].browse(
-                                vals.get("template_id")
-                            )
-                            _logger.info(
-                                "[ACADEMIC_SESSION CREATE] Template encontrado: %s (fixed_subject_id=%s, subject_category=%s)",
-                                template.name if template else None,
-                                template.fixed_subject_id.id if template and template.fixed_subject_id else None,
-                                template.subject_category if template else None,
-                            )
-                            
-                            # 1) plantilla con asignatura fija
-                            if template and template.fixed_subject_id:
-                                vals["subject_id"] = template.fixed_subject_id.id
-                                _logger.info(
-                                    "[ACADEMIC_SESSION CREATE] Asignado subject_id desde template.fixed_subject_id: %s",
-                                    vals["subject_id"],
-                                )
-                                continue
-
-                            # 2) intentar obtener programa (priorizar vals, luego plantilla)
-                            program_to_search = vals.get("program_id") or (
-                                template.program_id.id if template and template.program_id else False
-                            )
-
-                            # 3) buscar subject activo por programa y categoría de plantilla
-                            domain = [("active", "=", True)]
-                            if program_to_search:
-                                domain.append(("program_id", "=", program_to_search))
-                            if template and template.subject_category:
-                                domain.append(("subject_category", "=", template.subject_category))
-
-                            _logger.info(
-                                "[ACADEMIC_SESSION CREATE] Buscando subject con dominio: %s", domain
-                            )
-                            
-                            Subject = self.env["benglish.subject"].sudo()
-                            subject = Subject.search(domain, limit=1)
-                            if subject:
-                                vals["subject_id"] = subject.id
-                                _logger.info(
-                                    "[ACADEMIC_SESSION CREATE] Asignado subject_id por template: %s (%s)",
-                                    subject.id,
-                                    subject.display_name,
-                                )
-                                continue
-                    
-                    # Opción 2: Si NO hay template_id, buscar por program_id directamente
-                    if not vals.get("subject_id"):
                         program_to_search = vals.get("program_id")
                         
                         # Si tampoco hay program_id en vals, intentar obtenerlo de la agenda
@@ -392,7 +328,7 @@ class AcademicSession(models.Model):
                             agenda = self.env["benglish.academic.agenda"].browse(vals.get("agenda_id"))
                             if agenda and agenda.program_id:
                                 program_to_search = agenda.program_id.id
-                                vals["program_id"] = program_to_search  # Aseguramos que esté en vals
+                                vals["program_id"] = program_to_search
                                 _logger.info(
                                     "[ACADEMIC_SESSION CREATE] program_id obtenido desde agenda: %s",
                                     program_to_search,
@@ -412,7 +348,7 @@ class AcademicSession(models.Model):
                                     subject.display_name,
                                 )
                     
-                        # Opción 3: Último recurso - cualquier subject activo
+                        # Último recurso - cualquier subject activo
                         if not vals.get("subject_id"):
                             Subject = self.env["benglish.subject"].sudo()
                             any_subject = Subject.search([("active", "=", True)], limit=1)
@@ -423,17 +359,16 @@ class AcademicSession(models.Model):
                                     any_subject.id,
                                     any_subject.display_name,
                                 )
-                        else:
-                            _logger.error(
-                                "[ACADEMIC_SESSION CREATE] NO SE ENCONTRÓ NINGÚN SUBJECT ACTIVO. Esto causará un error."
-                            )
-                            raise UserError(
-                                _(
-                                    "No se pudo asignar una asignatura a la sesión. "
-                                    "Por favor, asegúrese de que existan asignaturas activas en el sistema "
-                                    "o configure un template con una asignatura fija."
+                            else:
+                                _logger.error(
+                                    "[ACADEMIC_SESSION CREATE] NO SE ENCONTRÓ NINGÚN SUBJECT ACTIVO. Esto causará un error."
                                 )
-                            )
+                                raise UserError(
+                                    _(
+                                        "No se pudo asignar una asignatura a la sesión. "
+                                        "Por favor, asegúrese de que existan asignaturas activas en el sistema."
+                                    )
+                                )
                 else:
                     _logger.info(
                         "[ACADEMIC_SESSION CREATE] subject_id ya proporcionado: %s", vals.get("subject_id")
@@ -454,13 +389,8 @@ class AcademicSession(models.Model):
 
         return super(AcademicSession, self).create(vals_list)
 
-    template_id = fields.Many2one(
-        comodel_name="benglish.agenda.template",
-        string="Plantilla",
-        ondelete="restrict",
-        domain="['|', ('program_id', '=', False), ('program_id', '=', program_id)]",
-        help="Tipo/plantilla de horario usada para homologación por estudiante.",
-    )
+    # NOTA: El campo template_id fue eliminado (modelo benglish.agenda.template ya no existe)
+    # La lógica de homologación ahora se basa directamente en subject_id
 
     elective_pool_id = fields.Many2one(
         comodel_name="benglish.elective.pool",
@@ -488,12 +418,8 @@ class AcademicSession(models.Model):
         help="Unidad final del rango de audiencia (1-24).",
     )
     
-    is_oral_test_template = fields.Boolean(
-        string="Es Oral Test",
-        compute="_compute_is_oral_test_template",
-        store=False,
-        help="Indica si el template es de categoría oral_test",
-    )
+    # NOTA: El campo is_oral_test_template fue eliminado junto con template_id
+    # La lógica de oral test ahora se basa en subject_id.subject_classification
 
     student_alias = fields.Char(
         string="Alias Estudiante",
@@ -513,7 +439,7 @@ class AcademicSession(models.Model):
             ("workshop", "Taller"),
         ],
         string="Tipo de Sesión",
-        default="regular",
+        default="elective",
         required=True,
         tracking=True,
         help="Tipo de sesión académica",
@@ -863,14 +789,8 @@ class AcademicSession(models.Model):
                 # Estado por defecto
                 record.max_capacity = 15
 
-    @api.depends('template_id', 'template_id.subject_category')
-    def _compute_is_oral_test_template(self):
-        """Determina si el template seleccionado es de categoría oral_test."""
-        for record in self:
-            record.is_oral_test_template = (
-                record.template_id and 
-                record.template_id.subject_category == 'oral_test'
-            )
+    # NOTA: El método _compute_is_oral_test_template fue eliminado
+    # ya que dependía del modelo benglish.agenda.template que ya no existe
 
     @api.model
     def _get_city_selection(self):
@@ -923,13 +843,8 @@ class AcademicSession(models.Model):
         for record in self:
             parts = []
 
-            if record.template_id:
-                template_label = record.template_id.name or record.template_id.alias_student
-                if record.template_id.code:
-                    parts.append(f"[{record.template_id.code}] {template_label}")
-                else:
-                    parts.append(template_label)
-            elif record.subject_id:
+            # Usar subject_id directamente (template_id fue eliminado)
+            if record.subject_id:
                 parts.append(f"[{record.subject_id.code}] {record.subject_id.name}")
 
             if record.date:
@@ -956,12 +871,11 @@ class AcademicSession(models.Model):
             return sessions.name_get()
         return super().name_search(name=name, args=args, operator=operator, limit=limit)
 
-    @api.depends("template_id.alias_student", "subject_id.alias", "subject_id.name")
+    @api.depends("subject_id.alias", "subject_id.name")
     def _compute_student_alias(self):
         for record in self:
-            if record.template_id and record.template_id.alias_student:
-                record.student_alias = record.template_id.alias_student
-            elif record.subject_id:
+            # Usar subject_id directamente (template_id fue eliminado)
+            if record.subject_id:
                 record.student_alias = record.subject_id.alias or record.subject_id.name
             else:
                 record.student_alias = "Clase"
@@ -1675,18 +1589,8 @@ class AcademicSession(models.Model):
                         }
                     )
 
-    @api.constrains("template_id", "program_id")
-    def _check_template_program(self):
-        for record in self:
-            if (
-                record.template_id
-                and record.template_id.program_id
-                and record.program_id
-                and record.template_id.program_id != record.program_id
-            ):
-                raise ValidationError(
-                    _("La plantilla seleccionada no corresponde al programa de la sesión.")
-                )
+    # NOTA: El constraint _check_template_program fue eliminado
+    # ya que template_id ya no existe
 
     @api.constrains("audience_unit_from", "audience_unit_to")
     def _check_audience_range(self):
@@ -1713,38 +1617,16 @@ class AcademicSession(models.Model):
             self.time_start = start_time
             self.time_end = end_time
 
-    @api.onchange("template_id")
-    def _onchange_template_id(self):
-        if not self.template_id:
-            return
-        if (
-            self.template_id.program_id
-            and self.program_id
-            and self.template_id.program_id != self.program_id
-        ):
-            self.template_id = False
-            return {
-                "warning": {
-                    "title": _("Plantilla inválida"),
-                    "message": _(
-                        "La plantilla seleccionada no pertenece al programa actual."
-                    ),
-                }
-            }
-        placeholder = self._get_placeholder_subject_from_template()
-        if placeholder:
-            self.subject_id = placeholder
+    # NOTA: El método _onchange_template_id fue eliminado
+    # ya que template_id ya no existe
 
     @api.onchange("session_type")
     def _onchange_session_type(self):
         """
         Al cambiar el tipo de sesión:
-        - Si es 'elective': limpiar template_id
         - Si NO es 'elective': limpiar elective_pool_id
         """
-        if self.session_type == "elective":
-            self.template_id = False
-        else:
+        if self.session_type != "elective":
             self.elective_pool_id = False
 
     @api.onchange("elective_pool_id")
@@ -1954,131 +1836,11 @@ class AcademicSession(models.Model):
 
         return res
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Validaciones al crear."""
-        # Los campos location_city y campus_id ahora son related de agenda
-        # No es necesario setearlos manualmente
-        for vals in vals_list:
-            if vals.get("template_id"):
-                template = self.env["benglish.agenda.template"].browse(
-                    vals.get("template_id")
-                )
-                
-                # B-checks y Oral Tests siempre son virtuales
-                if template.subject_category in ('bcheck', 'oral_test'):
-                    vals["delivery_mode"] = "virtual"
-                
-                # Oral Tests: si solo se proporciona audience_unit_to (unidad objetivo),
-                # copiar a audience_unit_from para que el rango sea [X, X]
-                if template.subject_category == 'oral_test':
-                    if vals.get('audience_unit_to') and not vals.get('audience_unit_from'):
-                        vals['audience_unit_from'] = vals['audience_unit_to']
-                    # Si no se proporciona audience_unit_to pero se proporciona audience_unit_from,
-                    # asumir que es una sesión para esa unidad específica
-                    elif vals.get('audience_unit_from') and not vals.get('audience_unit_to'):
-                        vals['audience_unit_to'] = vals['audience_unit_from']
-                
-                if not vals.get("program_id"):
-                    if template.program_id:
-                        vals["program_id"] = template.program_id.id
-                if vals.get("audience_phase_id") and (
-                    not vals.get("audience_unit_from") or not vals.get("audience_unit_to")
-                ):
-                    phase = self.env["benglish.phase"].browse(vals.get("audience_phase_id"))
-                    unit_from, unit_to = self._get_phase_unit_range(phase)
-                    if unit_from and unit_to:
-                        vals.setdefault("audience_unit_from", unit_from)
-                        vals.setdefault("audience_unit_to", unit_to)
-                if not vals.get("subject_id"):
-                    virtual = self.new(vals)
-                    placeholder = virtual._get_placeholder_subject_from_template()
-                    if placeholder:
-                        vals["subject_id"] = placeholder.id
-                    elif template.subject_category == 'oral_test':
-                        # Para Oral Tests, si no se encuentra un subject específico,
-                        # buscar cualquier oral test del programa como fallback
-                        program_to_search = template.program_id.id if template.program_id else vals.get("program_id")
-                        if program_to_search:
-                            oral_test_fallback = self.env["benglish.subject"].sudo().search([
-                                ("program_id", "=", program_to_search),
-                                ("active", "=", True),
-                                ("subject_category", "=", "oral_test"),
-                            ], limit=1)
-                            if oral_test_fallback:
-                                vals["subject_id"] = oral_test_fallback.id
-                            else:
-                                # Último recurso: crear un placeholder temporal para oral test
-                                # Esto permitirá que se cree la sesión y después se pueda resolver dinámicamente
-                                import logging
-                                _logger = logging.getLogger(__name__)
-                                _logger.warning(
-                                    f"[ACADEMIC SESSION] No se encontró subject específico para Oral Test en programa {program_to_search}. "
-                                    f"Buscando fallback general..."
-                                )
-                                # Buscar CUALQUIER oral test del sistema como placeholder
-                                any_oral_test = self.env["benglish.subject"].sudo().search([
-                                    ("active", "=", True),
-                                    ("subject_category", "=", "oral_test"),
-                                ], limit=1)
-                                if any_oral_test:
-                                    vals["subject_id"] = any_oral_test.id
-                                    _logger.info(f"[ACADEMIC SESSION] Usando oral test fallback: {any_oral_test.name} (ID: {any_oral_test.id})")
-                                else:
-                                    # Error crítico: no hay oral tests en el sistema
-                                    _logger.error("[ACADEMIC SESSION] No hay ningún oral test en el sistema. No se puede crear la sesión.")
-                                    raise ValidationError(
-                                        _("Error: No se encontraron asignaturas de tipo 'Oral Test' en el sistema. "
-                                          "Contacte al administrador para configurar las asignaturas.")
-                                    )
-                # Validación final: asegurar que siempre hay subject_id para oral tests
-                if template.subject_category == 'oral_test' and not vals.get("subject_id"):
-                    raise ValidationError(
-                        _("Error crítico: No se pudo asignar una asignatura para la sesión de Oral Test. "
-                          "Verifique que:\n"
-                          "1. El programa tenga asignaturas de tipo 'Oral Test' configuradas\n"
-                          "2. La plantilla tenga mapping_mode = 'block'\n"
-                          "3. Las asignaturas tengan unit_block_start y unit_block_end configurados\n"
-                          "4. Se haya especificado audience_unit_to en la sesión")
-                    )
-        sessions = super(AcademicSession, self).create(vals_list)
-
-        # Post-procesamiento de sesiones creadas
-        for session in sessions:
-            # Si no se proporcionó un código de sesión, generarlo automáticamente
-            if not session.session_code:
-                try:
-                    session.session_code = session._generate_session_code()
-                except Exception:
-                    # No bloquear la creación por errores menores en generación de código
-                    pass
-
-            # Para oral tests, intentar resolver el subject_id correcto si es necesario
-            if (session.template_id and 
-                session.template_id.subject_category == 'oral_test' and
-                session.audience_unit_to):
-                try:
-                    better_subject = session._get_placeholder_subject_from_template()
-                    if better_subject and better_subject.id != session.subject_id.id:
-                        session.subject_id = better_subject.id
-                except Exception as e:
-                    import logging
-                    _logger = logging.getLogger(__name__)
-                    _logger.warning(f"[ORAL TEST] No se pudo resolver mejor subject para sesión {session.id}: {str(e)}")
-
-            if session.agenda_id:
-                session._create_session_log("create")
-
-        return sessions
+    # NOTA: El segundo método create con lógica de template fue eliminado
+    # La lógica principal está en el método create anterior
 
     def write(self, vals):
         """Validaciones al actualizar."""
-        # Oral Tests: si solo se proporciona audience_unit_to, copiar a audience_unit_from
-        if vals.get('audience_unit_to') and not vals.get('audience_unit_from'):
-            for record in self:
-                if record.template_id and record.template_id.subject_category == 'oral_test':
-                    vals['audience_unit_from'] = vals['audience_unit_to']
-        
         # Capturar estado anterior para sincronización
         old_states = {}
         if "state" in vals:
@@ -2591,80 +2353,12 @@ class AcademicSession(models.Model):
         return (1, max_unit or 0)
 
     def _get_placeholder_subject_from_template(self):
+        """
+        NOTA: Este método fue simplificado después de eliminar el modelo benglish.agenda.template.
+        Ahora simplemente retorna el subject_id de la sesión ya que no hay lógica de template.
+        """
         self.ensure_one()
-        template = self.template_id
-        if not template:
-            return False
-        program = self.program_id or template.program_id
-        if template.mapping_mode == "fixed" and template.fixed_subject_id:
-            return template.fixed_subject_id
-        if not program:
-            return False
-        
-        Subject = self.env["benglish.subject"].sudo()
-        
-        # LÓGICA ESPECIAL PARA ORAL TESTS
-        if template.subject_category == 'oral_test':
-            # Si no hay audiencia específica, buscar cualquier oral test disponible
-            if not (self.audience_unit_from and self.audience_unit_to):
-                domain = [
-                    ("program_id", "=", program.id),
-                    ("active", "=", True),
-                    ("subject_category", "=", "oral_test"),
-                ]
-                return Subject.search(domain, order="unit_block_end asc", limit=1)
-        
-        unit_from, unit_to = self._get_audience_unit_range()
-        unit_from = unit_from or 1
-        unit_to = unit_to or unit_from
-        if template.mapping_mode == "pair" and not (self.audience_unit_from and self.audience_unit_to):
-            pair_size = template.pair_size or 2
-            unit_from = 1
-            unit_to = max(unit_from, min(unit_from + pair_size - 1, unit_to))
-        if template.mapping_mode == "block" and not (self.audience_unit_from and self.audience_unit_to):
-            block_size = template.block_size or 4
-            unit_from = 1
-            unit_to = max(unit_from, min(unit_from + block_size - 1, unit_to))
-        domain = [
-            ("program_id", "=", program.id),
-            ("active", "=", True),
-            ("subject_category", "=", template.subject_category),
-        ]
-        # CAMBIO: Para bskills, NO filtrar por bskill_number
-        # Las skills son intercambiables en el catálogo
-        # if template.subject_category == "bskills" and template.skill_number:
-        #     domain.append(("bskill_number", "=", template.skill_number))
-        if template.mapping_mode in ("per_unit", "pair"):
-            domain.append(("unit_number", "=", unit_from))
-            subject = Subject.search(domain, limit=1)
-            if subject:
-                return subject
-            domain[-1] = ("unit_number", ">=", unit_from)
-            domain.append(("unit_number", "<=", unit_to))
-            return Subject.search(domain, order="unit_number asc", limit=1)
-        if template.mapping_mode == "block":
-            domain = [
-                ("program_id", "=", program.id),
-                ("active", "=", True),
-                ("subject_category", "=", template.subject_category),
-                ("unit_block_start", "=", unit_from),
-                ("unit_block_end", "=", unit_to),
-            ]
-            subject = Subject.search(domain, limit=1)
-            if subject:
-                return subject
-            
-            # FALLBACK ESPECÍFICO PARA ORAL TESTS: Si no encuentra con bloque exacto,
-            # buscar cualquier oral test que tenga unit_block_end coincidente (unidad objetivo)
-            if template.subject_category == 'oral_test':
-                fallback_domain = [
-                    ("program_id", "=", program.id),
-                    ("active", "=", True),
-                    ("subject_category", "=", "oral_test"),
-                    ("unit_block_end", "=", unit_to),  # La unidad objetivo debe coincidir
-                ]
-                return Subject.search(fallback_domain, limit=1)
-        return False
+        return self.subject_id or False
 
     def _get_student_target_unit(self, student, max_unit=None):
         """
@@ -3068,11 +2762,8 @@ class AcademicSession(models.Model):
         """
         Resuelve la asignatura efectiva para un estudiante en esta sesión.
         
-        LÓGICA CORRECTA REFACTORIZADA:
-        - El slot asignado depende EXCLUSIVAMENTE del progreso del estudiante
-        - NO depende del skill_number de la plantilla
-        - Las skills son REPETIBLES: pueden tomarse múltiples veces
-        - Cada skill completa el SIGUIENTE SLOT disponible (1, 2, 3 o 4)
+        NOTA: Simplificado después de eliminar el modelo benglish.agenda.template.
+        Ahora retorna directamente subject_id para sesiones regulares.
         
         ELECTIVE POOLS (HU-POOL):
         - Si la sesión tiene elective_pool_id, resolver del pool
@@ -3088,7 +2779,7 @@ class AcademicSession(models.Model):
             return False
 
         # ═══════════════════════════════════════════════════════════════════════════════
-        # NUEVA LÓGICA: Sesiones con ELECTIVE POOL
+        # LÓGICA: Sesiones con ELECTIVE POOL
         # ═══════════════════════════════════════════════════════════════════════════════
         if self.session_type == 'elective' and self.elective_pool_id:
             return self._resolve_elective_pool_subject(
@@ -3097,399 +2788,8 @@ class AcademicSession(models.Model):
                 raise_on_error=raise_on_error
             )
 
-        # Sesiones legacy: usar subject_id directo
-        if not self.template_id:
-            return self.subject_id
-
-        template = self.template_id
-        if template.program_id and self.program_id and template.program_id != self.program_id:
-            if raise_on_error:
-                raise UserError(_("La plantilla no corresponde al programa de la sesión."))
-            return False
-
-        program = self.program_id or template.program_id
-        if not program:
-            if raise_on_error:
-                raise UserError(_("No se pudo determinar el programa para homologar."))
-            return False
-
-        max_unit = self._get_max_unit_for_program(program)
-        unit_target = self._get_student_target_unit(student, max_unit=max_unit)
-
-        completed_ids = self._get_completed_subject_ids(student) if check_completed else set()
-
-        unit_from, unit_to = self._get_audience_unit_range()
-        unit_from = unit_from or 1
-        unit_to = unit_to or (max_unit or unit_from)
-
-        Subject = self.env["benglish.subject"].sudo()
-
-        def subject_completed(subject):
-            return subject and subject.id in completed_ids
-
-        if template.mapping_mode == "per_unit":
-            if not (unit_from <= unit_target <= unit_to):
-                if raise_on_error:
-                    raise UserError(_("La sesión no está disponible para la unidad del estudiante."))
-                return False
-            
-            # ═══════════════════════════════════════════════════════════════
-            # LÓGICA CORRECTA PARA BSKILLS (REFACTORIZADA)
-            # ═══════════════════════════════════════════════════════════════
-            if template.subject_category == "bskills":
-                # Obtener progreso detallado de la unidad objetivo
-                unit_progress = self._get_unit_progress_details(student, unit_target)
-                
-                # ═══════════════════════════════════════════════════════════════════════
-                # VALIDACIÓN PARA SKILLS: B-check AGENDADO o COMPLETADO
-                # ═══════════════════════════════════════════════════════════════════════
-                # Para agendar Skills, el estudiante puede:
-                # 1. Haber ASISTIDO al B-check (unit_progress['bcheck'] = True) O
-                # 2. Tener el B-check AGENDADO en cualquier plan de la semana
-                # ═══════════════════════════════════════════════════════════════════════
-                bcheck_ok = unit_progress['bcheck']  # Asistió al B-check
-                
-                # Si no asistió, verificar si tiene B-check agendado en CUALQUIER plan
-                if not bcheck_ok:
-                    import logging
-                    _logger = logging.getLogger(__name__)
-                    _logger.info(f"[SKILL VALIDATION] Buscando B-check agendado para Unit {unit_target}, Student {student.id}")
-                    
-                    # Buscar DIRECTAMENTE en la base de datos si hay un B-check agendado
-                    PlanLine = self.env['portal.student.weekly.plan.line'].sudo()
-                    Subject = self.env['benglish.subject'].sudo()
-                    
-                    # Buscar subjects de tipo B-check para esta unidad y programa
-                    bcheck_subjects = Subject.search([
-                        ('subject_category', '=', 'bcheck'),
-                        ('unit_number', '=', unit_target),
-                        ('program_id', '=', program.id)
-                    ])
-                    
-                    _logger.info(f"[SKILL VALIDATION] B-check subjects encontrados: {bcheck_subjects.ids}")
-                    
-                    if bcheck_subjects:
-                        # Buscar si hay alguna línea de plan con sesiones de B-check para este estudiante
-                        bcheck_lines = PlanLine.search([
-                            ('plan_id.student_id', '=', student.id),
-                            ('session_id.template_id.subject_category', '=', 'bcheck'),
-                        ])
-                        
-                        _logger.info(f"[SKILL VALIDATION] Líneas de B-check encontradas: {len(bcheck_lines)}")
-                        
-                        for line in bcheck_lines:
-                            # Verificar si la sesión es para la unidad correcta
-                            session = line.session_id
-                            if session:
-                                # Verificar audience_unit_from y audience_unit_to
-                                unit_from = session.audience_unit_from or 0
-                                unit_to = session.audience_unit_to or 0
-                                _logger.info(f"[SKILL VALIDATION] Sesión {session.id}: unit_from={unit_from}, unit_to={unit_to}, target={unit_target}")
-                                
-                                if unit_from <= unit_target <= unit_to or unit_from == unit_target or unit_to == unit_target:
-                                    bcheck_ok = True
-                                    _logger.info(f"[SKILL VALIDATION] ✅ B-check encontrado agendado!")
-                                    break
-                
-                # Si no tiene B-check completado ni agendado → ERROR
-                if not bcheck_ok:
-                    if raise_on_error:
-                        raise UserError(
-                            _("Para agendar Skills de la Unidad %s, debes tener el B-check de esa unidad:\n"
-                              "• Completado (ya asististe) O\n"
-                              "• Agendado en tu horario semanal\n\n"
-                              "📚 ACCIÓN: Agenda el B-check de la Unidad %s primero") 
-                            % (unit_target, unit_target)
-                        )
-                    return False
-                
-                # Obtener el siguiente slot disponible
-                next_slot = unit_progress['next_pending_slot']
-                
-                if next_slot is None:
-                    # Unidad completa, intentar avanzar a siguiente unidad
-                    if template.allow_next_pending and unit_target < (max_unit or 999):
-                        unit_target += 1
-                        unit_progress = self._get_unit_progress_details(student, unit_target)
-                        
-                        # ═══════════════════════════════════════════════════════════════════════
-                        # VALIDACIÓN PARA NUEVA UNIDAD: B-check AGENDADO o COMPLETADO
-                        # ═══════════════════════════════════════════════════════════════════════
-                        bcheck_new_unit_ok = unit_progress['bcheck']  # Asistió al B-check
-                        
-                        # Si no asistió, buscar directamente en BD
-                        if not bcheck_new_unit_ok:
-                            PlanLine = self.env['portal.student.weekly.plan.line'].sudo()
-                            bcheck_lines = PlanLine.search([
-                                ('plan_id.student_id', '=', student.id),
-                                ('session_id.template_id.subject_category', '=', 'bcheck'),
-                            ])
-                            for line in bcheck_lines:
-                                session = line.session_id
-                                if session:
-                                    unit_from = session.audience_unit_from or 0
-                                    unit_to = session.audience_unit_to or 0
-                                    if unit_from <= unit_target <= unit_to or unit_from == unit_target or unit_to == unit_target:
-                                        bcheck_new_unit_ok = True
-                                        break
-                        
-                        if not bcheck_new_unit_ok:
-                            if raise_on_error:
-                                raise UserError(
-                                    _("Has completado la unidad %s. Para continuar con la Unidad %s, debes tener el B-check:\n"
-                                      "• Completado (ya asististe) O\n"
-                                      "• Agendado en tu horario semanal") 
-                                    % (unit_target - 1, unit_target)
-                                )
-                            return False
-                        
-                        next_slot = unit_progress['next_pending_slot']
-                        if next_slot is None:
-                            if raise_on_error:
-                                raise UserError(_("No hay slots disponibles en las unidades accesibles."))
-                            return False
-                    else:
-                        if raise_on_error:
-                            raise UserError(
-                                _("Has completado todas las skills de la unidad %s. Continúa con la siguiente unidad.") 
-                                % unit_target
-                            )
-                        return False
-                
-                # Buscar la asignatura correspondiente al SLOT (no al skill_number)
-                subject = Subject.search([
-                    ("program_id", "=", program.id),
-                    ("active", "=", True),
-                    ("subject_category", "=", "bskills"),
-                    ("unit_number", "=", unit_target),
-                    ("bskill_number", "=", next_slot),  # ← BASADO EN PROGRESO, NO EN PLANTILLA
-                ], limit=1)
-                
-                if not subject:
-                    if raise_on_error:
-                        raise UserError(
-                            _("Error de configuración: No existe asignatura para Unit %s, Slot %s. "
-                              "Contacta al administrador.") % (unit_target, next_slot)
-                        )
-                    return False
-                
-                # Validación final: verificar que bskill_number esté en rango válido
-                if not (1 <= subject.bskill_number <= 4):
-                    if raise_on_error:
-                        raise UserError(
-                            _("Error de configuración: La asignatura '%s' tiene bskill_number inválido (%s). "
-                              "Debe estar entre 1-4.") % (subject.name, subject.bskill_number)
-                        )
-                    return False
-                
-                return subject
-            
-            # ═══════════════════════════════════════════════════════════════
-            # LÓGICA PARA OTRAS CATEGORÍAS (B-check, etc.) - SIN CAMBIOS
-            # ═══════════════════════════════════════════════════════════════
-            domain = [
-                ("program_id", "=", program.id),
-                ("active", "=", True),
-                ("subject_category", "=", template.subject_category),
-                ("unit_number", ">=", unit_from),
-                ("unit_number", "<=", unit_to),
-            ]
-            
-            candidates = Subject.search(domain, order="unit_number asc")
-            # Buscar en la unidad objetivo
-            primary = candidates.filtered(lambda s: s.unit_number == unit_target and not subject_completed(s))[:1]
-            if primary:
-                return primary
-            # Si todas completadas en unit_target, buscar siguiente pendiente
-            if template.allow_next_pending:
-                pending = candidates.filtered(lambda s: not subject_completed(s) and s.unit_number >= unit_target)
-                if pending:
-                    return pending[0]
-            if raise_on_error:
-                raise UserError(_("No hay asignaturas pendientes disponibles para esta sesión."))
-            return False
-
-        if template.mapping_mode == "pair":
-            pair_size = template.pair_size or 2
-            pair_start = unit_target - ((unit_target - 1) % pair_size)
-            pair_end = min(pair_start + pair_size - 1, max_unit or pair_start)
-            
-            # ═══════════════════════════════════════════════════════════════════════
-            # CORRECCIÓN: Respetar audiencia específica de la sesión
-            # ═══════════════════════════════════════════════════════════════════════
-            # Si la sesión tiene audiencia específica (ej: solo Unit 8), 
-            # NO buscar en toda la pareja, solo en la audiencia definida
-            # 
-            # Ejemplo:
-            # - Sesión con audience 7-8 → Busca en [7, 8] 
-            # - Sesión con audience 8-8 → Busca SOLO en [8]
-            # ═══════════════════════════════════════════════════════════════════════
-            if self.audience_unit_from and self.audience_unit_to:
-                # Si hay audiencia específica, úsala en lugar de la pareja calculada
-                pair_start = self.audience_unit_from
-                pair_end = self.audience_unit_to
-                
-                # Validar que el estudiante esté dentro de la audiencia
-                if not (pair_start <= unit_target <= pair_end):
-                    if raise_on_error:
-                        raise UserError(_("La sesión no está disponible para la unidad del estudiante."))
-                    return False
-            
-            # Buscar B-checks solo en el rango definido (audiencia o pareja)
-            domain = [
-                ("program_id", "=", program.id),
-                ("active", "=", True),
-                ("subject_category", "=", template.subject_category),
-                ("unit_number", ">=", pair_start),
-                ("unit_number", "<=", pair_end),
-            ]
-            candidates = Subject.search(domain, order="unit_number asc")
-            
-            # Primero: Buscar B-check de la unidad exacta del estudiante
-            primary = candidates.filtered(lambda s: s.unit_number == unit_target)[:1]
-            if primary and not subject_completed(primary):
-                return primary
-            
-            # Log de diagnóstico si B-check de unidad actual está completado
-            if primary and subject_completed(primary):
-                import logging
-                _logger = logging.getLogger(__name__)
-                _logger.info(
-                    f"[RESOLVE B-CHECK] B-check Unit {unit_target} completado para {student.name}. "
-                    f"Buscando siguiente pendiente con allow_next_pending={template.allow_next_pending}"
-                )
-            
-            # Segundo: Si allow_next_pending, buscar siguiente pendiente DENTRO de la audiencia
-            if template.allow_next_pending:
-                pending = candidates.filtered(lambda s: not subject_completed(s) and s.unit_number >= unit_target)
-                if pending:
-                    pending_bcheck = pending[0]
-                    
-                    # ═══════════════════════════════════════════════════════════════
-                    # CORRECCIÓN: B-checks NO requieren skills completas
-                    # ═══════════════════════════════════════════════════════════════
-                    # Los B-checks se publican en pareja (7-8, 9-10, etc.)
-                    # Estudiantes pueden agendar el B-check de la siguiente unidad
-                    # SIN necesidad de completar todas las skills de la unidad anterior
-                    # 
-                    # Ejemplo:
-                    # - Estudiante en Unit 7, completó B-check 7, tiene 1/4 skills
-                    # - Puede agendar B-check Unit 8 ✅ (NO requiere 4/4 skills)
-                    # ═══════════════════════════════════════════════════════════════
-                    
-                    import logging
-                    _logger = logging.getLogger(__name__)
-                    _logger.info(
-                        f"[RESOLVE B-CHECK] Asignando B-check Unit {pending_bcheck.unit_number} "
-                        f"para {student.name} (actualmente en Unit {unit_target})"
-                    )
-                    
-                    return pending_bcheck
-            
-            if raise_on_error:
-                raise UserError(_("No hay B-checks pendientes para esta sesión."))
-            return False
-
-        if template.mapping_mode == "block":
-            block_size = template.block_size or 4
-            
-            # ═══════════════════════════════════════════════════════════════════════
-            # CORRECCIÓN CRÍTICA: Para Oral Tests, usar audience_unit_to en lugar de unit_target
-            # ═══════════════════════════════════════════════════════════════════════
-            # Oral Tests se definen por el audience_unit_to que representa la última unidad del bloque
-            # Ejemplo: Oral Test 4 (audience_unit_to=4) valida bloque 1-4
-            # Oral Test 8 (audience_unit_to=8) valida bloque 5-8
-            # ═══════════════════════════════════════════════════════════════════════
-            if template.subject_category == "oral_test" and self.audience_unit_to:
-                # Para Oral Tests, el bloque se determina por audience_unit_to
-                reference_unit = self.audience_unit_to
-            else:
-                # Para otras categorías (bcheck, bskills), usar la unidad actual del estudiante
-                reference_unit = unit_target
-            
-            block_start = ((reference_unit - 1) // block_size) * block_size + 1
-            block_end = min(block_start + block_size - 1, max_unit or block_start)
-            
-            # ═══════════════════════════════════════════════════════════════════════
-            # VALIDACIÓN SIMPLIFICADA PARA ORAL TESTS
-            # ═══════════════════════════════════════════════════════════════════════
-            # Para agendar un Oral Test, el estudiante solo necesita:
-            # - Haber ASISTIDO al B-check de la ÚLTIMA UNIDAD del bloque (ej: Unit 16 para bloque 13-16)
-            # - NO es obligatorio completar las skills
-            # ═══════════════════════════════════════════════════════════════════════
-            if check_prereq and template.subject_category == "oral_test":
-                # Solo validar el B-check de la última unidad del bloque
-                oral_test_unit = block_end  # Última unidad del bloque (ej: 16 para bloque 13-16)
-                
-                History = self.env['benglish.academic.history'].sudo()
-                
-                # Verificar si asistió al B-check de la unidad del Oral Test
-                bcheck_attended = History.search([
-                    ('student_id', '=', student.id),
-                    ('attendance_status', '=', 'attended'),  # ← DEBE haber asistido
-                    ('subject_id.subject_category', '=', 'bcheck'),
-                    ('subject_id.unit_number', '=', oral_test_unit),
-                    ('subject_id.program_id', '=', student.program_id.id if student.program_id else False)
-                ], limit=1)
-                
-                if not bcheck_attended:
-                    # Verificar si faltó al B-check para mensaje específico
-                    bcheck_absent = History.search([
-                        ('student_id', '=', student.id),
-                        ('attendance_status', '=', 'absent'),
-                        ('subject_id.subject_category', '=', 'bcheck'),
-                        ('subject_id.unit_number', '=', oral_test_unit),
-                        ('subject_id.program_id', '=', student.program_id.id if student.program_id else False)
-                    ], limit=1)
-                    
-                    if raise_on_error:
-                        if bcheck_absent:
-                            raise UserError(
-                                _("No puedes agendar este Oral Test.\n\n"
-                                  "Para presentar el Oral Test de la Unidad %s, debías haber ASISTIDO "
-                                  "al B-Check de esa unidad, pero faltaste.\n\n"
-                                  "✅ SOLUCIÓN:\n"
-                                  "1. Solicita que te habiliten un NUEVO B-Check de la Unidad %s\n"
-                                  "2. Asiste al B-Check de recuperación\n"
-                                  "3. Después podrás agendar el Oral Test") % (oral_test_unit, oral_test_unit)
-                            )
-                        else:
-                            raise UserError(
-                                _("No puedes agendar este Oral Test.\n\n"
-                                  "Para presentar el Oral Test de la Unidad %s, debes haber ASISTIDO "
-                                  "al B-Check de esa unidad.\n\n"
-                                  "✅ PRÓXIMOS PASOS:\n"
-                                  "1. Agenda el B-Check de la Unidad %s\n"
-                                  "2. Asiste al B-Check\n"
-                                  "3. Luego podrás agendar el Oral Test") % (oral_test_unit, oral_test_unit)
-                            )
-                    return False
-                    
-            domain = [
-                ("program_id", "=", program.id),
-                ("active", "=", True),
-                ("subject_category", "=", template.subject_category),
-                ("unit_block_start", "=", block_start),
-                ("unit_block_end", "=", block_end),
-            ]
-            subject = Subject.search(domain, limit=1)
-            if subject and not subject_completed(subject):
-                return subject
-            if raise_on_error:
-                raise UserError(_("No hay Oral Test disponible para este bloque."))
-            return False
-
-        if template.mapping_mode == "fixed":
-            subject = template.fixed_subject_id or self.subject_id
-            if subject and not subject_completed(subject):
-                return subject
-            if raise_on_error:
-                raise UserError(_("No hay asignatura fija disponible o ya fue completada."))
-            return False
-
-        if raise_on_error:
-            raise UserError(_("No se pudo resolver la asignatura efectiva."))
-        return False
+        # Sesiones regulares: usar subject_id directo (lógica de template eliminada)
+        return self.subject_id
 
     def _generate_session_code(self):
         """

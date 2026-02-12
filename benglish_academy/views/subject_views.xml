@@ -118,7 +118,6 @@
                         <group>
                             <group string="🏛️ Ubicación Curricular">
                                 <field name="phase_id" readonly="1" />
-                                <field name="plan_ids" widget="many2many_tags" readonly="1" />
                                 <field name="program_id" readonly="1" />
                             </group>
                             <group string="📊 Carga Académica">
@@ -193,7 +192,7 @@
             <field name="name">benglish.subject.kanban</field>
             <field name="model">benglish.subject</field>
             <field name="arch" type="xml">
-                <kanban class="o_kanban_mobile" create="false">
+                <kanban class="o_kanban_mobile">
                     <field name="name" />
                     <field name="code" />
                     <field name="level_id" />

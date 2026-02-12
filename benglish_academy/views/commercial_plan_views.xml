@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         PLAN COMERCIAL - VISTAS
+         Define la estructura de asignaturas por tipo para cada plan comercial
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA TREE - PLAN COMERCIAL
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_commercial_plan_list" model="ir.ui.view">
+        <field name="name">benglish.commercial.plan.list</field>
+        <field name="model">benglish.commercial.plan</field>
+        <field name="arch" type="xml">
+            <list string="Planes Comerciales"
+                decoration-muted="state == 'archived'"
+                decoration-info="state == 'draft'"
+                decoration-success="state == 'active'">
+                <field name="code" optional="show" />
+                <field name="name" />
+                <field name="program_id" />
+                <field name="level_start" string="Desde" />
+                <field name="level_end" string="Hasta" />
+                <field name="total_levels" string="Niveles" optional="hide" />
+                <field name="total_selection" string="Selección" />
+                <field name="total_oral_test" string="Oral Test" />
+                <field name="total_electives" string="Electivas" />
+                <field name="total_subjects" string="Total" decoration-bf="1" />
+                <field name="enrollment_count" string="Matrículas" optional="show" />
+                <field name="state" widget="badge"
+                    decoration-info="state == 'draft'"
+                    decoration-success="state == 'active'"
+                    decoration-danger="state == 'archived'" />
+                <field name="active" column_invisible="1" />
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA FORM - PLAN COMERCIAL
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_commercial_plan_form" model="ir.ui.view">
+        <field name="name">benglish.commercial.plan.form</field>
+        <field name="model">benglish.commercial.plan</field>
+        <field name="arch" type="xml">
+            <form string="Plan Comercial">
+                <header>
+                    <button name="action_activate"
+                        string="Activar"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'draft'" />
+                    <button name="action_set_draft"
+                        string="Volver a Borrador"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="state != 'active'"
+                        confirm="¿Seguro que desea volver este plan a borrador? Solo es posible si no tiene matrículas activas." />
+                    <button name="action_archive"
+                        string="Archivar"
+                        type="object"
+                        class="btn-warning"
+                        invisible="state == 'archived'"
+                        confirm="¿Seguro que desea archivar este plan? No estará disponible para nuevas matrículas." />
+                    <button name="action_unarchive"
+                        string="Reactivar"
+                        type="object"
+                        class="btn-success"
+                        invisible="state != 'archived'" />
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active" />
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_enrollments"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-users">
+                            <field name="enrollment_count" widget="statinfo" string="Matrículas" />
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archivado" bg_color="bg-danger"
+                        invisible="active" />
+
+                    <div class="oe_title">
+                        <label for="name" />
+                        <h1>
+                            <field name="name"
+                                placeholder="Nombre del Plan Comercial (ej: Plan Plus)" />
+                        </h1>
+                        <h3>
+                            <field name="code" readonly="1" />
+                        </h3>
+                    </div>
+
+                    <group>
+                        <group name="basic_info" string="Información Básica">
+                            <field name="program_id" options="{'no_create': True}" />
+                            <field name="commercial_value" />
+                            <field name="sequence" />
+                        </group>
+                        <group name="level_config" string="Configuración de Niveles">
+                            <field name="level_start" />
+                            <field name="level_end" />
+                            <field name="total_levels" readonly="1" />
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Configuración de Asignaturas" name="subject_config">
+                            <field name="line_ids" nolabel="1">
+                                <list string="Configuración" editable="bottom">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="subject_type" />
+                                    <field name="calculation_mode" />
+                                    <field name="quantity_per_level"
+                                        invisible="calculation_mode != 'per_level'" />
+                                    <field name="levels_interval"
+                                        invisible="calculation_mode != 'per_x_levels'" />
+                                    <field name="fixed_quantity"
+                                        invisible="calculation_mode != 'fixed_total'" />
+                                    <field name="calculated_total" decoration-bf="1" string="Total" />
+                                </list>
+                                <form string="Línea de Configuración">
+                                    <group>
+                                        <group string="Tipo de Asignatura">
+                                            <field name="subject_type" />
+                                            <field name="sequence" />
+                                        </group>
+                                        <group string="Cálculo">
+                                            <field name="calculation_mode" />
+                                            <field name="quantity_per_level"
+                                                invisible="calculation_mode != 'per_level'" />
+                                            <field name="levels_interval"
+                                                invisible="calculation_mode != 'per_x_levels'" />
+                                            <field name="fixed_quantity"
+                                                invisible="calculation_mode != 'fixed_total'" />
+                                            <field name="calculated_total" readonly="1" />
+                                        </group>
+                                    </group>
+                                    <group string="Notas">
+                                        <field name="notes" />
+                                    </group>
+                                </form>
+                            </field>
+                            <group>
+                                <div class="alert alert-info" role="alert">
+                                    <strong><i class="fa fa-info-circle" /> Instrucciones:</strong>
+                                    <p>Configure cuántas asignaturas de cada tipo debe cursar el
+                                        estudiante con este plan.</p>
+                                    <ul>
+                                        <li><strong>Por Nivel:</strong> X asignaturas por cada nivel
+                                            (ej: 2 electivas por nivel = 48 en 24 niveles)</li>
+                                        <li><strong>Cada X Niveles:</strong> 1 asignatura cada X
+                                            niveles (ej: 1 oral test cada 4 niveles = 6 en 24
+                                            niveles)</li>
+                                        <li><strong>Total Fijo:</strong> Cantidad fija total
+                                            independiente de niveles</li>
+                                    </ul>
+                                </div>
+                            </group>
+                        </page>
+
+                        <page string="Resumen de Totales" name="totals">
+                            <!-- <group>
+                                <group string="Totales por Tipo">
+                                    <field name="total_selection" />
+                                    <field name="total_oral_test" />
+                                    <field name="total_electives" />
+                                    <field name="total_regular" />
+                                    <field name="total_bskills" />
+                                </group>
+                                <group string="Total General">
+                                    <div class="o_row">
+                                        <span class="text-muted">Total de Asignaturas:</span>
+                                        <field name="total_subjects" class="oe_inline" nolabel="1" />
+                                    </div>
+                                </group>
+                            </group>-->
+
+                            <!-- Tabla de resumen visual -->
+                            <div class="alert alert-success">
+                                <h4><i class="fa fa-calculator" /> Resumen del Plan</h4>
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Tipo</th>
+                                            <th class="text-center">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Selección</td>
+                                            <td class="text-center">
+                                                <field name="total_selection" nolabel="1" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Oral Tests</td>
+                                            <td class="text-center">
+                                                <field name="total_oral_test" nolabel="1" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Electivas</td>
+                                            <td class="text-center">
+                                                <field name="total_electives" nolabel="1" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Regulares</td>
+                                            <td class="text-center">
+                                                <field name="total_regular" nolabel="1" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>B-Skills</td>
+                                            <td class="text-center">
+                                                <field name="total_bskills" nolabel="1" />
+                                            </td>
+                                        </tr>
+                                        <tr class="table-primary">
+                                            <th>TOTAL ASIGNATURAS</th>
+                                            <th class="text-center">
+                                                <field name="total_subjects" nolabel="1" />
+                                            </th>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </page>
+
+                        <page string="Descripción" name="description">
+                            <field name="description"
+                                placeholder="Descripción detallada del plan comercial y sus beneficios..." />
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA SEARCH - PLAN COMERCIAL
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_commercial_plan_search" model="ir.ui.view">
+        <field name="name">benglish.commercial.plan.search</field>
+        <field name="model">benglish.commercial.plan</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Planes Comerciales">
+                <field name="name" />
+                <field name="code" />
+                <field name="program_id" />
+                <separator />
+                <filter name="filter_draft" string="Borradores" domain="[('state', '=', 'draft')]" />
+                <filter name="filter_active" string="Activos" domain="[('state', '=', 'active')]" />
+                <filter name="filter_archived" string="Archivados"
+                    domain="[('state', '=', 'archived')]" />
+                <separator />
+                <group expand="0" string="Agrupar Por">
+                    <filter name="group_program" string="Programa"
+                        context="{'group_by': 'program_id'}" />
+                    <filter name="group_state" string="Estado"
+                        context="{'group_by': 'state'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA KANBAN - PLAN COMERCIAL
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_commercial_plan_kanban" model="ir.ui.view">
+        <field name="name">benglish.commercial.plan.kanban</field>
+        <field name="model">benglish.commercial.plan</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="name" />
+                <field name="code" />
+                <field name="program_id" />
+                <field name="commercial_value" />
+                <field name="total_subjects" />
+                <field name="total_levels" />
+                <field name="enrollment_count" />
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top mb-0">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name" />
+                                        </strong>
+                                    </div>
+                                    <span class="badge rounded-pill bg-primary"> Valor: <field
+                                            name="commercial_value" />
+                                    </span>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <field name="program_id" />
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <span class="badge bg-success">
+                                            <i class="fa fa-book" /> <field name="total_subjects" />
+                                            asignaturas </span>
+                                        <span class="badge bg-info ms-1">
+                                            <field name="total_levels" /> niveles </span>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <span class="badge bg-secondary">
+                                            <i class="fa fa-users" />
+                                            <field name="enrollment_count" />
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         ACCIÓN DE VENTANA - PLAN COMERCIAL
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="action_commercial_plan" model="ir.actions.act_window">
+        <field name="name">Planes Comerciales</field>
+        <field name="res_model">benglish.commercial.plan</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_commercial_plan_search" />
+        <field name="context">{'search_default_filter_active': 1, 'search_default_group_state': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                ¡Crea tu primer Plan Comercial!
+            </p>
+            <p>
+                Los planes comerciales definen la estructura de asignaturas que debe cursar cada
+                estudiante
+                según el plan que compró (Plus, Gold, Módulo, etc.).
+            </p>
+            <p> A diferencia de un plan de estudios fijo, aquí defines <strong>cuántas asignaturas
+                    de cada tipo</strong> por nivel, y el sistema calcula automáticamente los
+                totales. </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         NOTA: El menú está definido en menus.xml como menu_benglish_commercial_plan
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         SECUENCIA - PLAN COMERCIAL
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="seq_commercial_plan" model="ir.sequence">
+        <field name="name">Plan Comercial</field>
+        <field name="code">benglish.commercial.plan</field>
+        <field name="prefix">CP-</field>
+        <field name="padding">3</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+    </record>
+
+</odoo>

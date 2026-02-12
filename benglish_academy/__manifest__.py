@@ -35,6 +35,7 @@
         "hr",
         "crm",
         "l10n_latam_base",  # Para tipos de documento (l10n_latam.identification.type)
+        "ox_res_partner_ext_co",  # Extensión de res.partner para Colombia
     ],
     "data": [
         # Modelos - Registro explícito (DEBE ir ANTES de security)
@@ -101,7 +102,6 @@
         "views/student_enrollment_import_wizard_views.xml",
         "views/portal_user_creation_wizard_views.xml",
         "views/student_actions.xml",
-        "views/agenda_template_views.xml",
         "views/publish_session_wizard_views.xml",
         # Vistas - Programación Académica
         "views/course_views.xml",
@@ -117,6 +117,12 @@
         "views/academic_history_views.xml",
         # Vistas - FASE 2: Pools de Electivas
         "views/elective_pool_views.xml",
+        # Vistas - Plan Comercial (NUEVA LÓGICA - Feb 2026)
+        "views/commercial_plan_views.xml",
+        # Vistas - Periodo Académico (Feb 2026)
+        "views/academic_period_views.xml",
+        # Vistas - Progreso Comercial del Estudiante (Feb 2026)
+        "views/student_commercial_progress_views.xml",
         # Vistas - FASE 2: Requisitos, Ejecución, Cumplimiento (plan_requirement_views ya cargado arriba)
         "views/student_requirement_status_views.xml",
         "views/student_compliance_views.xml",

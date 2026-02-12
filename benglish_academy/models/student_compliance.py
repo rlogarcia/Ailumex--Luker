@@ -105,6 +105,23 @@ class StudentCompliance(models.Model):
         help="Asignatura que se contabilizó para el cumplimiento",
     )
 
+    # Categoría de asignatura (para integración con progreso comercial)
+    subject_category = fields.Selection(
+        related="subject_id.subject_category",
+        store=True,
+        readonly=True,
+        help="Categoría de la asignatura (del subject)",
+    )
+
+    # Relación con progreso comercial (si aplica)
+    commercial_progress_id = fields.Many2one(
+        comodel_name="benglish.student.commercial.progress",
+        string="Progreso Comercial",
+        ondelete="set null",
+        readonly=True,
+        help="Registro de progreso comercial actualizado con este cumplimiento",
+    )
+
     # ═══════════════════════════════════════════════════════════════════════════
     # INFORMACIÓN DEL CUMPLIMIENTO
     # ═══════════════════════════════════════════════════════════════════════════
@@ -265,6 +282,12 @@ class StudentCompliance(models.Model):
                 session_id=session.id if session else False
             )
 
+        # ═══════════════════════════════════════════════════════════════════════
+        # INTEGRACIÓN CON PROGRESO COMERCIAL (Feb 2026)
+        # ═══════════════════════════════════════════════════════════════════════
+        # Actualizar el progreso comercial si la matrícula tiene plan comercial
+        compliance._update_commercial_progress()
+
         _logger.info(
             "Cumplimiento registrado: %s para estudiante %s (matrícula %s).",
             compliance.display_name,
@@ -273,3 +296,84 @@ class StudentCompliance(models.Model):
         )
 
         return compliance
+
+    def _update_commercial_progress(self):
+        """
+        Actualiza el progreso comercial del estudiante basándose en este cumplimiento.
+        
+        Mapeo de subject_category a commercial_plan subject_type:
+        - bcheck → selection
+        - bskills → bskills  
+        - oral_test → oral_test
+        - conversation_club, master_class → elective
+        - other → regular
+        """
+        self.ensure_one()
+        
+        # Verificar si la matrícula tiene plan comercial
+        if not self.enrollment_id.commercial_plan_id:
+            _logger.debug(
+                "Matrícula %s no tiene plan comercial, omitiendo actualización de progreso",
+                self.enrollment_id.code
+            )
+            return
+        
+        # Obtener el nivel del cumplimiento
+        level = self.level_id
+        if not level:
+            _logger.warning(
+                "Cumplimiento %s sin nivel definido, omitiendo actualización de progreso",
+                self.id
+            )
+            return
+        
+        # Buscar o crear el registro de progreso comercial para este nivel
+        CommercialProgress = self.env["benglish.student.commercial.progress"]
+        progress = CommercialProgress.search([
+            ("enrollment_id", "=", self.enrollment_id.id),
+            ("level_id", "=", level.id),
+        ], limit=1)
+        
+        if not progress:
+            # Si no existe el registro de progreso, intentar generarlo
+            _logger.info(
+                "Generando registro de progreso para matrícula %s nivel %s",
+                self.enrollment_id.code, level.name
+            )
+            CommercialProgress.create_progress_for_enrollment(self.enrollment_id)
+            progress = CommercialProgress.search([
+                ("enrollment_id", "=", self.enrollment_id.id),
+                ("level_id", "=", level.id),
+            ], limit=1)
+        
+        if not progress:
+            _logger.warning(
+                "No se pudo crear/encontrar progreso para matrícula %s nivel %s",
+                self.enrollment_id.code, level.name
+            )
+            return
+        
+        # Mapear subject_category a subject_type del plan comercial
+        category_to_type = {
+            "bcheck": "selection",
+            "bskills": "bskills",
+            "oral_test": "oral_test",
+            "conversation_club": "elective",
+            "master_class": "elective",
+            "placement_test": "regular",
+            "other": "regular",
+        }
+        
+        subject_category = self.subject_id.subject_category
+        commercial_type = category_to_type.get(subject_category, "regular")
+        
+        # Actualizar el progreso
+        progress.update_from_compliance(commercial_type, increment=1)
+        
+        # Guardar la referencia al progreso actualizado
+        self.commercial_progress_id = progress.id
+        
+        _logger.info(
+            "Progreso comercial actualizado: %s, tipo=%s, nivel=%s",
+            self.enrollment_id.code, commercial_type, level.name
+        )

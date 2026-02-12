@@ -4,6 +4,9 @@ from . import res_config_settings
 from . import session_sync_mixin
 from . import program
 from . import plan
+from . import commercial_plan  # NUEVO: Plan Comercial (Feb 2026)
+from . import commercial_plan_line  # NUEVO: Líneas del Plan Comercial
+from . import student_commercial_progress  # NUEVO: Progreso dinámico del estudiante
 from . import phase
 from . import level
 from . import subject
@@ -37,7 +40,6 @@ from . import student_import_batch
 from . import student_import_line
 from . import student_import_log
 from . import academic_agenda
-from . import agenda_template
 from . import academic_session
 from . import elective_pool  # FASE 2: Pools de electivas por fase
 from . import plan_requirement  # Requisitos académicos por nivel y plan
@@ -46,6 +48,7 @@ from . import student_requirement_status  # Estado de requisitos del estudiante
 from . import student_compliance  # Cumplimiento académico del estudiante
 from . import class_execution  # Clase ejecutada y asistencia
 from . import academic_history
+from . import academic_period  # NUEVO: Periodo Académico (Feb 2026)
 from . import placement_test
 from . import placement_test_prospect
 from . import subject_session_tracking

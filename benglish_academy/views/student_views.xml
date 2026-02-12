@@ -184,7 +184,7 @@
                             </div>
                             <field name="program_id" readonly="1"
                                 placeholder="Se asigna al aprobar matrícula" />
-                            <field name="plan_id" readonly="1"
+                            <field name="commercial_plan_id" readonly="1"
                                 placeholder="Se asigna al aprobar matrícula" />
                             <field name="current_phase_id" readonly="1"
                                 placeholder="Calculado desde matrículas activas" />
@@ -206,18 +206,23 @@
                             string="Información de Contacto / Preferencias académicas">
                             <field name="email" widget="email" />
                             <field name="mobile" widget="phone" />
-                            <field name="city" placeholder="Ciudad" options="{'no_create': True}" />
-                            <field name="country_id" placeholder="País" />
-                            <field name="address" placeholder="Calle, número, barrio..." />
+                            <field name="country_id" placeholder="País"
+                                options="{'no_create': True, 'no_open': True}" />
+                            <field name="state_id" placeholder="Departamento/Estado"
+                                options="{'no_create': True, 'no_open': True}" />
+                            <field name="city_id" placeholder="Ciudad"
+                                options="{'no_create': True, 'no_open': True}" />
+                            <field name="city" placeholder="Barrio/Zona" />
+                            <field name="address" placeholder="Calle, número..." />
                         </group>
                         <group name="academic_info" string="Información del Plan">
                             <field name="program_id" string="Programa"
                                 placeholder="Selecciona el programa del estudiante"
                                 options="{'no_create': True}" />
-                            <field name="plan_id" string="Plan de Estudio"
-                                placeholder="Selecciona el plan de estudio"
+                            <field name="commercial_plan_id" string="Plan Comercial"
+                                placeholder="Selecciona el plan comercial"
                                 options="{'no_create': True}"
-                                domain="[('program_id', '=', program_id)]" />
+                                domain="[('program_id', '=', program_id), ('state', '=', 'active')]" />
                             <field name="preferred_campus_id" string="Sede Principal" />
                             <field name="preferred_delivery_mode" string="Modalidad Preferida"
                                 widget="radio"
@@ -306,7 +311,7 @@
                                     <!-- Mostrar plan desde matrícula activa -->
                                     <div class="alert alert-info" role="alert"
                                         invisible="not active_enrollment_ids">
-                                        <strong>Plan de Estudios (desde matrícula activa):</strong>
+                                        <strong>Plan Comercial (desde matrícula activa):</strong>
                                         <br />
                                         <field name="active_enrollment_ids" invisible="1" />
                                         <span invisible="not active_enrollment_ids">
@@ -315,16 +320,17 @@
                                     </div>
 
                                     <div class="alert alert-warning" role="alert"
-                                        invisible="plan_id or active_enrollment_ids">
+                                        invisible="commercial_plan_id or active_enrollment_ids">
                                         <strong>⚠️ Sin Plan Asignado:</strong> El estudiante no
                                         tiene matrícula activa. El plan se asigna al crear una
                                         matrícula. </div>
 
                                     <!-- Información básica del plan -->
-                                    <group string="Información del Plan" invisible="not plan_id">
+                                    <group string="Información del Plan"
+                                        invisible="not commercial_plan_id">
                                         <group>
                                             <field name="program_id" readonly="1" />
-                                            <field name="plan_id" readonly="1" />
+                                            <field name="commercial_plan_id" readonly="1" />
                                         </group>
                                         <group>
                                             <field name="current_phase_id" readonly="1" />
@@ -334,12 +340,12 @@
                                     </group>
 
                                     <!-- Botón para ver detalles del plan -->
-                                    <div invisible="not plan_id" class="mt16">
+                                    <div invisible="not commercial_plan_id" class="mt16">
                                         <button name="action_view_plan_details"
                                             type="object"
                                             string="Ver Estructura Completa del Plan"
                                             class="btn-primary"
-                                            invisible="not plan_id"
+                                            invisible="not commercial_plan_id"
                                             icon="fa-sitemap" />
                                     </div>
                                 </page>
@@ -348,7 +354,7 @@
                                 <page name="subject_progress" string="📈 Avance">
                                     <div class="alert alert-info" role="alert">
                                         <strong>Progreso por Asignatura:</strong> Detalle del avance
-                                        en cada asignatura del plan de estudios. </div>
+                                        en cada asignatura del plan comercial. </div>
 
                                     <!-- Obtener progreso desde la matrícula activa -->
                                     <field name="active_enrollment_ids" invisible="1" />
@@ -359,7 +365,7 @@
                                         <field name="active_enrollment_ids" nolabel="1">
                                             <list string="Matrículas en Curso" open_form_view="True">
                                                 <field name="code" />
-                                                <field name="plan_id" />
+                                                <field name="commercial_plan_id" />
                                                 <field name="current_subject_id"
                                                     string="Asignatura Actual" />
                                                 <field name="state" widget="badge" />
@@ -379,15 +385,15 @@
                                         <strong>Asignaturas del Plan:</strong> Muestra TODAS las
                                         asignaturas del plan. El estudiante está en: <field
                                             name="program_id" readonly="1" nolabel="1" /> / <field
-                                            name="plan_id" readonly="1" nolabel="1" /> / <field
+                                            name="commercial_plan_id" readonly="1" nolabel="1" /> / <field
                                             name="current_phase_id" readonly="1" nolabel="1" />
                                     </div>
 
-                                    <field name="plan_id" invisible="1" />
+                                    <field name="commercial_plan_id" invisible="1" />
                                     <field name="subject_ids" invisible="1" />
 
                                     <div class="alert alert-warning" role="alert"
-                                        invisible="plan_id">
+                                        invisible="commercial_plan_id">
                                         ⚠️ El estudiante aún no tiene un plan asignado. </div>
 
                                     <!-- Lista única de todas las sesiones -->

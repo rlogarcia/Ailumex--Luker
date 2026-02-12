@@ -22,7 +22,9 @@
                                 <field name="agenda_id" required="1" />
                                 <field name="campus_id" readonly="1" />
                                 <field name="program_id" required="1" />
-                                <field name="template_id" required="1" />
+                                <field name="subject_id" required="1"
+                                    domain="[('program_id', '=', program_id), ('active', '=', True)]"
+                                    options="{'no_create': True}" />
                             </group>
                             <group string="Audiencia">
                                 <field name="audience_phase_id" />

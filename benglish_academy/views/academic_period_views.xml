@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         PERIODO ACADÉMICO - VISTAS
+         Gestiona los períodos académicos (semestres, cuatrimestres, etc.)
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA LIST - PERIODO ACADÉMICO
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_academic_period_list" model="ir.ui.view">
+        <field name="name">benglish.academic.period.list</field>
+        <field name="model">benglish.academic.period</field>
+        <field name="arch" type="xml">
+            <list string="Periodos Académicos"
+                decoration-info="state == 'draft'"
+                decoration-success="state == 'active'"
+                decoration-warning="state == 'open'"
+                decoration-muted="state in ('closed', 'archived')">
+                <field name="code" />
+                <field name="name" />
+                <field name="period_type" />
+                <field name="date_start" />
+                <field name="date_end" />
+                <field name="duration_days" string="Días" />
+                <field name="program_id" optional="hide" />
+                <field name="enrollment_count" string="Matrículas" />
+                <field name="state" widget="badge"
+                    decoration-info="state == 'draft'"
+                    decoration-success="state == 'active'"
+                    decoration-warning="state == 'open'"
+                    decoration-danger="state in ('closed', 'archived')" />
+                <field name="is_current" widget="boolean" />
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA FORM - PERIODO ACADÉMICO
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_academic_period_form" model="ir.ui.view">
+        <field name="name">benglish.academic.period.form</field>
+        <field name="model">benglish.academic.period</field>
+        <field name="arch" type="xml">
+            <form string="Periodo Académico">
+                <header>
+                    <button name="action_open_enrollment"
+                        string="Abrir Matrículas"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'draft'" />
+                    <button name="action_start"
+                        string="Iniciar Periodo"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'open'" />
+                    <button name="action_close"
+                        string="Cerrar Periodo"
+                        type="object"
+                        class="btn-warning"
+                        invisible="state != 'active'"
+                        confirm="¿Seguro que desea cerrar este periodo? No se podrán agregar más matrículas." />
+                    <button name="action_archive"
+                        string="Archivar"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="state != 'closed'" />
+                    <button name="action_set_draft"
+                        string="Volver a Borrador"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="state not in ('open', 'closed')" />
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="draft,open,active,closed" />
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_enrollments"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-users">
+                            <field name="enrollment_count" widget="statinfo" string="Matrículas" />
+                        </button>
+                        <button name="action_view_agendas"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-calendar">
+                            <field name="agenda_count" widget="statinfo" string="Agendas" />
+                        </button>
+                    </div>
+
+                    <widget name="web_ribbon" title="Archivado" bg_color="bg-danger"
+                        invisible="active" />
+                    <widget name="web_ribbon" title="Periodo Actual" bg_color="bg-success"
+                        invisible="not is_current" />
+
+                    <div class="oe_title">
+                        <label for="name" />
+                        <h1>
+                            <field name="name"
+                                placeholder="Nombre del Periodo (ej: Semestre 2026-1)" />
+                        </h1>
+                        <h3>
+                            <field name="code" placeholder="Código (ej: 2026-1)" />
+                        </h3>
+                    </div>
+
+                    <group>
+                        <group name="type_info" string="Tipo de Periodo">
+                            <field name="period_type" />
+                            <field name="program_id" options="{'no_create': True}" />
+                            <field name="sequence" />
+                        </group>
+                        <group name="dates" string="Fechas del Periodo">
+                            <field name="date_start" />
+                            <field name="date_end" />
+                            <field name="duration_days" readonly="1" />
+                        </group>
+                    </group>
+
+                    <group>
+                        <group name="enrollment_dates" string="Ventana de Matrículas">
+                            <field name="enrollment_date_start" />
+                            <field name="enrollment_date_end" />
+                        </group>
+                        <group name="other" string="Otros">
+                            <field name="company_id" groups="base.group_multi_company" />
+                            <field name="active" />
+                            <field name="is_current" readonly="1" />
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Descripción" name="description">
+                            <field name="description"
+                                placeholder="Notas o descripción del periodo..." />
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA SEARCH - PERIODO ACADÉMICO
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_academic_period_search" model="ir.ui.view">
+        <field name="name">benglish.academic.period.search</field>
+        <field name="model">benglish.academic.period</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Periodos">
+                <field name="name" />
+                <field name="code" />
+                <field name="program_id" />
+                <separator />
+                <filter name="filter_current" string="Periodo Actual"
+                    domain="[('is_current', '=', True)]" />
+                <separator />
+                <filter name="filter_draft" string="Borradores" domain="[('state', '=', 'draft')]" />
+                <filter name="filter_open" string="Matrículas Abiertas"
+                    domain="[('state', '=', 'open')]" />
+                <filter name="filter_active" string="En Curso" domain="[('state', '=', 'active')]" />
+                <filter name="filter_closed" string="Cerrados" domain="[('state', '=', 'closed')]" />
+                <separator />
+                <filter name="filter_this_year" string="Este Año"
+                    domain="[('date_start', '>=', (context_today() - relativedelta(days=context_today().timetuple().tm_yday)).strftime('%Y-%m-%d'))]" />
+                <separator />
+                <group expand="0" string="Agrupar Por">
+                    <filter name="group_type" string="Tipo" context="{'group_by': 'period_type'}" />
+                    <filter name="group_state" string="Estado" context="{'group_by': 'state'}" />
+                    <filter name="group_year" string="Año" context="{'group_by': 'date_start:year'}" />
+                    <filter name="group_program" string="Programa"
+                        context="{'group_by': 'program_id'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA CALENDAR - PERIODO ACADÉMICO
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_academic_period_calendar" model="ir.ui.view">
+        <field name="name">benglish.academic.period.calendar</field>
+        <field name="model">benglish.academic.period</field>
+        <field name="arch" type="xml">
+            <calendar string="Periodos Académicos"
+                date_start="date_start"
+                date_stop="date_end"
+                color="period_type"
+                mode="year">
+                <field name="name" />
+                <field name="state" />
+            </calendar>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         ACCIÓN DE VENTANA - PERIODO ACADÉMICO
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="action_academic_period" model="ir.actions.act_window">
+        <field name="name">Periodos Académicos</field>
+        <field name="res_model">benglish.academic.period</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="search_view_id" ref="view_academic_period_search" />
+        <field name="context">{'search_default_filter_active': 0}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                ¡Crea tu primer Periodo Académico!
+            </p>
+            <p>
+                Los periodos académicos te permiten organizar las matrículas, agendas y clases
+                por semestres, cuatrimestres u otros intervalos de tiempo.
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         MENÚ - PERIODO ACADÉMICO
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_benglish_academic_period"
+        name="Periodos Académicos"
+        parent="benglish_academy.menu_benglish_configuration"
+        action="action_academic_period"
+        sequence="5" />
+
+</odoo>

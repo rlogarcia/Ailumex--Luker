@@ -73,18 +73,9 @@ class AcademicPhase(models.Model):
         string="Programa",
         required=True,
         ondelete="restrict",
-        help="Programa al que pertenece esta fase (compartida por todos los planes del programa)",
+        help="Programa al que pertenece esta fase",
     )
-    plan_ids = fields.Many2many(
-        comodel_name="benglish.plan",
-        relation="benglish_phase_plan_rel",
-        column1="phase_id",
-        column2="plan_id",
-        string="Planes de Estudio",
-        compute="_compute_plan_ids",
-        store=False,
-        help="Planes que usan esta fase (todos los del programa)",
-    )
+
     level_ids = fields.One2many(
         comodel_name="benglish.level",
         inverse_name="phase_id",
@@ -161,17 +152,6 @@ class AcademicPhase(models.Model):
                 phase.complete_name = f"{phase.program_id.name} / {phase.name}"
             else:
                 phase.complete_name = phase.name
-
-    @api.depends("program_id")
-    def _compute_plan_ids(self):
-        """Calcula los planes que usan esta fase (todos los del programa)."""
-        for phase in self:
-            if phase.program_id:
-                phase.plan_ids = self.env["benglish.plan"].search(
-                    [("program_id", "=", phase.program_id.id)]
-                )
-            else:
-                phase.plan_ids = False
 
     @api.depends("shared_phase_id", "shared_phase_id.level_ids")
     def _compute_level_ids(self):

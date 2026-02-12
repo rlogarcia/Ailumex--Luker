@@ -22,7 +22,7 @@
                     <field name="weekday" />
                     <field name="time_start_label" string="Hora Inicio" />
                     <field name="time_end_label" string="Hora Fin" />
-                    <field name="template_id" />
+                    <field name="subject_id" />
                     <field name="student_alias" />
                     <field name="campus_id" />
                     <field name="subcampus_id" />
@@ -97,12 +97,6 @@
                             <group>
                                 <field name="program_id" required="1" options="{'no_create': True}" />
 
-                                <!-- Plantilla: visible solo cuando NO es tipo electiva -->
-                                <field name="template_id"
-                                    domain="['|', ('program_id', '=', False), ('program_id', '=', program_id)]"
-                                    options="{'no_create': True}"
-                                    invisible="session_type == 'elective'" />
-
                                 <!-- Pool de Electivas: visible solo cuando ES tipo electiva -->
                                 <field name="elective_pool_id"
                                     domain="[('state', '=', 'active'), ('program_id', '=', program_id)]"
@@ -110,35 +104,22 @@
                                     invisible="session_type != 'elective'"
                                     required="session_type == 'elective'" />
 
-                                <field name="is_oral_test_template" invisible="1" />
-
-                                <!-- Fase Audiencia: NO visible para electivas -->
+                                <!-- Fase Audiencia -->
                                 <field name="audience_phase_id"
                                     domain="[('program_id', '=', program_id), ('active', '=', True)]"
-                                    options="{'no_create': True}"
-                                    invisible="not template_id or session_type == 'elective'" />
+                                    options="{'no_create': True}" />
 
-                                <!-- Para Oral Tests: solo mostrar audience_unit_to (unidad
-                                objetivo) -->
-                                <field name="audience_unit_to"
-                                    string="Unidad"
-                                    invisible="not is_oral_test_template or session_type == 'elective'"
-                                    placeholder="Ej: 4 (para bloque 1-4), 8 (para bloque 5-8)" />
-
-                                <!-- Para otras plantillas (B-checks, Skills) y Electivas: mostrar
-                                rango desde-hasta -->
+                                <!-- Rango de unidades -->
                                 <field name="audience_unit_from"
-                                    invisible="is_oral_test_template or (not template_id and session_type != 'elective')"
                                     placeholder="Unidad inicial (1-24)" />
                                 <field name="audience_unit_to"
-                                    invisible="is_oral_test_template or (not template_id and session_type != 'elective')"
                                     placeholder="Unidad final (1-24)" />
                             </group>
                             <group>
                                 <field name="session_type" required="1" />
                                 <field name="elective_pool_id" invisible="1" />
                                 <field name="subject_id"
-                                    readonly="template_id or elective_pool_id"
+                                    readonly="elective_pool_id"
                                     force_save="1"
                                     required="1"
                                     domain="[('program_id', '=', program_id), ('active', '=', True)]"
@@ -232,10 +213,9 @@
             <field name="model">benglish.academic.session</field>
             <field name="arch" type="xml">
                 <search string="Buscar Clases">
-                    <field name="template_id" string="Plantilla" />
-                    <field name="student_alias" string="Alias" />
                     <field name="subject_id" string="Asignatura"
                         filter_domain="['|', ('subject_id.name', 'ilike', self), ('subject_id.code', 'ilike', self)]" />
+                    <field name="student_alias" string="Alias" />
                     <field name="teacher_id" />
                     <field name="campus_id" />
                     <field name="location_city" />
@@ -284,8 +264,6 @@
                             context="{'group_by': 'campus_id'}" />
                         <filter name="group_teacher" string="Docente"
                             context="{'group_by': 'teacher_id'}" />
-                        <filter name="group_template" string="Plantilla"
-                            context="{'group_by': 'template_id'}" />
                         <filter name="group_subject" string="Asignatura"
                             context="{'group_by': 'subject_id'}" />
                         <filter name="group_state" string="Estado" context="{'group_by': 'state'}" />
@@ -305,13 +283,13 @@
                     mode="week"
                     date_start="datetime_start"
                     date_stop="datetime_end"
-                    color="template_id"
+                    color="subject_id"
                     quick_create="false"
                     form_view_id="%(view_academic_session_form)s"
                     all_day="all_day"
                     hide_time="false">
                     <field name="session_code" readonly="1" />
-                    <field name="template_id" />
+                    <field name="subject_id" />
                     <field name="student_alias" />
                     <field name="teacher_id" />
                     <field name="campus_id" />

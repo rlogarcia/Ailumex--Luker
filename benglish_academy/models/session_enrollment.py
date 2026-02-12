@@ -3,6 +3,10 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class SessionEnrollment(models.Model):
     """
@@ -28,6 +32,14 @@ class SessionEnrollment(models.Model):
         help="Sesión de clase a la que se inscribe el estudiante",
     )
 
+    # Campo auxiliar para filtrar estudiantes disponibles según la sesión
+    available_student_ids = fields.Many2many(
+        comodel_name="benglish.student",
+        compute="_compute_available_students",
+        string="Estudiantes Disponibles",
+        help="Estudiantes elegibles para inscribirse en esta sesión",
+    )
+
     student_id = fields.Many2one(
         comodel_name="benglish.student",
         string="Estudiante",
@@ -35,6 +47,7 @@ class SessionEnrollment(models.Model):
         ondelete="cascade",
         tracking=True,
         index=True,
+        domain="[('id', 'in', available_student_ids)]",
         help="Estudiante inscrito en la sesión",
     )
 
@@ -231,6 +244,67 @@ class SessionEnrollment(models.Model):
 
             # Puede cancelar si NO está cancelada ni ha asistido
             record.can_cancel = record.state not in ["cancelled", "attended"]
+
+    @api.depends("session_id", "session_id.program_id", "session_id.subject_id", "session_id.campus_id")
+    def _compute_available_students(self):
+        """
+        Calcula los estudiantes disponibles para inscribir en la sesión.
+        
+        LÓGICA DE FILTRADO:
+        1. Estudiantes activos
+        2. Que tengan al menos una matrícula activa (enrolled, in_progress, active)
+        3. Que estén en el mismo programa que la sesión
+        4. Que no estén ya inscritos en esta sesión (con estado != cancelled)
+        
+        Este campo se usa para el dominio dinámico del campo student_id,
+        asegurando que solo se muestren estudiantes elegibles.
+        """
+        Student = self.env["benglish.student"]
+        
+        for record in self:
+            if not record.session_id:
+                record.available_student_ids = Student.browse()
+                continue
+            
+            session = record.session_id
+            program_id = session.program_id.id if session.program_id else False
+            
+            # Dominio base: estudiantes activos con matrículas activas en el mismo programa
+            domain = [
+                ("active", "=", True),
+            ]
+            
+            # Filtrar por programa si la sesión tiene uno asignado
+            if program_id:
+                domain.append(("program_id", "=", program_id))
+            
+            # Buscar estudiantes con matrículas activas
+            domain.append(
+                ("enrollment_ids.state", "in", ["enrolled", "in_progress", "active"])
+            )
+            
+            # Obtener estudiantes que cumplen los criterios base
+            eligible_students = Student.search(domain)
+            
+            # Excluir estudiantes ya inscritos en esta sesión (que no estén cancelados)
+            if session.id:
+                already_enrolled = self.search([
+                    ("session_id", "=", session.id),
+                    ("state", "!=", "cancelled"),
+                    ("id", "!=", record.id if record.id else 0),
+                ]).mapped("student_id")
+                
+                eligible_students = eligible_students - already_enrolled
+            
+            _logger.debug(
+                "[AVAILABLE_STUDENTS] Sesión %s (ID: %s), Programa: %s - "
+                "Estudiantes elegibles: %d",
+                session.display_name, session.id,
+                session.program_id.name if session.program_id else "Sin programa",
+                len(eligible_students)
+            )
+            
+            record.available_student_ids = eligible_students
 
     # VALIDACIONES
 

@@ -63,15 +63,19 @@
                             </group>
                         </group>
 
-                        <group string="Dirección">
-                            <group>
+                        <group string="Ubicación y Dirección">
+                            <group string="Ubicación">
+                                <field name="country_id" placeholder="País"
+                                    options="{'no_create': True, 'no_open': True}" />
+                                <field name="state_id" placeholder="Departamento/Estado"
+                                    options="{'no_create': True, 'no_open': True}" />
+                                <field name="city_id" placeholder="Ciudad"
+                                    options="{'no_create': True, 'no_open': True}" />
+                            </group>
+                            <group string="Dirección">
                                 <field name="street" placeholder="Dirección" />
                                 <field name="street2" placeholder="Complemento" />
-                                <field name="city" placeholder="Ciudad" />
-                            </group>
-                            <group>
-                                <field name="state_id" />
-                                <field name="country_id" />
+                                <field name="city" placeholder="Barrio/Zona" />
                                 <field name="zip" />
                             </group>
                         </group>

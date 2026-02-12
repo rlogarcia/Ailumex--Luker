@@ -507,7 +507,6 @@ class PortalStudentWeeklyPlanLine(models.Model):
     @api.depends(
         "session_id",
         "session_id.subject_id",
-        "session_id.template_id",
         "session_id.audience_unit_from",
         "session_id.audience_unit_to",
         "plan_id.student_id",

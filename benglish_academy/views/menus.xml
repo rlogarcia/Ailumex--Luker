@@ -19,11 +19,22 @@
                   action="action_benglish_program"
                   sequence="10" />
 
+            <!-- Plan Comercial: Define qué ve el estudiante (cantidades por tipo) -->
+            <menuitem id="menu_benglish_commercial_plan"
+                  name="Planes Comerciales"
+                  parent="menu_benglish_curricular"
+                  action="action_commercial_plan"
+                  sequence="15" />
+
+            <!-- Plan de Estudios Legacy: OCULTO - Solo existe para datos históricos
+                 Si necesitas acceder, quita active="False" temporalmente -->
             <menuitem id="menu_benglish_plan"
-                  name="Planes de Estudio"
+                  name="Planes de Estudio (Legacy)"
                   parent="menu_benglish_curricular"
                   action="action_benglish_plan"
-                  sequence="20" />
+                  sequence="18"
+                  active="False"
+                  groups="base.group_no_one" />
 
             <menuitem id="menu_benglish_phase"
                   name="Fases"
@@ -102,13 +113,6 @@
                   parent="menu_academic_agenda_root"
                   action="action_session_transfer_log"
                   sequence="23"
-                  groups="group_academic_coordinator,group_academic_manager" />
-
-            <menuitem id="menu_agenda_template"
-                  name="Plantillas de Agenda"
-                  parent="menu_academic_agenda_root"
-                  action="action_agenda_template"
-                  sequence="45"
                   groups="group_academic_coordinator,group_academic_manager" />
 
             <menuitem id="menu_elective_pool"

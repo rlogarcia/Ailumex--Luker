@@ -12,11 +12,11 @@
                     <field name="sequence" widget="handle" />
                     <field name="code" />
                     <field name="name" />
-                    <field name="plan_count" string="Planes" />
-                    <field name="active" invisible="1" />
-                    <button name="action_view_plans" type="object" string="Ver Planes"
-                        class="btn-primary" icon="fa-book"
-                        invisible="plan_count == 0" />
+                    <field name="program_type" optional="show" />
+                    <field name="commercial_plan_count" string="Planes" />
+                    <field name="active" column_invisible="1" />
+                    <button name="action_view_commercial_plans" type="object" string="Ver Planes"
+                        class="btn-primary" icon="fa-shopping-cart" />
                 </list>
             </field>
         </record>
@@ -29,11 +29,10 @@
                 <form string="Programa Académico">
                     <sheet>
                         <div class="oe_button_box" name="button_box">
-                            <button name="action_view_plans" type="object"
-                                class="oe_stat_button" icon="fa-book"
-                                style="background-color: #17a2b8; color: white;">
-                                <field name="plan_count" widget="statinfo"
-                                    string="Planes de Estudio" />
+                            <button name="action_view_commercial_plans" type="object"
+                                class="oe_stat_button" icon="fa-shopping-cart">
+                                <field name="commercial_plan_count" widget="statinfo"
+                                    string="Planes Comerciales" />
                             </button>
                         </div>
                         <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger"
@@ -51,6 +50,7 @@
                         </div>
                         <group>
                             <group string="📋 Información Básica">
+                                <field name="program_type" />
                                 <field name="sequence" />
                                 <field name="active" widget="boolean_toggle" />
                             </group>
@@ -62,15 +62,17 @@
                                 <field name="description"
                                     placeholder="Descripción detallada del programa académico..." />
                             </page>
-                            <page string="Planes de Estudio">
-                                <field name="plan_ids" context="{'default_program_id': id}">
+                            <page string="Planes Comerciales" name="commercial_plans">
+                                <field name="commercial_plan_ids"
+                                    context="{'default_program_id': id}">
                                     <list>
-                                        <field name="sequence" widget="handle" />
                                         <field name="code" />
                                         <field name="name" />
-                                        <field name="duration_months" />
-                                        <field name="phase_count" />
-                                        <field name="active" widget="boolean_toggle" />
+                                        <field name="level_start" string="Desde" />
+                                        <field name="level_end" string="Hasta" />
+                                        <field name="total_subjects" string="Total Asig." />
+                                        <field name="state" widget="badge" />
+                                        <field name="active" column_invisible="1" />
                                     </list>
                                 </field>
                             </page>
@@ -89,6 +91,7 @@
                 <kanban class="o_kanban_mobile">
                     <field name="name" />
                     <field name="code" />
+                    <field name="commercial_plan_count" />
                     <field name="plan_count" />
                     <field name="active" />
                     <templates>
@@ -109,8 +112,9 @@
                                     </div>
                                 </div>
                                 <div class="o_kanban_record_body">
-                                    <span class="badge text-bg-info">
-                                        <i class="fa fa-book" /> <field name="plan_count" /> Planes </span>
+                                    <span class="badge text-bg-success">
+                                        <i class="fa fa-shopping-cart" /> <field
+                                            name="commercial_plan_count" /> Planes </span>
                                 </div>
                             </div>
                         </t>

@@ -57,7 +57,7 @@ class Coach(models.Model):
         string="Nombre de Usuario", help="Nombre de usuario para acceso"
     )
 
-    # Información de contacto
+    # Información de contacto - País, Departamento, Ciudad con filtros cascada
     phone = fields.Char(
         string="Teléfono",
         required=True,
@@ -72,15 +72,22 @@ class Coach(models.Model):
     )
     street = fields.Char(string="Dirección", help="Dirección de residencia")
     street2 = fields.Char(string="Dirección 2", help="Complemento de dirección")
-    city = fields.Char(string="Ciudad", help="Ciudad de residencia")
-    state_id = fields.Many2one(
-        comodel_name="res.country.state", string="Departamento/Estado"
-    )
     country_id = fields.Many2one(
         comodel_name="res.country",
         string="País",
         default=lambda self: self.env.ref("base.co", raise_if_not_found=False),
     )
+    state_id = fields.Many2one(
+        comodel_name="res.country.state",
+        string="Departamento/Estado",
+        domain="[('country_id', '=', country_id)]",
+    )
+    city_id = fields.Many2one(
+        comodel_name="res.city",
+        string="Ciudad",
+        domain="[('state_id', '=', state_id)]",
+    )
+    city = fields.Char(string="Barrio/Zona", help="Barrio o zona de residencia")
     zip = fields.Char(string="Código Postal")
 
     # Información personal
@@ -211,6 +218,20 @@ class Coach(models.Model):
             "El link de reuniones debe ser único.",
         ),
     ]
+
+    # Onchange para filtros en cascada: País -> Departamento -> Ciudad
+    @api.onchange("country_id")
+    def _onchange_country_id(self):
+        """Limpia el departamento y ciudad cuando cambia el país."""
+        if self.state_id and self.state_id.country_id != self.country_id:
+            self.state_id = False
+            self.city_id = False
+
+    @api.onchange("state_id")
+    def _onchange_state_id(self):
+        """Limpia la ciudad cuando cambia el departamento."""
+        if self.city_id and self.city_id.state_id != self.state_id:
+            self.city_id = False
 
     @api.depends(
         "active",

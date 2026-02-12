@@ -164,13 +164,7 @@ class Subject(models.Model):
         store=True,
         help="Fase asociada (a través del nivel)",
     )
-    plan_ids = fields.Many2many(
-        comodel_name="benglish.plan",
-        string="Planes de Estudio",
-        compute="_compute_plan_ids",
-        store=False,
-        help="Planes que usan esta asignatura (todos los planes del programa comparten las mismas asignaturas)",
-    )
+
     program_id = fields.Many2one(
         comodel_name="benglish.program",
         string="Programa",
@@ -210,11 +204,8 @@ class Subject(models.Model):
     # Restricciones SQL
     _sql_constraints = [
         ("code_unique", "UNIQUE(code)", "El código de la asignatura debe ser único."),
-        (
-            "sequence_level_unique",
-            "UNIQUE(level_id, sequence)",
-            "La secuencia debe ser única dentro del nivel.",
-        ),
+        # NOTA: Se elimina la restricción de secuencia única para dar flexibilidad
+        # El campo sequence es solo para ordenar, no necesita ser único
     ]
 
     @api.constrains('subject_category', 'bskill_number')
@@ -368,21 +359,6 @@ class Subject(models.Model):
         """Calcula el número de asignaturas dependientes."""
         for subject in self:
             subject.dependent_count = len(subject.dependent_subject_ids)
-
-    @api.depends("level_id.phase_id.program_id")
-    def _compute_plan_ids(self):
-        """Calcula los planes que usan esta asignatura (todos los del programa)."""
-        for subject in self:
-            if (
-                subject.level_id
-                and subject.level_id.phase_id
-                and subject.level_id.phase_id.program_id
-            ):
-                subject.plan_ids = self.env["benglish.plan"].search(
-                    [("program_id", "=", subject.level_id.phase_id.program_id.id)]
-                )
-            else:
-                subject.plan_ids = False
 
     @api.constrains("prerequisite_ids")
     def _check_prerequisite_recursion(self):

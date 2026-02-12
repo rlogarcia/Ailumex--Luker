@@ -9,22 +9,17 @@
             <field name="arch" type="xml">
                 <list string="Sedes" default_order="sequence, name"
                     decoration-muted="not active"
-                    decoration-bf="campus_type == 'main'"
-                    decoration-success="campus_type == 'main'"
-                    decoration-info="campus_type == 'branch'">
+                    decoration-info="campus_type == 'branch'"
+                    decoration-warning="campus_type == 'online'">
                     <field name="sequence" widget="handle" />
                     <field name="code" />
                     <field name="name" />
                     <field name="city_name" string="Ciudad" />
                     <field name="department_name" string="Departamento" optional="show" />
-                    <field name="is_main_campus" widget="boolean_toggle" string="Principal" />
-                    <field name="parent_campus_id" optional="show" />
                     <field name="campus_type" widget="badge"
-                        decoration-success="campus_type == 'main'"
                         decoration-info="campus_type == 'branch'"
                         decoration-warning="campus_type == 'online'" />
-                    <field name="city" string="Barrio/Zona" optional="hide" />
-                    <field name="group_count" string="Grupos" optional="show" />
+                    <field name="subcampus_count" string="Aulas" />
                     <field name="total_capacity" string="Capacidad Total" />
                     <field name="manager_id" widget="many2one_avatar_user" />
                     <field name="active" invisible="1" />
@@ -43,23 +38,19 @@
                 <form string="Sede">
                     <sheet>
                         <div class="oe_button_box" name="button_box">
-                            <button name="action_view_courses" type="object"
-                                class="oe_stat_button" icon="fa-book">
-                                <field name="course_count" widget="statinfo" string="Cursos" />
+                            <button name="action_view_subcampus" type="object"
+                                class="oe_stat_button" icon="fa-building">
+                                <field name="subcampus_count" widget="statinfo" string="Aulas" />
                             </button>
-                            <button name="action_view_groups" type="object"
-                                class="oe_stat_button" icon="fa-users">
-                                <field name="group_count" widget="statinfo" string="Grupos" />
-                            </button>
-                            <button name="action_view_teachers" type="object"
-                                class="oe_stat_button" icon="fa-chalkboard-teacher">
-                                <field name="teacher_count" widget="statinfo" string="Docentes" />
+                            <button name="action_view_sessions" type="object"
+                                class="oe_stat_button" icon="fa-calendar">
+                                <field name="session_count" widget="statinfo" string="Sesiones" />
                             </button>
                         </div>
                         <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger"
                             invisible="active" />
-                        <widget name="web_ribbon" title="SEDE PRINCIPAL" bg_color="text-bg-success"
-                            invisible="campus_type != 'main'" />
+                        <widget name="web_ribbon" title="SEDE VIRTUAL" bg_color="text-bg-warning"
+                            invisible="campus_type != 'online'" />
                         <div class="oe_title">
                             <label for="name" class="oe_edit_only" />
                             <h1>
@@ -70,45 +61,37 @@
                                 <field name="code" readonly="1" class="fw-bold text-primary"
                                     style="min-width: 100px; display: inline-block;" />
                                 <field name="campus_type" widget="badge"
-                                    decoration-success="campus_type == 'main'"
                                     decoration-info="campus_type == 'branch'"
                                     decoration-warning="campus_type == 'online'" />
                             </div>
                         </div>
                         <group>
                             <group string="📄 Información Básica">
-                                <field name="city_name" placeholder="Ej: Bogotá, Medellín, Cali"
-                                    invisible="campus_type == 'online'"
-                                    required="campus_type != 'online'" />
-                                <field name="department_name" placeholder="Ej: Cundinamarca"
-                                    invisible="campus_type == 'online'" />
-                                <field name="is_main_campus" widget="boolean_toggle"
-                                    invisible="campus_type == 'online'" />
-                                <field name="parent_campus_id"
-                                    invisible="is_main_campus or campus_type == 'online'"
-                                    required="campus_type != 'online' and not is_main_campus" />
+                                <field name="active" widget="boolean_toggle" />
+                                <field name="is_virtual_sede" widget="boolean_toggle" />
                                 <field name="manager_id" widget="many2one_avatar_user"
                                     string="Coordinador" />
                                 <field name="sequence" />
-                                <field name="active" widget="boolean_toggle" />
                             </group>
-                            <group string="📏 Capacidad">
-                                <field name="capacity" string="Capacidad base" />
-                                <field name="total_capacity" string="Capacidad total (con aulas)" />
-                                <field name="child_campus_count" string="Sedes secundarias"
-                                    invisible="not is_main_campus" />
+                            <group string="📏 Capacidad"
+                                invisible="is_virtual_sede or campus_type == 'online'">
+                                <field name="total_capacity"
+                                    string="Capacidad Total (suma de aulas)" readonly="1" />
+                                <field name="subcampus_count" string="Número de Aulas" readonly="1" />
                             </group>
                         </group>
-                        <group string="📍 Información de Contacto">
-                            <group string="Dirección">
-                                <field name="street" placeholder="Calle y número" />
-                                <field name="street2"
-                                    placeholder="Complemento (Apto, Oficina, etc.)" />
-                                <field name="city" placeholder="Barrio o Zona" />
-                                <field name="state_id" placeholder="Departamento/Estado" />
+                        <group string="📍 Información de Ubicación y Contacto"
+                            invisible="is_virtual_sede or campus_type == 'online'">
+                            <group string="Ubicación">
+                                <field name="country_id" placeholder="País"
+                                    options="{'no_create': True, 'no_open': True}" />
+                                <field name="state_id" placeholder="Departamento/Estado"
+                                    options="{'no_create': True, 'no_open': True}" />
+                                <field name="city_id" placeholder="Ciudad"
+                                    options="{'no_create': True, 'no_open': True}" />
                             </group>
-                            <group string="Contacto">
-                                <field name="country_id" placeholder="País" />
+                            <group string="Dirección y Contacto">
+                                <field name="direccion" placeholder="Dirección completa de la sede" />
                                 <field name="zip" placeholder="Código postal" />
                                 <field name="phone" widget="phone" placeholder="+57 300 123 4567" />
                                 <field name="email" widget="email"
@@ -117,11 +100,11 @@
                         </group>
                         <notebook>
                             <page string="⏰ Configuración de Horario" name="schedule_config"
-                                priority="1">
+                                priority="1" invisible="is_virtual_sede or campus_type == 'online'">
                                 <group>
-                                    <group string="Horarios Permitidos">
+                                    <group string="🕐 Horario General de Operación">
                                         <label for="schedule_start_time"
-                                            string="Horario de Operación" />
+                                            string="Horario General de Operación" />
                                         <div class="o_row">
                                             <field name="schedule_start_time" widget="float_time"
                                                 class="oe_inline" />
@@ -136,154 +119,120 @@
                                         <field name="class_duration_text"
                                             placeholder="Ej: 50' cada una" />
                                         <field name="schedule_text"
-                                            placeholder="Lunes: 11 am - 1pm&#10;Martes - Viernes: 8 am - 1 pm / 3pm - 9pm" />
+                                            placeholder="Descripción del horario general..." />
+                                        <div class="alert alert-info mb-3" role="alert">
+                                            <strong>ℹ️ Lógica de Horarios:</strong><br /> • El <b>Horario
+                                            General de Operación</b> define el rango máximo de horas
+                                            que la sede puede operar.<br /> • Los <b>Horarios por
+                                                Día</b> deben estar <u>dentro</u> del horario
+                                            general y permiten configurar horarios específicos para
+                                            cada día.<br /> • Si un día tiene horario en 00:00, se
+                                            usará el horario general como horario de ese día. </div>
+
                                     </group>
-                                    <group string="Días Permitidos para Programación">
-                                        <field name="allow_monday" widget="boolean_toggle" />
-                                        <field name="allow_tuesday" widget="boolean_toggle" />
-                                        <field name="allow_wednesday" widget="boolean_toggle" />
-                                        <field name="allow_thursday" widget="boolean_toggle" />
-                                        <field name="allow_friday" widget="boolean_toggle" />
-                                        <field name="allow_saturday" widget="boolean_toggle" />
-                                        <field name="allow_sunday" widget="boolean_toggle" />
+                                    <group string="📅 Días Permitidos y Horarios Específicos">
+                                        <group string="Lunes - Domingo">
+                                            <field name="allow_monday" widget="boolean_toggle" />
+                                            <label for="monday_start_time" string="Horario Lunes"
+                                                invisible="not allow_monday" />
+                                            <div class="o_row" invisible="not allow_monday">
+                                                <field name="monday_start_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Inicio" />
+                                                <span class="mx-1">-</span>
+                                                <field name="monday_end_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Fin" />
+                                            </div>
+                                            <field name="allow_tuesday" widget="boolean_toggle" />
+                                            <label for="tuesday_start_time" string="Horario Martes"
+                                                invisible="not allow_tuesday" />
+                                            <div class="o_row" invisible="not allow_tuesday">
+                                                <field name="tuesday_start_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Inicio" />
+                                                <span class="mx-1">-</span>
+                                                <field name="tuesday_end_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Fin" />
+                                            </div>
+                                            <field name="allow_wednesday" widget="boolean_toggle" />
+                                            <label for="wednesday_start_time"
+                                                string="Horario Miércoles"
+                                                invisible="not allow_wednesday" />
+                                            <div class="o_row" invisible="not allow_wednesday">
+                                                <field name="wednesday_start_time"
+                                                    widget="float_time"
+                                                    class="oe_inline" placeholder="Inicio" />
+                                                <span class="mx-1">-</span>
+                                                <field name="wednesday_end_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Fin" />
+                                            </div>
+                                            <field name="allow_thursday" widget="boolean_toggle" />
+                                            <label for="thursday_start_time" string="Horario Jueves"
+                                                invisible="not allow_thursday" />
+                                            <div class="o_row" invisible="not allow_thursday">
+                                                <field name="thursday_start_time"
+                                                    widget="float_time"
+                                                    class="oe_inline" placeholder="Inicio" />
+                                                <span class="mx-1">-</span>
+                                                <field name="thursday_end_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Fin" />
+                                            </div>
+                                            <field name="allow_friday" widget="boolean_toggle" />
+                                            <label for="friday_start_time" string="Horario Viernes"
+                                                invisible="not allow_friday" />
+                                            <div class="o_row" invisible="not allow_friday">
+                                                <field name="friday_start_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Inicio" />
+                                                <span class="mx-1">-</span>
+                                                <field name="friday_end_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Fin" />
+                                            </div>
+                                            <field name="allow_saturday" widget="boolean_toggle" />
+                                            <label for="saturday_start_time" string="Horario Sábado"
+                                                invisible="not allow_saturday" />
+                                            <div class="o_row" invisible="not allow_saturday">
+                                                <field name="saturday_start_time"
+                                                    widget="float_time"
+                                                    class="oe_inline" placeholder="Inicio" />
+                                                <span class="mx-1">-</span>
+                                                <field name="saturday_end_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Fin" />
+                                            </div>
+                                            <field name="allow_sunday" widget="boolean_toggle" />
+                                            <label for="sunday_start_time" string="Horario Domingo"
+                                                invisible="not allow_sunday" />
+                                            <div class="o_row" invisible="not allow_sunday">
+                                                <field name="sunday_start_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Inicio" />
+                                                <span class="mx-1">-</span>
+                                                <field name="sunday_end_time" widget="float_time"
+                                                    class="oe_inline" placeholder="Fin" />
+                                            </div>
+                                        </group>
                                     </group>
                                 </group>
-                                <div class="alert alert-info" role="alert">
-                                    <strong>ℹ️ Información:</strong> Esta configuración determina en
-                                    qué días y horarios el coordinador académico puede programar
-                                    sesiones de clase en esta sede. Las sesiones que no cumplan con
-                                    estas restricciones serán rechazadas automáticamente. </div>
+                                <div class="alert alert-warning" role="alert">
+                                    <strong>⚠️ Importante:</strong> Las sesiones que no cumplan con
+                                    estas restricciones de horario serán rechazadas automáticamente. </div>
                             </page>
-                            <page string="🏢 Sedes Secundarias" name="child_campus"
-                                invisible="not is_main_campus"
-                                priority="2">
-                                <field name="child_campus_ids"
-                                    context="{'default_parent_campus_id': id, 'default_city_name': city_name, 'default_is_main_campus': False}">
-                                    <list>
-                                        <field name="code" />
-                                        <field name="name" />
-                                        <field name="city" string="Barrio/Zona" />
-                                        <field name="phone" />
-                                        <field name="subcampus_count" string="Aulas" />
-                                        <field name="manager_id" widget="many2one_avatar_user" />
-                                        <field name="active" widget="boolean_toggle" />
-                                    </list>
-                                </field>
-                            </page>
-                            <page string="📊 Resumen" name="summary">
-                                <group>
-                                    <group string="Estadísticas">
-                                        <field name="child_campus_count" readonly="1"
-                                            invisible="not is_main_campus"
-                                            string="Sedes secundarias" />
-                                        <field name="subcampus_count" readonly="1" />
-                                        <field name="course_count" readonly="1" />
-                                        <field name="group_count" readonly="1" />
-                                        <field name="teacher_count" readonly="1" />
-                                    </group>
-                                    <group string="Información Rápida">
-                                        <label for="capacity" string="Capacidad base" />
-                                        <div class="o_row">
-                                            <field name="capacity" readonly="1" />
-                                            <span class="text-muted">estudiantes</span>
-                                        </div>
-                                        <label for="total_capacity"
-                                            string="Capacidad total (con aulas)" />
-                                        <div class="o_row">
-                                            <field name="total_capacity" readonly="1" />
-                                            <span class="text-muted">estudiantes</span>
-                                        </div>
-                                    </group>
-                                </group>
-                            </page>
-                            <page string="🏢 Sub-sedes / Aulas" name="subcampus">
-                                <field name="subcampus_ids" context="{'default_campus_id': id}">
-                                    <list editable="bottom">
-                                        <field name="sequence" widget="handle" />
+                            <page string="🏢 Aulas" name="subcampus"
+                                invisible="is_virtual_sede or campus_type == 'online'">
+                                <div class="alert alert-warning" role="alert">
+                                    <strong>⚠️ Nota:</strong> Las aulas se gestionan desde el menú
+                                    de Aulas. Aquí solo puede visualizar las aulas asociadas a esta
+                                    sede. </div>
+                                <field name="subcampus_ids" readonly="1">
+                                    <list create="0" edit="0" delete="0">
                                         <field name="code" />
                                         <field name="name" />
                                         <field name="subcampus_type" />
-                                        <field name="space_label" optional="show" />
                                         <field name="modality" widget="badge"
                                             decoration-success="modality == 'presential'"
                                             decoration-info="modality == 'virtual'"
                                             decoration-warning="modality == 'hybrid'" />
-                                        <field name="capacity" string="Cap. Presencial" />
-                                        <field name="virtual_capacity" optional="show" />
-                                        <field name="total_capacity" string="Total" />
-                                        <field name="building" optional="show" />
-                                        <field name="floor" optional="show" />
+                                        <field name="capacity" string="Capacidad" />
                                         <field name="is_available" widget="boolean_toggle" />
-                                        <field name="has_projector" widget="boolean_toggle"
-                                            optional="hide" />
-                                        <field name="has_computer" widget="boolean_toggle"
-                                            optional="hide" />
-                                        <field name="has_internet" widget="boolean_toggle"
-                                            optional="hide" />
-                                        <field name="has_audio_system" widget="boolean_toggle"
-                                            optional="hide" />
                                         <field name="active" widget="boolean_toggle" />
                                     </list>
                                 </field>
-                            </page>
-                            <page string="Cursos">
-                                <field name="course_ids">
-                                    <list>
-                                        <field name="code" />
-                                        <field name="name" />
-                                        <field name="subject_id" />
-                                        <field name="main_teacher_id" widget="many2one_avatar_user" />
-                                        <field name="start_date" />
-                                        <field name="end_date" />
-                                        <field name="group_count" />
-                                        <field name="state" widget="badge" />
-                                    </list>
-                                </field>
-                            </page>
-                            <page string="Grupos">
-                                <field name="group_ids" readonly="1">
-                                    <list create="0" edit="0" delete="0">
-                                        <field name="code" />
-                                        <field name="name" />
-                                        <field name="subject_id" />
-                                        <field name="subcampus_id" />
-                                        <field name="teacher_id" widget="many2one_avatar_user" />
-                                        <field name="current_students" />
-                                        <field name="total_capacity" />
-                                        <field name="state" widget="badge" />
-                                    </list>
-                                </field>
-                            </page>
-                            <page string="Sesiones">
-                                <field name="session_ids" readonly="1">
-                                    <list model="benglish.class.session">
-                                        <field name="subject_id" />
-                                        <field name="start_datetime" />
-                                        <field name="end_datetime" />
-                                        <field name="subcampus_id" />
-                                        <field name="teacher_id" widget="many2one_avatar_user" />
-                                        <field name="state" widget="badge"
-                                            decoration-info="state == 'planned'"
-                                            decoration-warning="state == 'in_progress'"
-                                            decoration-success="state == 'done'"
-                                            decoration-danger="state == 'cancelled'" />
-                                    </list>
-                                </field>
-                            </page>
-                            <page string="Docentes">
-                                <field name="teacher_ids" readonly="1">
-                                    <list create="0" edit="0" delete="0">
-                                        <field name="name" />
-                                        <field name="login" />
-                                        <field name="email" />
-                                        <field name="phone" />
-                                    </list>
-                                </field>
-                            </page>
-                            <page string="Información Adicional">
-                                <group>
-                                    <field name="address" readonly="1" />
-                                </group>
                             </page>
                         </notebook>
                     </sheet>
@@ -300,7 +249,7 @@
                 <kanban class="o_kanban_mobile">
                     <field name="name" />
                     <field name="code" />
-                    <field name="city" />
+                    <field name="city_name" />
                     <field name="campus_type" />
                     <field name="subcampus_count" />
                     <field name="total_capacity" />
@@ -322,17 +271,15 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <span t-if="record.campus_type.raw_value == 'main'"
-                                        class="badge text-bg-success">Principal</span>
                                     <span t-if="record.campus_type.raw_value == 'branch'"
-                                        class="badge text-bg-info">Sucursal</span>
+                                        class="badge text-bg-info">Presencial</span>
                                     <span t-if="record.campus_type.raw_value == 'online'"
                                         class="badge text-bg-warning">Virtual</span>
                                 </div>
                                 <div class="o_kanban_record_body">
                                     <div class="text-muted">
                                         <i class="fa fa-map-marker" />
-                                        <field name="city" />
+                                        <field name="city_name" />
                                     </div>
                                     <div class="mt-2">
                                         <span class="badge text-bg-info me-1">
@@ -362,22 +309,20 @@
                     <field name="name" string="Sede"
                         filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]" />
                     <field name="code" />
-                    <field name="city" />
+                    <field name="city_name" />
                     <field name="manager_id" />
                     <separator />
                     <filter string="Activos" name="active" domain="[('active', '=', True)]" />
                     <filter string="Archivados" name="inactive" domain="[('active', '=', False)]" />
                     <separator />
-                    <filter string="Sede Principal" name="main"
-                        domain="[('campus_type', '=', 'main')]" />
-                    <filter string="Sucursal" name="branch"
+                    <filter string="Presencial" name="branch"
                         domain="[('campus_type', '=', 'branch')]" />
                     <filter string="Virtual" name="online" domain="[('campus_type', '=', 'online')]" />
                     <group expand="0" string="Agrupar por">
                         <filter string="Tipo" name="group_by_type"
                             context="{'group_by': 'campus_type'}" />
                         <filter string="Ciudad" name="group_by_city"
-                            context="{'group_by': 'city'}" />
+                            context="{'group_by': 'city_name'}" />
                         <filter string="Coordinador" name="group_by_manager"
                             context="{'group_by': 'manager_id'}" />
                     </group>
@@ -397,8 +342,8 @@
                 </p>
                 <p>
                     <strong>Las sedes</strong> son los espacios físicos o virtuales donde se
-                    imparten las clases.<br /> 📍 <em>Cada sede puede tener múltiples aulas o
-                    sub-sedes con diferentes características y capacidades.</em>
+                    imparten las clases.<br /> 📍 <em>Cada sede puede tener múltiples aulas con
+                    diferentes características y capacidades.</em>
                 </p>
             </field>
         </record>
@@ -422,8 +367,6 @@
                         decoration-warning="subcampus_type == 'virtual'" />
                     <field name="space_label" optional="show" />
                     <field name="capacity" string="Cap." />
-                    <field name="building" optional="show" />
-                    <field name="floor" optional="show" />
                     <field name="is_available" string="Disponible" />
                     <field name="has_projector" string="📹" widget="boolean" optional="show" />
                     <field name="has_computer" string="💻" widget="boolean" optional="show" />
@@ -487,14 +430,13 @@
                                     style="min-width: 100px; display: inline-block;" />
                                 <field name="modality" invisible="1" />
 
+                                <label for="campus_id" class="fw-bold me-2">Sede:</label>
                                 <field name="campus_id" options="{'no_create': True}"
                                     placeholder="Seleccione Sede" />
                             </div>
                         </div>
                         <group>
-                            <group string="📍 Ubicación Detallada">
-                                <field name="building" placeholder="Ej: Edificio A" />
-                                <field name="floor" placeholder="Ej: Piso 2 / Planta Baja" />
+                            <group string="📄 Información Básica">
                                 <field name="sequence" />
                                 <field name="space_label" placeholder="Ej: Salón kids" />
                             </group>
@@ -531,47 +473,6 @@
                             </group>
                         </group>
                         <notebook>
-                            <page string="Cursos">
-                                <field name="course_ids" readonly="1">
-                                    <list create="0" edit="0" delete="0">
-                                        <field name="code" />
-                                        <field name="name" />
-                                        <field name="subject_id" />
-                                        <field name="main_teacher_id" widget="many2one_avatar_user" />
-                                        <field name="start_date" />
-                                        <field name="end_date" />
-                                        <field name="state" widget="badge" />
-                                    </list>
-                                </field>
-                            </page>
-                            <page string="Sesiones">
-                                <field name="session_ids" readonly="1">
-                                    <list model="benglish.class.session">
-                                        <field name="subject_id" />
-                                        <field name="start_datetime" />
-                                        <field name="end_datetime" />
-                                        <field name="teacher_id" widget="many2one_avatar_user" />
-                                        <field name="state" widget="badge"
-                                            decoration-info="state == 'planned'"
-                                            decoration-warning="state == 'in_progress'"
-                                            decoration-success="state == 'done'"
-                                            decoration-danger="state == 'cancelled'" />
-                                    </list>
-                                </field>
-                            </page>
-                            <page string="Grupos">
-                                <field name="group_ids" readonly="1">
-                                    <list create="0" edit="0" delete="0">
-                                        <field name="code" />
-                                        <field name="name" />
-                                        <field name="subject_id" />
-                                        <field name="teacher_id" widget="many2one_avatar_user" />
-                                        <field name="current_students" />
-                                        <field name="total_capacity" />
-                                        <field name="state" widget="badge" />
-                                    </list>
-                                </field>
-                            </page>
                             <page string="Descripción y Notas">
                                 <group>
                                     <field name="description"
@@ -601,8 +502,6 @@
                         filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]" />
                     <field name="code" />
                     <field name="campus_id" />
-                    <field name="building" />
-                    <field name="floor" />
                     <separator />
                     <filter string="Activos" name="active" domain="[('active', '=', True)]" />
                     <filter string="Archivados" name="inactive" domain="[('active', '=', False)]" />
@@ -634,10 +533,6 @@
                             context="{'group_by': 'campus_id'}" />
                         <filter string="Tipo" name="group_by_type"
                             context="{'group_by': 'subcampus_type'}" />
-                        <filter string="Edificio" name="group_by_building"
-                            context="{'group_by': 'building'}" />
-                        <filter string="Piso" name="group_by_floor"
-                            context="{'group_by': 'floor'}" />
                         <filter string="Disponibilidad" name="group_by_availability"
                             context="{'group_by': 'is_available'}" />
                     </group>
@@ -663,8 +558,6 @@
                     <field name="has_internet" />
                     <field name="has_audio_system" />
                     <field name="has_air_conditioning" />
-                    <field name="building" />
-                    <field name="floor" />
                     <field name="active" />
                     <templates>
                         <t t-name="kanban-box">
@@ -696,12 +589,6 @@
                                 <div class="o_kanban_record_body">
                                     <div>
                                         <field name="campus_id" />
-                                    </div>
-                                    <div class="text-muted">
-                                        <t t-if="record.building.raw_value">
-                                            <field name="building" />
-                                        </t>
-                                        <t t-if="record.floor.raw_value"> - Piso <field name="floor" /></t>
                                     </div>
                                     <div class="mt-2">
                                         <!-- Badge según modalidad del aula -->

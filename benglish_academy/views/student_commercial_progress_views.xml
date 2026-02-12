@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         PROGRESO COMERCIAL DEL ESTUDIANTE - VISTAS
+         Muestra el progreso dinámico del estudiante según su plan comercial
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA LIST - PROGRESO COMERCIAL
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_student_commercial_progress_list" model="ir.ui.view">
+        <field name="name">benglish.student.commercial.progress.list</field>
+        <field name="model">benglish.student.commercial.progress</field>
+        <field name="arch" type="xml">
+            <list string="Progreso Comercial por Nivel"
+                decoration-success="level_status == 'completed'"
+                decoration-info="level_status == 'in_progress'"
+                decoration-muted="level_status == 'not_started'"
+                create="false" delete="false">
+                <field name="level_sequence" string="Nivel #" />
+                <field name="level_id" />
+                <field name="phase_id" optional="hide" />
+                <!-- Esperados -->
+                <field name="expected_selection" string="Sel. Esp." />
+                <field name="expected_oral_test" string="OT Esp." />
+                <field name="expected_electives" string="Elec. Esp." />
+                <field name="expected_bskills" string="BS Esp." optional="hide" />
+                <field name="expected_total" string="Total Esp." decoration-bf="1" />
+                <!-- Completados -->
+                <field name="completed_selection" string="Sel. Comp." />
+                <field name="completed_oral_test" string="OT Comp." />
+                <field name="completed_electives" string="Elec. Comp." />
+                <field name="completed_bskills" string="BS Comp." optional="hide" />
+                <field name="completed_total" string="Total Comp." decoration-bf="1" />
+                <!-- Progreso -->
+                <field name="progress_percentage" string="% Avance" widget="progressbar" />
+                <field name="level_status" widget="badge"
+                    decoration-success="level_status == 'completed'"
+                    decoration-info="level_status == 'in_progress'"
+                    decoration-warning="level_status == 'not_started'" />
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA FORM - PROGRESO COMERCIAL
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_student_commercial_progress_form" model="ir.ui.view">
+        <field name="name">benglish.student.commercial.progress.form</field>
+        <field name="model">benglish.student.commercial.progress</field>
+        <field name="arch" type="xml">
+            <form string="Progreso Comercial" create="false" delete="false">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="display_name" />
+                        <h1>
+                            <field name="display_name" readonly="1" />
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Información del Estudiante">
+                            <field name="enrollment_id" readonly="1" />
+                            <field name="student_id" readonly="1" />
+                            <field name="commercial_plan_id" readonly="1" />
+                        </group>
+                        <group string="Nivel">
+                            <field name="level_id" readonly="1" />
+                            <field name="level_sequence" readonly="1" />
+                            <field name="phase_id" readonly="1" />
+                            <field name="level_status" widget="badge"
+                                decoration-success="level_status == 'completed'"
+                                decoration-info="level_status == 'in_progress'"
+                                decoration-warning="level_status == 'not_started'" />
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Detalle de Avance" name="progress_detail">
+                            <group>
+                                <group string="📋 Esperado (Plan Comercial)">
+                                    <field name="expected_selection" readonly="1" />
+                                    <field name="expected_oral_test" readonly="1" />
+                                    <field name="expected_electives" readonly="1" />
+                                    <field name="expected_regular" readonly="1" />
+                                    <field name="expected_bskills" readonly="1" />
+                                    <field name="expected_total" readonly="1" decoration-bf="1" />
+                                </group>
+                                <group string="✅ Completado">
+                                    <field name="completed_selection" />
+                                    <field name="completed_oral_test" />
+                                    <field name="completed_electives" />
+                                    <field name="completed_regular" />
+                                    <field name="completed_bskills" />
+                                    <field name="completed_total" readonly="1" decoration-bf="1" />
+                                </group>
+                            </group>
+                            <group>
+                                <group string="⏳ Pendiente">
+                                    <field name="pending_selection" readonly="1" />
+                                    <field name="pending_oral_test" readonly="1" />
+                                    <field name="pending_electives" readonly="1" />
+                                    <field name="pending_regular" readonly="1" />
+                                    <field name="pending_bskills" readonly="1" />
+                                    <field name="pending_total" readonly="1" decoration-bf="1" />
+                                </group>
+                                <group string="📊 Porcentaje de Avance">
+                                    <field name="progress_percentage" widget="progressbar" />
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         VISTA SEARCH - PROGRESO COMERCIAL
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_student_commercial_progress_search" model="ir.ui.view">
+        <field name="name">benglish.student.commercial.progress.search</field>
+        <field name="model">benglish.student.commercial.progress</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Progreso Comercial">
+                <field name="student_id" />
+                <field name="enrollment_id" />
+                <field name="level_id" />
+                <field name="commercial_plan_id" />
+                <separator />
+                <filter name="filter_completed" string="Completados"
+                    domain="[('level_status', '=', 'completed')]" />
+                <filter name="filter_in_progress" string="En Progreso"
+                    domain="[('level_status', '=', 'in_progress')]" />
+                <filter name="filter_not_started" string="No Iniciados"
+                    domain="[('level_status', '=', 'not_started')]" />
+                <separator />
+                <group expand="0" string="Agrupar Por">
+                    <filter name="group_student" string="Estudiante"
+                        context="{'group_by': 'student_id'}" />
+                    <filter name="group_enrollment" string="Matrícula"
+                        context="{'group_by': 'enrollment_id'}" />
+                    <filter name="group_plan" string="Plan Comercial"
+                        context="{'group_by': 'commercial_plan_id'}" />
+                    <filter name="group_level" string="Nivel"
+                        context="{'group_by': 'level_id'}" />
+                    <filter name="group_status" string="Estado"
+                        context="{'group_by': 'level_status'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         ACCIÓN DE VENTANA - PROGRESO COMERCIAL
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <record id="action_student_commercial_progress" model="ir.actions.act_window">
+        <field name="name">Progreso Comercial</field>
+        <field name="res_model">benglish.student.commercial.progress</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_student_commercial_progress_search" />
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay registros de progreso comercial.
+            </p>
+            <p>
+                Los registros de progreso se generan automáticamente cuando se asigna
+                un plan comercial a una matrícula de estudiante.
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         MENÚ (opcional - si se quiere acceso directo)
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <!-- Descomenta si quieres un menú directo para ver todo el progreso comercial
+    <menuitem id="menu_student_commercial_progress"
+        name="Progreso Comercial"
+        parent="benglish_academy.menu_benglish_students"
+        action="action_student_commercial_progress"
+        sequence="35" />
+    -->
+
+</odoo>

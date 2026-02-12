@@ -8,8 +8,8 @@ import re
 
 class Campus(models.Model):
     """
-    Modelo para gestionar las Sedes Principales.
-    Una sede puede tener múltiples sub-sedes o aulas.
+    Modelo para gestionar las Sedes.
+    Una sede puede tener múltiples aulas.
     """
 
     _name = "benglish.campus"
@@ -37,76 +37,64 @@ class Campus(models.Model):
         string="Secuencia", default=10, help="Orden de visualización"
     )
 
-    # Jerarquía de sedes por ciudad
+    # Campos de ubicación
     city_name = fields.Char(
         string="Ciudad",
+        compute="_compute_city_name",
+        store=True,
         help="Nombre de la ciudad donde se encuentra la sede",
     )
     department_name = fields.Char(
         string="Departamento",
-        help="Departamento (texto) según la parametrización operativa",
-    )
-    is_main_campus = fields.Boolean(
-        string="Sede Principal de la Ciudad",
-        default=False,
-        help="Marca si esta es la sede principal de la ciudad",
-    )
-    parent_campus_id = fields.Many2one(
-        comodel_name="benglish.campus",
-        string="Sede Principal",
-        domain="[('is_main_campus', '=', True), ('id', '!=', id)]",
-        help="Sede principal a la que pertenece esta sede (solo aplica si no es sede principal)",
-    )
-    child_campus_ids = fields.One2many(
-        comodel_name="benglish.campus",
-        inverse_name="parent_campus_id",
-        string="Sedes Secundarias",
-        help="Sedes secundarias que dependen de esta sede principal",
-    )
-    child_campus_count = fields.Integer(
-        string="Número de Sedes Secundarias",
-        compute="_compute_child_campus_count",
+        compute="_compute_department_name",
         store=True,
+        help="Departamento según la ciudad seleccionada",
     )
 
-    # Información de contacto
-    street = fields.Char(string="Calle")
-    street2 = fields.Char(string="Calle 2")
-    city = fields.Char(
-        string="Barrio/Zona", help="Barrio o zona específica dentro de la ciudad"
+    # Información de contacto - País, Departamento, Ciudad con filtros cascada
+    country_id = fields.Many2one(
+        comodel_name="res.country",
+        string="País",
+        help="País donde se encuentra la sede",
     )
     state_id = fields.Many2one(
-        comodel_name="res.country.state", string="Departamento/Estado"
+        comodel_name="res.country.state",
+        string="Departamento/Estado",
+        domain="[('country_id', '=', country_id)]",
+        help="Departamento o estado del país",
     )
-    country_id = fields.Many2one(comodel_name="res.country", string="País")
+    city_id = fields.Many2one(
+        comodel_name="res.city",
+        string="Ciudad",
+        domain="[('state_id', '=', state_id)]",
+        help="Ciudad donde se encuentra la sede",
+    )
+    direccion = fields.Char(
+        string="Dirección",
+        help="Dirección completa de la sede",
+    )
     zip = fields.Char(string="Código Postal")
     phone = fields.Char(string="Teléfono")
     email = fields.Char(string="Email")
 
-    # Información adicional
-    address = fields.Char(
-        string="Dirección Completa",
-        compute="_compute_address",
-        store=True,
-        help="Dirección completa de la sede",
+    # Campo para sede virtual
+    is_virtual_sede = fields.Boolean(
+        string="¿Es sede virtual?",
+        default=False,
+        tracking=True,
+        help="Marcar si es una sede virtual. Los campos de ubicación y contacto se ocultarán.",
     )
 
     # Tipo de sede
     campus_type = fields.Selection(
         selection=[
-            ("main", "Sede Principal"),
-            ("branch", "Sucursal"),
+            ("branch", "Presencial"),
             ("online", "Virtual"),
         ],
         string="Tipo de Sede",
         default="branch",
         required=True,
         help="Tipo de sede",
-    )
-
-    # Capacidad
-    capacity = fields.Integer(
-        string="Capacidad Total", help="Capacidad total de estudiantes de la sede"
     )
 
     # Estado
@@ -136,23 +124,93 @@ class Campus(models.Model):
     allow_monday = fields.Boolean(
         string="Lunes", default=True, help="Permitir sesiones los lunes"
     )
+    monday_start_time = fields.Float(
+        string="Lunes - Hora Inicio",
+        default=0.0,
+        help="Hora de inicio el lunes (0 = usar horario general)",
+    )
+    monday_end_time = fields.Float(
+        string="Lunes - Hora Fin",
+        default=0.0,
+        help="Hora de fin el lunes (0 = usar horario general)",
+    )
     allow_tuesday = fields.Boolean(
         string="Martes", default=True, help="Permitir sesiones los martes"
+    )
+    tuesday_start_time = fields.Float(
+        string="Martes - Hora Inicio",
+        default=0.0,
+        help="Hora de inicio el martes (0 = usar horario general)",
+    )
+    tuesday_end_time = fields.Float(
+        string="Martes - Hora Fin",
+        default=0.0,
+        help="Hora de fin el martes (0 = usar horario general)",
     )
     allow_wednesday = fields.Boolean(
         string="Miércoles", default=True, help="Permitir sesiones los miércoles"
     )
+    wednesday_start_time = fields.Float(
+        string="Miércoles - Hora Inicio",
+        default=0.0,
+        help="Hora de inicio el miércoles (0 = usar horario general)",
+    )
+    wednesday_end_time = fields.Float(
+        string="Miércoles - Hora Fin",
+        default=0.0,
+        help="Hora de fin el miércoles (0 = usar horario general)",
+    )
     allow_thursday = fields.Boolean(
         string="Jueves", default=True, help="Permitir sesiones los jueves"
+    )
+    thursday_start_time = fields.Float(
+        string="Jueves - Hora Inicio",
+        default=0.0,
+        help="Hora de inicio el jueves (0 = usar horario general)",
+    )
+    thursday_end_time = fields.Float(
+        string="Jueves - Hora Fin",
+        default=0.0,
+        help="Hora de fin el jueves (0 = usar horario general)",
     )
     allow_friday = fields.Boolean(
         string="Viernes", default=True, help="Permitir sesiones los viernes"
     )
+    friday_start_time = fields.Float(
+        string="Viernes - Hora Inicio",
+        default=0.0,
+        help="Hora de inicio el viernes (0 = usar horario general)",
+    )
+    friday_end_time = fields.Float(
+        string="Viernes - Hora Fin",
+        default=0.0,
+        help="Hora de fin el viernes (0 = usar horario general)",
+    )
     allow_saturday = fields.Boolean(
         string="Sábado", default=True, help="Permitir sesiones los sábados"
     )
+    saturday_start_time = fields.Float(
+        string="Sábado - Hora Inicio",
+        default=0.0,
+        help="Hora de inicio el sábado (0 = usar horario general)",
+    )
+    saturday_end_time = fields.Float(
+        string="Sábado - Hora Fin",
+        default=0.0,
+        help="Hora de fin el sábado (0 = usar horario general)",
+    )
     allow_sunday = fields.Boolean(
         string="Domingo", default=False, help="Permitir sesiones los domingos"
+    )
+    sunday_start_time = fields.Float(
+        string="Domingo - Hora Inicio",
+        default=0.0,
+        help="Hora de inicio el domingo (0 = usar horario general)",
+    )
+    sunday_end_time = fields.Float(
+        string="Domingo - Hora Fin",
+        default=0.0,
+        help="Hora de fin el domingo (0 = usar horario general)",
     )
 
     # Duración por defecto de las sesiones
@@ -195,8 +253,8 @@ class Campus(models.Model):
     subcampus_ids = fields.One2many(
         comodel_name="benglish.subcampus",
         inverse_name="campus_id",
-        string="Sub-sedes/Aulas",
-        help="Sub-sedes o aulas que pertenecen a esta sede",
+        string="Aulas",
+        help="Aulas que pertenecen a esta sede",
     )
 
     # Responsable
@@ -206,29 +264,7 @@ class Campus(models.Model):
         help="Coordinador o responsable de la sede",
     )
 
-    # Relaciones con Cursos, Grupos y Docentes
-    course_ids = fields.One2many(
-        comodel_name="benglish.course",
-        inverse_name="campus_id",
-        string="Cursos",
-        help="Cursos que se dictan en esta sede",
-    )
-    group_ids = fields.One2many(
-        comodel_name="benglish.group",
-        inverse_name="campus_id",
-        string="Grupos",
-        help="Grupos que tienen clases en esta sede",
-    )
-    teacher_ids = fields.Many2many(
-        comodel_name="res.users",
-        relation="benglish_campus_teacher_rel",
-        column1="campus_id",
-        column2="user_id",
-        string="Docentes",
-        compute="_compute_teacher_ids",
-        store=True,
-        help="Docentes que dictan clases en esta sede",
-    )
+    # Relación con sesiones
     session_ids = fields.One2many(
         comodel_name="benglish.class.session",
         inverse_name="campus_id",
@@ -238,25 +274,16 @@ class Campus(models.Model):
 
     # Campos computados
     subcampus_count = fields.Integer(
-        string="Número de Sub-sedes", compute="_compute_subcampus_count", store=True
-    )
-    course_count = fields.Integer(
-        string="Número de Cursos", compute="_compute_course_count", store=True
-    )
-    group_count = fields.Integer(
-        string="Número de Grupos", compute="_compute_group_count", store=True
-    )
-    teacher_count = fields.Integer(
-        string="Número de Docentes", compute="_compute_teacher_count", store=True
+        string="Número de Aulas", compute="_compute_subcampus_count", store=True
     )
     session_count = fields.Integer(
         string="Sesiones Programadas", compute="_compute_session_count", store=True
     )
     total_capacity = fields.Integer(
-        string="Capacidad Total (incluye sub-sedes)",
+        string="Capacidad Total",
         compute="_compute_total_capacity",
         store=True,
-        help="Capacidad total sumando todas las sub-sedes",
+        help="Capacidad total sumando todas las aulas (solo para sedes presenciales)",
     )
 
     # Restricciones SQL
@@ -264,25 +291,32 @@ class Campus(models.Model):
         ("code_unique", "UNIQUE(code)", "El código de la sede debe ser único."),
     ]
 
-    @api.depends("street", "street2", "city", "state_id", "country_id", "zip")
-    def _compute_address(self):
-        """Calcula la dirección completa de la sede."""
+    # Métodos computados para city_name y department_name
+    @api.depends("city_id", "city_id.name")
+    def _compute_city_name(self):
+        """Calcula el nombre de la ciudad desde el Many2one."""
         for campus in self:
-            address_parts = []
-            if campus.street:
-                address_parts.append(campus.street)
-            if campus.street2:
-                address_parts.append(campus.street2)
-            if campus.city:
-                address_parts.append(campus.city)
-            if campus.state_id:
-                address_parts.append(campus.state_id.name)
-            if campus.country_id:
-                address_parts.append(campus.country_id.name)
-            if campus.zip:
-                address_parts.append(campus.zip)
+            campus.city_name = campus.city_id.name if campus.city_id else ""
 
-            campus.address = ", ".join(address_parts) if address_parts else ""
+    @api.depends("state_id", "state_id.name")
+    def _compute_department_name(self):
+        """Calcula el nombre del departamento desde el Many2one."""
+        for campus in self:
+            campus.department_name = campus.state_id.name if campus.state_id else ""
+
+    # Onchange para filtros en cascada: País -> Departamento -> Ciudad
+    @api.onchange("country_id")
+    def _onchange_country_id(self):
+        """Limpia el departamento y ciudad cuando cambia el país."""
+        if self.state_id and self.state_id.country_id != self.country_id:
+            self.state_id = False
+            self.city_id = False
+
+    @api.onchange("state_id")
+    def _onchange_state_id(self):
+        """Limpia la ciudad cuando cambia el departamento."""
+        if self.city_id and self.city_id.state_id != self.state_id:
+            self.city_id = False
 
     @api.depends(
         "schedule_start_time",
@@ -331,51 +365,9 @@ class Campus(models.Model):
 
     @api.depends("subcampus_ids")
     def _compute_subcampus_count(self):
-        """Calcula el número de sub-sedes."""
+        """Calcula el número de aulas."""
         for campus in self:
             campus.subcampus_count = len(campus.subcampus_ids)
-
-    @api.depends("child_campus_ids")
-    def _compute_child_campus_count(self):
-        """Calcula el número de sedes secundarias."""
-        for campus in self:
-            campus.child_campus_count = len(campus.child_campus_ids)
-
-    @api.depends("course_ids")
-    def _compute_course_count(self):
-        """Calcula el número de cursos."""
-        for campus in self:
-            campus.course_count = len(campus.course_ids)
-
-    @api.depends("group_ids")
-    def _compute_group_count(self):
-        """Calcula el número de grupos."""
-        for campus in self:
-            campus.group_count = len(campus.group_ids)
-
-    @api.depends(
-        "group_ids.teacher_id",
-        "course_ids.main_teacher_id",
-        "course_ids.assistant_teacher_ids",
-    )
-    def _compute_teacher_ids(self):
-        """Calcula los docentes que dictan en esta sede."""
-        for campus in self:
-            teachers = self.env["res.users"]
-            # Docentes de grupos
-            teachers |= campus.group_ids.mapped("teacher_id")
-            # Docentes principales de cursos
-            teachers |= campus.course_ids.mapped("main_teacher_id")
-            # Docentes asistentes de cursos
-            for course in campus.course_ids:
-                teachers |= course.assistant_teacher_ids
-            campus.teacher_ids = teachers
-
-    @api.depends("teacher_ids")
-    def _compute_teacher_count(self):
-        """Calcula el número de docentes."""
-        for campus in self:
-            campus.teacher_count = len(campus.teacher_ids)
 
     @api.depends("session_ids.state")
     def _compute_session_count(self):
@@ -385,12 +377,17 @@ class Campus(models.Model):
                 campus.session_ids.filtered(lambda s: s.state != "cancelled")
             )
 
-    @api.depends("capacity", "subcampus_ids.capacity")
+    @api.depends("subcampus_ids.capacity", "is_virtual_sede")
     def _compute_total_capacity(self):
-        """Calcula la capacidad total incluyendo sub-sedes."""
+        """
+        Calcula la capacidad total sumando las capacidades de todas las aulas.
+        Para sedes virtuales, la capacidad es 0 (no aplica).
+        """
         for campus in self:
-            subcampus_capacity = sum(campus.subcampus_ids.mapped("capacity"))
-            campus.total_capacity = (campus.capacity or 0) + subcampus_capacity
+            if campus.is_virtual_sede or campus.campus_type == 'online':
+                campus.total_capacity = 0
+            else:
+                campus.total_capacity = sum(campus.subcampus_ids.mapped("capacity"))
 
     @api.constrains("schedule_start_time", "schedule_end_time")
     def _check_schedule_times(self):
@@ -451,6 +448,73 @@ class Campus(models.Model):
                     )
                 )
 
+    @api.constrains(
+        "schedule_start_time", "schedule_end_time",
+        "monday_start_time", "monday_end_time",
+        "tuesday_start_time", "tuesday_end_time",
+        "wednesday_start_time", "wednesday_end_time",
+        "thursday_start_time", "thursday_end_time",
+        "friday_start_time", "friday_end_time",
+        "saturday_start_time", "saturday_end_time",
+        "sunday_start_time", "sunday_end_time",
+    )
+    def _check_day_schedules_within_general(self):
+        """
+        Valida que los horarios específicos por día estén dentro del horario general de operación.
+        Los horarios por día son un subconjunto del horario general.
+        """
+        day_fields = [
+            ("Lunes", "monday_start_time", "monday_end_time", "allow_monday"),
+            ("Martes", "tuesday_start_time", "tuesday_end_time", "allow_tuesday"),
+            ("Miércoles", "wednesday_start_time", "wednesday_end_time", "allow_wednesday"),
+            ("Jueves", "thursday_start_time", "thursday_end_time", "allow_thursday"),
+            ("Viernes", "friday_start_time", "friday_end_time", "allow_friday"),
+            ("Sábado", "saturday_start_time", "saturday_end_time", "allow_saturday"),
+            ("Domingo", "sunday_start_time", "sunday_end_time", "allow_sunday"),
+        ]
+        
+        for campus in self:
+            for day_name, start_field, end_field, allow_field in day_fields:
+                day_start = getattr(campus, start_field)
+                day_end = getattr(campus, end_field)
+                is_allowed = getattr(campus, allow_field)
+                
+                # Solo validar si el día está habilitado y tiene horario específico
+                if is_allowed and (day_start > 0 or day_end > 0):
+                    # Si solo uno está configurado, ambos deben estarlo
+                    if (day_start > 0) != (day_end > 0):
+                        raise ValidationError(
+                            _("El día %s tiene configuración incompleta. "
+                              "Debe especificar tanto hora de inicio como hora de fin, "
+                              "o dejar ambos en 00:00 para usar el horario general.")
+                            % day_name
+                        )
+                    
+                    # Validar que inicio < fin
+                    if day_start >= day_end:
+                        raise ValidationError(
+                            _("El horario del %s es inválido: la hora de inicio (%.2f) "
+                              "debe ser menor que la hora de fin (%.2f).")
+                            % (day_name, day_start, day_end)
+                        )
+                    
+                    # Validar que el horario esté dentro del horario general
+                    if day_start < campus.schedule_start_time:
+                        raise ValidationError(
+                            _("El horario del %s inicia a las %.2f, pero el horario general "
+                              "de operación de la sede inicia a las %.2f. "
+                              "El horario por día debe estar dentro del horario general.")
+                            % (day_name, day_start, campus.schedule_start_time)
+                        )
+                    
+                    if day_end > campus.schedule_end_time:
+                        raise ValidationError(
+                            _("El horario del %s termina a las %.2f, pero el horario general "
+                              "de operación de la sede termina a las %.2f. "
+                              "El horario por día debe estar dentro del horario general.")
+                            % (day_name, day_end, campus.schedule_end_time)
+                        )
+
     @api.constrains("default_session_duration")
     def _check_default_session_duration(self):
         """Valida que la duración por defecto sea positiva y razonable."""
@@ -495,83 +559,40 @@ class Campus(models.Model):
                     % (campus.default_end_time, campus.schedule_start_time, campus.schedule_end_time)
                 )
 
-    @api.constrains("campus_type", "city_name")
+    @api.constrains("campus_type", "city_name", "is_virtual_sede")
     def _check_city_required_for_non_online(self):
         """Valida que las sedes no virtuales tengan ciudad."""
         for campus in self:
-            if campus.campus_type != "online" and not campus.city_name:
-                raise ValidationError(
-                    _("La ciudad es obligatoria para sedes presenciales o sucursales.")
-                )
-
-    @api.constrains("is_main_campus", "parent_campus_id", "city_name")
-    def _check_campus_hierarchy(self):
-        """Valida la jerarquía de sedes."""
-        for campus in self:
-            if campus.campus_type == "online":
+            # Si es sede virtual, no requiere ciudad
+            if campus.is_virtual_sede or campus.campus_type == "online":
                 continue
-            # Una sede principal no puede tener sede padre
-            if campus.is_main_campus and campus.parent_campus_id:
+            if not campus.city_name:
                 raise ValidationError(
-                    _(
-                        "Una sede principal no puede tener una sede padre. "
-                        'Desmarque "Sede Principal de la Ciudad" o elimine la sede principal asignada.'
-                    )
+                    _("La ciudad es obligatoria para sedes presenciales.")
                 )
-
-            # Una sede secundaria debe tener sede padre
-            if not campus.is_main_campus and not campus.parent_campus_id:
-                raise ValidationError(
-                    _(
-                        "Una sede secundaria debe tener asignada una sede principal. "
-                        'Seleccione una sede principal o marque esta sede como "Sede Principal de la Ciudad".'
-                    )
-                )
-
-            # Validar que la sede padre sea de la misma ciudad
-            if (
-                campus.parent_campus_id
-                and campus.city_name != campus.parent_campus_id.city_name
-            ):
-                raise ValidationError(
-                    _(
-                        "La sede secundaria debe pertenecer a la misma ciudad que su sede principal. "
-                        "Ciudad actual: %s, Ciudad de sede principal: %s"
-                    )
-                    % (campus.city_name, campus.parent_campus_id.city_name)
-                )
-
-            # Evitar duplicidad de sede principal por ciudad
-            if campus.is_main_campus:
-                existing_main = self.search(
-                    [
-                        ("city_name", "=", campus.city_name),
-                        ("is_main_campus", "=", True),
-                        ("id", "!=", campus.id),
-                    ],
-                    limit=1,
-                )
-                if existing_main:
-                    raise ValidationError(
-                        _(
-                            'Ya existe una sede principal para la ciudad "%s": %s. '
-                            "Solo puede haber una sede principal por ciudad."
-                        )
-                        % (campus.city_name, existing_main.name)
-                    )
-
-    @api.onchange("is_main_campus")
-    def _onchange_is_main_campus(self):
-        """Limpia la sede padre cuando se marca como sede principal."""
-        if self.is_main_campus:
-            self.parent_campus_id = False
 
     @api.onchange("campus_type")
     def _onchange_campus_type(self):
-        """Limpia jerarquia cuando la sede es virtual."""
+        """Sincroniza is_virtual_sede cuando la sede es virtual."""
         if self.campus_type == "online":
-            self.parent_campus_id = False
-            self.is_main_campus = False
+            self.is_virtual_sede = True
+        else:
+            self.is_virtual_sede = False
+
+    @api.onchange("is_virtual_sede")
+    def _onchange_is_virtual_sede(self):
+        """
+        Limpia campos de ubicación y contacto cuando se marca como sede virtual.
+        """
+        if self.is_virtual_sede:
+            self.city_id = False
+            self.state_id = False
+            self.country_id = False
+            self.direccion = False
+            self.zip = False
+            self.phone = False
+            self.email = False
+            self.campus_type = "online"
 
     def is_day_allowed(self, weekday):
         """
@@ -595,18 +616,55 @@ class Campus(models.Model):
         }
         return day_mapping.get(weekday, False)
 
-    def is_time_in_schedule(self, time_float):
+    def get_day_schedule(self, weekday):
+        """
+        Obtiene el horario de operación para un día específico.
+        Si el día tiene horario configurado (valores > 0), usa ese.
+        Si no, usa el horario general de la sede.
+
+        Args:
+            weekday (int): Día de la semana (1=Lunes, 2=Martes, ..., 7=Domingo)
+
+        Returns:
+            tuple: (hora_inicio, hora_fin) en formato decimal
+        """
+        self.ensure_one()
+        day_schedules = {
+            1: (self.monday_start_time, self.monday_end_time),
+            2: (self.tuesday_start_time, self.tuesday_end_time),
+            3: (self.wednesday_start_time, self.wednesday_end_time),
+            4: (self.thursday_start_time, self.thursday_end_time),
+            5: (self.friday_start_time, self.friday_end_time),
+            6: (self.saturday_start_time, self.saturday_end_time),
+            7: (self.sunday_start_time, self.sunday_end_time),
+        }
+        day_start, day_end = day_schedules.get(weekday, (0.0, 0.0))
+        
+        # Si el día tiene horario específico (ambos valores > 0), usarlo
+        if day_start > 0 and day_end > 0:
+            return (day_start, day_end)
+        
+        # Si no, usar el horario general
+        return (self.schedule_start_time, self.schedule_end_time)
+
+    def is_time_in_schedule(self, time_float, weekday=None):
         """
         Verifica si una hora está dentro del rango permitido de la sede.
 
         Args:
             time_float (float): Hora en formato decimal (ej: 14.5 = 14:30)
+            weekday (int, optional): Día de la semana para verificar horario específico
 
         Returns:
             bool: True si la hora está en el rango permitido, False en caso contrario
         """
         self.ensure_one()
-        return self.schedule_start_time <= time_float <= self.schedule_end_time
+        if weekday:
+            start_time, end_time = self.get_day_schedule(weekday)
+        else:
+            start_time = self.schedule_start_time
+            end_time = self.schedule_end_time
+        return start_time <= time_float <= end_time
 
     def validate_session_schedule(self, start_datetime, end_datetime):
         """
@@ -671,97 +729,60 @@ class Campus(models.Model):
         start_time_float = (
             start_datetime_local.hour + start_datetime_local.minute / 60.0
         )
-        if not self.is_time_in_schedule(start_time_float):
+        # Obtener horario del día específico
+        day_start, day_end = self.get_day_schedule(weekday)
+        if not self.is_time_in_schedule(start_time_float, weekday):
+            # Formatear horario del día para el mensaje
+            start_h = int(day_start)
+            start_m = int((day_start - start_h) * 60)
+            end_h = int(day_end)
+            end_m = int((day_end - end_h) * 60)
+            day_schedule_str = f"{start_h:02d}:{start_m:02d} - {end_h:02d}:{end_m:02d}"
             raise ValidationError(
                 _(
-                    'La hora de inicio (%02d:%02d hora de Colombia) está fuera del horario permitido de la sede "%s" (%s).'
+                    'La hora de inicio (%02d:%02d hora de Colombia) está fuera del horario permitido de la sede "%s" para ese día (%s).'
                 )
                 % (
                     start_datetime_local.hour,
                     start_datetime_local.minute,
                     self.name,
-                    self.schedule_summary,
+                    day_schedule_str,
                 )
             )
 
         # Validar hora de fin (usando hora LOCAL de Colombia)
         end_time_float = end_datetime_local.hour + end_datetime_local.minute / 60.0
-        if not self.is_time_in_schedule(end_time_float):
+        if not self.is_time_in_schedule(end_time_float, weekday):
+            # Formatear horario del día para el mensaje
+            start_h = int(day_start)
+            start_m = int((day_start - start_h) * 60)
+            end_h = int(day_end)
+            end_m = int((day_end - end_h) * 60)
+            day_schedule_str = f"{start_h:02d}:{start_m:02d} - {end_h:02d}:{end_m:02d}"
             raise ValidationError(
                 _(
-                    'La hora de fin (%02d:%02d hora de Colombia) está fuera del horario permitido de la sede "%s" (%s).'
+                    'La hora de fin (%02d:%02d hora de Colombia) está fuera del horario permitido de la sede "%s" para ese día (%s).'
                 )
                 % (
                     end_datetime_local.hour,
                     end_datetime_local.minute,
                     self.name,
-                    self.schedule_summary,
+                    day_schedule_str,
                 )
             )
 
         return True
 
-    def action_view_child_campus(self):
-        """Acción para ver las sedes secundarias."""
-        self.ensure_one()
-        return {
-            "name": _("Sedes Secundarias"),
-            "type": "ir.actions.act_window",
-            "res_model": "benglish.campus",
-            "view_mode": "list,form",
-            "domain": [("parent_campus_id", "=", self.id)],
-            "context": {
-                "default_parent_campus_id": self.id,
-                "default_city_name": self.city_name,
-                "default_is_main_campus": False,
-            },
-        }
-
     def action_view_subcampus(self):
-        """Acción para ver las sub-sedes."""
+        """Acción para ver las aulas de la sede."""
         self.ensure_one()
         return {
-            "name": _("Sub-sedes / Aulas"),
+            "name": _("Aulas"),
             "type": "ir.actions.act_window",
             "res_model": "benglish.subcampus",
             "view_mode": "list,form",
             "domain": [("campus_id", "=", self.id)],
             "context": {"default_campus_id": self.id},
-        }
-
-    def action_view_courses(self):
-        """Acción para ver los cursos de la sede."""
-        self.ensure_one()
-        return {
-            "name": _("Cursos en la Sede"),
-            "type": "ir.actions.act_window",
-            "res_model": "benglish.course",
-            "view_mode": "list,form",
-            "domain": [("campus_id", "=", self.id)],
-            "context": {"default_campus_id": self.id},
-        }
-
-    def action_view_groups(self):
-        """Acción para ver los grupos de la sede."""
-        self.ensure_one()
-        return {
-            "name": _("Grupos en la Sede"),
-            "type": "ir.actions.act_window",
-            "res_model": "benglish.group",
-            "view_mode": "list,form",
-            "domain": [("campus_id", "=", self.id)],
-            "context": {"default_campus_id": self.id},
-        }
-
-    def action_view_teachers(self):
-        """Acción para ver los docentes de la sede."""
-        self.ensure_one()
-        return {
-            "name": _("Docentes en la Sede"),
-            "type": "ir.actions.act_window",
-            "res_model": "res.users",
-            "view_mode": "list,form",
-            "domain": [("id", "in", self.teacher_ids.ids)],
         }
 
     def action_view_sessions(self):
@@ -893,7 +914,7 @@ class SubCampus(models.Model):
     # Relaciones
     campus_id = fields.Many2one(
         comodel_name="benglish.campus",
-        string="Sede Principal",
+        string="Sede:",
         required=True,
         ondelete="restrict",
         help="Sede principal a la que pertenece",
@@ -953,42 +974,3 @@ class SubCampus(models.Model):
                         "El código del aula solo puede contener letras, números, guiones y guiones bajos."
                     )
                 )
-
-    # NORMALIZACIÓN AUTOMÁTICA
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Sobrescribe create para normalizar datos y generar código automático si no se proporciona."""
-        for vals in vals_list:
-            if "name" in vals and vals["name"]:
-                vals["name"] = normalize_to_uppercase(vals["name"])
-            if "city_name" in vals and vals["city_name"]:
-                vals["city_name"] = normalize_to_uppercase(vals["city_name"])
-            if "department_name" in vals and vals["department_name"]:
-                vals["department_name"] = normalize_to_uppercase(
-                    vals["department_name"]
-                )
-
-            # If no manual code provided, generate using sequence SE-1, SE-2 ...
-            if vals.get("code", "/") in (None, "", "/"):
-                vals["code"] = self.env["ir.sequence"].next_by_code("benglish.campus") or "/"
-            else:
-                # normalize provided code
-                vals["code"] = normalize_codigo(vals["code"])
-
-        return super(Campus, self).create(vals_list)
-
-    def write(self, vals):
-        """Sobrescribe write para normalizar datos a MAYÚSCULAS automáticamente."""
-        if "name" in vals and vals["name"]:
-            vals["name"] = normalize_to_uppercase(vals["name"])
-        if "city_name" in vals and vals["city_name"]:
-            vals["city_name"] = normalize_to_uppercase(vals["city_name"])
-        if "department_name" in vals and vals["department_name"]:
-            vals["department_name"] = normalize_to_uppercase(vals["department_name"])
-        if "code" in vals and vals["code"]:
-            vals["code"] = normalize_codigo(vals["code"])
-
-        return super(Campus, self).write(vals)
-
-    # Subcampus create is implemented in SubCampus class below; keep definitions separate

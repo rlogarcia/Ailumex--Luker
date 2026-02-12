@@ -352,11 +352,6 @@ class PortalStudentController(CustomerPortal):
         if not session:
             return False
         
-        # Verificar por template
-        if getattr(session, "template_id", False):
-            if session.template_id.subject_category in ["bcheck", "oral_test"]:
-                return True
-        
         # Verificar por subject
         subject = session.subject_id
         return bool(subject and subject.subject_category in ["bcheck", "oral_test"])
@@ -380,11 +375,7 @@ class PortalStudentController(CustomerPortal):
         if program:
             domain.append(("session_ids.program_id", "=", program.id))
         if subjects:
-            domain += [
-                "|",
-                ("session_ids.template_id", "!=", False),
-                ("session_ids.subject_id", "in", subjects.ids),
-            ]
+            domain.append(("session_ids.subject_id", "in", subjects.ids))
         if campus:
             domain_with_campus = list(domain) + [("campus_id", "=", campus.id)]
             agenda = Agenda.search(
@@ -405,11 +396,7 @@ class PortalStudentController(CustomerPortal):
         if program:
             domain.append(("session_ids.program_id", "=", program.id))
         if subjects:
-            domain += [
-                "|",
-                ("session_ids.template_id", "!=", False),
-                ("session_ids.subject_id", "in", subjects.ids),
-            ]
+            domain.append(("session_ids.subject_id", "in", subjects.ids))
         agendas = Agenda.search(domain, order="campus_id asc, date_start desc, write_date desc, id desc")
         latest_by_campus = {}
         for agenda in agendas:
@@ -425,11 +412,7 @@ class PortalStudentController(CustomerPortal):
         if program:
             domain.append(("session_ids.program_id", "=", program.id))
         if subjects:
-            domain += [
-                "|",
-                ("session_ids.template_id", "!=", False),
-                ("session_ids.subject_id", "in", subjects.ids),
-            ]
+            domain.append(("session_ids.subject_id", "in", subjects.ids))
         if start_date:
             domain.append(("date_end", ">=", start_date))
         if end_date:
@@ -473,11 +456,7 @@ class PortalStudentController(CustomerPortal):
         if program:
             domain.append(("program_id", "=", program.id))
         if subjects:
-            domain += [
-                "|",
-                ("template_id", "!=", False),
-                ("subject_id", "in", subjects.ids),
-            ]
+            domain.append(("subject_id", "in", subjects.ids))
         if campus:
             domain.append(("campus_id", "=", campus.id))
         return domain, agenda, subjects
@@ -926,7 +905,7 @@ class PortalStudentController(CustomerPortal):
                 if subjects:
                     domain += [
                         "|",
-                        ("template_id", "!=", False),
+                        ("subject_id", "!=", False),
                         ("subject_id", "in", subjects.ids),
                     ]
                 if campus:
@@ -1441,8 +1420,6 @@ class PortalStudentController(CustomerPortal):
         ]
         if student_subjects:
             campus_domain += [
-                "|",
-                ("template_id", "!=", False),
                 ("subject_id", "in", student_subjects.ids),
             ]
         if program:
@@ -1675,13 +1652,10 @@ class PortalStudentController(CustomerPortal):
         
         for session in filtered_sessions:
             # ⭐ FILTRO DE AUDIENCIA: Verificar que el estudiante esté en el rango de audiencia de la sesión
-            if session.template_id and session.audience_unit_from and session.audience_unit_to:
+            if session.subject_id and session.audience_unit_from and session.audience_unit_to:
                 # EXCEPCIÓN: Oral Tests se publican para UNA sola unidad (ej: Unit 4 para bloque 1-4)
                 # El estudiante debe estar EN esa unidad o haberla completado (estar en la siguiente)
-                is_oral_test = (
-                    session.template_id.subject_category == 'oral_test' or
-                    (session.subject_id and session.subject_id.subject_category == 'oral_test')
-                )
+                is_oral_test = session.subject_id.subject_category == 'oral_test'
                 
                 if is_oral_test:
                     # Oral Test publicado para Unit X: mostrar a estudiantes en Unit X o X+1

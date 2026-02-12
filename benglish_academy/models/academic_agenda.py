@@ -471,12 +471,12 @@ class AcademicAgenda(models.Model):
         Para sedes virtuales, la ciudad no es obligatoria.
         """
         for record in self:
-            # Si la sede es virtual (online), no validar ciudad
-            if record.campus_id and record.campus_id.campus_type == 'online':
+            # Si la sede es virtual (online o is_virtual_sede=True), no validar ciudad
+            if record.campus_id and (record.campus_id.campus_type == 'online' or record.campus_id.is_virtual_sede):
                 continue
                 
             # Para sedes presenciales, ciudad es obligatoria
-            if record.campus_id and record.campus_id.campus_type != 'online' and not record.location_city:
+            if record.campus_id and record.campus_id.campus_type != 'online' and not record.campus_id.is_virtual_sede and not record.location_city:
                 raise ValidationError(
                     _("La ciudad es obligatoria para horarios con sedes presenciales.")
                 )
@@ -623,7 +623,7 @@ class AcademicAgenda(models.Model):
             )
         
         # Validar ciudad solo para sedes NO virtuales
-        if self.campus_id.campus_type != 'online' and not self.location_city:
+        if self.campus_id.campus_type != 'online' and not self.campus_id.is_virtual_sede and not self.location_city:
             raise UserError(
                 _("La ciudad es obligatoria para agendas con sedes presenciales.")
             )

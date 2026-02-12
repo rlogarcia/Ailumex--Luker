@@ -66,13 +66,24 @@ class AcademicProgram(models.Model):
     plan_ids = fields.One2many(
         comodel_name="benglish.plan",
         inverse_name="program_id",
-        string="Planes de Estudio",
-        help="Planes de estudio asociados a este programa",
+        string="Planes de Estudio (Legacy)",
+        help="Planes de estudio asociados a este programa (modelo legacy)",
+    )
+
+    commercial_plan_ids = fields.One2many(
+        comodel_name="benglish.commercial.plan",
+        inverse_name="program_id",
+        string="Planes Comerciales",
+        help="Planes comerciales asociados a este programa (nuevo modelo Feb 2026)",
     )
 
     # Campos computados
     plan_count = fields.Integer(
-        string="Número de Planes", compute="_compute_plan_count", store=True
+        string="Planes (Legacy)", compute="_compute_plan_count", store=False
+    )
+
+    commercial_plan_count = fields.Integer(
+        string="Planes Comerciales", compute="_compute_commercial_plan_count", store=False
     )
 
     # Restricciones SQL
@@ -140,17 +151,35 @@ class AcademicProgram(models.Model):
 
     @api.depends("plan_ids")
     def _compute_plan_count(self):
-        """Calcula el número de planes de estudio asociados."""
+        """Calcula el número de planes de estudio asociados (legacy)."""
         for program in self:
             program.plan_count = len(program.plan_ids)
 
+    @api.depends("commercial_plan_ids")
+    def _compute_commercial_plan_count(self):
+        """Calcula el número de planes comerciales asociados."""
+        for program in self:
+            program.commercial_plan_count = len(program.commercial_plan_ids)
+
     def action_view_plans(self):
-        """Acción para ver los planes de estudio del programa."""
+        """Acción para ver los planes de estudio del programa (legacy)."""
         self.ensure_one()
         return {
-            "name": _("Planes de Estudio"),
+            "name": _("Planes de Estudio (Legacy)"),
             "type": "ir.actions.act_window",
             "res_model": "benglish.plan",
+            "view_mode": "list,form",
+            "domain": [("program_id", "=", self.id)],
+            "context": {"default_program_id": self.id},
+        }
+
+    def action_view_commercial_plans(self):
+        """Acción para ver los planes comerciales del programa."""
+        self.ensure_one()
+        return {
+            "name": _("Planes Comerciales - %s") % self.name,
+            "type": "ir.actions.act_window",
+            "res_model": "benglish.commercial.plan",
             "view_mode": "list,form",
             "domain": [("program_id", "=", self.id)],
             "context": {"default_program_id": self.id},

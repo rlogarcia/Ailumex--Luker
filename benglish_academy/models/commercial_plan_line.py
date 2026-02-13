@@ -33,7 +33,7 @@ class CommercialPlanLine(models.Model):
 
     _name = "benglish.commercial.plan.line"
     _description = "Línea de Plan Comercial"
-    _order = "plan_id, sequence, subject_type"
+    _order = "plan_id, sequence, subject_type_id"
     _rec_name = "display_name"
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -77,27 +77,21 @@ class CommercialPlanLine(models.Model):
     # TIPO DE ASIGNATURA
     # ═══════════════════════════════════════════════════════════════════════════
 
-    subject_type = fields.Selection(
-        selection=[
-            ("selection", "Selección"),
-            ("oral_test", "Oral Test"),
-            ("elective", "Electiva"),
-            ("regular", "Regular"),
-            ("bskills", "Skills"),
-            ("master_class", "Master Class"),
-            ("conversation_club", "Conversation Club"),
-        ],
+    subject_type_id = fields.Many2one(
+        comodel_name="benglish.subject.type",
         string="Tipo de Asignatura",
         required=True,
         index=True,
-        help="Tipo de asignatura que configura esta línea:\n"
-             "- Selección/B-check: Asignaturas de selección obligatoria\n"
-             "- Oral Test: Evaluaciones orales\n"
-             "- Electiva: Asignaturas del pool de electivas\n"
-             "- Regular: Asignaturas regulares del currículo\n"
-             "- B-Skills: Habilidades específicas\n"
-             "- Master Class: Clases magistrales\n"
-             "- Conversation Club: Clubes de conversación",
+        ondelete="restrict",
+        help="Tipo de asignatura configurable que determina esta línea del plan comercial",
+    )
+
+    subject_type_code = fields.Char(
+        string="Código del Tipo",
+        related="subject_type_id.code",
+        store=True,
+        readonly=True,
+        help="Código del tipo de asignatura para facilitar comparaciones",
     )
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -192,7 +186,7 @@ class CommercialPlanLine(models.Model):
     _sql_constraints = [
         (
             "unique_plan_subject_type",
-            "UNIQUE(plan_id, subject_type)",
+            "UNIQUE(plan_id, subject_type_id)",
             "Solo puede haber una configuración por tipo de asignatura en cada plan.",
         ),
         (
@@ -211,13 +205,12 @@ class CommercialPlanLine(models.Model):
     # MÉTODOS COMPUTE
     # ═══════════════════════════════════════════════════════════════════════════
 
-    @api.depends("subject_type", "calculation_mode", "calculated_total")
+    @api.depends("subject_type_id", "subject_type_id.name", "calculation_mode", "calculated_total")
     def _compute_display_name(self):
-        type_names = dict(self._fields["subject_type"].selection)
         mode_names = dict(self._fields["calculation_mode"].selection)
         
         for record in self:
-            type_name = type_names.get(record.subject_type, "")
+            type_name = record.subject_type_id.name if record.subject_type_id else "Sin Tipo"
             mode_name = mode_names.get(record.calculation_mode, "")
             record.display_name = f"{type_name} ({mode_name}) = {record.calculated_total}"
 
@@ -338,14 +331,14 @@ class CommercialPlanLine(models.Model):
             self.levels_interval = 0
             self.fixed_quantity = 10
 
-    @api.onchange("subject_type")
+    @api.onchange("subject_type_id")
     def _onchange_subject_type(self):
         """Sugiere modo de cálculo según el tipo de asignatura."""
-        if self.subject_type == "oral_test":
+        if self.subject_type_code == "oral_test":
             # Los oral tests típicamente son cada X niveles
             self.calculation_mode = "per_x_levels"
             self.levels_interval = 4
-        elif self.subject_type in ("selection", "elective", "bskills"):
+        elif self.subject_type_code in ("selection", "elective", "bskills"):
             # Estos típicamente son por nivel
             self.calculation_mode = "per_level"
-            self.quantity_per_level = 1 if self.subject_type == "selection" else 2
+            self.quantity_per_level = 1 if self.subject_type_code == "selection" else 2

@@ -95,7 +95,6 @@
                     <group>
                         <group name="basic_info" string="Información Básica">
                             <field name="program_id" options="{'no_create': True}" />
-                            <field name="commercial_value" />
                             <field name="sequence" />
                         </group>
                         <group name="level_config" string="Configuración de Niveles">
@@ -110,7 +109,8 @@
                             <field name="line_ids" nolabel="1">
                                 <list string="Configuración" editable="bottom">
                                     <field name="sequence" widget="handle" />
-                                    <field name="subject_type" />
+                                    <field name="subject_type_id"
+                                        options="{'no_create': True, 'no_open': True}" />
                                     <field name="calculation_mode" />
                                     <field name="quantity_per_level"
                                         invisible="calculation_mode != 'per_level'" />
@@ -123,7 +123,8 @@
                                 <form string="Línea de Configuración">
                                     <group>
                                         <group string="Tipo de Asignatura">
-                                            <field name="subject_type" />
+                                            <field name="subject_type_id"
+                                                options="{'no_create': True}" />
                                             <field name="sequence" />
                                         </group>
                                         <group string="Cálculo">

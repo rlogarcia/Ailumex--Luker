@@ -136,16 +136,14 @@ class SubjectSessionTracking(models.Model):
             else:
                 record.display_name = "Tracking de Sesión"
 
-    @api.depends("subject_id", "subject_id.phase_id", "subject_id.level_id")
+    @api.depends("subject_id", "subject_id.subject_type_id")
     def _compute_hierarchy(self):
         """Computa la jerarquía académica desde la asignatura"""
         for record in self:
-            record.phase_id = (
-                record.subject_id.phase_id.id if record.subject_id else False
-            )
-            record.level_id = (
-                record.subject_id.level_id.id if record.subject_id else False
-            )
+            # Las asignaturas ya no tienen phase_id/level_id, se mantienen como False
+            # o se pueden derivar de otras fuentes si es necesario
+            record.phase_id = False
+            record.level_id = False
 
     @api.onchange("attended", "grade", "teacher_id", "notes", "session_id")
     def _onchange_session_data(self):
@@ -319,8 +317,8 @@ class SubjectSessionTracking(models.Model):
                     {
                         "student_id": student.id,
                         "subject_id": subject.id,
-                        "phase_id": subject.phase_id.id,
-                        "level_id": subject.level_id.id,
+                        "phase_id": False,  # Las asignaturas ya no tienen phase_id
+                        "level_id": False,  # Las asignaturas ya no tienen level_id
                         "state": "pending",
                     }
                 )

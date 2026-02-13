@@ -52,13 +52,13 @@ class Group(models.Model):
         string='Tipo de Clase',
         help='Tipo de clase (B check, B skills, Oral test, etc.)'
     )
-    level_id = fields.Many2one(
-        comodel_name='benglish.level',
-        string='Nivel',
-        related='subject_id.level_id',
+    subject_type_id = fields.Many2one(
+        comodel_name='benglish.subject.type',
+        string='Tipo de Asignatura',
+        related='subject_id.subject_type_id',
         store=True,
         readonly=True,
-        help='Nivel académico del grupo'
+        help='Tipo de asignatura del grupo'
     )
     
     # Relaciones de ubicación

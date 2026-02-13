@@ -33,7 +33,7 @@
 
         <record id="commercial_plan_plus_line_selection" model="benglish.commercial.plan.line">
             <field name="plan_id" ref="commercial_plan_plus"/>
-            <field name="subject_type">selection</field>
+            <field name="subject_type_id" ref="subject_type_selection"/>
             <field name="calculation_mode">per_level</field>
             <field name="quantity_per_level">1</field>
             <field name="sequence">10</field>
@@ -41,7 +41,7 @@
 
         <record id="commercial_plan_plus_line_oral" model="benglish.commercial.plan.line">
             <field name="plan_id" ref="commercial_plan_plus"/>
-            <field name="subject_type">oral_test</field>
+            <field name="subject_type_id" ref="subject_type_oral_test"/>
             <field name="calculation_mode">per_x_levels</field>
             <field name="levels_interval">4</field>
             <field name="sequence">20</field>
@@ -49,7 +49,7 @@
 
         <record id="commercial_plan_plus_line_elective" model="benglish.commercial.plan.line">
             <field name="plan_id" ref="commercial_plan_plus"/>
-            <field name="subject_type">elective</field>
+            <field name="subject_type_id" ref="subject_type_elective"/>
             <field name="calculation_mode">per_level</field>
             <field name="quantity_per_level">2</field>
             <field name="use_phase_pool">True</field>
@@ -78,7 +78,7 @@
 
         <record id="commercial_plan_gold_line_selection" model="benglish.commercial.plan.line">
             <field name="plan_id" ref="commercial_plan_gold"/>
-            <field name="subject_type">selection</field>
+            <field name="subject_type_id" ref="subject_type_selection"/>
             <field name="calculation_mode">per_level</field>
             <field name="quantity_per_level">1</field>
             <field name="sequence">10</field>
@@ -86,7 +86,7 @@
 
         <record id="commercial_plan_gold_line_oral" model="benglish.commercial.plan.line">
             <field name="plan_id" ref="commercial_plan_gold"/>
-            <field name="subject_type">oral_test</field>
+            <field name="subject_type_id" ref="subject_type_oral_test"/>
             <field name="calculation_mode">per_x_levels</field>
             <field name="levels_interval">4</field>
             <field name="sequence">20</field>
@@ -94,7 +94,7 @@
 
         <record id="commercial_plan_gold_line_elective" model="benglish.commercial.plan.line">
             <field name="plan_id" ref="commercial_plan_gold"/>
-            <field name="subject_type">elective</field>
+            <field name="subject_type_id" ref="subject_type_elective"/>
             <field name="calculation_mode">per_level</field>
             <field name="quantity_per_level">4</field>
             <field name="use_phase_pool">True</field>
@@ -123,7 +123,7 @@
 
         <record id="commercial_plan_modulo_line_selection" model="benglish.commercial.plan.line">
             <field name="plan_id" ref="commercial_plan_modulo"/>
-            <field name="subject_type">selection</field>
+            <field name="subject_type_id" ref="subject_type_selection"/>
             <field name="calculation_mode">per_level</field>
             <field name="quantity_per_level">1</field>
             <field name="sequence">10</field>
@@ -131,7 +131,7 @@
 
         <record id="commercial_plan_modulo_line_oral" model="benglish.commercial.plan.line">
             <field name="plan_id" ref="commercial_plan_modulo"/>
-            <field name="subject_type">oral_test</field>
+            <field name="subject_type_id" ref="subject_type_oral_test"/>
             <field name="calculation_mode">per_x_levels</field>
             <field name="levels_interval">4</field>
             <field name="sequence">20</field>
@@ -139,7 +139,7 @@
 
         <record id="commercial_plan_modulo_line_elective" model="benglish.commercial.plan.line">
             <field name="plan_id" ref="commercial_plan_modulo"/>
-            <field name="subject_type">elective</field>
+            <field name="subject_type_id" ref="subject_type_elective"/>
             <field name="calculation_mode">per_level</field>
             <field name="quantity_per_level">4</field>
             <field name="use_phase_pool">True</field>

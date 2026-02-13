@@ -99,14 +99,14 @@
 
                                 <!-- Pool de Electivas: visible solo cuando ES tipo electiva -->
                                 <field name="elective_pool_id"
-                                    domain="[('state', '=', 'active'), ('program_id', '=', program_id)]"
+                                    domain="[('state', '=', 'active')]"
                                     options="{'no_create': True}"
                                     invisible="session_type != 'elective'"
                                     required="session_type == 'elective'" />
 
                                 <!-- Fase Audiencia -->
                                 <field name="audience_phase_id"
-                                    domain="[('program_id', '=', program_id), ('active', '=', True)]"
+                                    domain="[('active', '=', True)]"
                                     options="{'no_create': True}" />
 
                                 <!-- Rango de unidades -->
@@ -122,7 +122,7 @@
                                     readonly="elective_pool_id"
                                     force_save="1"
                                     required="1"
-                                    domain="[('program_id', '=', program_id), ('active', '=', True)]"
+                                    domain="[('active', '=', True)]"
                                     options="{'no_create': True}" />
                             </group>
                         </group>

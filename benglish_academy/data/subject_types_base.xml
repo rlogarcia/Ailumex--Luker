@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- ══════════════════════════════════════════════════════════════════════════════
+             TIPOS DE ASIGNATURA BASE
+             Define los tipos de asignatura estándar del sistema
+             ══════════════════════════════════════════════════════════════════════════════ -->
+
+        <!-- Selección / B-check -->
+        <record id="subject_type_selection" model="benglish.subject.type">
+            <field name="name">Selección</field>
+            <field name="code">selection</field>
+            <field name="sequence">10</field>
+            <field name="description">Asignaturas de selección obligatoria (B-check)</field>
+            <field name="active">True</field>
+            <field name="color">1</field>
+        </record>
+
+        <!-- Oral Test -->
+        <record id="subject_type_oral_test" model="benglish.subject.type">
+            <field name="name">Oral Test</field>
+            <field name="code">oral_test</field>
+            <field name="sequence">20</field>
+            <field name="description">Evaluaciones orales periódicas</field>
+            <field name="active">True</field>
+            <field name="color">2</field>
+        </record>
+
+        <!-- Electiva -->
+        <record id="subject_type_elective" model="benglish.subject.type">
+            <field name="name">Electiva</field>
+            <field name="code">elective</field>
+            <field name="sequence">30</field>
+            <field name="description">Asignaturas del pool de electivas</field>
+            <field name="active">True</field>
+            <field name="color">3</field>
+        </record>
+
+        <!-- Regular -->
+        <record id="subject_type_regular" model="benglish.subject.type">
+            <field name="name">Regular</field>
+            <field name="code">regular</field>
+            <field name="sequence">40</field>
+            <field name="description">Asignaturas regulares del currículo</field>
+            <field name="active">True</field>
+            <field name="color">4</field>
+        </record>
+
+        <!-- B-Skills -->
+        <record id="subject_type_bskills" model="benglish.subject.type">
+            <field name="name">Skills</field>
+            <field name="code">bskills</field>
+            <field name="sequence">50</field>
+            <field name="description">Habilidades específicas (B-Skills)</field>
+            <field name="active">True</field>
+            <field name="color">5</field>
+        </record>
+
+        <!-- Master Class -->
+        <record id="subject_type_master_class" model="benglish.subject.type">
+            <field name="name">Master Class</field>
+            <field name="code">master_class</field>
+            <field name="sequence">60</field>
+            <field name="description">Clases magistrales especiales</field>
+            <field name="active">True</field>
+            <field name="color">6</field>
+        </record>
+
+        <!-- Conversation Club -->
+        <record id="subject_type_conversation_club" model="benglish.subject.type">
+            <field name="name">Conversation Club</field>
+            <field name="code">conversation_club</field>
+            <field name="sequence">70</field>
+            <field name="description">Clubes de conversación</field>
+            <field name="active">True</field>
+            <field name="color">7</field>
+        </record>
+
+    </data>
+</odoo>

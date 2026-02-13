@@ -41,21 +41,13 @@ class Course(models.Model):
         tracking=True,
         help='Asignatura que se dicta en este curso'
     )
-    level_id = fields.Many2one(
-        comodel_name='benglish.level',
-        string='Nivel',
-        related='subject_id.level_id',
+    subject_type_id = fields.Many2one(
+        comodel_name='benglish.subject.type',
+        string='Tipo de Asignatura',
+        related='subject_id.subject_type_id',
         store=True,
         readonly=True,
-        help='Nivel académico del curso'
-    )
-    phase_id = fields.Many2one(
-        comodel_name='benglish.phase',
-        string='Fase',
-        related='level_id.phase_id',
-        store=True,
-        readonly=True,
-        help='Fase académica del curso'
+        help='Tipo de asignatura del curso'
     )
     
     # Relaciones de ubicación

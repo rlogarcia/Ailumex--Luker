@@ -118,12 +118,11 @@
                         <group string="📚 Fases Académicas (Compartidas por el Programa)">
                             <field name="active_phase" widget="boolean_toggle" />
                             <field name="phase_ids" invisible="active_phase == False"
-                                context="{'default_program_id': program_id, 'tree_view_ref': 'benglish_academy.view_benglish_phase_list_inline'}">
+                                context="{'tree_view_ref': 'benglish_academy.view_benglish_phase_list_inline'}">
                                 <list editable="bottom" create="true">
                                     <field name="sequence" widget="handle" />
                                     <field name="code" />
                                     <field name="name" />
-                                    <field name="program_id" invisible="1" />
                                     <field name="duration_months" />
                                     <field name="level_count" readonly="1" />
                                     <field name="active" widget="boolean_toggle" />
@@ -134,17 +133,15 @@
                         <group string="Niveles Académicos (30 niveles compartidos)">
                             <field name="active_level" widget="boolean_toggle" />
                             <field name="level_ids" invisible="active_level == False"
-                                context="{'default_program_id': program_id, 'tree_view_ref': 'benglish_academy.view_benglish_level_list_inline'}">
+                                context="{'tree_view_ref': 'benglish_academy.view_benglish_level_list_inline'}">
                                 <list editable="bottom" create="true">
                                     <field name="sequence" widget="handle" />
                                     <field name="code" />
                                     <field name="name" />
                                     <field name="phase_id"
-                                        domain="[('program_id', '=', parent.program_id)]"
                                         options="{'no_create': False}" />
                                     <field name="duration_weeks" />
                                     <field name="total_hours" />
-                                    <field name="subject_count" readonly="1" />
                                     <field name="active" widget="boolean_toggle" />
                                 </list>
                             </field>
@@ -153,13 +150,12 @@
                         <group string="Asignaturas Académicas (126 asignaturas compartidas)">
                             <field name="active_subject" widget="boolean_toggle" />
                             <field name="subject_ids" invisible="active_subject == False"
-                                context="{'default_program_id': program_id, 'tree_view_ref': 'benglish_academy.view_benglish_subject_list_inline'}">
+                                context="{'tree_view_ref': 'benglish_academy.view_benglish_subject_list_inline'}">
                                 <list editable="bottom" create="true">
                                     <field name="sequence" widget="handle" />
                                     <field name="code" />
                                     <field name="name" />
-                                    <field name="level_id"
-                                        domain="[('program_id', '=', parent.program_id)]"
+                                    <field name="subject_type_id"
                                         options="{'no_create': False}" />
                                     <field name="hours" />
                                     <field name="active" widget="boolean_toggle" />
@@ -178,15 +174,14 @@
                                 </p>
                             </group>
                             <field name="requirement_ids" nolabel="1"
-                                context="{'default_plan_id': id, 'default_program_id': program_id}">
+                                context="{'default_plan_id': id}">
                                 <list editable="bottom"
                                     decoration-success="requirement_type == 'course'"
                                     decoration-info="requirement_type == 'electives'"
                                     decoration-warning="requirement_type == 'choice'"
                                     decoration-danger="requirement_type == 'unlockable'">
                                     <field name="sequence" widget="handle" />
-                                    <field name="level_id"
-                                        domain="[('program_id', '=', parent.program_id)]" />
+                                    <field name="level_id" />
                                     <field name="requirement_type" />
                                     <field name="subject_id"
                                         invisible="requirement_type not in ('course', 'unlockable')" />
@@ -197,7 +192,6 @@
                                     <field name="option_count" string="Opciones"
                                         invisible="requirement_type != 'choice'" />
                                     <field name="plan_id" invisible="1" />
-                                    <field name="program_id" invisible="1" />
                                 </list>
                             </field>
                         </group>

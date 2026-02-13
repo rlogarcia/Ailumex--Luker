@@ -9,7 +9,8 @@
                 <field name="code" />
                 <field name="name" />
                 <field name="subject_id" />
-                <field name="level_id" />
+                <!--<field
+                name="level_id" />-->
                 <field name="delivery_mode" widget="badge"
                     decoration-success="delivery_mode == 'presential'"
                     decoration-info="delivery_mode == 'virtual'"
@@ -85,7 +86,7 @@
                             <field name="name" />
                             <field name="code" />
                             <field name="subject_id" />
-                            <field name="level_id" />
+                            <!-- <field name="level_id" />-->
                             <field name="course_id" />
                         </group>
                         <group name="delivery">
@@ -180,7 +181,7 @@
                 <field name="code" />
                 <field name="name" />
                 <field name="subject_id" />
-                <field name="level_id" />
+                <!-- <field name="level_id" />-->
                 <field name="campus_id" />
                 <field name="subcampus_id" />
                 <field name="teacher_id" />
@@ -210,7 +211,7 @@
                                     </div>
                                     <div class="col-6">
                                         <i class="fa fa-signal" />
-                                        <field name="level_id" />
+                                        <!-- <field name="level_id" />-->
                                     </div>
                                 </div>
                                 <div class="row mt-2">

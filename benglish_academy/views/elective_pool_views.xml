@@ -13,7 +13,7 @@
                 <field name="code" />
                 <field name="name" />
                 <field name="phase_id" />
-                <field name="program_id" />
+                <!-- <field name="program_id" />-->
                 <field name="subject_count" />
                 <field name="count_value" />
                 <field name="state" widget="badge" decoration-success="state=='active'"
@@ -73,7 +73,7 @@
                     <group>
                         <group name="basic_info" string="Información Básica">
                             <field name="phase_id" options="{'no_create': True}" />
-                            <field name="program_id" readonly="1" />
+                            <!-- <field name="program_id" readonly="1" /> -->
                             <field name="sequence" />
                             <field name="count_value" />
                         </group>
@@ -90,16 +90,13 @@
 
                     <notebook>
                         <page name="subjects" string="Asignaturas Electivas">
-                            <field name="phase_id" invisible="1" />
                             <field name="subject_ids" widget="many2many"
-                                domain="[('phase_id', '=', phase_id), ('active', '=', True)]"
-                                context="{'default_subject_type': 'elective'}">
+                                domain="[('active', '=', True)]"
+                                context="{'tree_view_ref': 'benglish_academy.benglish_subject_list_view'}">
                                 <list>
                                     <field name="name" />
                                     <field name="code" />
-                                    <field name="level_id" />
-                                    <field name="phase_id" />
-                                    <field name="subject_type" />
+                                    <field name="subject_type_id" />
                                     <field name="hours" />
                                     <field name="credits" />
                                     <field name="active" invisible="1" />
@@ -169,7 +166,8 @@
                 <field name="name" />
                 <field name="code" />
                 <field name="phase_id" />
-                <field name="program_id" />
+                <!--<field
+                name="program_id" />-->
                 <separator />
                 <filter string="Activos" name="filter_state_active"
                     domain="[('state', '=', 'active')]" />
@@ -186,8 +184,9 @@
                 <filter string="Archivados" name="filter_inactive" domain="[('active', '=', False)]" />
                 <group expand="0" string="Agrupar por">
                     <filter string="Fase" name="group_phase" context="{'group_by': 'phase_id'}" />
-                    <filter string="Programa" name="group_program"
-                        context="{'group_by': 'program_id'}" />
+                    <!--<filter
+                    string="Programa" name="group_program"
+                        context="{'group_by': 'program_id'}" />-->
                     <filter string="Estado" name="group_state" context="{'group_by': 'state'}" />
                 </group>
             </search>

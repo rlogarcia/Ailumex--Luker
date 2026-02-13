@@ -15,7 +15,7 @@ class Subject(models.Model):
     _name = "benglish.subject"
     _description = "Asignatura"
     _inherit = ["mail.thread", "mail.activity.mixin"]
-    _order = "level_id, sequence, name"
+    _order = "sequence, name"
     _rec_name = "complete_name"
 
     # Campos básicos
@@ -65,17 +65,25 @@ class Subject(models.Model):
         string="Créditos", help="Número de créditos académicos de la asignatura"
     )
 
-    # Tipo de asignatura
+    # Tipo de asignatura (campo legacy - mantener para compatibilidad)
     subject_type = fields.Selection(
         selection=[
             ("core", "Núcleo/Obligatoria"),
             ("elective", "Electiva"),
             ("complementary", "Complementaria"),
         ],
-        string="Tipo de Asignatura",
+        string="Tipo de Asignatura (Legacy)",
         default="core",
-        required=True,
-        help="Tipo de asignatura dentro del currículo",
+        help="Campo legacy - Usar 'Tipo de Asignatura Configurable' en su lugar",
+    )
+
+    # Tipo de asignatura configurable (nuevo)
+    subject_type_id = fields.Many2one(
+        comodel_name="benglish.subject.type",
+        string="Tipo de Asignatura",
+        ondelete="restrict",
+        tracking=True,
+        help="Tipo de asignatura configurable desde el menú de configuración",
     )
 
     # Clasificación de asignatura
@@ -147,30 +155,6 @@ class Subject(models.Model):
         string="Activo",
         default=True,
         help="Si está inactivo, la asignatura no estará disponible para nuevas operaciones",
-    )
-
-    # Relaciones jerárquicas
-    level_id = fields.Many2one(
-        comodel_name="benglish.level",
-        string="Nivel",
-        required=True,
-        ondelete="cascade",
-        help="Nivel al que pertenece esta asignatura",
-    )
-    phase_id = fields.Many2one(
-        comodel_name="benglish.phase",
-        string="Fase",
-        related="level_id.phase_id",
-        store=True,
-        help="Fase asociada (a través del nivel)",
-    )
-
-    program_id = fields.Many2one(
-        comodel_name="benglish.program",
-        string="Programa",
-        related="level_id.program_id",
-        store=True,
-        help="Programa asociado (a través del nivel)",
     )
 
     # Prerrequisitos
@@ -302,14 +286,14 @@ class Subject(models.Model):
             pass
         return super().write(vals)
 
-    @api.depends("name", "code", "level_id.complete_name")
+    @api.depends("name", "code")
     def _compute_complete_name(self):
-        """Calcula el nombre completo de la asignatura incluyendo el nivel."""
+        """Calcula el nombre completo de la asignatura."""
         for subject in self:
-            if subject.level_id:
-                subject.complete_name = f"{subject.level_id.complete_name} / {subject.code} - {subject.name}"
-            else:
+            if subject.code and subject.code != "/":
                 subject.complete_name = f"{subject.code} - {subject.name}"
+            else:
+                subject.complete_name = subject.name or ""
 
     def name_get(self):
         """Muestra solo código y alias en lugar del nombre completo jerárquico."""
@@ -409,37 +393,14 @@ class Subject(models.Model):
         visited.discard(record_key)  # Limpieza al regresar
         return False
 
-    @api.constrains("prerequisite_ids", "level_id")
+    @api.constrains("prerequisite_ids")
     def _check_prerequisite_level(self):
         """
-        Valida que los prerrequisitos pertenezcan al mismo programa
-        y sean de niveles anteriores o del mismo nivel.
+        Valida que los prerrequisitos sean lógicos.
+        Nota: Sin jerarquía de niveles, solo se valida que no haya ciclos.
         """
-        for subject in self:
-            for prerequisite in subject.prerequisite_ids:
-                # Validar que pertenezcan al mismo programa
-                if prerequisite.program_id != subject.program_id:
-                    raise ValidationError(
-                        _(
-                            'El prerrequisito "%s" debe pertenecer al mismo programa que "%s".'
-                        )
-                        % (prerequisite.name, subject.name)
-                    )
-
-                # Validar que el prerrequisito sea de un nivel anterior o igual
-                if prerequisite.level_id.sequence > subject.level_id.sequence:
-                    raise ValidationError(
-                        _(
-                            'El prerrequisito "%s" (Nivel %s) no puede ser de un nivel posterior '
-                            'a la asignatura "%s" (Nivel %s).'
-                        )
-                        % (
-                            prerequisite.name,
-                            prerequisite.level_id.name,
-                            subject.name,
-                            subject.level_id.name,
-                        )
-                    )
+        # Esta validación se puede eliminar o simplificar según necesidades
+        pass
 
     def check_prerequisites_completed(self, student_id):
         """

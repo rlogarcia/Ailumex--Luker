@@ -66,8 +66,8 @@ def rebuild_session_tracking():
                     {
                         "student_id": student.id,
                         "subject_id": subject_id,
-                        "phase_id": subject.phase_id.id,
-                        "level_id": subject.level_id.id,
+                        "phase_id": False,  # Las asignaturas ya no tienen phase_id
+                        "level_id": False,  # Las asignaturas ya no tienen level_id
                         "state": "pending",
                     }
                 )

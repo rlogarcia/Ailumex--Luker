@@ -15,7 +15,7 @@ class AcademicPhase(models.Model):
     _name = "benglish.phase"
     _description = "Fase Académica"
     _inherit = ["mail.thread", "mail.activity.mixin"]
-    _order = "program_id, sequence, name"
+    _order = "sequence, name"
     _rec_name = "complete_name"
 
     # Campos básicos
@@ -67,13 +67,6 @@ class AcademicPhase(models.Model):
         comodel_name="benglish.phase",
         string="Fase Compartida",
         help="Fase de la cual esta fase comparte los niveles. Usado principalmente para fases de cortesía que comparten niveles con fases regulares.",
-    )
-    program_id = fields.Many2one(
-        comodel_name="benglish.program",
-        string="Programa",
-        required=True,
-        ondelete="restrict",
-        help="Programa al que pertenece esta fase",
     )
 
     level_ids = fields.One2many(
@@ -144,12 +137,12 @@ class AcademicPhase(models.Model):
             vals["name"] = normalize_to_uppercase(vals["name"])
         return super().write(vals)
 
-    @api.depends("name", "program_id.name")
+    @api.depends("name", "code")
     def _compute_complete_name(self):
-        """Calcula el nombre completo de la fase incluyendo el programa."""
+        """Calcula el nombre completo de la fase."""
         for phase in self:
-            if phase.program_id:
-                phase.complete_name = f"{phase.program_id.name} / {phase.name}"
+            if phase.code and phase.code != '/':
+                phase.complete_name = f"[{phase.code}] {phase.name}"
             else:
                 phase.complete_name = phase.name
 

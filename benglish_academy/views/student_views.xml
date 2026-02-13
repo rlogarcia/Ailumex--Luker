@@ -407,7 +407,8 @@
                                             decoration-muted="state == 'pending'">
                                             <field name="session_code" string="Código Sesión"
                                                 readonly="1" />
-                                            <field name="phase_id" string="Fase" readonly="1" />
+                                            <!-- <field name="phase_id" string="Fase" readonly="1"
+                                            /> -->
                                             <field name="subject_id" string="Asignatura"
                                                 readonly="1" />
                                             <field name="state" string="Estado" widget="badge"
@@ -463,8 +464,8 @@
                                 <list string="Asignaturas Aprobadas">
                                     <field name="code" />
                                     <field name="name" />
-                                    <field name="level_id" />
-                                    <field name="phase_id" />
+                                    <!-- <field name="level_id" /> -->
+                                    <!-- <field name="phase_id" /> -->
                                     <field name="hours" />
                                     <field name="credits" />
                                 </list>

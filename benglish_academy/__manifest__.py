@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Benglish - Gestión Académica",
-    "version": "18.0.1.7.0",
+    "version": "18.0.1.7.2",
     "category": "Education",
     "summary": "Sistema de gestión académica para academia de inglés",
     "description": """
@@ -55,6 +55,9 @@
         "views/plan_views.xml",
         "views/phase_views.xml",
         "views/level_views.xml",
+        # Datos - Tipos de Asignatura Base (ANTES de las vistas)
+        "data/subject_types_base.xml",
+        "views/subject_type_views.xml",
         "views/subject_views.xml",
         # Vistas - Institucional
         "views/campus_views.xml",
@@ -152,7 +155,9 @@
             "benglish_academy/static/src/css/time_picker_widget.css",
         ],
     },
-    "demo": [],
+    "demo": [
+        "data/commercial_plan_demo.xml",
+    ],
     "installable": True,
     "application": True,
     "auto_install": False,

@@ -87,14 +87,12 @@
                                         domain="[('program_id', '=', program_id), ('state', '=', 'active')]"
                                         options="{'no_create': True}"
                                         placeholder="Seleccione el plan comercial" />
-                                    <field name="phase_id" readonly="1" />
-                                    <field name="level_id" readonly="1" />
                                 </group>
                                 <group string="Asignatura Inicial (Opcional)">
                                     <field name="subject_id"
                                         required="0"
                                         readonly="0"
-                                        domain="[('program_id', '=', program_id)]"
+                                        domain="[('active', '=', True)]"
                                         options="{'no_create': True}"
                                         placeholder="Primera asignatura (opcional)" />
                                 </group>
@@ -118,8 +116,7 @@
                                     <list>
                                         <field name="code" />
                                         <field name="name" />
-                                        <field name="level_id" />
-                                        <field name="phase_id" />
+                                        <field name="subject_type_id" />
                                     </list>
                                 </field>
                             </group>

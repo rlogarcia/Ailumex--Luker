@@ -238,6 +238,12 @@
                   action="action_student_profile_state"
                   sequence="10" />
 
+            <menuitem id="menu_config_subject_types"
+                  name="Tipos de Asignatura"
+                  parent="menu_benglish_configuration"
+                  action="action_benglish_subject_type"
+                  sequence="12" />
+
             <menuitem id="menu_config_state_transitions"
                   name="Transiciones de Estado"
                   parent="menu_benglish_configuration"

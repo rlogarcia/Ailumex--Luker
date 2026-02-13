@@ -756,15 +756,9 @@ class Student(models.Model):
         """Calcula todas las asignaturas del plan actual del estudiante"""
         for student in self:
             if student.plan_id:
-                # Obtener todas las asignaturas del plan a través de las fases
-                phases = self.env["benglish.phase"].search(
-                    [("program_id", "=", student.plan_id.program_id.id)]
-                )
-                levels = self.env["benglish.level"].search(
-                    [("phase_id", "in", phases.ids)]
-                )
+                # Obtener todas las asignaturas del programa (las asignaturas ya no tienen level_id)
                 student.subject_ids = self.env["benglish.subject"].search(
-                    [("level_id", "in", levels.ids)]
+                    [("program_id", "=", student.plan_id.program_id.id)]
                 )
             else:
                 student.subject_ids = False
@@ -2993,6 +2987,9 @@ Contacto creado automáticamente desde el sistema académico.
         Genera historial académico retroactivo para estudiantes importados.
         Crea registros 'attended' para todas las clases de unidades anteriores
         a la unidad actual del estudiante.
+        
+        NOTA: Refactorizado para trabajar sin level_id/phase_id en asignaturas.
+        Las asignaturas ahora son globales y se identifican por program_id y unit_number.
         """
         from datetime import timedelta
 
@@ -3021,12 +3018,11 @@ Contacto creado automáticamente desde el sistema académico.
                     program = enrollment.program_id
                     plan = enrollment.plan_id  # El plan viene de la matrícula, NO del estudiante
 
-                    if not current_level or not program or not plan:
+                    if not program or not plan:
                         results.append(
-                            "⚠️ %s: Sin nivel/programa/plan (Nivel: %s, Programa: %s, Plan: %s)"
+                            "⚠️ %s: Sin programa/plan (Programa: %s, Plan: %s)"
                             % (
                                 student.name,
-                                current_level.name if current_level else "N/A",
                                 program.name if program else "N/A",
                                 plan.name if plan else "N/A",
                             )
@@ -3034,177 +3030,38 @@ Contacto creado automáticamente desde el sistema académico.
                         continue
                     
                     # ═════════════════════════════════════════════════════════════════════
-                    # Calcular unidad máxima completada correctamente
-                    # - Obtener la unidad mínima definida en el nivel actual
-                    # - Si es posible, acumular las unidades máximas de niveles
-                    #   previos del mismo programa para derivar la unidad global
-                    #   (esto permite generar historial cuando el estudiante
-                    #    ingresa directamente a un nivel avanzado).
+                    # SIMPLIFICADO: Las asignaturas ya no tienen level_id
+                    # Usar unit_number del nivel actual para determinar la unidad actual
                     # ═════════════════════════════════════════════════════════════════════
-                    current_level_subjects = Subject.search(
-                        [
-                            ("level_id", "=", current_level.id),
-                            ("active", "=", True),
-                            ("unit_number", ">", 0),
-                        ],
-                        order="unit_number ASC",
-                    )
-
-                    if not current_level_subjects:
-                        # Fallback: usar max_unit del nivel si no hay asignaturas
-                        _logger.warning(
-                            f"Nivel {current_level.name} sin asignaturas. Usando max_unit={current_level.max_unit}"
-                        )
-                        min_unit_current_level = current_level.max_unit or 0
+                    
+                    # Obtener la unidad actual desde el nivel (si existe)
+                    if current_level:
+                        min_unit_current_level = current_level.max_unit or 1
                     else:
-                        # Obtener la unidad mínima del nivel actual
-                        min_unit_current_level = min(current_level_subjects.mapped("unit_number"))
-
-                    # Intentar calcular la 'unidad global' acumulando unidades de
-                    # niveles previos dentro del mismo programa. Esto corrige el
-                    # caso en que el nivel actual comienza en unit 1 pero hay
-                    # niveles anteriores con unidades previas que deben considerarse.
-                    try:
-                        Level = self.env["benglish.level"].sudo()
-                        sum_prev_units = 0
-                        prev_levels = self.env["benglish.level"].browse()
-
-                        # Construir prev_levels respetando el orden de fases y niveles.
-                        # 1) Todas las fases del programa con sequence < current_phase.sequence
-                        # 2) Niveles de la misma fase con sequence < current_level.sequence
-                        Phase = self.env["benglish.phase"].sudo()
-                        current_phase = current_level.phase_id
-
-                        prev_levels = self.env["benglish.level"].browse()
-
-                        # Fases anteriores dentro del mismo programa
-                        prev_phases = Phase.search(
-                            [("program_id", "=", program.id), ("sequence", "<", current_phase.sequence)]
-                        ) if current_phase else Phase.search([])
-
-                        if prev_phases:
-                            prev_levels = Level.search([("phase_id", "in", prev_phases.ids)])
-
-                        # Niveles anteriores dentro de la misma fase (si aplica)
-                        same_phase_prev_levels = Level.search(
+                        # Fallback: buscar el unit_number más bajo en asignaturas del programa
+                        program_subjects = Subject.search(
                             [
-                                ("phase_id", "=", current_phase.id),
-                                ("sequence", "<", current_level.sequence),
-                            ]
-                        ) if current_phase else self.env["benglish.level"].browse()
-
-                        prev_levels = (prev_levels | same_phase_prev_levels).sorted(lambda r: (r.phase_id.sequence or 0, r.sequence or 0))
-
-                        # Calcular sum_prev_units usando max_unit si está disponible;
-                        # si no, inferir max_unit a partir de las asignaturas del nivel.
-                        sum_prev_units = 0
-                        for l in prev_levels:
-                            l_max = l.max_unit or 0
-                            if not l_max:
-                                # Inferir a partir de asignaturas (unit_number) en el mismo nivel
-                                lvl_subjects = Subject.search(
-                                    [
-                                        ("level_id", "=", l.id),
-                                        ("active", "=", True),
-                                        ("unit_number", ">", 0),
-                                    ],
-                                    order="unit_number DESC",
-                                    limit=1,
-                                )
-                                if lvl_subjects:
-                                    l_max = max(lvl_subjects.mapped("unit_number"))
-                                else:
-                                    l_max = 0
-                            sum_prev_units += l_max
-
-                        # Si no se obtuvo nada a partir de max_unit ni por nivel,
-                        # intentar inferir desde asignaturas del programa/plan
-                        if sum_prev_units == 0 and prev_levels:
-                            # 1) Buscar asignaturas de los prev_levels con unit_number
-                            subj_prev = Subject.search(
-                                [
-                                    ("level_id", "in", prev_levels.ids),
-                                    ("active", "=", True),
-                                    ("unit_number", ">", 0),
-                                ]
-                            )
-                            if subj_prev:
-                                # Sumar el máximo unit_number por nivel
-                                for lid in set(subj_prev.mapped("level_id").ids):
-                                    s_lv = subj_prev.filtered(lambda s: s.level_id.id == lid)
-                                    if s_lv:
-                                        sum_prev_units += max(s_lv.mapped("unit_number"))
-
-                        # Si aún no hay unidades, intentar buscar por plan (asignaturas del plan)
-                        # Nota: `plan_ids` en `benglish.subject` es compute store=False, por lo
-                        # que buscar por esa relación devuelve vacío. En su lugar, buscar
-                        # asignaturas por su nivel/programa (nivel->fase->program).
-                        if sum_prev_units == 0 and plan:
-                            subj_plan = Subject.search(
-                                [
-                                    ("level_id.phase_id.program_id", "=", program.id),
-                                    ("active", "=", True),
-                                    ("unit_number", ">", 0),
-                                ]
-                            )
-                            _logger.info(
-                                "[HISTORIAL-DEBUG] %s: subj_plan_count=%s (fallback search by program.level.phase)",
-                                student.name,
-                                len(subj_plan),
-                            )
-                            if subj_plan:
-                                # Sumar máximos por level encontrados en el plan/programa
-                                for lid in set(subj_plan.mapped("level_id").ids):
-                                    s_lv = subj_plan.filtered(lambda s: s.level_id.id == lid)
-                                    if s_lv:
-                                        sum_prev_units += max(s_lv.mapped("unit_number"))
-                        current_unit = sum_prev_units + (min_unit_current_level - 1)
-
-                        # Loguear detalles para debug si el resultado es inesperado
-                        _logger.info(
-                            "[HISTORIAL-DEBUG] %s: current_level_id=%s, sequence_exists=%s, prev_levels=%s, sum_prev_units=%s",
-                            student.name,
-                            current_level.id,
-                            ("sequence" in current_level._fields),
-                            prev_levels.ids,
-                            sum_prev_units,
+                                ("program_id", "=", program.id),
+                                ("active", "=", True),
+                                ("unit_number", ">", 0),
+                            ],
+                            order="unit_number ASC",
+                            limit=1,
                         )
-                    except Exception as ex:
-                        _logger.exception(
-                            "[HISTORIAL-ERROR] Error calculando niveles previos para %s: %s",
-                            student.name,
-                            ex,
-                        )
-                        # En caso de cualquier fallo al consultar niveles, volver
-                        # al cálculo sencillo para evitar bloquear el proceso.
-                        current_unit = min_unit_current_level - 1
+                        min_unit_current_level = program_subjects[0].unit_number if program_subjects else 1
+                    
+                    # Calcular unidad actual basándose en el nivel
+                    current_unit = min_unit_current_level - 1 if min_unit_current_level > 1 else 0
 
                     _logger.info(
-                        f"[HISTORIAL] {student.name}: Nivel={current_level.name}, "
+                        f"[HISTORIAL] {student.name}: Programa={program.name}, "
                         f"Unit mín nivel={min_unit_current_level}, Unit máx completada={current_unit}"
                     )
 
                     if current_unit < 1:
-                        # Añadir información de depuración en la notificación para
-                        # que el usuario vea por qué no se generan entradas.
-                        try:
-                            prev_levels_ids = prev_levels.ids if prev_levels else []
-                        except Exception:
-                            prev_levels_ids = []
-
-                        debug_msg = (
-                            "DEBUG: prev_levels_ids=%s, sum_prev_units=%s, min_unit_current_level=%s, current_level_max_unit=%s"
-                            % (
-                                prev_levels_ids,
-                                sum_prev_units,
-                                min_unit_current_level,
-                                getattr(current_level, "max_unit", None),
-                            )
-                        )
-
                         results.append(
-                            "✓ %s: En Unit %d - Sin historial previo\n%s"
-                            % (student.name, min_unit_current_level, debug_msg)
+                            "✓ %s: En Unit %d - Sin historial previo"
+                            % (student.name, min_unit_current_level)
                         )
                         continue
 
@@ -3225,7 +3082,7 @@ Contacto creado automáticamente desde el sistema académico.
                     # Debug: show how many subjects we found for the program and a small sample
                     try:
                         sample = [
-                            (s.id, s.unit_number, s.subject_category, s.level_id.id)
+                            (s.id, s.unit_number, s.subject_category, s.subject_type_id.id if s.subject_type_id else False)
                             for s in list(all_program_subjects)[:10]
                         ]
                     except Exception:
@@ -3253,16 +3110,8 @@ Contacto creado automáticamente desde el sistema académico.
                             if s.unit_number:
                                 return bool(s.unit_number in previous_units)
 
-                            # FALLBACK: some subjects in this dataset have unit_number=0 or unset.
-                            # If the subject belongs to one of the previous levels, include it
-                            # as part of the retroactive history (we assume levels map to
-                            # previous units when unit_number is missing).
-                            try:
-                                if prev_levels and s.level_id and s.level_id.id in prev_levels.ids:
-                                    return True
-                            except Exception:
-                                pass
-
+                            # FALLBACK: Las asignaturas ya no tienen level_id
+                            # Solo usar unit_number para determinar si debe completarse
                             return False
                         except Exception:
                             return False
@@ -3324,12 +3173,8 @@ Contacto creado automáticamente desde el sistema académico.
                                 "enrollment_id": False,  # No hay session enrollment para historial retroactivo
                                 "program_id": program.id,
                                 "plan_id": plan.id if plan else False,
-                                "phase_id": (
-                                    subject.phase_id.id if subject.phase_id else False
-                                ),
-                                "level_id": (
-                                    subject.level_id.id if subject.level_id else False
-                                ),
+                                "phase_id": False,  # Las asignaturas ya no tienen phase_id
+                                "level_id": False,  # Las asignaturas ya no tienen level_id
                                 "session_date": historical_date,
                                 "attendance_status": "attended",
                                 "attended": True,  # ⭐ IMPORTANTE: Marcar campo booleano
@@ -3371,16 +3216,8 @@ Contacto creado automáticamente desde el sistema académico.
                                 {
                                     "student_id": student.id,
                                     "subject_id": subject.id,
-                                    "phase_id": (
-                                        subject.phase_id.id
-                                        if subject.phase_id
-                                        else False
-                                    ),
-                                    "level_id": (
-                                        subject.level_id.id
-                                        if subject.level_id
-                                        else False
-                                    ),
+                                    "phase_id": False,  # Las asignaturas ya no tienen phase_id
+                                    "level_id": False,  # Las asignaturas ya no tienen level_id
                                     "attended": True,
                                     "state": "registered",
                                 }
@@ -3458,16 +3295,8 @@ Contacto creado automáticamente desde el sistema académico.
                                 {
                                     "student_id": student.id,
                                     "subject_id": subject.id,
-                                    "phase_id": (
-                                        subject.phase_id.id
-                                        if subject.phase_id
-                                        else False
-                                    ),
-                                    "level_id": (
-                                        subject.level_id.id
-                                        if subject.level_id
-                                        else False
-                                    ),
+                                    "phase_id": False,  # Las asignaturas ya no tienen phase_id
+                                    "level_id": False,  # Las asignaturas ya no tienen level_id
                                     "attended": True,
                                     "state": "registered",
                                 }

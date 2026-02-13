@@ -76,19 +76,14 @@ class EnrollmentProgress(models.Model):
         index=True,
         help="Asignatura del plan de estudios",
     )
-    level_id = fields.Many2one(
-        comodel_name="benglish.level",
-        string="Nivel",
-        related="subject_id.level_id",
+    
+    # Tipo de asignatura (relacionado desde la asignatura)
+    subject_type_id = fields.Many2one(
+        comodel_name="benglish.subject.type",
+        string="Tipo de Asignatura",
+        related="subject_id.subject_type_id",
         store=True,
-        help="Nivel de la asignatura",
-    )
-    phase_id = fields.Many2one(
-        comodel_name="benglish.phase",
-        string="Fase",
-        related="subject_id.phase_id",
-        store=True,
-        help="Fase de la asignatura",
+        help="Tipo de la asignatura",
     )
 
     # GRUPO Y CONFIGURACIÓN ACADÉMICA

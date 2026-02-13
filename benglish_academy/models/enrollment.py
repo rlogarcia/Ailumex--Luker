@@ -674,17 +674,12 @@ class Enrollment(models.Model):
     @api.depends("subject_id")
     def _compute_academic_hierarchy(self):
         """
-        [LEGACY] Calcula la jerarquía académica desde subject_id.
-        DEPRECADO: Solo para compatibilidad con matrículas antiguas.
-        Usar current_phase_id y current_level_id para nuevas matrículas.
+        [LEGACY] Calcula la jerarquía académica.
+        NOTA: Las asignaturas ya no tienen level_id/phase_id.
         """
         for enrollment in self:
-            if enrollment.subject_id:
-                enrollment.level_id = enrollment.subject_id.level_id
-                enrollment.phase_id = enrollment.subject_id.phase_id
-            else:
-                enrollment.level_id = False
-                enrollment.phase_id = False
+            enrollment.level_id = False
+            enrollment.phase_id = False
 
     @api.depends("delivery_mode")
     def _compute_attendance_type(self):
@@ -1120,9 +1115,9 @@ class Enrollment(models.Model):
                     if first_level:
                         vals["current_level_id"] = first_level.id
 
-                        # Obtener primera asignatura de ese nivel
+                        # Obtener primera asignatura del programa (ya no dependen del nivel)
                         first_subject = self.env["benglish.subject"].search(
-                            [("level_id", "=", first_level.id)],
+                            [("program_id", "=", self.env["benglish.plan"].browse(vals.get("plan_id")).program_id.id)],
                             order="sequence ASC",
                             limit=1,
                         )
@@ -1433,9 +1428,9 @@ class Enrollment(models.Model):
         # Generar requisitos para el nuevo nivel (sin afectar los anteriores)
         self._generate_requirement_statuses(level=next_level)
 
-        # Buscar primera asignatura del nuevo nivel
+        # Buscar primera asignatura del programa (ya no dependen del nivel)
         first_subject = self.env["benglish.subject"].search(
-            [("level_id", "=", next_level.id)],
+            [("program_id", "=", self.plan_id.program_id.id)],
             order="sequence ASC",
             limit=1,
         )
@@ -1471,10 +1466,10 @@ class Enrollment(models.Model):
                 _("No hay asignatura actual definida. No se puede avanzar.")
             )
 
-        # Buscar siguiente asignatura en el mismo nivel
+        # Buscar siguiente asignatura en el programa (ya no dependen del nivel)
         next_subject = self.env["benglish.subject"].search(
             [
-                ("level_id", "=", self.current_level_id.id),
+                ("program_id", "=", self.plan_id.program_id.id),
                 ("sequence", ">", self.current_subject_id.sequence),
             ],
             order="sequence ASC",
@@ -1482,70 +1477,11 @@ class Enrollment(models.Model):
         )
 
         if next_subject:
-            # Hay más asignaturas en el nivel actual
+            # Hay más asignaturas en el programa
             self.write({"current_subject_id": next_subject.id})
             return
 
-        # No hay más asignaturas en este nivel, buscar siguiente nivel
-        next_level = self.env["benglish.level"].search(
-            [
-                ("phase_id", "=", self.current_phase_id.id),
-                ("sequence", ">", self.current_level_id.sequence),
-            ],
-            order="sequence ASC",
-            limit=1,
-        )
-
-        if next_level:
-            # Hay más niveles en la fase actual
-            first_subject_of_level = self.env["benglish.subject"].search(
-                [("level_id", "=", next_level.id)],
-                order="sequence ASC",
-                limit=1,
-            )
-            if first_subject_of_level:
-                self.write(
-                    {
-                        "current_level_id": next_level.id,
-                        "current_subject_id": first_subject_of_level.id,
-                    }
-                )
-                return
-
-        # No hay más niveles en esta fase, buscar siguiente fase
-        next_phase = self.env["benglish.phase"].search(
-            [
-                ("program_id", "=", self.plan_id.program_id.id),
-                ("sequence", ">", self.current_phase_id.sequence),
-            ],
-            order="sequence ASC",
-            limit=1,
-        )
-
-        if next_phase:
-            # Hay más fases en el programa
-            first_level_of_phase = self.env["benglish.level"].search(
-                [("phase_id", "=", next_phase.id)],
-                order="sequence ASC",
-                limit=1,
-            )
-            if first_level_of_phase:
-                first_subject_of_level = self.env["benglish.subject"].search(
-                    [("level_id", "=", first_level_of_phase.id)],
-                    order="sequence ASC",
-                    limit=1,
-                )
-                if first_subject_of_level:
-                    self.write(
-                        {
-                            "current_phase_id": next_phase.id,
-                            "current_level_id": first_level_of_phase.id,
-                            "current_subject_id": first_subject_of_level.id,
-                        }
-                    )
-                    return
-
-        # No hay más fases/niveles/asignaturas - plan completado
+        # No hay más asignaturas - plan completado
         raise ValidationError(
             _(
                 "✅ ¡Felicitaciones! El estudiante ha completado todas las asignaturas del plan de estudios.\n"

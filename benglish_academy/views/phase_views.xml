@@ -7,12 +7,11 @@
             <field name="name">benglish.phase.list</field>
             <field name="model">benglish.phase</field>
             <field name="arch" type="xml">
-                <list string="Fases Académicas" default_order="program_id, sequence, name"
+                <list string="Fases Académicas" default_order="sequence, name"
                     decoration-muted="not active">
                     <field name="sequence" widget="handle" />
                     <field name="code" />
                     <field name="name" />
-                    <field name="program_id" />
                     <field name="duration_months" string="Duración (meses)" />
                     <field name="level_count" string="Niveles" />
                     <field name="active" invisible="1" />
@@ -63,9 +62,6 @@
                             </div>
                         </group>
                         <group>
-                            <group string="📚 Jerarquía Académica">
-                                <field name="program_id" options="{'no_create': True}" />
-                            </group>
                             <group string="⏱️ Duración">
                                 <!--<field
                                 name="sequence" />-->
@@ -104,7 +100,6 @@
                 <kanban class="o_kanban_mobile">
                     <field name="name" />
                     <field name="code" />
-                    <field name="program_id" />
                     <field name="duration_months" />
                     <field name="level_count" />
                     <field name="active" />
@@ -125,9 +120,6 @@
                                     </div>
                                 </div>
                                 <div class="o_kanban_record_body">
-                                    <div class="text-muted">
-                                        <field name="program_id" />
-                                    </div>
                                     <div class="mt-2">
                                         <span class="badge text-bg-success me-1">
                                             <i class="fa fa-clock-o" /> <field name="duration_months" />
@@ -153,14 +145,9 @@
                     <field name="name" string="Fase"
                         filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]" />
                     <field name="code" />
-                    <field name="program_id" />
                     <separator />
                     <filter string="Activos" name="active" domain="[('active', '=', True)]" />
                     <filter string="Archivados" name="inactive" domain="[('active', '=', False)]" />
-                    <group expand="0" string="Agrupar por">
-                        <filter string="Programa" name="group_by_program"
-                            context="{'group_by': 'program_id'}" />
-                    </group>
                 </search>
             </field>
         </record>

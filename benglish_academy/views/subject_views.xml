@@ -7,7 +7,7 @@
             <field name="name">benglish.subject.list</field>
             <field name="model">benglish.subject</field>
             <field name="arch" type="xml">
-                <list string="Asignaturas" default_order="level_id, sequence, name"
+                <list string="Asignaturas" default_order="sequence, name"
                     decoration-muted="not active"
                     decoration-primary="subject_type == 'core'"
                     decoration-info="subject_type == 'elective'"
@@ -20,11 +20,10 @@
                     <field name="sequence" widget="handle" />
                     <field name="code" />
                     <field name="name" />
-                    <field name="level_id" />
-                    <field name="phase_id" />
+                    <field name="subject_type_id" optional="show" />
                     <field name="subject_type" widget="badge"
                         decoration-success="subject_type == 'core'"
-                        decoration-info="subject_type == 'elective'" />
+                        decoration-info="subject_type == 'elective'" optional="hide" />
                     <field name="subject_classification" widget="badge"
                         decoration-success="subject_classification == 'regular'"
                         decoration-warning="subject_classification == 'prerequisite'"
@@ -101,25 +100,16 @@
                         <group>
                             <group>
                                 <div>
-                                    <label for="level_id" />
-                                    <field name="level_id" options="{'no_create': True}"
-                                        placeholder="Seleccione Nivel" />
-                                </div>
-                            </group>
-                            <group>
-                                <div>
                                     <label for="subject_classification" />
                                     <field name="subject_classification" widget="radio"
                                         options="{'horizontal': true}" />
                                 </div>
+                                <field name="subject_type_id" options="{'no_create': True}"
+                                    placeholder="Seleccione Tipo" />
                                 <field name="evaluable" />
+                                <field name="sequence" string="Secuencia" />
                             </group>
-                        </group>
-                        <group>
-                            <group string="🏛️ Ubicación Curricular">
-                                <field name="phase_id" readonly="1" />
-                                <field name="program_id" readonly="1" />
-                            </group>
+
                             <group string="📊 Carga Académica">
                                 <field name="hours" string="Horas" />
                                 <field name="duration_hours" string="Duración (Horas)" />
@@ -155,8 +145,7 @@
                                         <list>
                                             <field name="code" />
                                             <field name="name" />
-                                            <field name="level_id" />
-                                            <field name="phase_id" />
+                                            <field name="subject_type_id" />
                                         </list>
                                     </field>
                                 </group>
@@ -175,8 +164,7 @@
                                     <list>
                                         <field name="code" />
                                         <field name="name" />
-                                        <field name="level_id" />
-                                        <field name="phase_id" />
+                                        <field name="subject_type_id" />
                                     </list>
                                 </field>
                             </page>
@@ -195,8 +183,7 @@
                 <kanban class="o_kanban_mobile">
                     <field name="name" />
                     <field name="code" />
-                    <field name="level_id" />
-                    <field name="phase_id" />
+                    <field name="subject_type_id" />
                     <field name="subject_type" />
                     <field name="hours" />
                     <field name="credits" />
@@ -231,10 +218,7 @@
                                 </div>
                                 <div class="o_kanban_record_body">
                                     <div>
-                                        <field name="level_id" />
-                                    </div>
-                                    <div class="text-muted">
-                                        <field name="phase_id" />
+                                        <field name="subject_type_id" />
                                     </div>
                                     <div class="mt-2">
                                         <span class="badge text-bg-primary me-1">
@@ -264,9 +248,7 @@
                     <field name="name" string="Asignatura"
                         filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]" />
                     <field name="code" />
-                    <field name="level_id" />
-                    <field name="phase_id" />
-                    <field name="program_id" />
+                    <field name="subject_type_id" />
                     <separator />
                     <filter string="Activos" name="active" domain="[('active', '=', True)]" />
                     <filter string="Archivados" name="inactive" domain="[('active', '=', False)]" />
@@ -278,14 +260,10 @@
                     <filter string="Con Prerrequisitos" name="with_prerequisites"
                         domain="[('prerequisite_count', '>', 0)]" />
                     <group expand="0" string="Agrupar por">
-                        <filter string="Nivel" name="group_by_level"
-                            context="{'group_by': 'level_id'}" />
-                        <filter string="Fase" name="group_by_phase"
-                            context="{'group_by': 'phase_id'}" />
-                        <filter string="Tipo" name="group_by_type"
+                        <filter string="Tipo de Asignatura" name="group_by_subject_type_id"
+                            context="{'group_by': 'subject_type_id'}" />
+                        <filter string="Tipo (Legacy)" name="group_by_type"
                             context="{'group_by': 'subject_type'}" />
-                        <filter string="Programa" name="group_by_program"
-                            context="{'group_by': 'program_id'}" />
                     </group>
                 </search>
             </field>

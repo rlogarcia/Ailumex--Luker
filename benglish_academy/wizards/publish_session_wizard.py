@@ -29,13 +29,12 @@ class PublishSessionWizard(models.TransientModel):
         comodel_name="benglish.subject",
         string="Asignatura",
         required=True,
-        domain="[('program_id', '=', program_id), ('active', '=', True)]",
+        domain="[('active', '=', True)]",
         help="Asignatura para esta sesión",
     )
     audience_phase_id = fields.Many2one(
         comodel_name="benglish.phase",
         string="Fase Audiencia",
-        domain="[('program_id', '=', program_id)]",
     )
     audience_unit_from = fields.Integer(string="Unidad Desde")
     audience_unit_to = fields.Integer(string="Unidad Hasta")

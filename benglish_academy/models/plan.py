@@ -279,15 +279,15 @@ class StudyPlan(models.Model):
             if vals.get("code", "/") == "/":
                 vals["code"] = self._next_unique_code("P-", "benglish.plan")
         records = super().create(vals_list)
-        # Poblamos las relaciones iniciales con las fases/niveles/asignaturas del programa
+        # Poblamos las relaciones iniciales con las fases/niveles del programa
         for rec in records:
             if rec.program_id:
                 phases = self.env["benglish.phase"].search([("program_id", "=", rec.program_id.id)])
                 rec.phase_ids = phases
                 levels = self.env["benglish.level"].search([("phase_id", "in", phases.ids)])
                 rec.level_ids = levels
-                subjects = self.env["benglish.subject"].search([("level_id", "in", levels.ids)])
-                rec.subject_ids = subjects
+                # Las asignaturas ya no están vinculadas a niveles - se asignan por tipo
+                rec.subject_ids = False
         return records
 
     def write(self, vals):
@@ -410,7 +410,7 @@ class StudyPlan(models.Model):
             "type": "ir.actions.act_window",
             "res_model": "benglish.subject",
             "view_mode": "list,form",
-            "domain": [("level_id", "in", levels.ids)],
+            "domain": [("program_id", "=", self.program_id.id)],
             "context": {
                 "default_program_id": self.program_id.id,
                 "search_default_program_id": self.program_id.id,

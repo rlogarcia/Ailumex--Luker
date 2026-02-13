@@ -269,7 +269,7 @@
                             <list>
                                 <field name="code" />
                                 <field name="name" />
-                                <field name="level_id" />
+                                <!-- <field name="level_id" />-->
                             </list>
                         </field>
                     </group>
@@ -376,7 +376,7 @@
                                     decoration-info="state == 'pending'"
                                     decoration-warning="state == 'in_progress'"
                                     decoration-success="state == 'completed'">
-                                    <field name="level_id" />
+                                    <!-- <field name="level_id" />-->
                                     <field name="requirement_type" />
                                     <field name="subject_id" />
                                     <field name="state" widget="badge"
@@ -426,7 +426,7 @@
                                     decoration-warning="progress_percentage &gt; 0 and progress_percentage &lt; 50"
                                     decoration-muted="progress_percentage == 0">
                                     <field name="level_sequence" string="Nivel" />
-                                    <field name="level_id" optional="hide" />
+                                    <!-- <field name="level_id" optional="hide" />-->
                                     <field name="expected_selection" string="Selección Esperada" />
                                     <field name="completed_selection" string="Selección Completada" />
                                     <field name="expected_oral_test" string="Oral Test Esperado" />

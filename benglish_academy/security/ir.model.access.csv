@@ -39,6 +39,11 @@ access_benglish_subject_teacher,benglish.subject.teacher,model_benglish_subject,
 access_benglish_subject_assistant,benglish.subject.assistant,model_benglish_subject,group_academic_assistant,1,0,0,0
 access_benglish_subject_coordinator,benglish.subject.coordinator,model_benglish_subject,group_academic_coordinator,1,1,1,1
 access_benglish_subject_manager,benglish.subject.manager,model_benglish_subject,group_academic_manager,1,1,1,1
+access_benglish_subject_type_user,benglish.subject.type.user,model_benglish_subject_type,group_academic_user,1,0,0,0
+access_benglish_subject_type_teacher,benglish.subject.type.teacher,model_benglish_subject_type,group_academic_teacher,1,0,0,0
+access_benglish_subject_type_assistant,benglish.subject.type.assistant,model_benglish_subject_type,group_academic_assistant,1,0,0,0
+access_benglish_subject_type_coordinator,benglish.subject.type.coordinator,model_benglish_subject_type,group_academic_coordinator,1,1,1,1
+access_benglish_subject_type_manager,benglish.subject.type.manager,model_benglish_subject_type,group_academic_manager,1,1,1,1
 access_benglish_campus_user,benglish.campus.user,model_benglish_campus,group_academic_user,1,0,0,0
 access_benglish_campus_teacher,benglish.campus.teacher,model_benglish_campus,group_academic_teacher,1,0,0,0
 access_benglish_campus_assistant,benglish.campus.assistant,model_benglish_campus,group_academic_assistant,1,1,0,0

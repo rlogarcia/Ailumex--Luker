@@ -8,7 +8,7 @@
             <field name="model">benglish.level</field>
             <field name="arch" type="xml">
                 <list string="Niveles Académicos" default_order="phase_id, sequence, name"
-                    decoration-muted="not active" decoration-info="subject_count &gt; 5">
+                    decoration-muted="not active">
                     <field name="sequence" widget="handle" />
                     <field name="code" />
                     <field name="name" />
@@ -16,11 +16,7 @@
                     <field name="max_unit" string="Unidad Máx" />
                     <field name="duration_weeks" string="Semanas" />
                     <field name="total_hours" string="Horas" />
-                    <field name="subject_count" string="Asignaturas" />
                     <field name="active" invisible="1" />
-                    <button name="action_view_subjects" type="object" string="Ver Asignaturas"
-                        class="btn-primary" icon="fa-book-open"
-                        invisible="subject_count == 0" />
                 </list>
             </field>
         </record>
@@ -33,11 +29,6 @@
                 <form string="Nivel Académico">
                     <sheet>
                         <div class="oe_button_box" name="button_box">
-                            <button name="action_view_subjects" type="object"
-                                class="oe_stat_button" icon="fa-book-open"
-                                style="background-color: #007bff; color: white;">
-                                <field name="subject_count" widget="statinfo" string="Asignaturas" />
-                            </button>
                         </div>
                         <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger"
                             invisible="active" />
@@ -71,9 +62,6 @@
                             </div>
                         </group>
                         <group>
-                            <group string="🏛️ Jerarquía Curricular">
-                                <field name="program_id" readonly="1" />
-                            </group>
                             <group string="⏰ Carga Académica">
                                 <field name="duration_weeks" string="Duración (semanas)" />
                                 <field name="total_hours" string="Total horas" />
@@ -119,7 +107,6 @@
                     <field name="phase_id" />
                     <field name="duration_weeks" />
                     <field name="total_hours" />
-                    <field name="subject_count" />
                     <field name="active" />
                     <templates>
                         <t t-name="kanban-box">
@@ -148,9 +135,6 @@
                                         <span class="badge text-bg-warning me-1">
                                             <i class="fa fa-clock-o" /> <field name="total_hours" />
                                             horas </span>
-                                        <span class="badge text-bg-info">
-                                            <i class="fa fa-book-open" /> <field name="subject_count" />
-                                            asignaturas </span>
                                     </div>
                                 </div>
                             </div>
@@ -170,15 +154,12 @@
                         filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]" />
                     <field name="code" />
                     <field name="phase_id" />
-                    <field name="program_id" />
                     <separator />
                     <filter string="Activos" name="active" domain="[('active', '=', True)]" />
                     <filter string="Archivados" name="inactive" domain="[('active', '=', False)]" />
                     <group expand="0" string="Agrupar por">
                         <filter string="Fase" name="group_by_phase"
                             context="{'group_by': 'phase_id'}" />
-                        <filter string="Programa" name="group_by_program"
-                            context="{'group_by': 'program_id'}" />
                     </group>
                 </search>
             </field>

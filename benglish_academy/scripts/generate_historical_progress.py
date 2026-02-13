@@ -148,8 +148,8 @@ def generate_historical_progress(env, student_ids=None, dry_run=False):
                             'enrollment_id': enrollment.id,
                             'program_id': program.id,
                             'plan_id': plan.id if plan else False,
-                            'phase_id': subject.phase_id.id if subject.phase_id else False,
-                            'level_id': subject.level_id.id if subject.level_id else False,
+                            'phase_id': False,  # Las asignaturas ya no tienen phase_id
+                            'level_id': False,  # Las asignaturas ya no tienen level_id
                             'session_date': historical_date,
                             'attendance_status': 'attended',
                             'attendance_registered_at': datetime.now(),

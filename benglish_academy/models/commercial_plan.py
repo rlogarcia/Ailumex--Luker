@@ -327,7 +327,7 @@ class CommercialPlan(models.Model):
         for record in self:
             record.line_count = len(record.line_ids)
 
-    @api.depends("line_ids.calculated_total", "line_ids.subject_type")
+    @api.depends("line_ids.calculated_total", "line_ids.subject_type_code")
     def _compute_totals(self):
         """Calcula los totales por tipo de asignatura y el total general."""
         for record in self:
@@ -338,15 +338,15 @@ class CommercialPlan(models.Model):
             total_bskills = 0
             
             for line in record.line_ids:
-                if line.subject_type == "selection":
+                if line.subject_type_code == "selection":
                     total_selection += line.calculated_total
-                elif line.subject_type == "oral_test":
+                elif line.subject_type_code == "oral_test":
                     total_oral_test += line.calculated_total
-                elif line.subject_type == "elective":
+                elif line.subject_type_code == "elective":
                     total_electives += line.calculated_total
-                elif line.subject_type == "regular":
+                elif line.subject_type_code == "regular":
                     total_regular += line.calculated_total
-                elif line.subject_type == "bskills":
+                elif line.subject_type_code == "bskills":
                     total_bskills += line.calculated_total
             
             record.total_selection = total_selection

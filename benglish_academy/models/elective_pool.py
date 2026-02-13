@@ -103,15 +103,6 @@ class ElectivePool(models.Model):
         help="Fase académica a la que pertenece este pool de electivas",
     )
 
-    program_id = fields.Many2one(
-        comodel_name="benglish.program",
-        string="Programa",
-        related="phase_id.program_id",
-        store=True,
-        readonly=True,
-        help="Programa al que pertenece la fase (heredado automáticamente)",
-    )
-
     # Nota: En el modelo original se menciona Id_Periodo, pero en la estructura
     # actual no existe un modelo de Periodo Académico explícito.
     # Se puede agregar si existe o usar campos de fecha directamente.
@@ -255,19 +246,9 @@ class ElectivePool(models.Model):
     @api.onchange("phase_id")
     def _onchange_phase_id(self):
         """
-        Al cambiar la fase, limpiar las asignaturas seleccionadas que no pertenezcan a la nueva fase.
+        Al cambiar la fase, solo notificar (ya no se filtran asignaturas por fase).
         """
-        if self.phase_id and self.subject_ids:
-            # Filtrar solo las asignaturas que pertenecen a la nueva fase
-            valid_subjects = self.subject_ids.filtered(lambda s: s.phase_id == self.phase_id)
-            if len(valid_subjects) != len(self.subject_ids):
-                self.subject_ids = valid_subjects
-                return {
-                    "warning": {
-                        "title": _("Asignaturas actualizadas"),
-                        "message": _("Se han removido asignaturas que no pertenecen a la fase seleccionada."),
-                    }
-                }
+        pass  # Las asignaturas ya no tienen fase
 
     # ==========================================
     # MÉTODOS DE CREACIÓN Y CÓDIGO
@@ -326,29 +307,10 @@ class ElectivePool(models.Model):
     @api.constrains("subject_ids", "phase_id")
     def _check_subjects_phase_compatibility(self):
         """
-        Valida que las asignaturas agregadas al pool sean compatibles con la fase.
+        Validación de compatibilidad de asignaturas.
+        NOTA: Las asignaturas ya no tienen fase, esta validación está deshabilitada.
         """
-        for record in self:
-            if record.subject_ids and record.phase_id:
-                # Verificar que las asignaturas pertenezcan a la fase del pool
-                incompatible_subjects = record.subject_ids.filtered(
-                    lambda s: s.phase_id and s.phase_id != record.phase_id
-                )
-                
-                if incompatible_subjects:
-                    subject_info = ", ".join([
-                        f"{s.name} (Fase: {s.phase_id.name})"
-                        for s in incompatible_subjects[:3]
-                    ])
-                    
-                    raise ValidationError(
-                        _(
-                            "Incompatibilidad de fase detectada:\n\n"
-                            "Pool: Fase %s\n"
-                            "Asignaturas incompatibles: %s\n\n"
-                            "Las asignaturas deben pertenecer a la misma fase del pool."
-                        ) % (record.phase_id.name, subject_info)
-                    )
+        pass  # Las asignaturas ya no tienen fase, no se requiere validación
 
     @api.constrains("phase_id", "name", "active")
     def _check_unique_active_pool_per_phase(self):

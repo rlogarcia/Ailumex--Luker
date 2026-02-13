@@ -13,8 +13,8 @@
                 decoration-danger="state=='failed'">
                 <field name="student_id" />
                 <field name="plan_id" />
-                <field name="phase_id" />
-                <field name="level_id" />
+                <!-- <field name="phase_id" /> -->
+                <!-- <field name="level_id" /> -->
                 <field name="subject_id" />
                 <field name="state" widget="badge" decoration-success="state=='completed'"
                     decoration-info="state=='in_progress'" decoration-muted="state=='pending'"
@@ -68,8 +68,8 @@
                         <group name="academic_info" string="Información Académica">
                             <field name="enrollment_id" readonly="1" />
                             <field name="plan_id" readonly="1" />
-                            <field name="phase_id" readonly="1" />
-                            <field name="level_id" readonly="1" />
+                            <!-- <field name="phase_id" readonly="1" /> -->
+                            <!-- <field name="level_id" readonly="1" />-->
                         </group>
                         <group name="dates" string="Fechas">
                             <field name="start_date" />
@@ -135,10 +135,10 @@
                                 </div>
                             </div>
                             <div class="o_kanban_record_body">
-                                <field name="phase_id" /> / <field name="level_id" />
+                                <!-- <field name="phase_id" /> / <field name="level_id" />-->
                                 <br />
                                 <strong>
-                                Nota:</strong> <field name="final_grade" /> | <strong>Asist:</strong> <field
+                                    Nota:</strong> <field name="final_grade" /> | <strong>Asist:</strong> <field
                                     name="attendance_percentage" />% </div>
                             <div class="o_kanban_record_bottom">
                                 <div class="oe_kanban_bottom_left">

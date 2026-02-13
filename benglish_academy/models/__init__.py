@@ -9,6 +9,7 @@ from . import commercial_plan_line  # NUEVO: Líneas del Plan Comercial
 from . import student_commercial_progress  # NUEVO: Progreso dinámico del estudiante
 from . import phase
 from . import level
+from . import subject_type
 from . import subject
 from . import campus
 from . import hr_employee  # Necesario para meeting_link en subcampus

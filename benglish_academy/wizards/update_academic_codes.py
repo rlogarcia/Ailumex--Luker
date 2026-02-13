@@ -427,24 +427,24 @@ class UpdateAcademicCodes(models.TransientModel):
             if self.only_invalid_codes
             else []
         )
-        subjects = Subject.search(domain, order="level_id, sequence, id")
+        subjects = Subject.search(domain, order="program_id, sequence, id")
 
         updated = []
         counters = {"bekids": 0, "bteens": 0, "benglish": 0, "other": 0}
 
         for subject in subjects:
             old_code = subject.code
-            program_type = subject.level_id.phase_id.program_id.program_type
+            # Las asignaturas ahora tienen program_id directamente
+            program = subject.program_id
+            program_type = program.program_type if program else "other"
 
             # Auto-detectar tipo de programa del padre si no está configurado
-            if not program_type or program_type == "other":
-                name_lower = subject.level_id.phase_id.program_id.name.lower()
+            if program and (not program_type or program_type == "other"):
+                name_lower = program.name.lower()
                 if "bekids" in name_lower or "be kids" in name_lower:
                     program_type = "bekids"
                     if not self.preview_mode:
-                        subject.level_id.phase_id.program_id.write(
-                            {"program_type": "bekids"}
-                        )
+                        program.write({"program_type": "bekids"})
                 elif (
                     "bteens" in name_lower
                     or "b teens" in name_lower
@@ -452,15 +452,11 @@ class UpdateAcademicCodes(models.TransientModel):
                 ):
                     program_type = "bteens"
                     if not self.preview_mode:
-                        subject.level_id.phase_id.program_id.write(
-                            {"program_type": "bteens"}
-                        )
+                        program.write({"program_type": "bteens"})
                 elif "benglish" in name_lower:
                     program_type = "benglish"
                     if not self.preview_mode:
-                        subject.level_id.phase_id.program_id.write(
-                            {"program_type": "benglish"}
-                        )
+                        program.write({"program_type": "benglish"})
                 else:
                     program_type = "other"
 
@@ -501,7 +497,7 @@ class UpdateAcademicCodes(models.TransientModel):
                 subject.write({"code": new_code})
 
             updated.append(
-                f"Asignatura '{subject.name}' ({subject.level_id.name}): {old_code} → {new_code}"
+                f"Asignatura '{subject.name}' ({program.name if program else 'Sin programa'}): {old_code} → {new_code}"
             )
 
         return updated

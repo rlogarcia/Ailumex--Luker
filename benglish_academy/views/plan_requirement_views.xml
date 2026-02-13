@@ -43,8 +43,7 @@
                     <group>
                         <group string="Contexto Académico">
                             <field name="plan_id" />
-                            <field name="program_id" />
-                            <field name="level_id" domain="[('program_id', '=', program_id)]" />
+                            <field name="level_id" />
                             <field name="phase_id" />
                         </group>
                         <group string="Configuración del Requisito">

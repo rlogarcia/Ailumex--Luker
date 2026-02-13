@@ -17,13 +17,13 @@
                             <field name="agenda_id" invisible="1" />
                             <field name="location_city" invisible="1" />
                             <field name="campus_id" invisible="1" />
-                            <field name="program_id" required="1" options="{'no_create': True}" />
+                            <!-- <field name="program_id" required="1" options="{'no_create': True}"
+                            />-->
                             <field name="subject_id"
-                                domain="[('program_id', '=', program_id), ('active', '=', True)]"
+                                domain="[('active', '=', True)]"
                                 options="{'no_create': True}"
                                 required="1" />
                             <field name="audience_phase_id"
-                                domain="[('program_id', '=', program_id)]"
                                 options="{'no_create': True}" />
                             <field name="audience_unit_from" />
                             <field name="audience_unit_to" />

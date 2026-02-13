@@ -111,20 +111,8 @@ class EnrollmentWizard(models.TransientModel):
         "Si no se selecciona, se asignará automáticamente la primera asignatura del plan. "
         "NOTA: Esto NO crea una matrícula a la asignatura, solo marca el punto de inicio.",
     )
-    level_id = fields.Many2one(
-        comodel_name="benglish.level",
-        string="Nivel",
-        related="subject_id.level_id",
-        readonly=True,
-        store=True,
-    )
-    phase_id = fields.Many2one(
-        comodel_name="benglish.phase",
-        string="Fase",
-        related="subject_id.phase_id",
-        readonly=True,
-        store=True,
-    )
+    # NOTA: level_id y phase_id eliminados - las asignaturas ya no tienen estos campos
+    # Los niveles se manejan a través de enrollment directamente
 
     # Prerrequisitos
     prerequisite_ids = fields.Many2many(
@@ -357,7 +345,7 @@ class EnrollmentWizard(models.TransientModel):
         if not self.subject_id:
             first_subject = self.env["benglish.subject"].search(
                 [("program_id", "=", self.program_id.id)],
-                order="level_id, sequence",
+                order="sequence",
                 limit=1,
             )
             if first_subject:
@@ -418,13 +406,9 @@ class EnrollmentWizard(models.TransientModel):
             "commercial_plan_id": self.commercial_plan_id.id,
             # Legacy: plan_id si se seleccionó
             "plan_id": self.plan_id.id if self.plan_id else False,
-            # Progresión actual (punto de inicio)
-            "current_phase_id": (
-                self.subject_id.phase_id.id if self.subject_id else False
-            ),
-            "current_level_id": (
-                self.subject_id.level_id.id if self.subject_id else False
-            ),
+            # Progresión actual (punto de inicio) - Las asignaturas ya no tienen level_id/phase_id
+            "current_phase_id": False,
+            "current_level_id": False,
             "current_subject_id": self.subject_id.id if self.subject_id else False,
             # Modalidad
             "delivery_mode": self.delivery_mode,
@@ -541,28 +525,27 @@ class EnrollmentWizard(models.TransientModel):
             )
 
     def _get_default_subject(self, plan):
-        """Retorna la primera asignatura del plan (orden nivel/sequence)."""
+        """Retorna la primera asignatura del plan (orden sequence)."""
         if not plan:
             return False
 
-        # Buscar asignaturas a través de los niveles del plan para mayor precisión
-        # Esto evita problemas de campos calculados no actualizados
+        # Buscar asignaturas del programa directamente
         subjects = (
             self.env["benglish.subject"]
-            .search([("level_id", "in", plan.level_ids.ids)])
-            .sorted(key=lambda s: (s.level_id.sequence or 0, s.sequence or 0))
+            .search([("program_id", "=", plan.program_id.id)])
+            .sorted(key=lambda s: s.sequence or 0)
         )
 
         return subjects[0] if subjects else False
 
     def _get_default_subject_by_program(self, program_id):
-        """Retorna la primera asignatura del programa (orden nivel/sequence)."""
+        """Retorna la primera asignatura del programa (orden sequence)."""
         if not program_id:
             return False
 
         subjects = self.env["benglish.subject"].search(
             [("program_id", "=", program_id)],
-            order="level_id, sequence",
+            order="sequence",
             limit=1,
         )
 

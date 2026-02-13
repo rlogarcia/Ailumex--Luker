@@ -100,7 +100,7 @@
                         </group>
                         <notebook>
                             <page string="⏰ Configuración de Horario" name="schedule_config"
-                                priority="1" invisible="is_virtual_sede or campus_type == 'online'">
+                                priority="1">
                                 <group>
                                     <group string="🕐 Horario General de Operación">
                                         <label for="schedule_start_time"

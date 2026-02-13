@@ -397,7 +397,7 @@ class AcademicSession(models.Model):
         string="Pool de Electivas",
         ondelete="restrict",
         tracking=True,
-        domain="[('state', '=', 'active'), ('program_id', '=', program_id)]",
+        domain="[('state', '=', 'active')]",
         help="Pool de electivas disponibles para esta sesión (solo para tipo Electiva).",
     )
 
@@ -405,7 +405,7 @@ class AcademicSession(models.Model):
         comodel_name="benglish.phase",
         string="Fase Audiencia",
         ondelete="restrict",
-        domain="[('program_id', '=', program_id), ('active', '=', True)]",
+        domain="[('active', '=', True)]",
         help="Fase (rango de unidades) objetivo para la sesión.",
     )
 
@@ -2748,11 +2748,11 @@ class AcademicSession(models.Model):
         
         _logger.info(
             "✅ [ELECTIVE-POOL] Asignatura seleccionada para estudiante %s: "
-            "'%s' (ID: %s, Nivel: %s, Categoría: %s)",
+            "'%s' (ID: %s, Tipo: %s, Categoría: %s)",
             student.name,
             selected_subject.name,
             selected_subject.id,
-            selected_subject.level_id.name if selected_subject.level_id else "N/A",
+            selected_subject.subject_type_id.name if selected_subject.subject_type_id else "N/A",
             selected_subject.subject_category or "N/A"
         )
         
@@ -3431,11 +3431,11 @@ class AcademicSession(models.Model):
         
         _logger.info(
             "✅ [ELECTIVE-POOL] Asignatura seleccionada para estudiante %s: "
-            "'%s' (ID: %s, Nivel: %s, Categoría: %s)",
+            "'%s' (ID: %s, Tipo: %s, Categoría: %s)",
             student.name,
             selected_subject.name,
             selected_subject.id,
-            selected_subject.level_id.name if selected_subject.level_id else "N/A",
+            selected_subject.subject_type_id.name if selected_subject.subject_type_id else "N/A",
             selected_subject.subject_category or "N/A"
         )
         

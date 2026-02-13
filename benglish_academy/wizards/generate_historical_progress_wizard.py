@@ -286,8 +286,8 @@ class GenerateHistoricalProgressWizard(models.TransientModel):
                                 'enrollment_id': False,  # No hay session enrollment para historial retroactivo
                                 'program_id': program.id,
                                 'plan_id': plan.id if plan else False,
-                                'phase_id': subject.phase_id.id if subject.phase_id else False,
-                                'level_id': subject.level_id.id if subject.level_id else False,
+                                'phase_id': False,  # Las asignaturas ya no tienen phase_id
+                                'level_id': False,  # Las asignaturas ya no tienen level_id
                                 'session_date': self.historical_date,
                                 'attended': True,  # ← CAMPO BOOLEANO para marcar asistencia
                                 'attendance_status': 'attended',  # ← Estado de asistencia

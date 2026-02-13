@@ -45,8 +45,8 @@ class ClassSession(models.Model):
         required=True,
         ondelete="restrict",
         tracking=True,
-        domain="[('program_id', '=', program_id)]",
-        help="Asignatura del programa para esta sesión (las asignaturas son compartidas por todos los planes del programa)",
+        domain="[('active', '=', True)]",
+        help="Asignatura para esta sesión",
     )
     # Campo para marcar sesión como prerrequisito (ahora editable manualmente)
     is_prerequisite_session = fields.Boolean(

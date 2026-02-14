@@ -13,9 +13,9 @@
                     decoration-info="subject_type == 'elective'"
                     decoration-warning="prerequisite_count &gt; 0">
                     <header>
-                        <button name="action_fix_classifications" type="object"
-                            string="🔧 Corregir Clasificaciones" class="btn-warning"
-                            help="Actualiza las clasificaciones de todas las asignaturas según su categoría" />
+                        <button name="action_fix_prerequisites" type="object"
+                            string="🔧 Corregir Prerrequisitos" class="btn-warning"
+                            help="Actualiza los prerrequisitos de todas las asignaturas según su categoría" />
                     </header>
                     <field name="sequence" widget="handle" />
                     <field name="code" />
@@ -24,10 +24,8 @@
                     <field name="subject_type" widget="badge"
                         decoration-success="subject_type == 'core'"
                         decoration-info="subject_type == 'elective'" optional="hide" />
-                    <field name="subject_classification" widget="badge"
-                        decoration-success="subject_classification == 'regular'"
-                        decoration-warning="subject_classification == 'prerequisite'"
-                        decoration-info="subject_classification == 'evaluation'" />
+                    <field name="is_prerequisite" widget="boolean_toggle" />
+                    <field name="evaluable" widget="boolean_toggle" />
                     <field name="hours" />
                     <field name="duration_hours" optional="show" />
                     <field name="credits" />
@@ -98,22 +96,16 @@
                             </group>
                         </group>
                         <group>
-                            <group>
-                                <div>
-                                    <label for="subject_classification" />
-                                    <field name="subject_classification" widget="radio"
-                                        options="{'horizontal': true}" />
-                                </div>
+                            <group string="📊 Clasificación Académica">
                                 <field name="subject_type_id" options="{'no_create': True}"
                                     placeholder="Seleccione Tipo" />
+                                <field name="is_prerequisite" />
                                 <field name="evaluable" />
-                                <field name="sequence" string="Secuencia" />
                             </group>
 
                             <group string="📊 Carga Académica">
-                                <field name="hours" string="Horas" />
-                                <field name="duration_hours" string="Duración (Horas)" />
                                 <field name="credits" string="Créditos" />
+                                <field name="sequence" string="Secuencia" />
                             </group>
                         </group>
                         <notebook>
@@ -269,15 +261,15 @@
             </field>
         </record>
 
-        <!-- Acción de Servidor para Corregir Clasificaciones -->
+        <!-- Acción de Servidor para Corregir Prerrequisitos -->
         <record id="action_server_fix_classifications" model="ir.actions.server">
-            <field name="name">🔧 Corregir Clasificaciones</field>
+            <field name="name">🔧 Corregir Prerrequisitos</field>
             <field name="model_id" ref="model_benglish_subject" />
             <field name="binding_model_id" ref="model_benglish_subject" />
             <field name="binding_view_types">list</field>
             <field name="state">code</field>
             <field name="code">
-                action = records.action_fix_classifications()
+                action = records.action_fix_prerequisites()
             </field>
         </record>
 

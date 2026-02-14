@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Benglish - Gestión Académica",
-    "version": "18.0.1.7.2",
+    "version": "18.0.1.9.0",
     "category": "Education",
     "summary": "Sistema de gestión académica para academia de inglés",
     "description": """
@@ -55,8 +55,8 @@
         "views/plan_views.xml",
         "views/phase_views.xml",
         "views/level_views.xml",
-        # Datos - Tipos de Asignatura Base (ANTES de las vistas)
-        "data/subject_types_base.xml",
+        # Datos - Tipos de Asignatura Base (YA NO se cargan automáticamente - se gestionan manualmente)
+        # "data/subject_types_base.xml",
         "views/subject_type_views.xml",
         "views/subject_views.xml",
         # Vistas - Institucional
@@ -142,6 +142,8 @@
         "data/ir_sequence_elective_pool.xml",
         # Secuencia para Ejecución de Clases
         "data/ir_sequence_class_execution.xml",
+        # Secuencia para Tipos de Asignatura
+        "data/ir_sequence_subject_type.xml",
     ],
     "assets": {
         "web.assets_backend": [

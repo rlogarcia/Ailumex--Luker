@@ -39,9 +39,9 @@ class ElectivePool(models.Model):
     """
 
     _name = "benglish.elective.pool"
-    _description = "Pool de Electivas por Fase"
+    _description = "Pool de Electivas"
     _inherit = ["mail.thread", "mail.activity.mixin"]
-    _order = "phase_id, sequence, name"
+    _order = "sequence, name"
     _rec_name = "display_name"
 
     # ==========================================
@@ -90,34 +90,10 @@ class ElectivePool(models.Model):
     )
 
     # ==========================================
-    # RELACIONES ACADÉMICAS
+    # CONFIGURACIÓN DE FECHAS/PERIODO
     # ==========================================
 
-    phase_id = fields.Many2one(
-        comodel_name="benglish.phase",
-        string="Fase",
-        required=True,
-        ondelete="restrict",
-        tracking=True,
-        index=True,
-        help="Fase académica a la que pertenece este pool de electivas",
-    )
-
-    # Nota: En el modelo original se menciona Id_Periodo, pero en la estructura
-    # actual no existe un modelo de Periodo Académico explícito.
-    # Se puede agregar si existe o usar campos de fecha directamente.
-    
-    # Si existe modelo de periodo académico (benglish.academic.period), descomentar:
-    # period_id = fields.Many2one(
-    #     comodel_name="benglish.academic.period",
-    #     string="Periodo Académico",
-    #     required=True,
-    #     ondelete="restrict",
-    #     tracking=True,
-    #     help="Periodo académico al que aplica este pool de electivas",
-    # )
-
-    # Alternativa: usar rango de fechas si no existe modelo de periodo
+    # Rango de fechas para vigencia del pool
     date_start = fields.Date(
         string="Fecha de Inicio",
         tracking=True,
@@ -205,7 +181,7 @@ class ElectivePool(models.Model):
     # MÉTODOS COMPUTADOS
     # ==========================================
 
-    @api.depends("name", "code", "phase_id", "phase_id.name")
+    @api.depends("name", "code")
     def _compute_display_name(self):
         """Genera nombre completo para visualización."""
         for record in self:
@@ -217,38 +193,22 @@ class ElectivePool(models.Model):
             if record.name:
                 parts.append(record.name)
             
-            if record.phase_id:
-                parts.append(f"({record.phase_id.name})")
-            
             record.display_name = " - ".join(parts) if parts else _("Nuevo Pool de Electivas")
 
-    @api.depends("subject_ids", "phase_id", "subject_count")
+    @api.depends("subject_ids", "subject_count")
     def _compute_pool_summary(self):
         """Genera resumen para vistas de lista."""
         for record in self:
-            if record.phase_id and record.subject_count > 0:
-                record.pool_summary = f"{record.phase_id.name} | {record.subject_count} asignatura(s)"
-            elif record.phase_id:
-                record.pool_summary = f"{record.phase_id.name} | Sin asignaturas"
+            if record.subject_count > 0:
+                record.pool_summary = f"{record.subject_count} asignatura(s) electiva(s)"
             else:
-                record.pool_summary = "Sin configurar"
+                record.pool_summary = "Sin asignaturas"
 
     @api.depends("subject_ids")
     def _compute_subject_count(self):
         """Cuenta el total de asignaturas en el pool."""
         for record in self:
             record.subject_count = len(record.subject_ids)
-
-    # ==========================================
-    # MÉTODOS ONCHANGE
-    # ==========================================
-
-    @api.onchange("phase_id")
-    def _onchange_phase_id(self):
-        """
-        Al cambiar la fase, solo notificar (ya no se filtran asignaturas por fase).
-        """
-        pass  # Las asignaturas ya no tienen fase
 
     # ==========================================
     # MÉTODOS DE CREACIÓN Y CÓDIGO
@@ -267,10 +227,9 @@ class ElectivePool(models.Model):
         
         for record in records:
             _logger.info(
-                "Pool de electivas creado: %s (ID: %s, Fase: %s)",
+                "Pool de electivas creado: %s (ID: %s)",
                 record.code,
                 record.id,
-                record.phase_id.name if record.phase_id else "N/A",
             )
         
         return records
@@ -312,17 +271,16 @@ class ElectivePool(models.Model):
         """
         pass  # Las asignaturas ya no tienen fase, no se requiere validación
 
-    @api.constrains("phase_id", "name", "active")
-    def _check_unique_active_pool_per_phase(self):
+    @api.constrains("name", "active")
+    def _check_unique_active_pool(self):
         """
-        Valida que no haya múltiples pools activos con el mismo nombre en la misma fase.
+        Valida que no haya múltiples pools activos con el mismo nombre.
         
         Nota: Esta validación se puede ajustar según necesidades de negocio.
         """
         for record in self:
-            if record.active and record.phase_id:
+            if record.active:
                 duplicates = self.search([
-                    ("phase_id", "=", record.phase_id.id),
                     ("name", "=", record.name),
                     ("id", "!=", record.id),
                     ("active", "=", True),
@@ -332,9 +290,9 @@ class ElectivePool(models.Model):
                     raise ValidationError(
                         _(
                             "Pool duplicado detectado:\n\n"
-                            "Ya existe un pool activo con el nombre '%s' para la fase '%s'.\n\n"
+                            "Ya existe un pool activo con el nombre '%s'.\n\n"
                             "Modifique el nombre o inactive el pool existente."
-                        ) % (record.name, record.phase_id.name)
+                        ) % record.name
                     )
 
     # Constraints SQL
@@ -366,8 +324,8 @@ class ElectivePool(models.Model):
                 record.write({"state": "active"})
                 record.message_post(
                     body=_(
-                        "Pool activado: %s asignatura(s) electiva(s) disponible(s) para la fase %s."
-                    ) % (record.subject_count, record.phase_id.name),
+                        "Pool activado: %s asignatura(s) electiva(s) disponible(s)."
+                    ) % record.subject_count,
                     subject=_("Pool Activado"),
                 )
         
@@ -396,7 +354,7 @@ class ElectivePool(models.Model):
             "domain": [("id", "in", self.subject_ids.ids)],
             "view_mode": "tree,form",
             "target": "current",
-            "context": {"default_phase_id": self.phase_id.id, "default_subject_type": "elective"},
+            "context": {},
         }
 
     def action_add_subjects_wizard(self):

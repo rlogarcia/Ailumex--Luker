@@ -7,11 +7,15 @@
             <field name="name">benglish.subject.type.tree</field>
             <field name="model">benglish.subject.type</field>
             <field name="arch" type="xml">
-                <list string="Tipos de Asignatura" default_order="sequence, name">
+                <list string="Tipos de Asignatura" default_order="sequence, name"
+                    decoration-muted="state == 'inactive'">
                     <field name="sequence" widget="handle" />
-                    <field name="code" optional="show" />
+                    <field name="code" />
                     <field name="name" />
-                    <field name="description" optional="hide" />
+                    <field name="state" widget="badge"
+                        decoration-success="state == 'active'"
+                        decoration-danger="state == 'inactive'" />
+                    <field name="is_elective_pool" widget="boolean_toggle" />
                     <field name="subject_count" string="Asignaturas" />
                     <field name="active" invisible="1" />
                 </list>
@@ -24,9 +28,17 @@
             <field name="model">benglish.subject.type</field>
             <field name="arch" type="xml">
                 <form string="Tipo de Asignatura">
+                    <header>
+                        <button name="action_set_active" type="object" string="Activo"
+                            class="btn-primary" invisible="state == 'active'" />
+                        <button name="action_set_inactive" type="object" string="Inactivo"
+                            class="btn-secondary" invisible="state == 'inactive'" />
+                        <field name="state" widget="statusbar"
+                            statusbar_visible="active,inactive" />
+                    </header>
                     <sheet>
-                        <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger"
-                            invisible="active" />
+                        <widget name="web_ribbon" title="Inactivo" bg_color="text-bg-danger"
+                            invisible="state == 'active'" />
                         <div class="oe_button_box" name="button_box">
                             <button class="oe_stat_button" icon="fa-book"
                                 type="object" name="action_view_subjects">
@@ -34,24 +46,39 @@
                             </button>
                         </div>
                         <div class="oe_title">
+                            <group>
+                                <group>
+                                    <div class="badge text-bg-dark"
+                                        style="display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fa fa-tag" />
+                                        <field name="code" readonly="1" />
+                                    </div>
+                                </group>
+                            </group>
                             <label for="name" />
                             <h1>
                                 <field name="name" placeholder="Nombre del tipo" />
                             </h1>
                         </div>
-                        <group>
-                            <group string="Información General">
-                                <!-- <field name="code" />-->
+                        <group string="Información General">
+                            <group>
+                                <field name="is_elective_pool" widget="boolean_toggle" />
                                 <field name="sequence" />
-                                <field name="color" widget="color_picker" />
-                                <field name="active" />
                             </group>
-                            <group string="Descripción">
-                                <field name="description" nolabel="1"
-                                    placeholder="Descripción del tipo de asignatura..." />
+                            <group>
+                                <field name="color" widget="color_picker" />
+
                             </group>
                         </group>
+                        <notebook>
+                            <page string="📝 Descripción" name="description">
+                                <field name="description" nolabel="1"
+                                    placeholder="Descripción detallada del tipo de asignatura..." />
+                            </page>
+                        </notebook>
+                        <field name="active" invisible="1" />
                     </sheet>
+                    <chatter />
                 </form>
             </field>
         </record>
@@ -64,9 +91,20 @@
                 <search string="Buscar Tipos de Asignatura">
                     <field name="name" />
                     <field name="code" />
+                    <separator />
+                    <filter string="Activos" name="active_filter"
+                        domain="[('state', '=', 'active')]" />
+                    <filter string="Inactivos" name="inactive_filter"
+                        domain="[('state', '=', 'inactive')]" />
+                    <separator />
+                    <filter string="Pool de Electivas" name="elective_pool"
+                        domain="[('is_elective_pool', '=', True)]" />
+                    <separator />
                     <filter string="Archivados" name="inactive" domain="[('active', '=', False)]" />
                     <group expand="0" string="Agrupar por">
-                        <filter string="Activo" name="group_active" context="{'group_by': 'active'}" />
+                        <filter string="Estado" name="group_state" context="{'group_by': 'state'}" />
+                        <filter string="Pool de Electivas" name="group_elective"
+                            context="{'group_by': 'is_elective_pool'}" />
                     </group>
                 </search>
             </field>
@@ -77,6 +115,7 @@
             <field name="name">Tipos de Asignatura</field>
             <field name="res_model">benglish.subject.type</field>
             <field name="view_mode">list,form</field>
+            <field name="context">{'search_default_active_filter': 1}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
                     Crea tu primer tipo de asignatura

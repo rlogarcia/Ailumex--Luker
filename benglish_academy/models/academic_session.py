@@ -196,6 +196,34 @@ class AcademicSession(models.Model):
         help="Programa académico (ej: Benglish, B teens)",
     )
 
+    # Tipo de Asignatura - reemplaza session_type
+    subject_type_id = fields.Many2one(
+        comodel_name="benglish.subject.type",
+        string="Tipo de Asignatura",
+        ondelete="restrict",
+        tracking=True,
+        index=True,
+        help="Tipo de asignatura. Filtra las asignaturas disponibles y determina si es sesión de pool de electivas.",
+    )
+
+    # Campo computado para usar en invisible de la vista
+    is_elective_session = fields.Boolean(
+        string="Es Sesión Electiva",
+        compute="_compute_is_elective_session",
+        store=False,
+        help="Indica si el tipo de asignatura seleccionado es de pool de electivas",
+    )
+
+    # Pool de electivas - visible solo cuando subject_type_id.is_elective_pool = True
+    elective_pool_id = fields.Many2one(
+        comodel_name="benglish.elective.pool",
+        string="Electivas",
+        ondelete="restrict",
+        tracking=True,
+        index=True,
+        help="Pool de electivas. Solo visible cuando el tipo de asignatura tiene 'Pool de Electivas' habilitado.",
+    )
+
     subject_id = fields.Many2one(
         comodel_name="benglish.subject",
         string="Asignatura",
@@ -206,6 +234,14 @@ class AcademicSession(models.Model):
         index=True,
         help="Asignatura a dictar (muestra solo código + nombre)",
     )
+
+    @api.depends('subject_type_id', 'subject_type_id.is_elective_pool')
+    def _compute_is_elective_session(self):
+        """Computa si la sesión es de tipo electiva basándose en subject_type_id"""
+        for record in self:
+            record.is_elective_session = bool(
+                record.subject_type_id and record.subject_type_id.is_elective_pool
+            )
 
     subject_code = fields.Char(
         string="Código Asignatura",
@@ -225,14 +261,19 @@ class AcademicSession(models.Model):
     # MÉTODOS ONCHANGE
     # ========================================================================
 
-    @api.onchange('session_type')
-    def _onchange_session_type(self):
+    @api.onchange('subject_type_id')
+    def _onchange_subject_type_id(self):
         """
-        Al cambiar el tipo de sesión, limpia campos relacionados
-        para evitar inconsistencias
+        Al cambiar el tipo de asignatura, limpia campos relacionados
+        para evitar inconsistencias y actualiza dominio de subject_id
         """
-        if self.session_type != 'elective':
+        # Si el tipo NO tiene pool de electivas, limpia el pool
+        if self.subject_type_id and not self.subject_type_id.is_elective_pool:
             self.elective_pool_id = False
+        
+        # Limpiar subject_id para forzar nueva selección según tipo
+        if self.subject_type_id:
+            self.subject_id = False
 
     @api.onchange('elective_pool_id')
     def _onchange_elective_pool_id(self):
@@ -256,7 +297,7 @@ class AcademicSession(models.Model):
                 self.subject_id.name,
                 self.subject_id.id
             )
-        elif self.session_type == 'elective' and not self.elective_pool_id:
+        elif self.subject_type_id and self.subject_type_id.is_elective_pool and not self.elective_pool_id:
             # Si se limpia el pool en una sesión electiva, limpiar subject_id también
             self.subject_id = False
             _logger.info("[ACADEMIC_SESSION ONCHANGE] Pool eliminado, subject_id limpiado")
@@ -290,16 +331,23 @@ class AcademicSession(models.Model):
             try:
                 # Si NO hay subject_id, intentar asignarlo
                 if not vals.get("subject_id"):
-                    session_type = vals.get("session_type", "regular")
+                    # Verificar si el tipo de asignatura es de pool de electivas
+                    is_elective_type = False
+                    subject_type_id = vals.get("subject_type_id")
+                    if subject_type_id:
+                        subject_type = self.env["benglish.subject.type"].browse(subject_type_id)
+                        if subject_type and subject_type.is_elective_pool:
+                            is_elective_type = True
                     
                     _logger.info(
-                        "[ACADEMIC_SESSION CREATE] subject_id no proporcionado. session_type=%s, elective_pool_id=%s",
-                        session_type,
+                        "[ACADEMIC_SESSION CREATE] subject_id no proporcionado. subject_type_id=%s, is_elective_type=%s, elective_pool_id=%s",
+                        subject_type_id,
+                        is_elective_type,
                         vals.get("elective_pool_id"),
                     )
                     
-                    # Si es tipo electiva, asignar una asignatura del pool
-                    if session_type == "elective" and vals.get("elective_pool_id"):
+                    # Si es tipo electiva (pool), asignar una asignatura del pool
+                    if is_elective_type and vals.get("elective_pool_id"):
                         pool = self.env["benglish.elective.pool"].browse(vals.get("elective_pool_id"))
                         if pool and pool.subject_ids:
                             # Asignar la primera asignatura del pool como placeholder
@@ -430,6 +478,17 @@ class AcademicSession(models.Model):
 
     # TIPO Y MODALIDAD
 
+    subject_type_id = fields.Many2one(
+        comodel_name="benglish.subject.type",
+        string="Tipo de Asignatura",
+        required=True,
+        ondelete="restrict",
+        tracking=True,
+        domain="[('state', '=', 'active')]",
+        help="Tipo de asignatura para esta sesión. Las asignaturas disponibles se filtrarán según este tipo.",
+    )
+
+    # Campo legacy para compatibilidad (se mantiene por ahora)
     session_type = fields.Selection(
         selection=[
             ("regular", "Clase Regular"),
@@ -438,11 +497,10 @@ class AcademicSession(models.Model):
             ("evaluation", "Evaluación"),
             ("workshop", "Taller"),
         ],
-        string="Tipo de Sesión",
-        default="elective",
-        required=True,
+        string="Tipo de Sesión (Legacy)",
+        default="regular",
         tracking=True,
-        help="Tipo de sesión académica",
+        help="Campo legacy - Usar 'Tipo de Asignatura' en su lugar",
     )
 
     delivery_mode = fields.Selection(

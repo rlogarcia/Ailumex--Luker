@@ -238,6 +238,12 @@
                   action="action_student_profile_state"
                   sequence="10" />
 
+            <menuitem id="menu_benglish_academic_period"
+                  name="Periodos Académicos"
+                  parent="menu_benglish_configuration"
+                  action="action_academic_period"
+                  sequence="5" />
+
             <menuitem id="menu_config_subject_types"
                   name="Tipos de Asignatura"
                   parent="menu_benglish_configuration"

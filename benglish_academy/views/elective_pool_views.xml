@@ -12,8 +12,6 @@
             <list string="Pools de Electivas">
                 <field name="code" />
                 <field name="name" />
-                <field name="phase_id" />
-                <!-- <field name="program_id" />-->
                 <field name="subject_count" />
                 <field name="count_value" />
                 <field name="state" widget="badge" decoration-success="state=='active'"
@@ -48,6 +46,9 @@
                             </div>
                         </button>
                     </div>
+                    <div class="oe_title">
+                        <field name="code" readonly="1" />
+                    </div>
                     <group>
                         <group>
                             <div class="oe_title">
@@ -55,9 +56,6 @@
                                 <h2>
                                     <field name="name" placeholder="ej: Electivas Básico 2025-1" />
                                 </h2>
-                                <div>
-                                    <field name="code" readonly="1" />
-                                </div>
                             </div>
                         </group>
                         <group>
@@ -72,12 +70,10 @@
 
                     <group>
                         <group name="basic_info" string="Información Básica">
-                            <field name="phase_id" options="{'no_create': True}" />
-                            <!-- <field name="program_id" readonly="1" /> -->
                             <field name="sequence" />
                             <field name="count_value" />
                         </group>
-                        <group name="period_info" string="Periodo de Vigencia">
+                        <group name="period_info" string="Período de Vigencia">
                             <field name="date_start" />
                             <field name="date_end" />
                         </group>
@@ -91,15 +87,16 @@
                     <notebook>
                         <page name="subjects" string="Asignaturas Electivas">
                             <field name="subject_ids" widget="many2many"
-                                domain="[('active', '=', True)]"
-                                context="{'tree_view_ref': 'benglish_academy.benglish_subject_list_view'}">
+                                domain="[('active', '=', True), ('subject_type_id.is_elective_pool', '=', True)]"
+                                context="{'tree_view_ref': 'benglish_academy.view_benglish_subject_elective_pool_list'}">
                                 <list>
-                                    <field name="name" />
-                                    <field name="code" />
-                                    <field name="subject_type_id" />
-                                    <field name="hours" />
-                                    <field name="credits" />
-                                    <field name="active" invisible="1" />
+                                    <field name="code" string="Código" />
+                                    <field name="name" string="Nombre" />
+                                    <field name="alias" string="Alias" />
+                                    <field name="is_prerequisite" string="Es prerrequisito?"
+                                        widget="boolean_toggle" />
+                                    <field name="evaluable" string="Es evaluable?"
+                                        widget="boolean_toggle" />
                                 </list>
                             </field>
                         </page>
@@ -126,7 +123,6 @@
             <kanban class="o_kanban_mobile">
                 <field name="name" />
                 <field name="code" />
-                <field name="phase_id" />
                 <field name="subject_count" />
                 <field name="state" />
                 <templates>
@@ -144,8 +140,6 @@
                                 </span>
                             </div>
                             <div class="o_kanban_record_body">
-                                <field name="phase_id" />
-                                <br />
                                 <t t-if="record.subject_count.value > 0">
                                     <i class="fa fa-book" /> <field name="subject_count" />
                                     asignatura(s) </t>
@@ -165,9 +159,6 @@
             <search string="Buscar Pools de Electivas">
                 <field name="name" />
                 <field name="code" />
-                <field name="phase_id" />
-                <!--<field
-                name="program_id" />-->
                 <separator />
                 <filter string="Activos" name="filter_state_active"
                     domain="[('state', '=', 'active')]" />
@@ -183,10 +174,6 @@
                 <separator />
                 <filter string="Archivados" name="filter_inactive" domain="[('active', '=', False)]" />
                 <group expand="0" string="Agrupar por">
-                    <filter string="Fase" name="group_phase" context="{'group_by': 'phase_id'}" />
-                    <!--<filter
-                    string="Programa" name="group_program"
-                        context="{'group_by': 'program_id'}" />-->
                     <filter string="Estado" name="group_state" context="{'group_by': 'state'}" />
                 </group>
             </search>
@@ -204,10 +191,9 @@
                 Crea tu primer pool de electivas
             </p>
             <p>
-                Los pools de electivas agrupan asignaturas electivas ofertadas para una fase
-                específica,
-                permitiendo configurar qué asignaturas electivas están disponibles según el nivel
-                académico.
+                Los pools de electivas agrupan asignaturas electivas ofertadas,
+                permitiendo configurar qué asignaturas electivas están disponibles.
+                Solo se mostrarán asignaturas cuyo tipo tenga marcado "Pool de Electivas".
             </p>
         </field>
     </record>

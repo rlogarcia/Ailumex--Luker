@@ -215,13 +215,4 @@
         </field>
     </record>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════════
-         MENÚ - PERIODO ACADÉMICO
-         ═══════════════════════════════════════════════════════════════════════════ -->
-    <menuitem id="menu_benglish_academic_period"
-        name="Periodos Académicos"
-        parent="benglish_academy.menu_benglish_configuration"
-        action="action_academic_period"
-        sequence="5" />
-
 </odoo>

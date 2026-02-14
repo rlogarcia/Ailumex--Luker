@@ -86,23 +86,20 @@ class Subject(models.Model):
         help="Tipo de asignatura configurable desde el menú de configuración",
     )
 
-    # Clasificación de asignatura
-    subject_classification = fields.Selection(
-        selection=[
-            ("regular", "Asignatura Regular"),
-            ("prerequisite", "Prerrequisito"),
-            ("evaluation", "Evaluación"),
-        ],
-        string="Clasificación",
-        default="regular",
-        required=True,
-        help="Tipo de clasificación de la asignatura: Regular (contenido académico normal), Prerrequisito (requerida para otras), o Evaluación (examen/prueba)",
+    # Indica si la asignatura es prerrequisito de otras
+    is_prerequisite = fields.Boolean(
+        string="Es prerrequisito?",
+        default=False,
+        tracking=True,
+        help="Indica si esta asignatura es prerrequisito de otras asignaturas. "
+             "Las asignaturas marcadas como prerrequisito deben ser aprobadas antes "
+             "de cursar las asignaturas que dependen de ellas.",
     )
 
     # Indica si la asignatura es evaluable (tiene nota/resultado)
     evaluable = fields.Boolean(
         string="Es evaluable?",
-        default=True,
+        default=False,
         tracking=True,
         help="Indica si la asignatura es evaluable (tiene calificación/nota).",
     )
@@ -267,8 +264,8 @@ class Subject(models.Model):
                 vals["code"] = self._next_unique_code("A-", "benglish.subject")
 
         records = super().create(vals_list)
-        # Ensure classification stays in sync after creation
-        records._sync_classification_with_category()
+        # Ensure is_prerequisite stays in sync after creation
+        records._sync_is_prerequisite_with_category()
         return records
     
     def write(self, vals):
@@ -312,24 +309,19 @@ class Subject(models.Model):
 
     # Normalización de clasificación según categoría
 
-    def _sync_classification_with_category(self):
-        """Ajusta subject_classification según subject_category."""
-        mapping = {
-            "bcheck": "prerequisite",
-            "bskills": "regular",
-            "oral_test": "evaluation",
-        }
+    def _sync_is_prerequisite_with_category(self):
+        """Ajusta is_prerequisite según subject_category."""
+        # B-checks siempre son prerrequisitos
         for subject in self:
-            target = mapping.get(subject.subject_category)
-            if target and subject.subject_classification != target:
-                subject.subject_classification = target
+            if subject.subject_category == "bcheck" and not subject.is_prerequisite:
+                subject.is_prerequisite = True
 
     # (create is implemented above with robust sequence handling)
 
     def write(self, vals):
         res = super().write(vals)
-        # Mantener clasificación alineada con categoría en cualquier actualización
-        self._sync_classification_with_category()
+        # Mantener is_prerequisite alineado con categoría en cualquier actualización
+        self._sync_is_prerequisite_with_category()
         return res
 
     @api.depends("prerequisite_ids")
@@ -575,52 +567,29 @@ class Subject(models.Model):
             "context": {"create": False},
         }
 
-    def action_fix_classifications(self):
+    def action_fix_prerequisites(self):
         """
-        Método para actualizar clasificaciones basándose en subject_category.
+        Método para actualizar is_prerequisite basándose en subject_category.
         Este método puede ser llamado manualmente o desde un botón en la interfaz.
         """
-        # Actualizar B-checks a 'prerequisite'
+        # Actualizar B-checks a is_prerequisite=True
         bchecks = self.search(
             [
                 ("subject_category", "=", "bcheck"),
-                ("subject_classification", "!=", "prerequisite"),
+                ("is_prerequisite", "=", False),
             ]
         )
-        bchecks.write({"subject_classification": "prerequisite"})
-
-        # Actualizar Bskills a 'regular'
-        bskills = self.search(
-            [
-                ("subject_category", "=", "bskills"),
-                ("subject_classification", "!=", "regular"),
-            ]
-        )
-        bskills.write({"subject_classification": "regular"})
-
-        # Actualizar Oral Tests a 'evaluation'
-        oral_tests = self.search(
-            [
-                ("subject_category", "=", "oral_test"),
-                ("subject_classification", "!=", "evaluation"),
-            ]
-        )
-        oral_tests.write({"subject_classification": "evaluation"})
-
-        total = len(bchecks) + len(bskills) + len(oral_tests)
+        bchecks.write({"is_prerequisite": True})
 
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": _("Clasificaciones Actualizadas"),
+                "title": _("Prerrequisitos Actualizados"),
                 "message": _(
-                    "Se actualizaron %d asignaturas:\n"
-                    "- %d B-checks → Prerrequisito\n"
-                    "- %d Bskills → Regular\n"
-                    "- %d Oral Tests → Evaluación"
+                    "Se actualizaron %d B-checks como prerrequisitos."
                 )
-                % (total, len(bchecks), len(bskills), len(oral_tests)),
+                % len(bchecks),
                 "type": "success",
                 "sticky": False,
             },
@@ -632,58 +601,67 @@ class Subject(models.Model):
         Elimina automáticamente todos los registros relacionados antes de eliminar la asignatura.
         Las plantillas de agenda se mantienen como catálogo independiente.
         """
+        registry = self.env.registry
         for subject in self:
             # Eliminar TODOS los registros relacionados automáticamente
-            
+
             # 1. Eliminar registros de progreso académico
-            progress_records = self.env['benglish.enrollment.progress'].search([('subject_id', '=', subject.id)])
-            if progress_records:
-                progress_records.unlink()
-            
+            if registry.get('benglish.enrollment.progress'):
+                progress_records = self.env['benglish.enrollment.progress'].search([('subject_id', '=', subject.id)])
+                if progress_records:
+                    progress_records.unlink()
+
             # 2. MANTENER plantillas de agenda como catálogo - solo limpiar referencia
-            template_records = self.env['benglish.agenda.template'].search([('fixed_subject_id', '=', subject.id)])
-            if template_records:
-                template_records.write({'fixed_subject_id': False})  # Limpiar referencia, mantener plantilla
-                
+            if registry.get('benglish.agenda.template'):
+                template_records = self.env['benglish.agenda.template'].search([('fixed_subject_id', '=', subject.id)])
+                if template_records:
+                    template_records.write({'fixed_subject_id': False})  # Limpiar referencia, mantener plantilla
+
             # 3. Eliminar historial académico
-            history_records = self.env['benglish.academic.history'].search([('subject_id', '=', subject.id)])
-            if history_records:
-                history_records.unlink()
-                
+            if registry.get('benglish.academic.history'):
+                history_records = self.env['benglish.academic.history'].search([('subject_id', '=', subject.id)])
+                if history_records:
+                    history_records.unlink()
+
             # 4. Eliminar sesiones académicas
-            session_records = self.env['benglish.academic.session'].search([('subject_id', '=', subject.id)])
-            if session_records:
-                session_records.unlink()
-                
+            if registry.get('benglish.academic.session'):
+                session_records = self.env['benglish.academic.session'].search([('subject_id', '=', subject.id)])
+                if session_records:
+                    session_records.unlink()
+
             # 5. Eliminar tracking de sesiones
-            tracking_records = self.env['benglish.subject.session.tracking'].search([('subject_id', '=', subject.id)])
-            if tracking_records:
-                tracking_records.unlink()
-                
+            if registry.get('benglish.subject.session.tracking'):
+                tracking_records = self.env['benglish.subject.session.tracking'].search([('subject_id', '=', subject.id)])
+                if tracking_records:
+                    tracking_records.unlink()
+
             # 6. Limpiar referencias en matrículas (sin eliminar las matrículas)
-            enrollment_records = self.env['benglish.enrollment'].search([('subject_id', '=', subject.id)])
-            if enrollment_records:
-                enrollment_records.write({'subject_id': False})
-                
+            if registry.get('benglish.enrollment'):
+                enrollment_records = self.env['benglish.enrollment'].search([('subject_id', '=', subject.id)])
+                if enrollment_records:
+                    enrollment_records.write({'subject_id': False})
+
             # 7. Limpiar referencias en estudiantes
-            student_records = self.env['benglish.student'].search([('current_subject_id', '=', subject.id)])
-            if student_records:
-                student_records.write({'current_subject_id': False})
-                
+            if registry.get('benglish.student'):
+                student_records = self.env['benglish.student'].search([('current_subject_id', '=', subject.id)])
+                if student_records:
+                    student_records.write({'current_subject_id': False})
+
             # 8. Limpiar inscripciones a sesiones
-            enrollments = self.env['benglish.session.enrollment'].search([('effective_subject_id', '=', subject.id)])
-            if enrollments:
-                enrollments.write({'effective_subject_id': False})
+            if registry.get('benglish.session.enrollment'):
+                enrollments = self.env['benglish.session.enrollment'].search([('effective_subject_id', '=', subject.id)])
+                if enrollments:
+                    enrollments.write({'effective_subject_id': False})
 
         # Ahora eliminar las asignaturas
         return super(Subject, self).unlink()
 
     @api.model
     def init(self):
-        """Sincroniza clasificaciones al iniciar el módulo."""
+        """Sincroniza is_prerequisite al iniciar el módulo."""
         super().init()
         try:
-            self.search([])._sync_classification_with_category()
+            self.search([])._sync_is_prerequisite_with_category()
         except Exception:
             # Evitar que errores aquí bloqueen la carga del módulo
             pass

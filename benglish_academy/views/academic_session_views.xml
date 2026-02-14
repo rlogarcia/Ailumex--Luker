@@ -90,40 +90,54 @@
                                 <field name="display_name" readonly="1" />
                             </h1>
                         </div>
-                        <group string="Codigo de Sesión">
+                        <group string="Código de Sesión">
                             <field name="session_code" readonly="1" />
                         </group>
                         <group string="Información Académica">
                             <group>
                                 <field name="program_id" required="1" options="{'no_create': True}" />
 
-                                <!-- Pool de Electivas: visible solo cuando ES tipo electiva -->
-                                <field name="elective_pool_id"
-                                    domain="[('state', '=', 'active')]"
-                                    options="{'no_create': True}"
-                                    invisible="session_type != 'elective'"
-                                    required="session_type == 'elective'" />
-
-                                <!-- Fase Audiencia -->
+                                <!-- Fase -->
                                 <field name="audience_phase_id"
+                                    string="Fase"
                                     domain="[('active', '=', True)]"
                                     options="{'no_create': True}" />
+
+                                <!-- Tipo de Asignatura (reemplaza session_type) -->
+                                <field name="subject_type_id"
+                                    string="Tipo de Asignatura"
+                                    required="1"
+                                    domain="[('state', '=', 'active')]"
+                                    options="{'no_create': True}" />
+
+                                <!-- Campo auxiliar para invisible -->
+                                <field name="is_elective_session" invisible="1" />
+
+                                <!-- Electivas: visible solo cuando el tipo de asignatura es pool de
+                                electivas -->
+                                <field name="elective_pool_id"
+                                    string="Electivas"
+                                    domain="[('state', '=', 'active')]"
+                                    options="{'no_create': True}"
+                                    invisible="not is_elective_session"
+                                    required="is_elective_session" />
+                            </group>
+                            <group>
+                                <!-- Asignatura filtrada por tipo seleccionado -->
+                                <field name="subject_id"
+                                    readonly="elective_pool_id"
+                                    force_save="1"
+                                    required="1"
+                                    domain="[('active', '=', True), ('subject_type_id', '=', subject_type_id)]"
+                                    options="{'no_create': True}" />
+
 
                                 <!-- Rango de unidades -->
                                 <field name="audience_unit_from"
                                     placeholder="Unidad inicial (1-24)" />
                                 <field name="audience_unit_to"
                                     placeholder="Unidad final (1-24)" />
-                            </group>
-                            <group>
-                                <field name="session_type" required="1" />
                                 <field name="elective_pool_id" invisible="1" />
-                                <field name="subject_id"
-                                    readonly="elective_pool_id"
-                                    force_save="1"
-                                    required="1"
-                                    domain="[('active', '=', True)]"
-                                    options="{'no_create': True}" />
                             </group>
                         </group>
                         <group>

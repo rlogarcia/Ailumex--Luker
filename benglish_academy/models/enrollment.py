@@ -1091,38 +1091,40 @@ class Enrollment(models.Model):
         # ═══════════════════════════════════════════════════════════════════════
         # INICIALIZACIÓN DE PROGRESIÓN ACADÉMICA
         # ═══════════════════════════════════════════════════════════════════════
-        # CORREGIDO: Solo inicializar con primera fase/nivel si NO vienen valores del wizard
-        # Esto permite que el wizard establezca el nivel correcto del estudiante
+        # CORREGIDO: Usa fases y niveles desde el plan de estudio (Many2many)
+        # No usa program_id directamente en fases/niveles (no existe ese campo)
         
         if vals.get("plan_id") and not vals.get("current_phase_id") and not vals.get("current_level_id"):
             plan = self.env["benglish.plan"].browse(vals["plan_id"])
-            if plan and plan.program_id:
-                # Obtener primera fase del programa
-                first_phase = self.env["benglish.phase"].search(
-                    [("program_id", "=", plan.program_id.id)],
-                    order="sequence ASC",
-                    limit=1,
-                )
+            if plan:
+                # Obtener primera fase del plan (Many2many ordenado por secuencia)
+                first_phase = plan.phase_ids.sorted(lambda p: p.sequence)[:1]
                 if first_phase:
                     vals["current_phase_id"] = first_phase.id
 
                     # Obtener primer nivel de esa fase
-                    first_level = self.env["benglish.level"].search(
-                        [("phase_id", "=", first_phase.id)],
-                        order="sequence ASC",
-                        limit=1,
-                    )
+                    first_level = first_phase.level_ids.sorted(lambda l: l.sequence)[:1]
                     if first_level:
                         vals["current_level_id"] = first_level.id
 
-                        # Obtener primera asignatura del programa (ya no dependen del nivel)
-                        first_subject = self.env["benglish.subject"].search(
-                            [("program_id", "=", self.env["benglish.plan"].browse(vals.get("plan_id")).program_id.id)],
-                            order="sequence ASC",
-                            limit=1,
-                        )
-                        if first_subject:
-                            vals["current_subject_id"] = first_subject.id
+                # Obtener primera asignatura del plan (Many2many ordenado por secuencia)
+                first_subject = plan.subject_ids.sorted(lambda s: s.sequence)[:1]
+                if first_subject:
+                    vals["current_subject_id"] = first_subject.id
+
+        # ═══════════════════════════════════════════════════════════════════════
+        # INICIALIZACIÓN DESDE PLAN COMERCIAL (si no hay plan legacy)
+        # ═══════════════════════════════════════════════════════════════════════
+        if vals.get("commercial_plan_id") and not vals.get("current_level_id"):
+            commercial_plan = self.env["benglish.commercial.plan"].browse(vals["commercial_plan_id"])
+            if commercial_plan and commercial_plan.level_ids:
+                # Obtener el primer nivel del plan comercial (ordenado por secuencia)
+                first_level = commercial_plan.level_ids.sorted(lambda l: (l.sequence, l.id))[:1]
+                if first_level:
+                    vals["current_level_id"] = first_level.id
+                    # Obtener la fase del nivel
+                    if first_level.phase_id:
+                        vals["current_phase_id"] = first_level.phase_id.id
 
         # Crear la matrícula
         enrollment = super(Enrollment, self).create(vals)

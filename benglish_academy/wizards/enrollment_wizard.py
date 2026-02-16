@@ -343,11 +343,8 @@ class EnrollmentWizard(models.TransientModel):
 
         # Si no hay asignatura inicial, asignar la primera del programa automáticamente
         if not self.subject_id:
-            first_subject = self.env["benglish.subject"].search(
-                [("program_id", "=", self.program_id.id)],
-                order="sequence",
-                limit=1,
-            )
+            # Buscar la primera asignatura usando los planes de estudio del programa
+            first_subject = self._get_default_subject_by_program(self.program_id.id)
             if first_subject:
                 self.subject_id = first_subject
             else:
@@ -359,21 +356,9 @@ class EnrollmentWizard(models.TransientModel):
                     % self.program_id.name
                 )
 
-        # Validar consistencia académica
-        if self.subject_id.program_id != self.commercial_plan_id.program_id:
-            raise ValidationError(
-                _(
-                    'ERROR DE CONSISTENCIA: La asignatura "%s" pertenece al programa "%s", '
-                    'pero está intentando matricular en el plan "%s" del programa "%s".\n\n'
-                    "Por favor, seleccione una asignatura del mismo programa."
-                )
-                % (
-                    self.subject_id.name,
-                    self.subject_id.program_id.name,
-                    self.commercial_plan_id.name,
-                    self.commercial_plan_id.program_id.name,
-                )
-            )
+        # NOTA: No validamos que la asignatura esté en un plan específico.
+        # El Plan Comercial define CANTIDADES por tipo de asignatura, no asignaturas fijas.
+        # La asignatura inicial es solo un punto de partida opcional para el estudiante.
 
         # Validación de prerrequisitos (solo informativo para asignatura inicial)
         if not self.prerequisites_met and not self.prerequisite_override:
@@ -529,24 +514,29 @@ class EnrollmentWizard(models.TransientModel):
         if not plan:
             return False
 
-        # Buscar asignaturas del programa directamente
-        subjects = (
-            self.env["benglish.subject"]
-            .search([("program_id", "=", plan.program_id.id)])
-            .sorted(key=lambda s: s.sequence or 0)
-        )
+        # plan puede ser un recordset o un id
+        plan_rec = plan if hasattr(plan, "subject_ids") else self.env["benglish.plan"].browse(plan)
 
-        return subjects[0] if subjects else False
+        subjects = plan_rec.subject_ids
+        if subjects:
+            # Ordenar por sequence y devolver la primera
+            subjects = subjects.sorted(key=lambda s: s.sequence or 0)
+            return subjects[0]
+        return False
 
     def _get_default_subject_by_program(self, program_id):
         """Retorna la primera asignatura del programa (orden sequence)."""
         if not program_id:
             return False
 
-        subjects = self.env["benglish.subject"].search(
-            [("program_id", "=", program_id)],
-            order="sequence",
-            limit=1,
-        )
+        # Buscar planes de estudio que pertenecen al programa y tomar sus asignaturas
+        plans = self.env["benglish.plan"].search([("program_id", "=", program_id)])
+        if not plans:
+            return False
 
-        return subjects[0] if subjects else False
+        subjects = plans.mapped("subject_ids")
+        if not subjects:
+            return False
+
+        subjects = subjects.sorted(key=lambda s: s.sequence or 0)
+        return subjects[0]

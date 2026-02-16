@@ -22,16 +22,12 @@
                 <field name="level_start" string="Desde" />
                 <field name="level_end" string="Hasta" />
                 <field name="total_levels" string="Niveles" optional="hide" />
-                <field name="total_selection" string="Selección" />
-                <field name="total_oral_test" string="Oral Test" />
-                <field name="total_electives" string="Electivas" />
-                <field name="total_subjects" string="Total" decoration-bf="1" />
+                <field name="total_subjects" string="Total Asignaturas" decoration-bf="1" />
                 <field name="enrollment_count" string="Matrículas" optional="show" />
                 <field name="state" widget="badge"
                     decoration-info="state == 'draft'"
                     decoration-success="state == 'active'"
                     decoration-danger="state == 'archived'" />
-                <field name="active" column_invisible="1" />
             </list>
         </field>
     </record>
@@ -162,72 +158,28 @@
                         </page>
 
                         <page string="Resumen de Totales" name="totals">
-                            <!-- <group>
-                                <group string="Totales por Tipo">
-                                    <field name="total_selection" />
-                                    <field name="total_oral_test" />
-                                    <field name="total_electives" />
-                                    <field name="total_regular" />
-                                    <field name="total_bskills" />
-                                </group>
-                                <group string="Total General">
+                            <!-- Tabla de resumen visual dinámico basado en las líneas configuradas -->
+
+                            <field name="line_ids" nolabel="1" readonly="1">
+                                <list string="Resumen de Totales" create="0" delete="0" edit="0">
+                                    <field name="subject_type_id" string="Tipo de Asignatura" />
+                                    <field name="calculation_mode" string="Modo de Cálculo" />
+                                    <field name="calculated_total" string="Total"
+                                        decoration-bf="1" />
+                                </list>
+                            </field>
+                            <group class="alert alert-success mt-4">
+                                <group>
                                     <div class="o_row">
-                                        <span class="text-muted">Total de Asignaturas:</span>
-                                        <field name="total_subjects" class="oe_inline" nolabel="1" />
+                                        <h3 class="text-primary mb-0">
+                                            <strong> TOTAL ASIGNATURAS DEL PLAN:</strong>
+                                        </h3>
+                                        <h3 class="text-success ms-3 mb-0">
+                                            <field name="total_subjects" nolabel="1" />
+                                        </h3>
                                     </div>
                                 </group>
-                            </group>-->
-
-                            <!-- Tabla de resumen visual -->
-                            <div class="alert alert-success">
-                                <h4><i class="fa fa-calculator" /> Resumen del Plan</h4>
-                                <table class="table table-sm table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Tipo</th>
-                                            <th class="text-center">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Selección</td>
-                                            <td class="text-center">
-                                                <field name="total_selection" nolabel="1" />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Oral Tests</td>
-                                            <td class="text-center">
-                                                <field name="total_oral_test" nolabel="1" />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Electivas</td>
-                                            <td class="text-center">
-                                                <field name="total_electives" nolabel="1" />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Regulares</td>
-                                            <td class="text-center">
-                                                <field name="total_regular" nolabel="1" />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>B-Skills</td>
-                                            <td class="text-center">
-                                                <field name="total_bskills" nolabel="1" />
-                                            </td>
-                                        </tr>
-                                        <tr class="table-primary">
-                                            <th>TOTAL ASIGNATURAS</th>
-                                            <th class="text-center">
-                                                <field name="total_subjects" nolabel="1" />
-                                            </th>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                            </group>
                         </page>
 
                         <page string="Descripción" name="description">

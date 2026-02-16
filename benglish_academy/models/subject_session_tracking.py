@@ -98,6 +98,23 @@ class SubjectSessionTracking(models.Model):
         help="Indica si el estudiante asistió a la sesión",
     )
 
+    session_status = fields.Selection(
+        selection=[
+            ("unscheduled", "No agendada"),
+            ("scheduled", "Agendada"),
+            ("attended", "Asistió"),
+            ("absent", "No asistió"),
+            ("approved", "Aprobada"),
+            ("failed", "Reprobada"),
+        ],
+        string="Estado de Sesión",
+        compute="_compute_session_status",
+        store=True,
+        readonly=True,
+        index=True,
+        help="Estado derivado de lo registrado en portales: asistencia, sesión y nota.",
+    )
+
     # CALIFICACIÓN Y DOCENTE
     grade = fields.Float(
         string="Calificación",
@@ -157,6 +174,41 @@ class SubjectSessionTracking(models.Model):
                 or record.session_id
             ):
                 record.state = "registered"
+
+    @api.depends("session_id", "attended", "grade", "state")
+    def _compute_session_status(self):
+        """Deriva un estado legible que integra si la sesión existe, asistencia y resultado.
+
+        Prioridad de resolución:
+        - Si hay calificación válida -> 'approved' / 'failed' según umbral
+        - Si no hay calificación pero asistió -> 'attended'
+        - Si no asistió pero hay sesión agendada -> 'absent'
+        - Si no hay sesión -> 'unscheduled' o 'scheduled' si session_id exists
+        """
+        # Umbral de aprobación por defecto (puede ser adaptado para usar campo del subject)
+        PASSING_THRESHOLD = 3.0
+        for record in self:
+            status = "unscheduled"
+            # Si existe una nota no nula, decidir aprobado/reprobado
+            if record.grade not in (None, False) and str(record.grade) != "":
+                try:
+                    g = float(record.grade)
+                    status = "approved" if g >= PASSING_THRESHOLD else "failed"
+                except Exception:
+                    status = "failed"
+            else:
+                # Sin nota explícita
+                if record.attended:
+                    status = "attended"
+                else:
+                    if record.session_id:
+                        # Si hay sesión asociada pero no asistencia marcada
+                        # si el registro ya pasó a 'registered' se considera 'absent'
+                        status = "absent" if record.state == "registered" else "scheduled"
+                    else:
+                        status = "unscheduled"
+
+            record.session_status = status
 
     def write(self, vals):
         """
@@ -218,8 +270,18 @@ class SubjectSessionTracking(models.Model):
             limit=1,
         )
 
-        # Determinar estado de asistencia
-        attendance_status = "attended" if self.attended else "pending"
+        # Determinar estado de asistencia a enviar al historial académico
+        # El modelo `benglish.academic.history` solo espera: 'attended', 'absent', 'pending'
+        # Mapear desde nuestro `session_status` más rico.
+        mapping = {
+            "attended": "attended",
+            "approved": "attended",
+            "absent": "absent",
+            "failed": "absent",
+            "scheduled": "pending",
+            "unscheduled": "pending",
+        }
+        attendance_status = mapping.get(self.session_status, "pending")
 
         if existing_history:
             # Actualizar historial existente
@@ -264,10 +326,10 @@ class SubjectSessionTracking(models.Model):
                 "subject_id": self.subject_id.id,
                 "campus_id": session.campus_id.id if session.campus_id else False,
                 "teacher_id": session.teacher_id.id if session.teacher_id else False,
-                "delivery_mode": session.delivery_mode,
-                "attendance_status": attendance_status,
-                "grade": self.grade if self.grade else 0.0,
-                "notes": self.notes or "",
+                    "delivery_mode": session.delivery_mode,
+                    "attendance_status": attendance_status,
+                    "grade": self.grade if self.grade else 0.0,
+                    "notes": self.notes or "",
                 "attendance_registered_at": fields.Datetime.now(),
                 "attendance_registered_by_id": self.env.user.id,
             }

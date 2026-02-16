@@ -13,26 +13,20 @@
                 decoration-danger="state == 'finished' and not is_approved"
                 decoration-muted="state in ['withdrawn', 'cancelled', 'suspended']"
                 decoration-primary="state == 'homologated'">
-                <field name="code" optional="show" />
-                <field name="enrollment_date" optional="show" />
-                <field name="student_id" widget="many2one_avatar_user" />
-                <field name="commercial_plan_id" optional="show" />
-                <field name="group_id" />
-                <field name="campus_id" optional="show" />
-                <field name="delivery_mode" widget="badge" optional="show"
+                <field name="code" string="Código de Matrícula" />
+                <field name="enrollment_date" string="Fecha de Matrícula" />
+                <field name="student_id" widget="many2one_avatar_user" string="Estudiante" />
+                <field name="commercial_plan_id" string="Plan Comercial" />
+                <field name="delivery_mode" widget="badge" string="Modalidad de Asistencia"
                     decoration-success="delivery_mode == 'presential'"
                     decoration-info="delivery_mode == 'virtual'"
                     decoration-warning="delivery_mode == 'hybrid'" />
-                <field name="attendance_type" widget="badge" optional="hide" />
-                <field name="coach_id" optional="show" />
-                <field name="start_date" optional="hide" />
-                <field name="end_date" optional="hide" />
-                <field name="prerequisites_met" invisible="1" />
-                <field name="group_available_seats" optional="show" />
-                <field name="commercial_progress_percentage" widget="progressbar" optional="show" />
-                <field name="final_grade" optional="show" />
-                <field name="is_approved" optional="show" />
-                <field name="state" widget="badge"
+                <field name="start_date" string="Fecha de Inicio" />
+                <field name="end_date" string="Fecha de Fin" />
+                <field name="commercial_progress_percentage" widget="progressbar"
+                    string="% Avance (Comercial)" />
+                <field name="final_grade" string="Calificación Final" />
+                <field name="state" widget="badge" string="Estado"
                     decoration-success="state in ['active', 'finished'] and is_approved"
                     decoration-info="state == 'active'"
                     decoration-warning="state == 'pending'"
@@ -633,7 +627,7 @@
         <field name="res_model">benglish.enrollment</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="context">{
-            'search_default_filter_active': 1,
+            'search_default_group_state': 1,
             }</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
@@ -656,7 +650,7 @@
         <field name="res_model">benglish.enrollment</field>
         <field name="view_mode">kanban,list,form</field>
         <field name="context">{
-            'search_default_filter_active': 1,
+            'search_default_group_state': 1,
             }</field>
     </record>
 

@@ -89,25 +89,52 @@ class SubjectType(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """Genera el código automáticamente al crear."""
+        import re
+        
+        # PASO 1: Limpiar registros legacy con código "/" antes de crear nuevos
+        legacy_records = self.search([("code", "=", "/")])
+        if legacy_records:
+            # Actualizar registros legacy con códigos únicos
+            for idx, rec in enumerate(legacy_records, start=1):
+                existing = self.search([("code", "like", "TA-%")])
+                max_num = 0
+                for r in existing:
+                    if r.code:
+                        match = re.search(r"TA-(\d+)", r.code)
+                        if match:
+                            try:
+                                n = int(match.group(1))
+                                if n > max_num:
+                                    max_num = n
+                            except ValueError:
+                                pass
+                legacy_code = f"TA-{str(max_num + idx).zfill(3)}"
+                # Actualizar directamente en SQL para evitar recursión
+                self.env.cr.execute(
+                    "UPDATE benglish_subject_type SET code = %s WHERE id = %s",
+                    (legacy_code, rec.id)
+                )
+        
+        # PASO 2: Generar códigos para nuevos registros
         for vals in vals_list:
             if vals.get("code", "/") == "/" or not vals.get("code"):
                 # Generar código único usando secuencia
                 new_code = self.env["ir.sequence"].next_by_code("benglish.subject.type")
                 if not new_code:
-                    # Fallback: generar código basado en el máximo existente
-                    max_code = self.search(
-                        [("code", "like", "TA-%")], 
-                        order="code desc", 
-                        limit=1
-                    )
-                    if max_code and max_code.code:
-                        try:
-                            num = int(max_code.code.replace("TA-", "")) + 1
-                        except ValueError:
-                            num = 1
-                    else:
-                        num = 1
-                    new_code = f"TA-{str(num).zfill(3)}"
+                    # Fallback: buscar el máximo numérico entre códigos existentes TA-###
+                    existing = self.search([("code", "like", "TA-%")])
+                    max_num = 0
+                    for rec in existing:
+                        if rec.code:
+                            match = re.search(r"TA-(\d+)", rec.code)
+                            if match:
+                                try:
+                                    n = int(match.group(1))
+                                    if n > max_num:
+                                        max_num = n
+                                except ValueError:
+                                    pass
+                    new_code = f"TA-{str(max_num + 1).zfill(3)}"
                 
                 vals["code"] = new_code
         return super().create(vals_list)

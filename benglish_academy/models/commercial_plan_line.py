@@ -194,12 +194,20 @@ class CommercialPlanLine(models.Model):
             "CHECK(quantity_per_level >= 0 AND fixed_quantity >= 0)",
             "Las cantidades deben ser positivas o cero.",
         ),
-        (
-            "interval_positive",
-            "CHECK(levels_interval > 0)",
-            "El intervalo de niveles debe ser mayor a cero.",
-        ),
     ]
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # VALIDACIONES
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    @api.constrains("calculation_mode", "levels_interval")
+    def _check_levels_interval(self):
+        """Valida que el intervalo de niveles sea válido cuando se usa el modo 'Cada X Niveles'."""
+        for record in self:
+            if record.calculation_mode == "per_x_levels" and record.levels_interval <= 0:
+                raise ValidationError(
+                    _("El intervalo de niveles debe ser mayor a cero cuando usa el modo 'Cada X Niveles'.")
+                )
 
     # ═══════════════════════════════════════════════════════════════════════════
     # MÉTODOS COMPUTE
@@ -320,7 +328,9 @@ class CommercialPlanLine(models.Model):
         """Establece valores por defecto según el modo de cálculo."""
         if self.calculation_mode == "per_level":
             self.quantity_per_level = 1
-            self.levels_interval = 0
+            # Mantener levels_interval con valor válido aunque no se use
+            if self.levels_interval <= 0:
+                self.levels_interval = 4
             self.fixed_quantity = 0
         elif self.calculation_mode == "per_x_levels":
             self.quantity_per_level = 0
@@ -328,7 +338,9 @@ class CommercialPlanLine(models.Model):
             self.fixed_quantity = 0
         elif self.calculation_mode == "fixed_total":
             self.quantity_per_level = 0
-            self.levels_interval = 0
+            # Mantener levels_interval con valor válido aunque no se use
+            if self.levels_interval <= 0:
+                self.levels_interval = 4
             self.fixed_quantity = 10
 
     @api.onchange("subject_type_id")

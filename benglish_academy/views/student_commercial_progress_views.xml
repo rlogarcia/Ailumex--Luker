@@ -17,24 +17,13 @@
                 decoration-info="level_status == 'in_progress'"
                 decoration-muted="level_status == 'not_started'"
                 create="false" delete="false">
-                <field name="level_sequence" string="Nivel #" />
-                <field name="level_id" />
-                <field name="phase_id" optional="hide" />
-                <!-- Esperados -->
-                <field name="expected_selection" string="Sel. Esp." />
-                <field name="expected_oral_test" string="OT Esp." />
-                <field name="expected_electives" string="Elec. Esp." />
-                <field name="expected_bskills" string="BS Esp." optional="hide" />
-                <field name="expected_total" string="Total Esp." decoration-bf="1" />
-                <!-- Completados -->
-                <field name="completed_selection" string="Sel. Comp." />
-                <field name="completed_oral_test" string="OT Comp." />
-                <field name="completed_electives" string="Elec. Comp." />
-                <field name="completed_bskills" string="BS Comp." optional="hide" />
-                <field name="completed_total" string="Total Comp." decoration-bf="1" />
-                <!-- Progreso -->
+                <!-- Mostrar solo las columnas solicitadas por el usuario -->
+                <field name="level_sequence" string="Número de Nivel" />
+                <field name="level_id" string="Nivel" />
+                <field name="expected_total" string="Total Esperado" />
+                <field name="completed_total" string="Total Completado" />
                 <field name="progress_percentage" string="% Avance" widget="progressbar" />
-                <field name="level_status" widget="badge"
+                <field name="level_status" string="Estado del Nivel" widget="badge"
                     decoration-success="level_status == 'completed'"
                     decoration-info="level_status == 'in_progress'"
                     decoration-warning="level_status == 'not_started'" />

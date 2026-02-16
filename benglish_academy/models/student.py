@@ -92,11 +92,10 @@ class Student(models.Model):
 
     code = fields.Char(
         string="Código de Estudiante",
-        required=True,
+        required=False,
         copy=False,
-        default="/",
         tracking=True,
-        help="Código único identificador del estudiante (ej: EST-2025-001)",
+        help="Código identificador del estudiante (opcional)",
     )
     image_1920 = fields.Image(string="Foto", help="Imagen del estudiante (avatar)")
     student_id_number = fields.Char(
@@ -260,6 +259,63 @@ class Student(models.Model):
         "Se actualiza automáticamente al aprobar una matrícula.",
     )
     
+    # Campos relacionados del plan comercial para mostrar en la vista del estudiante
+    plan_total_subjects = fields.Integer(
+        string="Total Asignaturas del Plan",
+        related="commercial_plan_id.total_subjects",
+        help="Total de asignaturas que debe cursar según el plan",
+    )
+    plan_total_selection = fields.Integer(
+        string="Selecciones del Plan",
+        related="commercial_plan_id.total_selection",
+        help="Total de asignaturas de tipo Selección",
+    )
+    plan_total_oral_test = fields.Integer(
+        string="Oral Tests del Plan",
+        related="commercial_plan_id.total_oral_test",
+        help="Total de Oral Tests a presentar",
+    )
+    plan_total_electives = fields.Integer(
+        string="Electivas del Plan",
+        related="commercial_plan_id.total_electives",
+        help="Total de electivas a cursar",
+    )
+    plan_total_regular = fields.Integer(
+        string="Regulares del Plan",
+        related="commercial_plan_id.total_regular",
+        help="Total de asignaturas regulares",
+    )
+    plan_total_bskills = fields.Integer(
+        string="B-Skills del Plan",
+        related="commercial_plan_id.total_bskills",
+        help="Total de B-Skills",
+    )
+    plan_level_start = fields.Integer(
+        string="Nivel Inicial del Plan",
+        related="commercial_plan_id.level_start",
+        help="Nivel desde el cual aplica el plan",
+    )
+    plan_level_end = fields.Integer(
+        string="Nivel Final del Plan",
+        related="commercial_plan_id.level_end",
+        help="Nivel hasta el cual aplica el plan",
+    )
+    plan_total_levels = fields.Integer(
+        string="Total Niveles del Plan",
+        related="commercial_plan_id.total_levels",
+        help="Cantidad de niveles que cubre el plan",
+    )
+    plan_description = fields.Text(
+        string="Descripción del Plan",
+        related="commercial_plan_id.description",
+        help="Descripción detallada del plan comercial",
+    )
+    plan_line_ids = fields.One2many(
+        string="Configuración del Plan",
+        related="commercial_plan_id.line_ids",
+        help="Líneas de configuración de asignaturas del plan comercial",
+    )
+    
     # ═══════════════════════════════════════════════════════════════════════════
     # PLAN DE ESTUDIOS (LEGACY - Deprecado Feb 2026)
     # ═══════════════════════════════════════════════════════════════════════════
@@ -321,7 +377,7 @@ class Student(models.Model):
             ("hybrid", "Híbrido"),
         ],
         string="Modalidad Preferida",
-        default="presential",
+        default="virtual",
         tracking=True,
         help="Modalidad de clases preferida por el estudiante",
     )
@@ -3428,10 +3484,11 @@ Contacto creado automáticamente desde el sistema académico.
                 vals["first_name"] = normalize_to_uppercase(vals["first_name"])
             if "second_name" in vals and vals["second_name"]:
                 vals["second_name"] = normalize_to_uppercase(vals["second_name"])
-            if "first_surname" in vals and vals["first_surname"]:
-                vals["first_surname"] = normalize_to_uppercase(vals["first_surname"])
-            if "second_surname" in vals and vals["second_surname"]:
-                vals["second_surname"] = normalize_to_uppercase(vals["second_surname"])
+            # Correct field names for apellidos
+            if "first_last_name" in vals and vals["first_last_name"]:
+                vals["first_last_name"] = normalize_to_uppercase(vals["first_last_name"])
+            if "second_last_name" in vals and vals["second_last_name"]:
+                vals["second_last_name"] = normalize_to_uppercase(vals["second_last_name"])
         return super().create(vals_list)
 
     def write(self, vals):
@@ -3441,8 +3498,9 @@ Contacto creado automáticamente desde el sistema académico.
             vals["first_name"] = normalize_to_uppercase(vals["first_name"])
         if "second_name" in vals and vals["second_name"]:
             vals["second_name"] = normalize_to_uppercase(vals["second_name"])
-        if "first_surname" in vals and vals["first_surname"]:
-            vals["first_surname"] = normalize_to_uppercase(vals["first_surname"])
-        if "second_surname" in vals and vals["second_surname"]:
-            vals["second_surname"] = normalize_to_uppercase(vals["second_surname"])
+        # Correct field names for apellidos
+        if "first_last_name" in vals and vals["first_last_name"]:
+            vals["first_last_name"] = normalize_to_uppercase(vals["first_last_name"])
+        if "second_last_name" in vals and vals["second_last_name"]:
+            vals["second_last_name"] = normalize_to_uppercase(vals["second_last_name"])
         return super().write(vals)

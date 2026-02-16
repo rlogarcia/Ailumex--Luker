@@ -306,17 +306,24 @@ class CommercialPlan(models.Model):
         """Calcula los niveles incluidos basado en la secuencia dentro del programa."""
         for record in self:
             if record.program_id and record.level_start and record.level_end:
-                # Buscar niveles del programa ordenados por secuencia
-                levels = self.env["benglish.level"].search([
+                # Buscar niveles a través de los planes de estudio del programa
+                # La relación es: program → plan → levels (Many2many)
+                study_plans = self.env["benglish.plan"].search([
                     ("program_id", "=", record.program_id.id),
                     ("active", "=", True),
-                ], order="sequence, id")
+                ])
                 
-                # Tomar los niveles en el rango configurado
-                if levels:
-                    start_idx = record.level_start - 1  # Convertir a índice 0-based
-                    end_idx = record.level_end
-                    record.level_ids = levels[start_idx:end_idx]
+                if study_plans:
+                    # Obtener todos los niveles de los planes y ordenar por secuencia
+                    all_levels = study_plans.mapped("level_ids").sorted(lambda l: (l.sequence, l.id))
+                    
+                    # Tomar los niveles en el rango configurado
+                    if all_levels:
+                        start_idx = record.level_start - 1  # Convertir a índice 0-based
+                        end_idx = record.level_end
+                        record.level_ids = all_levels[start_idx:end_idx]
+                    else:
+                        record.level_ids = False
                 else:
                     record.level_ids = False
             else:
@@ -331,12 +338,14 @@ class CommercialPlan(models.Model):
     def _compute_totals(self):
         """Calcula los totales por tipo de asignatura y el total general."""
         for record in self:
+            # Inicializar contadores para tipos conocidos
             total_selection = 0
             total_oral_test = 0
             total_electives = 0
             total_regular = 0
             total_bskills = 0
             
+            # Sumar por tipo (mantener compatibilidad con tipos conocidos)
             for line in record.line_ids:
                 if line.subject_type_code == "selection":
                     total_selection += line.calculated_total
@@ -354,10 +363,9 @@ class CommercialPlan(models.Model):
             record.total_electives = total_electives
             record.total_regular = total_regular
             record.total_bskills = total_bskills
-            record.total_subjects = (
-                total_selection + total_oral_test + total_electives + 
-                total_regular + total_bskills
-            )
+            
+            # Total general: sumar TODOS los calculated_total (dinámico)
+            record.total_subjects = sum(line.calculated_total for line in record.line_ids)
 
     def _compute_enrollment_count(self):
         """Calcula el número de matrículas activas con este plan comercial."""

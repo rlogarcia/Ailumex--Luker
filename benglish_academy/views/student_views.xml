@@ -30,24 +30,23 @@
         <field name="model">benglish.student</field>
         <field name="arch" type="xml">
             <list string="Estudiantes" sample="1">
-                <field name="code" optional="show" />
-                <field name="name" string="Nombre Completo" />
-                <field name="email" optional="show" />
-                <field name="mobile" optional="show" />
-                <field name="program_id" optional="show" />
-                <field name="current_level_id" optional="show" />
-                <field name="max_unit_completed" string="Unidad Máx. Completada" optional="show" />
-                <field name="preferred_campus_id" optional="show" />
-                <field name="academic_progress_percentage" optional="show" widget="progressbar" />
-                <field name="active_enrollments" string="Matrículas Activas" />
-                <field name="completed_enrollments" optional="hide" />
-                <field name="state" widget="badge"
+                <field name="code" string="Codigo estudiante" />
+                <field name="name" string="Nombre completo" />
+                <field name="email" string="Correo electronico" />
+                <field name="mobile" string="Celular" />
+                <field name="student_id_number" string="Documento" />
+                <field name="program_id" string="Programa Actual" />
+                <field name="current_level_id" string="Nivel Actual" />
+                <field name="max_unit_completed" string="Unidad Max. Completada" />
+                <field name="academic_progress_percentage" string="Progreso" widget="progressbar" />
+                <field name="active_enrollments" string="Matriculas Activas" />
+                <field name="state" string="Estado" widget="badge"
                     decoration-success="state == 'active'"
                     decoration-info="state == 'enrolled'"
                     decoration-warning="state == 'inactive'"
                     decoration-muted="state == 'withdrawn'"
                     decoration-primary="state == 'graduated'" />
-                <field name="active" invisible="1" />
+
             </list>
         </field>
     </record>
@@ -150,7 +149,7 @@
                                         readonly="1" />
                                 </h1>
                                 <h3>
-                                    <field name="code" placeholder="EST-2025-001" required="1" />
+                                    <field name="code" placeholder="Código (opcional)" />
                                 </h3>
                             </div>
                         </group>
@@ -223,163 +222,109 @@
                                 placeholder="Selecciona el plan comercial"
                                 options="{'no_create': True}"
                                 domain="[('program_id', '=', program_id), ('state', '=', 'active')]" />
-                            <field name="preferred_campus_id" string="Sede Principal" />
                             <field name="preferred_delivery_mode" string="Modalidad Preferida"
                                 widget="radio"
                                 options="{'horizontal': true}" />
+                            <field name="preferred_campus_id" string="Sede Principal"
+                                invisible="preferred_delivery_mode == 'virtual'" />
                             <field name="enrollment_date" string="Fecha de Ingreso" />
                         </group>
                     </group>
 
                     <notebook>
-                        <!-- Página de Matrículas en Curso -->
-                        <page name="active_enrollments" string="📚 Matrículas en Curso">
-                            <field name="active_enrollment_ids" nolabel="1">
-                                <list string="Matrículas en Curso"
-                                    decoration-success="state == 'in_progress'">
-                                    <field name="code" />
-                                    <field name="subject_id" />
-                                    <field name="group_id" />
-                                    <field name="campus_id" />
-                                    <field name="delivery_mode" widget="badge" />
-                                    <field name="attendance_type" widget="badge" />
-                                    <field name="start_date" />
-                                    <field name="end_date" />
-                                    <field name="state" widget="badge" />
-                                </list>
-                            </field>
-                        </page>
-
                         <!-- RF-03: Historia Académica Completa -->
                         <page name="academic_history" string="📖 Historia Académica">
-                            <!-- KPIs Resumen -->
-                            <div class="row mt16">
-                                <div class="col-md-12">
-                                    <div class="alert alert-info" role="alert">
-                                        <strong>Historia Académica Completa:</strong> Resumen
-                                        ejecutivo, estructura del plan, avance por asignatura,
-                                        asistencia y línea de tiempo. </div>
-                                </div>
-                            </div>
-
                             <notebook>
                                 <!-- Tab 1: Resumen Ejecutivo (KPIs) -->
                                 <page name="kpi_summary" string="📊 Resumen">
                                     <group col="4">
                                         <group string="Progreso General" colspan="2">
                                             <field name="completion_rate" widget="progressbar" />
-                                            <field name="academic_progress_percentage"
-                                                widget="progressbar" />
-                                            <field name="average_grade" widget="float" />
                                             <field name="average_attendance" widget="progressbar" />
                                         </group>
                                         <group string="Asignaturas" colspan="2">
-                                            <field name="total_subjects_in_plan" readonly="1" />
                                             <field name="completed_subjects_count" readonly="1" />
                                             <field name="in_progress_subjects_count" readonly="1" />
                                             <field name="pending_subjects_count" readonly="1" />
-                                            <field name="failed_subjects_count" readonly="1" />
                                         </group>
                                     </group>
                                     <group col="4">
-                                        <group string="Horas Académicas" colspan="2">
-                                            <field name="completed_hours" readonly="1" />
-                                            <field name="total_plan_hours" readonly="1" />
-                                        </group>
                                         <group string="Asistencia" colspan="2">
                                             <field name="total_classes_attended" readonly="1" />
                                             <field name="total_classes_scheduled" readonly="1" />
-                                        </group>
-                                    </group>
-                                    <group col="4">
-                                        <group string="Matrículas" colspan="2">
-                                            <field name="total_enrollments" readonly="1" />
-                                            <field name="completed_enrollments" readonly="1" />
-                                            <field name="failed_enrollments" readonly="1" />
                                         </group>
                                         <group string="Congelamiento" colspan="2">
                                             <field name="dias_congelamiento_usados" readonly="1" />
                                             <field name="dias_congelamiento_disponibles"
                                                 readonly="1" />
-                                            <field name="tiene_congelamiento_activo" readonly="1" />
                                         </group>
                                     </group>
                                 </page>
 
                                 <!-- Tab 2: Estructura del Plan -->
                                 <page name="plan_structure" string="🗂️ Plan">
-                                    <!-- Mostrar plan desde matrícula activa -->
-                                    <div class="alert alert-info" role="alert"
-                                        invisible="not active_enrollment_ids">
-                                        <strong>Plan Comercial (desde matrícula activa):</strong>
-                                        <br />
-                                        <field name="active_enrollment_ids" invisible="1" />
-                                        <span invisible="not active_enrollment_ids">
-                                            Ver información en la pestaña "Matrículas en Curso"
-                                        </span>
-                                    </div>
-
                                     <div class="alert alert-warning" role="alert"
-                                        invisible="commercial_plan_id or active_enrollment_ids">
+                                        invisible="commercial_plan_id">
                                         <strong>⚠️ Sin Plan Asignado:</strong> El estudiante no
-                                        tiene matrícula activa. El plan se asigna al crear una
-                                        matrícula. </div>
+                                        tiene un plan comercial asignado. Seleccione uno en la
+                                        información del plan. </div>
 
-                                    <!-- Información básica del plan -->
-                                    <group string="Información del Plan"
-                                        invisible="not commercial_plan_id">
-                                        <group>
+                                    <!-- Información del Plan Comercial -->
+                                    <group invisible="not commercial_plan_id">
+                                        <group string="Información del Plan">
                                             <field name="program_id" readonly="1" />
                                             <field name="commercial_plan_id" readonly="1" />
+                                            <field name="plan_description" readonly="1" nolabel="1"
+                                                placeholder="Sin descripción" />
                                         </group>
+                                        <group string="Niveles del Plan">
+                                            <field name="plan_level_start" readonly="1" />
+                                            <field name="plan_level_end" readonly="1" />
+                                            <field name="plan_total_levels" readonly="1" />
+                                        </group>
+                                    </group>
+
+                                    <!-- Estado Actual del Estudiante -->
+                                    <group string="Posición Actual del Estudiante"
+                                        invisible="not commercial_plan_id">
                                         <group>
                                             <field name="current_phase_id" readonly="1" />
                                             <field name="current_level_id" readonly="1" />
+                                        </group>
+                                        <group>
                                             <field name="current_subject_id" readonly="1" />
                                         </group>
                                     </group>
 
-                                    <!-- Botón para ver detalles del plan -->
-                                    <div invisible="not commercial_plan_id" class="mt16">
-                                        <button name="action_view_plan_details"
-                                            type="object"
-                                            string="Ver Estructura Completa del Plan"
-                                            class="btn-primary"
-                                            invisible="not commercial_plan_id"
-                                            icon="fa-sitemap" />
-                                    </div>
-                                </page>
-
-                                <!-- Tab 3: Avance por Asignatura -->
-                                <page name="subject_progress" string="📈 Avance">
-                                    <div class="alert alert-info" role="alert">
-                                        <strong>Progreso por Asignatura:</strong> Detalle del avance
-                                        en cada asignatura del plan comercial. </div>
-
-                                    <!-- Obtener progreso desde la matrícula activa -->
-                                    <field name="active_enrollment_ids" invisible="1" />
-
-                                    <group string="Progreso en Asignaturas"
-                                        invisible="not active_enrollment_ids">
-                                        <!-- Mostrar enrollment_progress_ids de la matrícula activa -->
-                                        <field name="active_enrollment_ids" nolabel="1">
-                                            <list string="Matrículas en Curso" open_form_view="True">
-                                                <field name="code" />
-                                                <field name="commercial_plan_id" />
-                                                <field name="current_subject_id"
-                                                    string="Asignatura Actual" />
-                                                <field name="state" widget="badge" />
+                                    <!-- Tabla de Configuración de Asignaturas por Tipo -->
+                                    <group string="Configuración de Asignaturas por Tipo"
+                                        invisible="not commercial_plan_id">
+                                        <field name="plan_line_ids" nolabel="1" readonly="1">
+                                            <list string="Resumen de Tipos de Asignatura" create="0"
+                                                delete="0" edit="0">
+                                                <field name="subject_type_id"
+                                                    string="Tipo de Asignatura" />
+                                                <field name="calculation_mode"
+                                                    string="Modo de Cálculo" />
+                                                <field name="calculated_total" string="Total"
+                                                    decoration-bf="1" />
                                             </list>
                                         </field>
                                     </group>
 
-                                    <div class="alert alert-warning" role="alert"
-                                        invisible="active_enrollment_ids">
-                                        <strong>⚠️ Sin Matrículas en Curso:</strong> El estudiante
-                                        no tiene matrículas en curso actualmente. </div>
+                                    <!-- Total General de Asignaturas -->
+                                    <group class="alert alert-info"
+                                        invisible="not commercial_plan_id">
+                                        <div class="o_row">
+                                            <strong class="text-primary">TOTAL ASIGNATURAS DEL PLAN:</strong>
+                                            <field name="plan_total_subjects" nolabel="1"
+                                                readonly="1" class="text-success ms-2" />
+                                        </div>
+                                    </group>
+
                                 </page>
 
-                                <!-- Tab 4: Asistencia -->
+                                <!-- Tab 3: Asistencia -->
                                 <page name="attendance_history" string="📅 Asistencia / Notas">
                                     <div class="alert alert-info" role="alert">
                                         <strong>Asignaturas del Plan:</strong> Muestra TODAS las
@@ -421,55 +366,7 @@
                                         </list>
                                     </field>
                                 </page>
-
-                                <!-- Tab 5: Línea de Tiempo -->
-                                <page name="timeline" string="🕐 Línea de Tiempo">
-                                    <div class="alert alert-info" role="alert">
-                                        <strong>Línea de Tiempo:</strong> Cronología de eventos
-                                        académicos (matrículas, avances, completaciones). </div>
-
-                                    <!-- Historial cronológico de matrículas -->
-                                    <field name="enrollment_ids" nolabel="1">
-                                        <list string="Historial Cronológico" open_form_view="True"
-                                            decoration-success="state in ['completed', 'finished']"
-                                            decoration-danger="state == 'failed'"
-                                            decoration-muted="state in ['withdrawn', 'cancelled']"
-                                            decoration-warning="state in ['active', 'in_progress']">
-                                            <field name="enrollment_date" string="Fecha" />
-                                            <field name="code" />
-                                            <field name="state" widget="badge" />
-                                        </list>
-                                    </field>
-
-                                    <!-- Historial de cambios de estado (acceso rápido) -->
-                                    <group string="Historial de Estados" col="1">
-                                        <div class="alert alert-info" role="alert">
-                                            Use el botón para abrir el historial de cambios en una
-                                            ventana separada.
-                                        </div>
-                                        <group>
-                                            <button name="action_view_lifecycle_history"
-                                                type="object"
-                                                string="Ver Historial de Estados"
-                                                class="btn-primary" />
-                                        </group>
-                                    </group>
-                                </page>
                             </notebook>
-                        </page>
-
-                        <!-- Asignaturas Aprobadas (mantener para compatibilidad) -->
-                        <page name="approved_subjects" string="✅ Asignaturas Aprobadas">
-                            <field name="approved_subject_ids" nolabel="1">
-                                <list string="Asignaturas Aprobadas">
-                                    <field name="code" />
-                                    <field name="name" />
-                                    <!-- <field name="level_id" /> -->
-                                    <!-- <field name="phase_id" /> -->
-                                    <field name="hours" />
-                                    <field name="credits" />
-                                </list>
-                            </field>
                         </page>
 
                         <!-- Página de Contacto de Emergencia -->
@@ -530,36 +427,6 @@
                             </field>
                         </page>
 
-                        <!-- Página de Historial (simplificada para evitar validación de vistas
-                        anidadas) -->
-                        <page name="history" string="🕘 Historial">
-                            <group col="1">
-                                <group>
-                                    <div class="alert alert-info" role="alert">
-                                        El historial detallado se muestra en ventanas separadas para
-                                        evitar validaciones de vista desde el formulario del
-                                        estudiante.
-                                    </div>
-                                </group>
-                                <group>
-                                    <button name="action_view_lifecycle_history" type="object"
-                                        string="Ver Historial de Estados" class="btn-primary" />
-                                </group>
-                            </group>
-                        </page>
-
-                        <!-- Página de Notas y Observaciones -->
-                        <page name="notes" string="📝 Notas">
-                            <group>
-                                <field name="notes"
-                                    placeholder="Observaciones generales sobre el estudiante..."
-                                    nolabel="1" />
-                                <field name="medical_notes"
-                                    placeholder="Información médica relevante (alergias, condiciones especiales, etc.)"
-                                    nolabel="1" />
-                            </group>
-                        </page>
-
                         <!-- Página de Control -->
                         <page name="control" string="⚙️ Control"
                             groups="benglish_academy.group_academic_coordinator">
@@ -573,6 +440,15 @@
                                     <field name="withdrawal_date" readonly="1" />
                                     <field name="withdrawal_reason" readonly="1" />
                                 </group>
+                            </group>
+                            <!-- Notas y Observaciones -->
+                            <group string="Notas y Observaciones">
+                                <field name="notes"
+                                    placeholder="Observaciones generales sobre el estudiante..."
+                                    nolabel="1" />
+                                <field name="medical_notes"
+                                    placeholder="Información médica relevante (alergias, condiciones especiales, etc.)"
+                                    nolabel="1" />
                             </group>
                         </page>
                     </notebook>

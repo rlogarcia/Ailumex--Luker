@@ -274,13 +274,35 @@ class ClassExecution(models.Model):
     # CREACIÓN
     # ═══════════════════════════════════════════════════════════════════════════
 
+    def _get_next_reusable_execution_code(self):
+        """
+        Obtiene el próximo código de ejecución reutilizando huecos si existen.
+        """
+        import re
+        prefix = "EXEC-"
+        padding = 5
+        
+        existing = self.sudo().search([('code', '=like', f'{prefix}%')])
+        used_numbers = set()
+        
+        for record in existing:
+            if record.code:
+                match = re.match(r'^EXEC-(\d+)$', record.code)
+                if match:
+                    used_numbers.add(int(match.group(1)))
+        
+        if used_numbers:
+            for num in range(1, max(used_numbers) + 2):
+                if num not in used_numbers:
+                    return f"{prefix}{num:0{padding}d}"
+        
+        return f"{prefix}00001"
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get("code", "/") == "/":
-                vals["code"] = self.env["ir.sequence"].next_by_code(
-                    "benglish.class.execution"
-                ) or "/"
+                vals["code"] = self._get_next_reusable_execution_code()
         return super().create(vals_list)
 
     # ═══════════════════════════════════════════════════════════════════════════

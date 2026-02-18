@@ -9,16 +9,16 @@
             <field name="arch" type="xml">
                 <list string="Sedes" default_order="sequence, name"
                     decoration-muted="not active"
-                    decoration-info="campus_type == 'branch'"
-                    decoration-warning="campus_type == 'online'">
+                    decoration-info="campus_type_code == 'branch'"
+                    decoration-warning="campus_type_code == 'online'">
                     <field name="sequence" widget="handle" />
                     <field name="code" />
                     <field name="name" />
                     <field name="city_name" string="Ciudad" />
                     <field name="department_name" string="Departamento" optional="show" />
-                    <field name="campus_type" widget="badge"
-                        decoration-info="campus_type == 'branch'"
-                        decoration-warning="campus_type == 'online'" />
+                    <field name="campus_type_code" widget="badge"
+                        decoration-info="campus_type_code == 'branch'"
+                        decoration-warning="campus_type_code == 'online'" />
                     <field name="subcampus_count" string="Aulas" />
                     <field name="total_capacity" string="Capacidad Total" />
                     <field name="manager_id" widget="many2one_avatar_user" />
@@ -49,8 +49,6 @@
                         </div>
                         <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger"
                             invisible="active" />
-                        <widget name="web_ribbon" title="SEDE VIRTUAL" bg_color="text-bg-warning"
-                            invisible="campus_type != 'online'" />
                         <div class="oe_title">
                             <label for="name" class="oe_edit_only" />
                             <h1>
@@ -60,9 +58,9 @@
                                 <label for="code" class="fw-bold me-2">Código:</label>
                                 <field name="code" readonly="1" class="fw-bold text-primary"
                                     style="min-width: 100px; display: inline-block;" />
-                                <field name="campus_type" widget="badge"
-                                    decoration-info="campus_type == 'branch'"
-                                    decoration-warning="campus_type == 'online'" />
+                                <field name="campus_type_code" widget="badge"
+                                    decoration-info="campus_type_code == 'branch'"
+                                    decoration-warning="campus_type_code == 'online'" class="mx-2" />
                             </div>
                         </div>
                         <group>
@@ -251,6 +249,7 @@
                     <field name="code" />
                     <field name="city_name" />
                     <field name="campus_type" />
+                    <field name="campus_type_code" />
                     <field name="subcampus_count" />
                     <field name="total_capacity" />
                     <field name="manager_id" />
@@ -271,10 +270,9 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <span t-if="record.campus_type.raw_value == 'branch'"
-                                        class="badge text-bg-info">Presencial</span>
-                                    <span t-if="record.campus_type.raw_value == 'online'"
-                                        class="badge text-bg-warning">Virtual</span>
+                                    <field name="campus_type_code" widget="badge"
+                                        decoration-info="campus_type_code == 'branch'"
+                                        decoration-warning="campus_type_code == 'online'" />
                                 </div>
                                 <div class="o_kanban_record_body">
                                     <div class="text-muted">

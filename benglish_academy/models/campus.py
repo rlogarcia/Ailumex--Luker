@@ -286,6 +286,21 @@ class Campus(models.Model):
         help="Capacidad total sumando todas las aulas (solo para sedes presenciales)",
     )
 
+    campus_display = fields.Char(
+        string="Tipo (display)",
+        compute="_compute_campus_display",
+        store=True,
+        help="Etiqueta legible para mostrar en listas/kanban: 'Virtual' o 'Presencial'",
+    )
+
+    campus_type_code = fields.Selection(
+        selection=[('branch', 'Presencial'), ('online', 'Virtual')],
+        string='Tipo',
+        compute='_compute_campus_type_code',
+        store=True,
+        help='Campo computado para facilitar badges con decoración (toma en cuenta is_virtual_sede).',
+    )
+
     # Restricciones SQL
     _sql_constraints = [
         ("code_unique", "UNIQUE(code)", "El código de la sede debe ser único."),
@@ -389,6 +404,36 @@ class Campus(models.Model):
             else:
                 campus.total_capacity = sum(campus.subcampus_ids.mapped("capacity"))
 
+    @api.depends("is_virtual_sede", "campus_type")
+    def _compute_campus_display(self):
+        """Campo computado que centraliza la etiqueta que se mostrará en vistas.
+
+        - Si `is_virtual_sede` es True -> 'Virtual'
+        - En otro caso utiliza `campus_type` ('Presencial'/'Virtual')
+        Esto evita depender de widgets booleanos en listas/kanban.
+        """
+        for campus in self:
+            if campus.is_virtual_sede:
+                campus.campus_display = "Virtual"
+            else:
+                if campus.campus_type == "branch":
+                    campus.campus_display = "Presencial"
+                elif campus.campus_type == "online":
+                    campus.campus_display = "Virtual"
+                else:
+                    campus.campus_display = ""
+
+    @api.depends('is_virtual_sede', 'campus_type')
+    def _compute_campus_type_code(self):
+        """Devuelve un código tipo ('branch'|'online') teniendo en cuenta el toggle is_virtual_sede.
+
+        Esto permite usar `decoration-info` / `decoration-warning` y `widget='badge'` sin mostrar HTML crudo.
+        """
+        for campus in self:
+            if campus.is_virtual_sede:
+                campus.campus_type_code = 'online'
+            else:
+                campus.campus_type_code = campus.campus_type or 'branch'
     @api.constrains("schedule_start_time", "schedule_end_time")
     def _check_schedule_times(self):
         """
@@ -821,32 +866,32 @@ class Campus(models.Model):
         return super(Campus, self).create(vals_list)
 
     def _next_unique_code(self, prefix, seq_code):
-        env = self.env
-        existing = self.search([("code", "ilike", f"{prefix}%")])
-        seq = env["ir.sequence"].search([("code", "=", seq_code)], limit=1)
-
+        """Calcula el siguiente código libre con prefijo, reutilizando huecos."""
+        import re
+        
+        existing = self.search([("code", "=like", f"{prefix}%")])
+        
         if not existing:
-            if seq:
-                seq.number_next = 1
             return f"{prefix}1"
-
-        max_n = 0
+        
+        used_numbers = set()
         for rec in existing:
-            if not rec.code:
-                continue
-            m = re.search(r"(\d+)$", rec.code)
-            if m:
-                try:
-                    n = int(m.group(1))
-                except Exception:
-                    n = 0
-                if n > max_n:
-                    max_n = n
-
-        next_n = max_n + 1
-        if seq and (not seq.number_next or seq.number_next <= next_n):
-            seq.number_next = next_n + 1
-        return f"{prefix}{next_n}"
+            if rec.code:
+                m = re.search(r"(\d+)$", rec.code)
+                if m:
+                    try:
+                        used_numbers.add(int(m.group(1)))
+                    except ValueError:
+                        pass
+        
+        if not used_numbers:
+            return f"{prefix}1"
+        
+        for num in range(1, max(used_numbers) + 2):
+            if num not in used_numbers:
+                return f"{prefix}{num}"
+        
+        return f"{prefix}{max(used_numbers) + 1}"
 
 
 class SubCampus(models.Model):

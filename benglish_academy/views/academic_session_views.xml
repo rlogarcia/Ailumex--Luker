@@ -107,7 +107,7 @@
                                 <field name="subject_type_id"
                                     string="Tipo de Asignatura"
                                     required="1"
-                                    domain="[('state', '=', 'active')]"
+                                    domain="[('active', '=', True)]"
                                     options="{'no_create': True}" />
 
                                 <!-- Campo auxiliar para invisible -->
@@ -117,17 +117,18 @@
                                 electivas -->
                                 <field name="elective_pool_id"
                                     string="Electivas"
-                                    domain="[('state', '=', 'active')]"
+                                    domain="[('active', '=', True)]"
                                     options="{'no_create': True}"
                                     invisible="not is_elective_session"
                                     required="is_elective_session" />
                             </group>
                             <group>
-                                <!-- Asignatura filtrada por tipo seleccionado -->
+                                <!-- Asignatura filtrada por tipo seleccionado - oculta si es
+                                electiva -->
                                 <field name="subject_id"
-                                    readonly="elective_pool_id"
                                     force_save="1"
-                                    required="1"
+                                    required="not is_elective_session"
+                                    invisible="is_elective_session"
                                     domain="[('active', '=', True), ('subject_type_id', '=', subject_type_id)]"
                                     options="{'no_create': True}" />
 
@@ -190,7 +191,8 @@
                                     invisible="delivery_mode != 'hybrid'"
                                     required="delivery_mode == 'hybrid'" />
                                 <field name="enrolled_count" readonly="1" />
-                                <field name="available_spots" readonly="1" />
+                                <field name="available_spots" readonly="1"
+                                    invisible="delivery_mode == 'virtual'" />
                             </group>
                             <group>
                                 <field name="is_full" readonly="1" />

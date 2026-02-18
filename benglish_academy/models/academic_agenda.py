@@ -494,16 +494,40 @@ class AcademicAgenda(models.Model):
 
     # CRUD OVERRIDES
 
+    def _get_next_reusable_agenda_code(self):
+        """
+        Obtiene el próximo código de agenda reutilizando huecos si existen.
+        Busca el primer número disponible entre los códigos existentes.
+        """
+        import re
+        prefix = "PL-"
+        padding = 3
+        
+        # Obtener todos los códigos usados
+        existing = self.sudo().search([('code', '=like', f'{prefix}%')])
+        used_numbers = set()
+        
+        for record in existing:
+            if record.code:
+                match = re.match(r'^PL-(\d+)$', record.code)
+                if match:
+                    used_numbers.add(int(match.group(1)))
+        
+        # Buscar primer hueco
+        if used_numbers:
+            for num in range(1, max(used_numbers) + 2):
+                if num not in used_numbers:
+                    return f"{prefix}{num:0{padding}d}"
+        
+        # No hay registros existentes, empezar en 1
+        return f"{prefix}001"
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Genera código consecutivo único al crear."""
+        """Genera código consecutivo único al crear, reutilizando huecos."""
         for vals in vals_list:
             if vals.get("code", "/") == "/":
-                vals["code"] = (
-                    self.env["ir.sequence"].next_by_code("benglish.academic.agenda")
-                    or "/"
-                )
+                vals["code"] = self._get_next_reusable_agenda_code()
         return super(AcademicAgenda, self).create(vals_list)
 
     def write(self, vals):

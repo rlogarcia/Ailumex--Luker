@@ -227,12 +227,12 @@ class AcademicSession(models.Model):
     subject_id = fields.Many2one(
         comodel_name="benglish.subject",
         string="Asignatura",
-        required=True,
+        required=False,
         ondelete="cascade",
         tracking=True,
         domain="[('program_id', '=', program_id), ('active', '=', True)]",
         index=True,
-        help="Asignatura a dictar (muestra solo código + nombre)",
+        help="Asignatura a dictar (muestra solo código + nombre). No requerido para sesiones de tipo electiva.",
     )
 
     @api.depends('subject_type_id', 'subject_type_id.is_elective_pool')
@@ -278,29 +278,50 @@ class AcademicSession(models.Model):
     @api.onchange('elective_pool_id')
     def _onchange_elective_pool_id(self):
         """
-        Cuando se selecciona un pool de electivas, asigna automáticamente
-        la primera asignatura del pool al campo subject_id.
-        
-        Esto es necesario porque subject_id es obligatorio, pero en sesiones
-        electivas cada estudiante verá su asignatura específica según su nivel.
+        Cuando se selecciona un pool de electivas, limpia subject_id ya que
+        para sesiones electivas la asignatura es el pool seleccionado.
         """
         _logger.info(
             "[ACADEMIC_SESSION ONCHANGE] elective_pool_id cambiado a: %s",
             self.elective_pool_id.id if self.elective_pool_id else None
         )
         
-        if self.elective_pool_id and self.elective_pool_id.subject_ids:
-            # Asignar la primera asignatura del pool como valor por defecto
-            self.subject_id = self.elective_pool_id.subject_ids[0]
-            _logger.info(
-                "[ACADEMIC_SESSION ONCHANGE] subject_id asignado desde pool: %s (%s)",
-                self.subject_id.name,
-                self.subject_id.id
-            )
-        elif self.subject_type_id and self.subject_type_id.is_elective_pool and not self.elective_pool_id:
-            # Si se limpia el pool en una sesión electiva, limpiar subject_id también
+        # Si es sesión electiva, limpiar subject_id (la asignatura es el pool)
+        if self.subject_type_id and self.subject_type_id.is_elective_pool:
             self.subject_id = False
-            _logger.info("[ACADEMIC_SESSION ONCHANGE] Pool eliminado, subject_id limpiado")
+            _logger.info("[ACADEMIC_SESSION ONCHANGE] Sesión electiva - subject_id limpiado")
+
+    # ========================================================================
+    # MÉTODOS AUXILIARES DE SECUENCIA
+    # ========================================================================
+
+    def _get_next_reusable_session_code(self):
+        """
+        Obtiene el próximo código de sesión reutilizando huecos si existen.
+        Busca el primer número disponible entre los códigos existentes.
+        """
+        import re
+        prefix = "SES-"
+        padding = 5
+        
+        # Obtener todos los códigos usados
+        existing = self.sudo().search([('session_code', '=like', f'{prefix}%')])
+        used_numbers = set()
+        
+        for record in existing:
+            if record.session_code:
+                match = re.match(r'^SES-(\d+)$', record.session_code)
+                if match:
+                    used_numbers.add(int(match.group(1)))
+        
+        # Buscar primer hueco
+        if used_numbers:
+            for num in range(1, max(used_numbers) + 2):
+                if num not in used_numbers:
+                    return f"{prefix}{num:0{padding}d}"
+        
+        # No hay registros existentes, empezar en 1
+        return f"{prefix}00001"
 
     # ========================================================================
     # MÉTODOS CRUD
@@ -313,12 +334,13 @@ class AcademicSession(models.Model):
         un `subject_id`.
         
         ADEMÁS (R2 - FASE 1):
-        Genera automáticamente el código único de sesión (session_code) usando secuencia.
+        Genera automáticamente el código único de sesión (session_code) usando secuencia
+        con reutilización de huecos.
         """
         for vals in vals_list:
-            # R2: Generar código único de sesión si no existe
+            # R2: Generar código único de sesión si no existe (con reutilización de huecos)
             if not vals.get('session_code') or vals.get('session_code') == '/':
-                vals['session_code'] = self.env['ir.sequence'].next_by_code('benglish.academic.session') or '/'
+                vals['session_code'] = self._get_next_reusable_session_code()
                 _logger.info("[ACADEMIC_SESSION CREATE] Código de sesión generado: %s", vals['session_code'])
             
             _logger.info(
@@ -329,94 +351,88 @@ class AcademicSession(models.Model):
             )
             
             try:
-                # Si NO hay subject_id, intentar asignarlo
-                if not vals.get("subject_id"):
-                    # Verificar si el tipo de asignatura es de pool de electivas
-                    is_elective_type = False
-                    subject_type_id = vals.get("subject_type_id")
-                    if subject_type_id:
-                        subject_type = self.env["benglish.subject.type"].browse(subject_type_id)
-                        if subject_type and subject_type.is_elective_pool:
-                            is_elective_type = True
-                    
+                # Verificar si el tipo de asignatura es de pool de electivas
+                is_elective_type = False
+                subject_type_id = vals.get("subject_type_id")
+                if subject_type_id:
+                    subject_type = self.env["benglish.subject.type"].browse(subject_type_id)
+                    if subject_type and subject_type.is_elective_pool:
+                        is_elective_type = True
+                
+                _logger.info(
+                    "[ACADEMIC_SESSION CREATE] subject_type_id=%s, is_elective_type=%s, elective_pool_id=%s, subject_id=%s",
+                    subject_type_id,
+                    is_elective_type,
+                    vals.get("elective_pool_id"),
+                    vals.get("subject_id"),
+                )
+                
+                # Si es tipo electiva (pool), NO necesita subject_id - la asignatura es el pool
+                if is_elective_type:
+                    # Asegurarse de que subject_id esté vacío para sesiones electivas
+                    if vals.get("subject_id"):
+                        _logger.info(
+                            "[ACADEMIC_SESSION CREATE] Sesión electiva - limpiando subject_id (la asignatura es el pool)"
+                        )
+                        vals["subject_id"] = False
                     _logger.info(
-                        "[ACADEMIC_SESSION CREATE] subject_id no proporcionado. subject_type_id=%s, is_elective_type=%s, elective_pool_id=%s",
-                        subject_type_id,
-                        is_elective_type,
+                        "[ACADEMIC_SESSION CREATE] Sesión electiva creada con pool_id=%s",
                         vals.get("elective_pool_id"),
                     )
+                # Si NO es tipo electiva y NO hay subject_id, intentar asignarlo
+                elif not vals.get("subject_id"):
+                    _logger.warning(
+                        "[ACADEMIC_SESSION CREATE] subject_id no proporcionado, intentando asignar automáticamente..."
+                    )
                     
-                    # Si es tipo electiva (pool), asignar una asignatura del pool
-                    if is_elective_type and vals.get("elective_pool_id"):
-                        pool = self.env["benglish.elective.pool"].browse(vals.get("elective_pool_id"))
-                        if pool and pool.subject_ids:
-                            # Asignar la primera asignatura del pool como placeholder
-                            vals["subject_id"] = pool.subject_ids[0].id
+                    program_to_search = vals.get("program_id")
+                    
+                    # Si tampoco hay program_id en vals, intentar obtenerlo de la agenda
+                    if not program_to_search and vals.get("agenda_id"):
+                        agenda = self.env["benglish.academic.agenda"].browse(vals.get("agenda_id"))
+                        if agenda and agenda.program_id:
+                            program_to_search = agenda.program_id.id
+                            vals["program_id"] = program_to_search
                             _logger.info(
-                                "[ACADEMIC_SESSION CREATE] Sesión electiva - Asignado subject_id desde pool: %s (%s)",
-                                pool.subject_ids[0].name,
-                                vals["subject_id"],
+                                "[ACADEMIC_SESSION CREATE] program_id obtenido desde agenda: %s",
+                                program_to_search,
+                            )
+                    
+                    if program_to_search:
+                        Subject = self.env["benglish.subject"].sudo()
+                        subject = Subject.search(
+                            [("active", "=", True), ("program_id", "=", program_to_search)],
+                            limit=1,
+                        )
+                        if subject:
+                            vals["subject_id"] = subject.id
+                            _logger.info(
+                                "[ACADEMIC_SESSION CREATE] Asignado subject_id por program_id: %s (%s)",
+                                subject.id,
+                                subject.display_name,
+                            )
+                
+                    # Último recurso - cualquier subject activo
+                    if not vals.get("subject_id"):
+                        Subject = self.env["benglish.subject"].sudo()
+                        any_subject = Subject.search([("active", "=", True)], limit=1)
+                        if any_subject:
+                            vals["subject_id"] = any_subject.id
+                            _logger.warning(
+                                "[ACADEMIC_SESSION CREATE] Asignado subject_id FALLBACK GENERAL: %s (%s)",
+                                any_subject.id,
+                                any_subject.display_name,
                             )
                         else:
-                            _logger.warning(
-                                "[ACADEMIC_SESSION CREATE] Pool de electivas %s no tiene asignaturas configuradas",
-                                vals.get("elective_pool_id"),
+                            _logger.error(
+                                "[ACADEMIC_SESSION CREATE] NO SE ENCONTRÓ NINGÚN SUBJECT ACTIVO. Esto causará un error."
                             )
-                    
-                    # Si aún no hay subject_id, buscar por program_id
-                    if not vals.get("subject_id"):
-                        _logger.warning(
-                            "[ACADEMIC_SESSION CREATE] subject_id no proporcionado, intentando asignar automáticamente..."
-                        )
-                        
-                        program_to_search = vals.get("program_id")
-                        
-                        # Si tampoco hay program_id en vals, intentar obtenerlo de la agenda
-                        if not program_to_search and vals.get("agenda_id"):
-                            agenda = self.env["benglish.academic.agenda"].browse(vals.get("agenda_id"))
-                            if agenda and agenda.program_id:
-                                program_to_search = agenda.program_id.id
-                                vals["program_id"] = program_to_search
-                                _logger.info(
-                                    "[ACADEMIC_SESSION CREATE] program_id obtenido desde agenda: %s",
-                                    program_to_search,
+                            raise UserError(
+                                _(
+                                    "No se pudo asignar una asignatura a la sesión. "
+                                    "Por favor, asegúrese de que existan asignaturas activas en el sistema."
                                 )
-                        
-                        if program_to_search:
-                            Subject = self.env["benglish.subject"].sudo()
-                            subject = Subject.search(
-                                [("active", "=", True), ("program_id", "=", program_to_search)],
-                                limit=1,
                             )
-                            if subject:
-                                vals["subject_id"] = subject.id
-                                _logger.info(
-                                    "[ACADEMIC_SESSION CREATE] Asignado subject_id por program_id: %s (%s)",
-                                    subject.id,
-                                    subject.display_name,
-                                )
-                    
-                        # Último recurso - cualquier subject activo
-                        if not vals.get("subject_id"):
-                            Subject = self.env["benglish.subject"].sudo()
-                            any_subject = Subject.search([("active", "=", True)], limit=1)
-                            if any_subject:
-                                vals["subject_id"] = any_subject.id
-                                _logger.warning(
-                                    "[ACADEMIC_SESSION CREATE] Asignado subject_id FALLBACK GENERAL: %s (%s)",
-                                    any_subject.id,
-                                    any_subject.display_name,
-                                )
-                            else:
-                                _logger.error(
-                                    "[ACADEMIC_SESSION CREATE] NO SE ENCONTRÓ NINGÚN SUBJECT ACTIVO. Esto causará un error."
-                                )
-                                raise UserError(
-                                    _(
-                                        "No se pudo asignar una asignatura a la sesión. "
-                                        "Por favor, asegúrese de que existan asignaturas activas en el sistema."
-                                    )
-                                )
                 else:
                     _logger.info(
                         "[ACADEMIC_SESSION CREATE] subject_id ya proporcionado: %s", vals.get("subject_id")
@@ -445,7 +461,7 @@ class AcademicSession(models.Model):
         string="Pool de Electivas",
         ondelete="restrict",
         tracking=True,
-        domain="[('state', '=', 'active')]",
+        domain="[('active', '=', True)]",
         help="Pool de electivas disponibles para esta sesión (solo para tipo Electiva).",
     )
 
@@ -484,7 +500,7 @@ class AcademicSession(models.Model):
         required=True,
         ondelete="restrict",
         tracking=True,
-        domain="[('state', '=', 'active')]",
+        domain="[('active', '=', True)]",
         help="Tipo de asignatura para esta sesión. Las asignaturas disponibles se filtrarán según este tipo.",
     )
 
@@ -832,17 +848,22 @@ class AcademicSession(models.Model):
                 else:
                     # Fallback si no hay aula asignada aún
                     record.max_capacity = 15
-            
+
             elif record.delivery_mode == 'virtual':
-                # Modalidad Virtual: cupo virtual
-                record.max_capacity = record.max_capacity_virtual or 20
-            
+                # Modalidad Virtual: sin límite numérico. Representar con NULL (False)
+                # `max_capacity_virtual` se mantiene como campo informativo, pero
+                # no debe restringir inscripciones automáticas.
+                record.max_capacity = False
+
             elif record.delivery_mode == 'hybrid':
-                # Modalidad Híbrida: suma de aula + virtual
+                # Modalidad Híbrida: capacidad presencial = capacidad del aula
+                # y capacidad virtual = cupo definido manualmente por el usuario.
                 aula_capacity = record.subcampus_id.capacity if record.subcampus_id else 0
-                virtual_capacity = record.max_capacity_virtual or 10
+                virtual_capacity = record.max_capacity_virtual or 0
+                # Asegurar que el campo de capacidad presencial refleje la del aula
+                record.max_capacity_presential = aula_capacity
                 record.max_capacity = aula_capacity + virtual_capacity
-            
+
             else:
                 # Estado por defecto
                 record.max_capacity = 15
@@ -1267,29 +1288,39 @@ class AcademicSession(models.Model):
     def _onchange_delivery_mode(self):
         """Limpia el aula si la modalidad es virtual y ajusta capacidades."""
         if self.delivery_mode == "virtual":
+            # Modalidad virtual no requiere aula y no debe imponerse `max_capacity`.
             self.subcampus_id = False
-        # Si cambia de híbrida a otra modalidad, usar max_capacity
+            self.max_capacity = False
+
+        # Si cambia de híbrida a otra modalidad, recalcular `max_capacity`
         if self.delivery_mode != "hybrid":
-            if self.max_capacity_presential or self.max_capacity_virtual:
-                # Sumar ambas capacidades si existen
-                self.max_capacity = (self.max_capacity_presential or 0) + (self.max_capacity_virtual or 0)
-        # Si cambia a híbrida, dividir la capacidad actual
-        elif self.delivery_mode == "hybrid" and self.max_capacity:
-            if not self.max_capacity_presential and not self.max_capacity_virtual:
-                # Dividir equitativamente
-                half = self.max_capacity // 2
-                self.max_capacity_presential = half
-                self.max_capacity_virtual = self.max_capacity - half
+            # Para presencial, `onchange_subcampus_id` ya completa la capacidad.
+            if self.delivery_mode == "presential" and self.subcampus_id and self.subcampus_id.capacity:
+                self.max_capacity = self.subcampus_id.capacity
+            elif self.delivery_mode == "virtual":
+                self.max_capacity = False
+            else:
+                # Como fallback, sumar presential+virtual si existen
+                if self.max_capacity_presential or self.max_capacity_virtual:
+                    self.max_capacity = (self.max_capacity_presential or 0) + (self.max_capacity_virtual or 0)
+
+        # Si cambia a híbrida, asegurar que la capacidad presencial refleje la del aula
+        elif self.delivery_mode == "hybrid":
+            if self.subcampus_id and self.subcampus_id.capacity:
+                self.max_capacity_presential = self.subcampus_id.capacity
+            # total se compone de aula + cupo virtual (que debe ser definido por el usuario)
+            self.max_capacity = (self.max_capacity_presential or 0) + (self.max_capacity_virtual or 0)
 
     @api.onchange("subcampus_id")
     def _onchange_subcampus_id(self):
         """Autocompleta la capacidad máxima con la capacidad del aula seleccionada."""
         if self.subcampus_id and self.subcampus_id.capacity:
             if self.delivery_mode == "hybrid":
-                # Para híbrida, dividir la capacidad del aula
-                half = self.subcampus_id.capacity // 2
-                self.max_capacity_presential = half
-                self.max_capacity_virtual = self.subcampus_id.capacity - half
+                # Para híbrida, la capacidad presencial debe ser exactamente
+                # la capacidad del aula; el cupo virtual lo define el usuario.
+                self.max_capacity_presential = self.subcampus_id.capacity
+                # No modificar `max_capacity_virtual` automáticamente; el usuario lo define.
+                self.max_capacity = (self.max_capacity_presential or 0) + (self.max_capacity_virtual or 0)
             else:
                 self.max_capacity = self.subcampus_id.capacity
 
@@ -1297,6 +1328,9 @@ class AcademicSession(models.Model):
     def _onchange_hybrid_capacities(self):
         """Actualiza max_capacity cuando cambian las capacidades híbridas."""
         if self.delivery_mode == "hybrid":
+            # La capacidad presencial debe reflejar la del aula si existe
+            if self.subcampus_id and self.subcampus_id.capacity:
+                self.max_capacity_presential = self.subcampus_id.capacity
             self.max_capacity = (self.max_capacity_presential or 0) + (self.max_capacity_virtual or 0)
 
     @api.onchange("date", "time_start", "time_end", "agenda_id")
@@ -1423,11 +1457,17 @@ class AcademicSession(models.Model):
             else:
                 # Para modalidad presencial o virtual, usar capacidad única
                 record.enrolled_count = enrolled
-                record.available_spots = max(0, record.max_capacity - enrolled)
-                record.is_full = enrolled >= record.max_capacity
-                record.occupancy_rate = (
-                    (enrolled / record.max_capacity * 100.0) if record.max_capacity else 0
-                )
+                # Modalidad virtual: ilimitada -> no marcar full ni restar cupos
+                if record.delivery_mode == 'virtual':
+                    record.available_spots = 999999
+                    record.is_full = False
+                    record.occupancy_rate = 0
+                else:
+                    record.available_spots = max(0, (record.max_capacity or 0) - enrolled)
+                    record.is_full = enrolled >= (record.max_capacity or 0)
+                    record.occupancy_rate = (
+                        (enrolled / (record.max_capacity or 1) * 100.0) if record.max_capacity else 0
+                    )
 
     # VALIDACIONES
 
@@ -1448,19 +1488,38 @@ class AcademicSession(models.Model):
         """Valida que las capacidades híbridas sean válidas."""
         for record in self:
             if record.delivery_mode == "hybrid":
+                # Presencial debe corresponder a la capacidad del aula si existe
                 if not record.max_capacity_presential or record.max_capacity_presential <= 0:
                     raise ValidationError(
                         _("La capacidad presencial debe ser mayor a 0 para modalidad híbrida.")
                     )
-                if not record.max_capacity_virtual or record.max_capacity_virtual <= 0:
+                if record.subcampus_id and record.subcampus_id.capacity:
+                    if record.max_capacity_presential != record.subcampus_id.capacity:
+                        raise ValidationError(
+                            _(
+                                "En modalidad híbrida, la capacidad presencial debe ser exactamente la capacidad del aula (%(cap)s)."
+                            ) % {"cap": record.subcampus_id.capacity}
+                        )
+                if record.max_capacity_virtual is None or record.max_capacity_virtual < 0:
                     raise ValidationError(
-                        _("La capacidad virtual debe ser mayor a 0 para modalidad híbrida.")
+                        _("La capacidad virtual debe ser 0 o mayor para modalidad híbrida.")
                     )
+            elif record.delivery_mode == 'virtual':
+                # Virtual: no es obligatorio tener max_capacity numérico (ilimitado)
+                continue
             else:
+                # Presencial u otros: requerir capacidad > 0 y que sea igual al aula si hay aula
                 if not record.max_capacity or record.max_capacity <= 0:
                     raise ValidationError(
                         _("La capacidad máxima debe ser mayor a 0.")
                     )
+                if record.delivery_mode == 'presential' and record.subcampus_id and record.subcampus_id.capacity:
+                    if record.max_capacity != record.subcampus_id.capacity:
+                        raise ValidationError(
+                            _(
+                                "Para modalidad presencial la capacidad de la sesión debe ser exactamente la capacidad del aula (%(cap)s)."
+                            ) % {"cap": record.subcampus_id.capacity}
+                        )
 
     @api.constrains("agenda_id", "date")
     def _check_date_in_agenda(self):
@@ -1633,11 +1692,12 @@ class AcademicSession(models.Model):
     def _check_capacity_vs_room(self):
         """Valida que la capacidad máxima de la clase no supere la capacidad del aula."""
         for record in self:
-            if record.subcampus_id and record.max_capacity:
-                if record.max_capacity > record.subcampus_id.capacity:
+            # Aplicar validación estricta solo para modalidad presencial
+            if record.subcampus_id and record.delivery_mode == 'presential':
+                if not record.max_capacity or record.max_capacity != record.subcampus_id.capacity:
                     raise ValidationError(
                         _(
-                            "La capacidad máxima de la clase (%(session_capacity)s) no puede superar "
+                            "Para modalidad presencial, la capacidad de la sesión (%(session_capacity)s) debe ser exactamente "
                             "la capacidad del aula '%(room)s' (%(room_capacity)s estudiantes)."
                         )
                         % {
@@ -1687,56 +1747,8 @@ class AcademicSession(models.Model):
         if self.session_type != "elective":
             self.elective_pool_id = False
 
-    @api.onchange("elective_pool_id")
-    def _onchange_elective_pool_id(self):
-        """
-        Al seleccionar un pool de electivas:
-        - Si hay asignaturas en el pool, asignar la primera como placeholder
-        - Actualizar el dominio para mostrar solo asignaturas del pool
-        """
-        import logging
-        _logger = logging.getLogger(__name__)
-        
-        if self.elective_pool_id:
-            _logger.info(
-                "[ONCHANGE POOL] Pool seleccionado: %s (ID: %s), Asignaturas: %s",
-                self.elective_pool_id.name,
-                self.elective_pool_id.id,
-                len(self.elective_pool_id.subject_ids),
-            )
-            
-            if self.elective_pool_id.subject_ids:
-                # Asignar la primera asignatura del pool como valor por defecto
-                self.subject_id = self.elective_pool_id.subject_ids[0]
-                _logger.info(
-                    "[ONCHANGE POOL] Asignada asignatura: %s (ID: %s)",
-                    self.subject_id.name,
-                    self.subject_id.id,
-                )
-                return {
-                    "domain": {
-                        "subject_id": [("id", "in", self.elective_pool_id.subject_ids.ids)]
-                    }
-                }
-            else:
-                _logger.warning(
-                    "[ONCHANGE POOL] Pool %s no tiene asignaturas configuradas",
-                    self.elective_pool_id.name,
-                )
-                self.subject_id = False
-                return {
-                    "domain": {
-                        "subject_id": [("id", "in", [])]
-                    }
-                }
-        elif self.session_type == "elective":
-            _logger.info("[ONCHANGE POOL] Pool limpiado, tipo electiva")
-            self.subject_id = False
-            return {
-                "domain": {
-                    "subject_id": [("id", "in", [])]
-                }
-            }
+    # NOTA: El onchange de elective_pool_id se encuentra en la sección de MÉTODOS ONCHANGE
+    # (línea ~278) - Este bloque fue eliminado para evitar duplicación
 
     @api.onchange("audience_phase_id")
     def _onchange_audience_phase_id(self):
@@ -2258,7 +2270,11 @@ class AcademicSession(models.Model):
     def can_enroll_student(self):
         """Verifica si se pueden agregar más estudiantes."""
         self.ensure_one()
-        return self.is_published and not self.is_full and self.available_spots > 0
+        # Modalidad virtual: sin límite (si está publicada, puede inscribirse)
+        if self.delivery_mode == 'virtual':
+            return bool(self.is_published)
+
+        return bool(self.is_published and not self.is_full and (self.available_spots or 0) > 0)
 
     @api.model
     def get_available_teachers(
@@ -2650,171 +2666,57 @@ class AcademicSession(models.Model):
         """
         Resuelve la asignatura efectiva para un estudiante desde un Pool de Electivas.
         
-        LÓGICA DE NEGOCIO (HU-POOL):
-        1. Obtener todas las asignaturas del pool de electivas
-        2. Filtrar por el nivel actual del estudiante (current_level_id)
-        3. Excluir asignaturas que el estudiante ya completó (attended)
-        4. Retornar la primera asignatura pendiente que cumpla los requisitos
+        NOTA: El modelo ha cambiado - ahora el Pool de Electivas ES la asignatura electiva.
+        Ya no contiene subject_ids. Este método simplemente verifica que haya un pool
+        configurado y activo.
         
         Args:
-            student: Estudiante para quien resolver la asignatura
-            check_completed: Si verificar asignaturas ya completadas (default: True)
-            raise_on_error: Si levantar error cuando no hay asignatura (default: True)
+            student: Estudiante para quien resolver la asignatura (usado para logging)
+            check_completed: No aplica en la nueva lógica
+            raise_on_error: Si levantar error cuando no hay pool (default: True)
         
         Returns:
-            benglish.subject: La asignatura efectiva para el estudiante, o False si no hay
+            benglish.elective.pool: El pool de electivas configurado, o False si no hay
         
         Raises:
-            UserError: Si no hay asignaturas disponibles y raise_on_error=True
+            UserError: Si no hay pool configurado y raise_on_error=True
         """
         self.ensure_one()
         
         pool = self.elective_pool_id
-        if not pool or not pool.subject_ids:
+        if not pool:
             _logger.warning(
-                "[ELECTIVE-POOL] Sesión %s (ID: %s) tiene pool sin asignaturas o pool no configurado. "
-                "pool_id=%s, state=%s",
-                self.display_name, self.id,
-                pool.id if pool else None,
-                pool.state if pool else None
+                "[ELECTIVE-POOL] Sesión %s (ID: %s) no tiene pool de electivas configurado.",
+                self.display_name, self.id
             )
             if raise_on_error:
                 raise UserError(
-                    _("El pool de electivas de esta sesión no tiene asignaturas configuradas.\n\n"
-                      "Contacte al administrador para configurar el pool '%s'.") 
-                    % (pool.display_name if pool else "No configurado")
+                    _("Esta sesión electiva no tiene un pool de electivas configurado.\n\n"
+                      "Contacte al administrador para configurar el pool.")
+                )
+            return False
+        
+        if not pool.active:
+            _logger.warning(
+                "[ELECTIVE-POOL] Pool %s (ID: %s) está inactivo.",
+                pool.display_name, pool.id
+            )
+            if raise_on_error:
+                raise UserError(
+                    _("El pool de electivas '%s' está inactivo.\n\n"
+                      "Contacte al administrador.")
+                    % pool.display_name
                 )
             return False
         
         _logger.info(
-            "🟢 [ELECTIVE-POOL] Resolviendo asignatura para estudiante %s (ID: %s) "
-            "desde pool '%s' (ID: %s, %d asignaturas)",
-            student.name, student.id,
-            pool.display_name, pool.id, len(pool.subject_ids)
+            "✅ [ELECTIVE-POOL] Pool de electivas para estudiante %s: '%s' (ID: %s)",
+            student.name if student else "N/A",
+            pool.display_name,
+            pool.id
         )
         
-        # ═══════════════════════════════════════════════════════════════════════════════
-        # PASO 1: Obtener asignaturas del pool
-        # ═══════════════════════════════════════════════════════════════════════════════
-        pool_subjects = pool.subject_ids.filtered(lambda s: s.active)
-        
-        _logger.info(
-            "🟢 [ELECTIVE-POOL] Asignaturas activas en pool: %d - IDs: %s",
-            len(pool_subjects),
-            pool_subjects.ids
-        )
-        
-        # ═══════════════════════════════════════════════════════════════════════════════
-        # PASO 2: Filtrar por nivel del estudiante
-        # ═══════════════════════════════════════════════════════════════════════════════
-        student_level = student.current_level_id
-        
-        if student_level:
-            _logger.info(
-                "🟢 [ELECTIVE-POOL] Nivel del estudiante: %s (ID: %s)",
-                student_level.name, student_level.id
-            )
-            
-            # Filtrar asignaturas que pertenezcan al nivel del estudiante
-            level_filtered_subjects = pool_subjects.filtered(
-                lambda s: s.level_id.id == student_level.id
-            )
-            
-            _logger.info(
-                "🟢 [ELECTIVE-POOL] Asignaturas filtradas por nivel %s: %d - %s",
-                student_level.name,
-                len(level_filtered_subjects),
-                [s.name for s in level_filtered_subjects]
-            )
-            
-            # Si no hay asignaturas del nivel exacto, incluir asignaturas sin nivel específico
-            # o del mismo programa (para mayor flexibilidad)
-            if not level_filtered_subjects:
-                _logger.info(
-                    "🟡 [ELECTIVE-POOL] No hay asignaturas del nivel exacto. "
-                    "Incluyendo asignaturas compatibles del programa..."
-                )
-                # Intentar con asignaturas del mismo programa
-                student_program = student.program_id
-                if student_program:
-                    level_filtered_subjects = pool_subjects.filtered(
-                        lambda s: s.program_id.id == student_program.id
-                    )
-                    _logger.info(
-                        "🟡 [ELECTIVE-POOL] Asignaturas del programa %s: %d",
-                        student_program.name, len(level_filtered_subjects)
-                    )
-            
-            pool_subjects = level_filtered_subjects if level_filtered_subjects else pool_subjects
-        else:
-            _logger.warning(
-                "🟡 [ELECTIVE-POOL] Estudiante %s no tiene nivel asignado. "
-                "Usando todas las asignaturas del pool.",
-                student.name
-            )
-        
-        # ═══════════════════════════════════════════════════════════════════════════════
-        # PASO 3: Excluir asignaturas ya completadas
-        # ═══════════════════════════════════════════════════════════════════════════════
-        if check_completed:
-            completed_ids = self._get_completed_subject_ids(student)
-            
-            _logger.info(
-                "🟢 [ELECTIVE-POOL] Asignaturas completadas por el estudiante: %d - IDs: %s",
-                len(completed_ids), list(completed_ids)
-            )
-            
-            # Filtrar para excluir las completadas
-            pending_subjects = pool_subjects.filtered(
-                lambda s: s.id not in completed_ids
-            )
-            
-            _logger.info(
-                "🟢 [ELECTIVE-POOL] Asignaturas pendientes (no completadas): %d - %s",
-                len(pending_subjects),
-                [s.name for s in pending_subjects]
-            )
-        else:
-            pending_subjects = pool_subjects
-        
-        # ═══════════════════════════════════════════════════════════════════════════════
-        # PASO 4: Ordenar y seleccionar la primera asignatura pendiente
-        # ═══════════════════════════════════════════════════════════════════════════════
-        if not pending_subjects:
-            _logger.warning(
-                "🔴 [ELECTIVE-POOL] No hay asignaturas pendientes para el estudiante %s "
-                "en el pool '%s'. Todas las asignaturas del pool ya fueron completadas.",
-                student.name, pool.display_name
-            )
-            if raise_on_error:
-                raise UserError(
-                    _("¡Felicidades! Has completado todas las asignaturas electivas "
-                      "disponibles en este pool.\n\n"
-                      "Pool: %s\n"
-                      "Asignaturas en el pool: %d\n\n"
-                      "Consulta con tu asesor académico para conocer tus siguientes opciones.")
-                    % (pool.display_name, len(pool.subject_ids))
-                )
-            return False
-        
-        # Ordenar por secuencia y nombre para consistencia
-        pending_subjects = pending_subjects.sorted(
-            key=lambda s: (s.sequence, s.name)
-        )
-        
-        selected_subject = pending_subjects[0]
-        
-        _logger.info(
-            "✅ [ELECTIVE-POOL] Asignatura seleccionada para estudiante %s: "
-            "'%s' (ID: %s, Tipo: %s, Categoría: %s)",
-            student.name,
-            selected_subject.name,
-            selected_subject.id,
-            selected_subject.subject_type_id.name if selected_subject.subject_type_id else "N/A",
-            selected_subject.subject_category or "N/A"
-        )
-        
-        return selected_subject
+        return pool
 
     def resolve_effective_subject(self, student, check_completed=True, raise_on_error=True, check_prereq=True):
         """
@@ -2824,10 +2726,7 @@ class AcademicSession(models.Model):
         Ahora retorna directamente subject_id para sesiones regulares.
         
         ELECTIVE POOLS (HU-POOL):
-        - Si la sesión tiene elective_pool_id, resolver del pool
-        - Filtrar asignaturas por nivel del estudiante
-        - Excluir asignaturas ya completadas
-        - Retornar la primera asignatura pendiente del pool
+        - Si la sesión tiene elective_pool_id, el pool ES la asignatura electiva
         """
         self.ensure_one()
 
@@ -3335,169 +3234,8 @@ class AcademicSession(models.Model):
         
         return set(completed_history.mapped('subject_id').ids)
 
-    def _resolve_elective_pool_subject(self, student, check_completed=True, raise_on_error=True):
-        """
-        Resuelve la asignatura efectiva para un estudiante desde un Pool de Electivas.
-        
-        LÓGICA DE NEGOCIO (HU-POOL):
-        1. Obtener todas las asignaturas del pool de electivas
-        2. Filtrar por el nivel actual del estudiante (current_level_id)
-        3. Excluir asignaturas que el estudiante ya completó (attended)
-        4. Retornar la primera asignatura pendiente que cumpla los requisitos
-        
-        Args:
-            student: Estudiante para quien resolver la asignatura
-            check_completed: Si verificar asignaturas ya completadas (default: True)
-            raise_on_error: Si levantar error cuando no hay asignatura (default: True)
-        
-        Returns:
-            benglish.subject: La asignatura efectiva para el estudiante, o False si no hay
-        
-        Raises:
-            UserError: Si no hay asignaturas disponibles y raise_on_error=True
-        """
-        self.ensure_one()
-        
-        pool = self.elective_pool_id
-        if not pool or not pool.subject_ids:
-            _logger.warning(
-                "[ELECTIVE-POOL] Sesión %s (ID: %s) tiene pool sin asignaturas o pool no configurado. "
-                "pool_id=%s, state=%s",
-                self.display_name, self.id,
-                pool.id if pool else None,
-                pool.state if pool else None
-            )
-            if raise_on_error:
-                raise UserError(
-                    _("El pool de electivas de esta sesión no tiene asignaturas configuradas.\n\n"
-                      "Contacte al administrador para configurar el pool '%s'.") 
-                    % (pool.display_name if pool else "No configurado")
-                )
-            return False
-        
-        _logger.info(
-            "🟢 [ELECTIVE-POOL] Resolviendo asignatura para estudiante %s (ID: %s) "
-            "desde pool '%s' (ID: %s, %d asignaturas)",
-            student.name, student.id,
-            pool.display_name, pool.id, len(pool.subject_ids)
-        )
-        
-        # ═══════════════════════════════════════════════════════════════════════════════
-        # PASO 1: Obtener asignaturas del pool
-        # ═══════════════════════════════════════════════════════════════════════════════
-        pool_subjects = pool.subject_ids.filtered(lambda s: s.active)
-        
-        _logger.info(
-            "🟢 [ELECTIVE-POOL] Asignaturas activas en pool: %d - IDs: %s",
-            len(pool_subjects),
-            pool_subjects.ids
-        )
-        
-        # ═══════════════════════════════════════════════════════════════════════════════
-        # PASO 2: Filtrar por nivel del estudiante
-        # ═══════════════════════════════════════════════════════════════════════════════
-        student_level = student.current_level_id
-        
-        if student_level:
-            _logger.info(
-                "🟢 [ELECTIVE-POOL] Nivel del estudiante: %s (ID: %s)",
-                student_level.name, student_level.id
-            )
-            
-            # Filtrar asignaturas del pool que son del nivel del estudiante
-            level_filtered_subjects = pool_subjects.filtered(
-                lambda s: s.level_id == student_level
-            )
-            
-            _logger.info(
-                "🟢 [ELECTIVE-POOL] Asignaturas del nivel %s: %d - %s",
-                student_level.name,
-                len(level_filtered_subjects),
-                [s.name for s in level_filtered_subjects]
-            )
-            
-            if not level_filtered_subjects:
-                # Intentar con asignaturas del mismo programa
-                student_program = student.program_id
-                if student_program:
-                    level_filtered_subjects = pool_subjects.filtered(
-                        lambda s: s.program_id.id == student_program.id
-                    )
-                    _logger.info(
-                        "🟡 [ELECTIVE-POOL] Asignaturas del programa %s: %d",
-                        student_program.name, len(level_filtered_subjects)
-                    )
-            
-            pool_subjects = level_filtered_subjects if level_filtered_subjects else pool_subjects
-        else:
-            _logger.warning(
-                "🟡 [ELECTIVE-POOL] Estudiante %s no tiene nivel asignado. "
-                "Usando todas las asignaturas del pool.",
-                student.name
-            )
-        
-        # ═══════════════════════════════════════════════════════════════════════════════
-        # PASO 3: Excluir asignaturas ya completadas
-        # ═══════════════════════════════════════════════════════════════════════════════
-        if check_completed:
-            completed_ids = self._get_completed_subject_ids(student)
-            
-            _logger.info(
-                "🟢 [ELECTIVE-POOL] Asignaturas completadas por el estudiante: %d - IDs: %s",
-                len(completed_ids), list(completed_ids)
-            )
-            
-            # Filtrar para excluir las completadas
-            pending_subjects = pool_subjects.filtered(
-                lambda s: s.id not in completed_ids
-            )
-            
-            _logger.info(
-                "🟢 [ELECTIVE-POOL] Asignaturas pendientes (no completadas): %d - %s",
-                len(pending_subjects),
-                [s.name for s in pending_subjects]
-            )
-        else:
-            pending_subjects = pool_subjects
-        
-        # ═══════════════════════════════════════════════════════════════════════════════
-        # PASO 4: Ordenar y seleccionar la primera asignatura pendiente
-        # ═══════════════════════════════════════════════════════════════════════════════
-        if not pending_subjects:
-            _logger.warning(
-                "🔴 [ELECTIVE-POOL] No hay asignaturas pendientes para el estudiante %s "
-                "en el pool '%s'. Todas las asignaturas del pool ya fueron completadas.",
-                student.name, pool.display_name
-            )
-            if raise_on_error:
-                raise UserError(
-                    _("¡Felicidades! Has completado todas las asignaturas electivas "
-                      "disponibles en este pool.\n\n"
-                      "Pool: %s\n"
-                      "Asignaturas en el pool: %d\n\n"
-                      "Consulta con tu asesor académico para conocer tus siguientes opciones.")
-                    % (pool.display_name, len(pool.subject_ids))
-                )
-            return False
-        
-        # Ordenar por secuencia y nombre para consistencia
-        pending_subjects = pending_subjects.sorted(
-            key=lambda s: (s.sequence or 0, s.code or '', s.name or '')
-        )
-        
-        selected_subject = pending_subjects[0]
-        
-        _logger.info(
-            "✅ [ELECTIVE-POOL] Asignatura seleccionada para estudiante %s: "
-            "'%s' (ID: %s, Tipo: %s, Categoría: %s)",
-            student.name,
-            selected_subject.name,
-            selected_subject.id,
-            selected_subject.subject_type_id.name if selected_subject.subject_type_id else "N/A",
-            selected_subject.subject_category or "N/A"
-        )
-        
-        return selected_subject
+    # NOTA: El método _resolve_elective_pool_subject ya está definido arriba (línea ~2632)
+    # Este duplicado fue eliminado para evitar conflictos.
 
     def resolve_effective_subject(self, student, check_completed=True, raise_on_error=True, check_prereq=True):
         """
@@ -3510,10 +3248,7 @@ class AcademicSession(models.Model):
         - Cada skill completa el SIGUIENTE SLOT disponible (1, 2, 3 o 4)
         
         ELECTIVE POOLS (HU-POOL):
-        - Si la sesión tiene elective_pool_id, resolver del pool
-        - Filtrar asignaturas por nivel del estudiante
-        - Excluir asignaturas ya completadas
-        - Retornar la primera asignatura pendiente del pool
+        - Si la sesión tiene elective_pool_id, el pool ES la asignatura electiva
         
         Args:
             student: Estudiante para quien resolver la asignatura
@@ -3522,7 +3257,7 @@ class AcademicSession(models.Model):
             check_prereq: Si verificar prerrequisitos
             
         Returns:
-            benglish.subject: La asignatura efectiva para el estudiante
+            benglish.subject o benglish.elective.pool: La asignatura efectiva para el estudiante
         """
         self.ensure_one()
 

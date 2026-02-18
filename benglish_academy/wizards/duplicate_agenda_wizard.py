@@ -362,7 +362,7 @@ class DuplicateAgendaWizard(models.TransientModel):
 
         return dates
 
-    def _check_teacher_availability(self, teacher_id, date, time_start, time_end, exclude_session_id=None):
+    def _check_teacher_availability(self, teacher_id, date, time_start, time_end, exclude_session_id=None, exclude_agenda_id=None):
         """
         Verifica si un docente está disponible en una fecha/hora específica.
         
@@ -372,6 +372,7 @@ class DuplicateAgendaWizard(models.TransientModel):
             time_start: Hora de inicio
             time_end: Hora de fin
             exclude_session_id: ID de sesión a excluir (para ediciones)
+            exclude_agenda_id: ID de agenda a excluir (para duplicaciones)
             
         Returns:
             tuple: (bool disponible, str motivo_conflicto)
@@ -390,6 +391,10 @@ class DuplicateAgendaWizard(models.TransientModel):
 
         if exclude_session_id:
             domain.append(('id', '!=', exclude_session_id))
+        
+        # Excluir todas las sesiones de la agenda origen al duplicar
+        if exclude_agenda_id:
+            domain.append(('agenda_id', '!=', exclude_agenda_id))
 
         conflicting_sessions = self.env['benglish.academic.session'].search(domain, limit=1)
 
@@ -406,7 +411,7 @@ class DuplicateAgendaWizard(models.TransientModel):
 
         return (True, None)
 
-    def _check_classroom_availability(self, subcampus_id, date, time_start, time_end, exclude_session_id=None):
+    def _check_classroom_availability(self, subcampus_id, date, time_start, time_end, exclude_session_id=None, exclude_agenda_id=None):
         """
         Verifica si un aula está disponible en una fecha/hora específica.
         
@@ -416,6 +421,7 @@ class DuplicateAgendaWizard(models.TransientModel):
             time_start: Hora de inicio
             time_end: Hora de fin
             exclude_session_id: ID de sesión a excluir
+            exclude_agenda_id: ID de agenda a excluir (para duplicaciones)
             
         Returns:
             tuple: (bool disponible, str motivo_conflicto)
@@ -434,6 +440,10 @@ class DuplicateAgendaWizard(models.TransientModel):
 
         if exclude_session_id:
             domain.append(('id', '!=', exclude_session_id))
+        
+        # Excluir todas las sesiones de la agenda origen al duplicar
+        if exclude_agenda_id:
+            domain.append(('agenda_id', '!=', exclude_agenda_id))
 
         conflicting_sessions = self.env['benglish.academic.session'].search(domain, limit=1)
 
@@ -564,7 +574,8 @@ class DuplicateAgendaWizard(models.TransientModel):
                             original_session.teacher_id.id if original_session.teacher_id else None,
                             new_date,
                             original_session.time_start,
-                            original_session.time_end
+                            original_session.time_end,
+                            exclude_agenda_id=source.id  # Excluir sesiones de la agenda origen
                         )
                     except Exception as check_error:
                         _logger.warning("Error al verificar disponibilidad del docente: %s", str(check_error))
@@ -575,7 +586,8 @@ class DuplicateAgendaWizard(models.TransientModel):
                             original_session.subcampus_id.id if original_session.subcampus_id else None,
                             new_date,
                             original_session.time_start,
-                            original_session.time_end
+                            original_session.time_end,
+                            exclude_agenda_id=source.id  # Excluir sesiones de la agenda origen
                         )
                     except Exception as check_error:
                         _logger.warning("Error al verificar disponibilidad del aula: %s", str(check_error))
@@ -631,6 +643,46 @@ class DuplicateAgendaWizard(models.TransientModel):
                     # ==========================================
 
                     try:
+                        # Determinar subject_type_id (requerido)
+                        # Si la sesión original no tiene subject_type_id, intentar inferirlo
+                        subject_type_id = False
+                        if original_session.subject_type_id:
+                            subject_type_id = original_session.subject_type_id.id
+                        else:
+                            # Intentar buscar un tipo por defecto
+                            default_subject_type = self.env['benglish.subject.type'].search(
+                                [('active', '=', True)], limit=1
+                            )
+                            if default_subject_type:
+                                subject_type_id = default_subject_type.id
+                                _logger.warning(
+                                    "Sesión original sin subject_type_id, usando tipo por defecto: %s",
+                                    default_subject_type.name
+                                )
+                            else:
+                                raise UserError(
+                                    _("No se puede duplicar la sesión %s porque no tiene tipo de asignatura "
+                                      "y no existe un tipo por defecto en el sistema.") % (
+                                        original_session.display_name or original_session.id,
+                                    )
+                                )
+                        
+                        # Validar program_id (requerido)
+                        if not original_session.program_id:
+                            raise UserError(
+                                _("No se puede duplicar la sesión %s porque no tiene programa asignado.") % (
+                                    original_session.display_name or original_session.id,
+                                )
+                            )
+                        
+                        # Validar teacher_id (requerido)
+                        if not original_session.teacher_id:
+                            raise UserError(
+                                _("No se puede duplicar la sesión %s porque no tiene docente asignado.") % (
+                                    original_session.display_name or original_session.id,
+                                )
+                            )
+
                         session_vals = {
                             'agenda_id': new_agenda.id,
                             'date': new_date,
@@ -644,6 +696,18 @@ class DuplicateAgendaWizard(models.TransientModel):
                             'session_type': original_session.session_type,
                             'max_capacity': original_session.max_capacity,
                             'meeting_link': original_session.meeting_link,
+                            # Campos requeridos que faltaban
+                            'subject_type_id': subject_type_id,
+                            'elective_pool_id': original_session.elective_pool_id.id if original_session.elective_pool_id else False,
+                            # Campos adicionales de audiencia
+                            'audience_phase_id': original_session.audience_phase_id.id if original_session.audience_phase_id else False,
+                            'audience_unit_from': original_session.audience_unit_from,
+                            'audience_unit_to': original_session.audience_unit_to,
+                            # Capacidades específicas híbridas
+                            'max_capacity_presential': original_session.max_capacity_presential,
+                            'max_capacity_virtual': original_session.max_capacity_virtual,
+                            # Estado inicial (draft por defecto)
+                            'state': 'draft',
                             # NO copiar inscripciones (student_ids)
                             # NO copiar ID de sesión original
                         }
@@ -660,29 +724,6 @@ class DuplicateAgendaWizard(models.TransientModel):
                             new_session.subject_id.name if new_session.subject_id else 'N/A',
                             new_date
                         )
-                        
-                        # ==========================================
-                        # COPIAR PUBLICACIONES
-                        # ==========================================
-                        if self.copy_publications and original_session.publication_ids:
-                            for pub in original_session.publication_ids:
-                                try:
-                                    self.env['benglish.session.publication'].create({
-                                        'session_id': new_session.id,
-                                        'agenda_id': new_agenda.id,
-                                        'subject_id': pub.subject_id.id,
-                                        'state': pub.state if self.copy_published_state else 'draft',
-                                    })
-                                    _logger.debug(
-                                        "Publicación copiada: Sesión %s → Asignatura %s",
-                                        new_session.id,
-                                        pub.subject_id.name
-                                    )
-                                except Exception as pub_error:
-                                    _logger.warning(
-                                        "Error al copiar publicación: %s",
-                                        str(pub_error)
-                                    )
                     
                         # ==========================================
                         # COPIAR ASOCIACIÓN A POOLS
@@ -730,8 +771,7 @@ class DuplicateAgendaWizard(models.TransientModel):
                 len(skipped_sessions)
             )
 
-            # Contar publicaciones y pools copiados
-            total_publications = sum(len(s.publication_ids) for s in created_sessions)
+            # Contar pools copiados
             total_pools = sum(len(s.elective_pool_ids) for s in created_sessions)
 
             # Crear mensaje detallado
@@ -742,7 +782,6 @@ class DuplicateAgendaWizard(models.TransientModel):
                 '',
                 _('📊 Resumen de duplicación:'),
                 _('  • Sesiones creadas: %s') % len(created_sessions),
-                _('  • Publicaciones copiadas: %s') % total_publications,
                 _('  • Asociaciones a pools: %s') % total_pools,
             ]
 

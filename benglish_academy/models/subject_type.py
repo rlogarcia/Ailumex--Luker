@@ -86,9 +86,37 @@ class SubjectType(models.Model):
         for record in self:
             record.active = record.state == "active"
     
+    def _get_next_reusable_subject_type_code(self):
+        """
+        Obtiene el próximo código de tipo de asignatura reutilizando huecos si existen.
+        Busca el primer número disponible entre los códigos existentes.
+        """
+        import re
+        prefix = "TA-"
+        padding = 3
+        
+        # Obtener todos los códigos usados
+        existing = self.sudo().search([('code', '=like', f'{prefix}%')])
+        used_numbers = set()
+        
+        for record in existing:
+            if record.code:
+                match = re.match(r'^TA-(\d+)$', record.code)
+                if match:
+                    used_numbers.add(int(match.group(1)))
+        
+        # Buscar primer hueco
+        if used_numbers:
+            for num in range(1, max(used_numbers) + 2):
+                if num not in used_numbers:
+                    return f"{prefix}{num:0{padding}d}"
+        
+        # No hay registros existentes, empezar en 1
+        return f"{prefix}001"
+    
     @api.model_create_multi
     def create(self, vals_list):
-        """Genera el código automáticamente al crear."""
+        """Genera el código automáticamente al crear, reutilizando huecos."""
         import re
         
         # PASO 1: Limpiar registros legacy con código "/" antes de crear nuevos
@@ -115,28 +143,10 @@ class SubjectType(models.Model):
                     (legacy_code, rec.id)
                 )
         
-        # PASO 2: Generar códigos para nuevos registros
+        # PASO 2: Generar códigos para nuevos registros (con reutilización de huecos)
         for vals in vals_list:
             if vals.get("code", "/") == "/" or not vals.get("code"):
-                # Generar código único usando secuencia
-                new_code = self.env["ir.sequence"].next_by_code("benglish.subject.type")
-                if not new_code:
-                    # Fallback: buscar el máximo numérico entre códigos existentes TA-###
-                    existing = self.search([("code", "like", "TA-%")])
-                    max_num = 0
-                    for rec in existing:
-                        if rec.code:
-                            match = re.search(r"TA-(\d+)", rec.code)
-                            if match:
-                                try:
-                                    n = int(match.group(1))
-                                    if n > max_num:
-                                        max_num = n
-                                except ValueError:
-                                    pass
-                    new_code = f"TA-{str(max_num + 1).zfill(3)}"
-                
-                vals["code"] = new_code
+                vals["code"] = self._get_next_reusable_subject_type_code()
         return super().create(vals_list)
     
     def action_set_active(self):

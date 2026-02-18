@@ -12,11 +12,9 @@
             <list string="Pools de Electivas">
                 <field name="code" />
                 <field name="name" />
-                <field name="subject_count" />
+                <field name="is_evaluable" widget="boolean_toggle" />
                 <field name="count_value" />
-                <field name="state" widget="badge" decoration-success="state=='active'"
-                    decoration-info="state=='draft'" decoration-muted="state=='closed'" />
-                <field name="active" invisible="1" />
+                <field name="active" widget="boolean_toggle" />
             </list>
         </field>
     </record>
@@ -27,28 +25,17 @@
         <field name="model">benglish.elective.pool</field>
         <field name="arch" type="xml">
             <form string="Pool de Electivas">
-                <header>
-                    <button name="action_activate_pool" string="Activar Pool" type="object"
-                        class="btn-primary" invisible="state != 'draft'" />
-                    <button name="action_close_pool" string="Cerrar Pool" type="object"
-                        invisible="state != 'active'" />
-                    <field name="state" widget="statusbar" statusbar_visible="draft,active,closed" />
-                </header>
                 <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <button name="action_view_subjects" type="object" class="oe_stat_button"
-                            icon="fa-book" invisible="subject_count == 0">
-                            <div class="o_field_widget o_stat_info">
-                                <span class="o_stat_value">
-                                    <field name="subject_count" />
-                                </span>
-                                <span class="o_stat_text">Asignaturas</span>
+                    <group>
+                        <group>
+                            <div class="oe_title">
+                                <field name="code" readonly="1" />
                             </div>
-                        </button>
-                    </div>
-                    <div class="oe_title">
-                        <field name="code" readonly="1" />
-                    </div>
+                        </group>
+                        <group>
+                            <field name="active" widget="boolean_toggle" />
+                        </group>
+                    </group>
                     <group>
                         <group>
                             <div class="oe_title">
@@ -72,6 +59,7 @@
                         <group name="basic_info" string="Información Básica">
                             <field name="sequence" />
                             <field name="count_value" />
+                            <field name="is_evaluable" />
                         </group>
                         <group name="period_info" string="Período de Vigencia">
                             <field name="date_start" />
@@ -79,34 +67,10 @@
                         </group>
                     </group>
 
-                    <group name="description">
-                        <field name="description"
-                            placeholder="Descripción detallada del pool y sus electivas..." />
-                    </group>
-
                     <notebook>
-                        <page name="subjects" string="Asignaturas Electivas">
-                            <field name="subject_ids" widget="many2many"
-                                domain="[('active', '=', True), ('subject_type_id.is_elective_pool', '=', True)]"
-                                context="{'tree_view_ref': 'benglish_academy.view_benglish_subject_elective_pool_list'}">
-                                <list>
-                                    <field name="code" string="Código" />
-                                    <field name="name" string="Nombre" />
-                                    <field name="alias" string="Alias" />
-                                    <field name="is_prerequisite" string="Es prerrequisito?"
-                                        widget="boolean_toggle" />
-                                    <field name="evaluable" string="Es evaluable?"
-                                        widget="boolean_toggle" />
-                                </list>
-                            </field>
-                        </page>
-                        <page name="stats" string="Estadísticas">
-                            <group>
-                                <group>
-                                    <field name="pool_summary" readonly="1" />
-                                    <field name="subject_count" readonly="1" />
-                                </group>
-                            </group>
+                        <page name="description" string="Descripción">
+                            <field name="description" nolabel="1"
+                                placeholder="Descripción detallada del pool y sus electivas..." />
                         </page>
                     </notebook>
                 </sheet>
@@ -123,8 +87,8 @@
             <kanban class="o_kanban_mobile">
                 <field name="name" />
                 <field name="code" />
-                <field name="subject_count" />
-                <field name="state" />
+                <field name="is_evaluable" />
+                <field name="active" />
                 <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_global_click">
@@ -134,15 +98,10 @@
                                         <field name="display_name" />
                                     </strong>
                                 </div>
-                                <span class="badge"
-                                    t-att-class="record.state.raw_value === 'active' ? 'bg-success' : record.state.raw_value === 'draft' ? 'bg-info' : 'bg-secondary'">
-                                    <field name="state" />
-                                </span>
                             </div>
                             <div class="o_kanban_record_body">
-                                <t t-if="record.subject_count.value > 0">
-                                    <i class="fa fa-book" /> <field name="subject_count" />
-                                    asignatura(s) </t>
+                                <t t-if="record.is_evaluable.raw_value">
+                                    <i class="fa fa-check-circle" /> Evaluable </t>
                             </div>
                         </div>
                     </t>
@@ -160,21 +119,15 @@
                 <field name="name" />
                 <field name="code" />
                 <separator />
-                <filter string="Activos" name="filter_state_active"
-                    domain="[('state', '=', 'active')]" />
-                <filter string="Borrador" name="filter_state_draft"
-                    domain="[('state', '=', 'draft')]" />
-                <filter string="Cerrados" name="filter_state_closed"
-                    domain="[('state', '=', 'closed')]" />
-                <separator />
-                <filter string="Con Asignaturas" name="filter_with_subjects"
-                    domain="[('subject_count', '>', 0)]" />
-                <filter string="Sin Asignaturas" name="filter_no_subjects"
-                    domain="[('subject_count', '=', 0)]" />
+                <filter string="Evaluables" name="filter_evaluable"
+                    domain="[('is_evaluable', '=', True)]" />
+                <filter string="No Evaluables" name="filter_not_evaluable"
+                    domain="[('is_evaluable', '=', False)]" />
                 <separator />
                 <filter string="Archivados" name="filter_inactive" domain="[('active', '=', False)]" />
                 <group expand="0" string="Agrupar por">
-                    <filter string="Estado" name="group_state" context="{'group_by': 'state'}" />
+                    <filter string="Evaluable" name="group_evaluable"
+                        context="{'group_by': 'is_evaluable'}" />
                 </group>
             </search>
         </field>
@@ -185,15 +138,15 @@
         <field name="name">Pools de Electivas</field>
         <field name="res_model">benglish.elective.pool</field>
         <field name="view_mode">list,kanban,form</field>
-        <field name="context">{'search_default_filter_state_active': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Crea tu primer pool de electivas
             </p>
             <p>
-                Los pools de electivas agrupan asignaturas electivas ofertadas,
-                permitiendo configurar qué asignaturas electivas están disponibles.
-                Solo se mostrarán asignaturas cuyo tipo tenga marcado "Pool de Electivas".
+                Los pools de electivas permiten crear asignaturas electivas propias.
+                Estas asignaturas no tienen tipo asignado y pueden marcarse como evaluables.
+                Cuando un Tipo de Asignatura tenga "Pool de Electivas" activado,
+                el sistema mostrará estas asignaturas como opciones válidas.
             </p>
         </field>
     </record>

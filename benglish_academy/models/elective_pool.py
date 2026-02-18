@@ -14,7 +14,7 @@ Reglas de negocio:
 """
 
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError, UserError
+from odoo.exceptions import ValidationError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -84,6 +84,13 @@ class ElectivePool(models.Model):
         help="Si está inactivo, el pool no se muestra en portales ni agendamientos",
     )
 
+    is_evaluable = fields.Boolean(
+        string="¿Es Evaluable?",
+        default=False,
+        tracking=True,
+        help="Indica si esta asignatura electiva es evaluable (tiene calificación/nota).",
+    )
+
     description = fields.Text(
         string="Descripción",
         help="Descripción detallada del pool y sus electivas",
@@ -107,27 +114,6 @@ class ElectivePool(models.Model):
     )
 
     # ==========================================
-    # RELACIÓN CON ASIGNATURAS ELECTIVAS
-    # ==========================================
-
-    subject_ids = fields.Many2many(
-        comodel_name="benglish.subject",
-        relation="benglish_elective_pool_subject_rel",
-        column1="pool_id",
-        column2="subject_id",
-        string="Asignaturas Electivas",
-        tracking=True,
-        help="Asignaturas electivas disponibles en este pool para la fase seleccionada",
-    )
-
-    subject_count = fields.Integer(
-        string="Número de Asignaturas",
-        compute="_compute_subject_count",
-        store=True,
-        help="Total de asignaturas electivas en este pool",
-    )
-
-    # ==========================================
     # CONFIGURACIÓN DE VALOR
     # ==========================================
 
@@ -143,23 +129,6 @@ class ElectivePool(models.Model):
     )
 
     # ==========================================
-    # ESTADO Y CONTROL
-    # ==========================================
-
-    state = fields.Selection(
-        selection=[
-            ("draft", "Borrador"),
-            ("active", "Activo"),
-            ("closed", "Cerrado"),
-        ],
-        string="Estado",
-        default="draft",
-        required=True,
-        tracking=True,
-        help="Estado del pool: Borrador (configuración), Activo (disponible), Cerrado (histórico)",
-    )
-
-    # ==========================================
     # CAMPOS COMPUTADOS
     # ==========================================
 
@@ -168,13 +137,6 @@ class ElectivePool(models.Model):
         compute="_compute_display_name",
         store=True,
         help="Nombre completo para visualización",
-    )
-
-    pool_summary = fields.Char(
-        string="Resumen",
-        compute="_compute_pool_summary",
-        store=True,
-        help="Resumen del pool para vistas de lista",
     )
 
     # ==========================================
@@ -195,33 +157,44 @@ class ElectivePool(models.Model):
             
             record.display_name = " - ".join(parts) if parts else _("Nuevo Pool de Electivas")
 
-    @api.depends("subject_ids", "subject_count")
-    def _compute_pool_summary(self):
-        """Genera resumen para vistas de lista."""
-        for record in self:
-            if record.subject_count > 0:
-                record.pool_summary = f"{record.subject_count} asignatura(s) electiva(s)"
-            else:
-                record.pool_summary = "Sin asignaturas"
-
-    @api.depends("subject_ids")
-    def _compute_subject_count(self):
-        """Cuenta el total de asignaturas en el pool."""
-        for record in self:
-            record.subject_count = len(record.subject_ids)
-
     # ==========================================
     # MÉTODOS DE CREACIÓN Y CÓDIGO
     # ==========================================
 
+    def _get_next_reusable_pool_code(self):
+        """
+        Obtiene el próximo código de pool reutilizando huecos si existen.
+        Busca el primer número disponible entre los códigos existentes.
+        """
+        import re
+        prefix = "POOL-"
+        padding = 3
+        
+        # Obtener todos los códigos usados
+        existing = self.sudo().search([('code', '=like', f'{prefix}%')])
+        used_numbers = set()
+        
+        for record in existing:
+            if record.code:
+                match = re.match(r'^POOL-(\d+)$', record.code)
+                if match:
+                    used_numbers.add(int(match.group(1)))
+        
+        # Buscar primer hueco
+        if used_numbers:
+            for num in range(1, max(used_numbers) + 2):
+                if num not in used_numbers:
+                    return f"{prefix}{num:0{padding}d}"
+        
+        # No hay registros existentes, empezar en 1
+        return f"{prefix}001"
+
     @api.model_create_multi
     def create(self, vals_list):
-        """Genera código automático al crear."""
+        """Genera código automático al crear, reutilizando huecos."""
         for vals in vals_list:
             if vals.get("code", "/") == "/":
-                vals["code"] = self.env["ir.sequence"].next_by_code(
-                    "benglish.elective.pool"
-                ) or "/"
+                vals["code"] = self._get_next_reusable_pool_code()
         
         records = super(ElectivePool, self).create(vals_list)
         
@@ -263,14 +236,6 @@ class ElectivePool(models.Model):
                     ) % record.count_value
                 )
 
-    @api.constrains("subject_ids", "phase_id")
-    def _check_subjects_phase_compatibility(self):
-        """
-        Validación de compatibilidad de asignaturas.
-        NOTA: Las asignaturas ya no tienen fase, esta validación está deshabilitada.
-        """
-        pass  # Las asignaturas ya no tienen fase, no se requiere validación
-
     @api.constrains("name", "active")
     def _check_unique_active_pool(self):
         """
@@ -303,71 +268,3 @@ class ElectivePool(models.Model):
             "El valor por asignatura debe ser mayor a cero.",
         ),
     ]
-
-    # ==========================================
-    # MÉTODOS DE NEGOCIO
-    # ==========================================
-
-    def action_activate_pool(self):
-        """Activa el pool (cambia estado a 'active')."""
-        for record in self:
-            if record.state != "active":
-                # Validar que tenga al menos una asignatura
-                if not record.subject_ids:
-                    raise UserError(
-                        _(
-                            "No se puede activar el pool sin asignaturas.\n\n"
-                            "Agregue al menos una asignatura electiva antes de activar."
-                        )
-                    )
-                
-                record.write({"state": "active"})
-                record.message_post(
-                    body=_(
-                        "Pool activado: %s asignatura(s) electiva(s) disponible(s)."
-                    ) % record.subject_count,
-                    subject=_("Pool Activado"),
-                )
-        
-        return True
-
-    def action_close_pool(self):
-        """Cierra el pool (histórico)."""
-        for record in self:
-            if record.state == "active":
-                record.write({"state": "closed"})
-                record.message_post(
-                    body=_("Pool cerrado y archivado como histórico."),
-                    subject=_("Pool Cerrado"),
-                )
-        
-        return True
-
-    def action_view_subjects(self):
-        """Abre vista de asignaturas del pool."""
-        self.ensure_one()
-        
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("Asignaturas de %s") % self.display_name,
-            "res_model": "benglish.subject",
-            "domain": [("id", "in", self.subject_ids.ids)],
-            "view_mode": "tree,form",
-            "target": "current",
-            "context": {},
-        }
-
-    def action_add_subjects_wizard(self):
-        """
-        Abre wizard para agregar asignaturas al pool de forma masiva.
-        
-        TODO: Implementar wizard en fases posteriores si se requiere.
-        """
-        self.ensure_one()
-        
-        raise UserError(
-            _(
-                "Wizard de adición masiva no implementado.\n\n"
-                "Use el campo 'Asignaturas Electivas' para agregar asignaturas manualmente."
-            )
-        )

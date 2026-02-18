@@ -92,43 +92,42 @@ class AcademicProgram(models.Model):
     ]
 
     def _next_unique_code(self, prefix, seq_code):
-        """Calcula el siguiente código libre con prefijo.
+        """Calcula el siguiente código libre con prefijo, reutilizando huecos.
 
         Lógica:
-        - Si no hay registros existentes con el prefijo, forzar inicio en 1 y ajustar la secuencia.
-        - Si hay registros, tomar el mayor sufijo numérico y devolver prefix+(max+1), y ajustar la secuencia si hace falta.
+        - Busca el primer número disponible (hueco) entre los existentes.
+        - Si no hay huecos, usa el siguiente número después del máximo.
         """
         env = self.env
+        import re
+        
         # Buscar registros existentes con el prefijo
-        existing = self.search([("code", "ilike", f"{prefix}%")])
-        seq = env["ir.sequence"].search([("code", "=", seq_code)], limit=1)
-
+        existing = self.search([("code", "=like", f"{prefix}%")])
+        
         if not existing:
-            # No hay códigos existentes: iniciar desde 1
-            if seq:
-                seq.number_next = 1
             return f"{prefix}1"
-
-        # Si hay existentes, calcular el mayor sufijo numérico
-        max_n = 0
+        
+        # Obtener todos los números usados
+        used_numbers = set()
         for rec in existing:
-            if not rec.code:
-                continue
-            m = re.search(r"(\d+)$", rec.code)
-            if m:
-                try:
-                    n = int(m.group(1))
-                except Exception:
-                    n = 0
-                if n > max_n:
-                    max_n = n
-
-        next_n = max_n + 1
-        # Ajustar secuencia para evitar que next_by_code genere un número menor
-        if seq and (not seq.number_next or seq.number_next <= next_n):
-            seq.number_next = next_n + 1
-
-        return f"{prefix}{next_n}"
+            if rec.code:
+                m = re.search(r"(\d+)$", rec.code)
+                if m:
+                    try:
+                        used_numbers.add(int(m.group(1)))
+                    except ValueError:
+                        pass
+        
+        if not used_numbers:
+            return f"{prefix}1"
+        
+        # Buscar primer hueco
+        for num in range(1, max(used_numbers) + 2):
+            if num not in used_numbers:
+                return f"{prefix}{num}"
+        
+        # No debería llegar aquí, pero por seguridad
+        return f"{prefix}{max(used_numbers) + 1}"
 
     @api.model_create_multi
     def create(self, vals_list):

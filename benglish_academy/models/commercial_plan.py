@@ -416,26 +416,37 @@ class CommercialPlan(models.Model):
     # MÉTODOS CRUD
     # ═══════════════════════════════════════════════════════════════════════════
 
+    def _get_next_reusable_commercial_plan_code(self):
+        """
+        Obtiene el próximo código de plan comercial reutilizando huecos si existen.
+        """
+        import re
+        prefix = "CP-"
+        padding = 3
+        
+        existing = self.sudo().search([('code', '=like', f'{prefix}%')])
+        used_numbers = set()
+        
+        for record in existing:
+            if record.code:
+                match = re.match(r'^CP-(\d+)$', record.code)
+                if match:
+                    used_numbers.add(int(match.group(1)))
+        
+        if used_numbers:
+            for num in range(1, max(used_numbers) + 2):
+                if num not in used_numbers:
+                    return f"{prefix}{num:0{padding}d}"
+        
+        return f"{prefix}001"
+
     @api.model_create_multi
     def create(self, vals_list):
-        """Genera código automático al crear."""
+        """Genera código automático al crear, reutilizando huecos."""
         for vals in vals_list:
             if vals.get("code", "/") == "/":
-                vals["code"] = self.env["ir.sequence"].next_by_code(
-                    "benglish.commercial.plan"
-                ) or self._generate_code()
+                vals["code"] = self._get_next_reusable_commercial_plan_code()
         return super().create(vals_list)
-
-    def _generate_code(self):
-        """Genera código si no hay secuencia configurada."""
-        max_code = self.search([], order="id desc", limit=1)
-        if max_code and max_code.code and max_code.code != "/":
-            try:
-                num = int(max_code.code.replace("CP-", ""))
-                return f"CP-{num + 1:03d}"
-            except ValueError:
-                pass
-        return "CP-001"
 
     # ═══════════════════════════════════════════════════════════════════════════
     # MÉTODOS DE NEGOCIO

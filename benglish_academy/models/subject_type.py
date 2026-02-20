@@ -166,13 +166,18 @@ class SubjectType(models.Model):
             )
 
     def action_view_subjects(self):
-        """Abre la vista de asignaturas filtrada por este tipo."""
+        """Abre la vista de asignaturas filtrada por este tipo (solo lectura)."""
         self.ensure_one()
         return {
             "type": "ir.actions.act_window",
             "name": f"Asignaturas - {self.name}",
             "res_model": "benglish.subject",
-            "view_mode": "tree,form",
+            "view_mode": "list,form",
             "domain": [("subject_type_id", "=", self.id)],
-            "context": {"default_subject_type_id": self.id},
+            "context": {
+                "default_subject_type_id": self.id,
+                "create": False,
+                "edit": False,
+                "delete": False,
+            },
         }

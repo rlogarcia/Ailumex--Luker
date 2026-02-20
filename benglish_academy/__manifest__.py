@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Benglish - Gestión Académica",
-    "version": "18.0.1.10.0",
+    "version": "18.0.1.10.1",
     "category": "Education",
     "summary": "Sistema de gestión académica para academia de inglés",
     "description": """

@@ -46,10 +46,13 @@ class StudentImportBatch(models.Model):
         "ciudad",
         "pais",
         "programa",
+        "nombre_programa",
         "plan",
+        "plan_comercial",
         "sede",
         "fase",
         "nivel",
+        "unidad",
         "modalidad",
         "categoria",
         "fecha_inicio_curso",
@@ -59,6 +62,14 @@ class StudentImportBatch(models.Model):
         "contacto_titular",
         "estado_academico",
         "nombre_completo",  # Por compatibilidad
+        # Campos adicionales del Excel de ejemplo
+        "tipo_identificacion",
+        "codigo_est",
+        "cod_programa",
+        "id_plan",
+        "pl",
+        "id_sede",
+        "estado_est",
     ]
     COLUMN_ALIASES = {
         # Documento
@@ -67,6 +78,10 @@ class StudentImportBatch(models.Model):
         "documentoidentidad": "documento_identidad",
         "id": "documento_identidad",
         "identificacion": "documento_identidad",
+        # Tipo de identificación
+        "tipo_identificacion": "tipo_identificacion",
+        "tipoidentificacion": "tipo_identificacion",
+        "tipo_documento": "tipo_identificacion",
         # Nombres desagregados
         "primer_nombre": "primer_nombre",
         "primernombre": "primer_nombre",
@@ -76,6 +91,7 @@ class StudentImportBatch(models.Model):
         "nombre2": "segundo_nombre",
         "primer_apellido": "primer_apellido",
         "primerapellido": "primer_apellido",
+        "pirmer_apellido": "primer_apellido",  # Typo común
         "apellido1": "primer_apellido",
         "segundo_apellido": "segundo_apellido",
         "segundoapellido": "segundo_apellido",
@@ -91,10 +107,12 @@ class StudentImportBatch(models.Model):
         "email": "email",
         "correo": "email",
         "correo_electronico": "email",
+        "email_est": "email",
         "telefono": "telefono",
         "telefono_principal": "telefono",
         "celular": "celular",
         "movil": "celular",
+        "movil_estudiante": "celular",
         # Datos personales
         "fecha_nacimiento": "fecha_nacimiento",
         "nacimiento": "fecha_nacimiento",
@@ -102,18 +120,33 @@ class StudentImportBatch(models.Model):
         "sexo": "genero",
         "codigo": "codigo",
         "codigo_estudiante": "codigo",
+        "codigo_est": "codigo",
         # Dirección
         "direccion": "direccion",
         "direccion_residencia": "direccion",
         "ciudad": "ciudad",
         "pais": "pais",
-        # Académico
+        # Académico - Programa
         "programa": "programa",
-        "plan": "plan",
+        "nombre_programa": "programa",
+        "cod_programa": "programa",
+        # Académico - Plan Comercial (principal)
+        "plan": "plan_comercial",
+        "plan_comercial": "plan_comercial",
+        "plancomercial": "plan_comercial",
+        "id_plan": "plan_comercial",
+        "pl": "plan_comercial",
+        # Sede
         "sede": "sede",
+        "id_sede": "sede",
+        "sed": "sede",
+        # Fase y Nivel
         "fase": "fase",
         "nivel": "nivel",
+        "unidad": "nivel",
+        # Modalidad
         "modalidad": "modalidad",
+        # Categoría
         "categoria": "categoria",
         # Fechas del curso/matrícula
         "fecha_inicio_curso": "fecha_inicio_curso",
@@ -132,6 +165,7 @@ class StudentImportBatch(models.Model):
         # Estado
         "estado_academico": "estado_academico",
         "estado": "estado_academico",
+        "estado_est": "estado_academico",
     }
 
     name = fields.Char(
@@ -477,23 +511,161 @@ class StudentImportBatch(models.Model):
             "canonical_headers": canonical_headers,
         }
 
+    @api.model
+    def _normalize_for_match(self, value):
+        """
+        Normaliza un valor para comparación case-insensitive.
+        Elimina acentos, espacios extra, y convierte a minúsculas.
+        """
+        if not value:
+            return ""
+        text = str(value).strip()
+        # Eliminar acentos
+        text = unicodedata.normalize("NFKD", text)
+        text = "".join(ch for ch in text if not unicodedata.combining(ch))
+        # Convertir a minúsculas y normalizar espacios
+        text = re.sub(r"\s+", " ", text.lower())
+        return text
+
     def _match_by_name(self, model_name, value, cache):
+        """
+        Busca un registro por nombre de forma case-insensitive y flexible.
+        Soporta variaciones como 'BENGLISH', 'benglish', 'Benglish', etc.
+        """
         if not value:
             return (False, False)
-        key = self._normalize_key(value)
-        if not key:
+        
+        # Normalizar el valor de búsqueda
+        normalized_search = self._normalize_for_match(value)
+        if not normalized_search:
             return (False, False)
-        if key in cache:
-            return cache[key]
+        
+        # Verificar en cache
+        cache_key = f"{model_name}:{normalized_search}"
+        if cache_key in cache:
+            return cache[cache_key]
 
-        records = self.env[model_name].search([("name", "ilike", value)], limit=2)
-        if not records:
-            cache[key] = (False, "not_found")
-        elif len(records) > 1:
-            cache[key] = (False, "ambiguous")
+        # Buscar todos los registros activos y comparar con normalización
+        all_records = self.env[model_name].search([("active", "=", True)])
+        matching_records = []
+        
+        for record in all_records:
+            record_normalized = self._normalize_for_match(record.name)
+            # Comparación exacta (case-insensitive, sin acentos)
+            if record_normalized == normalized_search:
+                matching_records.append(record)
+                continue
+            # Comparación parcial (contenido)
+            if normalized_search in record_normalized or record_normalized in normalized_search:
+                matching_records.append(record)
+        
+        if not matching_records:
+            # Intentar con búsqueda ilike como fallback
+            records = self.env[model_name].search([("name", "ilike", value)], limit=2)
+            if not records:
+                cache[cache_key] = (False, "not_found")
+            elif len(records) > 1:
+                cache[cache_key] = (False, "ambiguous")
+            else:
+                cache[cache_key] = (records[0], False)
+        elif len(matching_records) > 1:
+            # Si hay múltiples coincidencias exactas, preferir la exacta
+            exact_matches = [r for r in matching_records 
+                           if self._normalize_for_match(r.name) == normalized_search]
+            if len(exact_matches) == 1:
+                cache[cache_key] = (exact_matches[0], False)
+            else:
+                cache[cache_key] = (False, "ambiguous")
         else:
-            cache[key] = (records[0], False)
-        return cache[key]
+            cache[cache_key] = (matching_records[0], False)
+        
+        return cache[cache_key]
+
+    def _match_commercial_plan(self, value, program_id, cache):
+        """
+        Busca un plan comercial por nombre de forma case-insensitive.
+        Soporta variaciones como 'Plan GOLD', 'plan gold', 'PLAN Gold', etc.
+        Si se proporciona program_id, filtra por ese programa.
+        """
+        if not value:
+            return (False, False)
+        
+        normalized_search = self._normalize_for_match(value)
+        if not normalized_search:
+            return (False, False)
+        
+        # Cache key incluye program_id
+        cache_key = f"commercial_plan:{normalized_search}:{program_id or 'all'}"
+        if cache_key in cache:
+            return cache[cache_key]
+
+        # Construir dominio de búsqueda
+        domain = [("state", "=", "active")]
+        if program_id:
+            domain.append(("program_id", "=", program_id))
+
+        all_plans = self.env["benglish.commercial.plan"].search(domain)
+        matching_plans = []
+        
+        for plan in all_plans:
+            plan_normalized = self._normalize_for_match(plan.name)
+            # Comparación exacta
+            if plan_normalized == normalized_search:
+                matching_plans.append(plan)
+                continue
+            # Comparación parcial - el nombre buscado contiene el nombre del plan
+            # o viceversa (ej: "plan gold" vs "gold")
+            if normalized_search in plan_normalized or plan_normalized in normalized_search:
+                matching_plans.append(plan)
+        
+        if not matching_plans:
+            cache[cache_key] = (False, "not_found")
+        elif len(matching_plans) > 1:
+            # Preferir coincidencia exacta
+            exact = [p for p in matching_plans 
+                    if self._normalize_for_match(p.name) == normalized_search]
+            if len(exact) == 1:
+                cache[cache_key] = (exact[0], False)
+            else:
+                cache[cache_key] = (False, "ambiguous")
+        else:
+            cache[cache_key] = (matching_plans[0], False)
+        
+        return cache[cache_key]
+
+    def _parse_starting_level(self, value):
+        """
+        Parsea el nivel de inicio desde el Excel.
+        Acepta números enteros (1-24), nombres de fase (INTERMEDIATE), 
+        o combinaciones (INTERMEDIATE 11 → nivel 11)
+        """
+        if not value:
+            return (None, False)
+        
+        text = str(value).strip()
+        
+        # Intentar parsear como número directamente
+        try:
+            level = int(float(text))
+            if 1 <= level <= 24:
+                return (level, False)
+            else:
+                return (None, True)  # Fuera de rango
+        except (ValueError, TypeError):
+            pass
+        
+        # Intentar extraer número de una cadena (ej: "INTERMEDIATE 11" → 11)
+        match = re.search(r"(\d+)", text)
+        if match:
+            try:
+                level = int(match.group(1))
+                if 1 <= level <= 24:
+                    return (level, False)
+            except ValueError:
+                pass
+        
+        # No se pudo parsear
+        return (None, True)
 
     def _match_country(self, value, cache):
         if not value:
@@ -579,17 +751,30 @@ class StudentImportBatch(models.Model):
             "benglish.program", program_raw, caches["program"]
         )
 
+        # Plan legacy (mantener compatibilidad)
         plan_raw = self._cell_to_string(data.get("plan"))
         plan, plan_error = self._match_by_name(
             "benglish.plan", plan_raw, caches["plan"]
         )
+
+        # Plan comercial (Feb 2026 - nuevo modelo de matrícula)
+        commercial_plan_raw = self._cell_to_string(data.get("plan_comercial"))
+        commercial_plan, commercial_plan_error = self._match_commercial_plan(
+            commercial_plan_raw,
+            program.id if program else None,
+            caches.setdefault("commercial_plan", {})
+        )
+
+        # Nivel de inicio (entero 1-24)
+        level_raw = self._cell_to_string(data.get("nivel"))
+        starting_level, starting_level_error = self._parse_starting_level(level_raw)
 
         phase_raw = self._cell_to_string(data.get("fase"))
         phase, phase_error = self._match_by_name(
             "benglish.phase", phase_raw, caches.setdefault("phase", {})
         )
 
-        level_raw = self._cell_to_string(data.get("nivel"))
+        # Level como registro (para compatibilidad legacy)
         level, level_error = self._match_by_name(
             "benglish.level", level_raw, caches.setdefault("level", {})
         )
@@ -653,6 +838,10 @@ class StudentImportBatch(models.Model):
             "program_match_error": bool(program_error),
             "plan_id": plan.id if plan else False,
             "plan_match_error": bool(plan_error),
+            "commercial_plan_id": commercial_plan.id if commercial_plan else False,
+            "commercial_plan_match_error": bool(commercial_plan_error),
+            "starting_level": starting_level,
+            "starting_level_parse_error": starting_level_error,
             "phase_id": phase.id if phase else False,
             "phase_match_error": bool(phase_error),
             "level_id": level.id if level else False,
@@ -941,8 +1130,14 @@ class StudentImportBatch(models.Model):
         }
 
     def _prepare_student_vals(self, line):
+        """Prepara los valores para crear/actualizar un estudiante."""
+        # Nombres desagregados - el campo 'name' es computado, no se pasa directamente
         vals = {
-            "name": line.name,
+            "first_name": line.first_name,
+            "second_name": line.second_name,
+            "first_last_name": line.first_last_name,
+            "second_last_name": line.second_last_name,
+            # "name": se computa automáticamente desde los campos anteriores
             "student_id_number": line.student_id_number,
             "email": line.email,
             "phone": line.phone,
@@ -955,6 +1150,9 @@ class StudentImportBatch(models.Model):
             "country_id": line.country_id.id if line.country_id else False,
             "program_id": line.program_id.id if line.program_id else False,
             "plan_id": line.plan_id.id if line.plan_id else False,
+            "commercial_plan_id": (
+                line.commercial_plan_id.id if line.commercial_plan_id else False
+            ),
             "preferred_campus_id": (
                 line.preferred_campus_id.id if line.preferred_campus_id else False
             ),
@@ -963,6 +1161,58 @@ class StudentImportBatch(models.Model):
         return {
             key: value for key, value in vals.items() if value not in (False, None, "")
         }
+
+    def _prepare_enrollment_vals(self, student, line):
+        """
+        Prepara los valores para crear una matrícula automáticamente.
+        
+        Feb 2026 - Modelo de matrícula por nivel:
+        - program_id: obligatorio
+        - commercial_plan_id: obligatorio (define estructura de asignaturas)
+        - current_level: nivel numérico de inicio (1-24)
+        """
+        vals = {
+            "student_id": student.id,
+            "program_id": line.program_id.id if line.program_id else False,
+            "commercial_plan_id": (
+                line.commercial_plan_id.id if line.commercial_plan_id else False
+            ),
+            "delivery_mode": line.preferred_delivery_mode or "presential",
+            "state": "active",
+        }
+        
+        # Nivel de inicio
+        if line.starting_level:
+            vals["current_level"] = line.starting_level
+            vals["starting_level"] = line.starting_level
+        elif line.commercial_plan_id:
+            # Usar el nivel inicial del plan comercial
+            vals["current_level"] = line.commercial_plan_id.level_start or 1
+            vals["starting_level"] = line.commercial_plan_id.level_start or 1
+        
+        # Datos adicionales del contrato
+        if line.categoria:
+            vals["categoria"] = line.categoria
+        if line.course_start_date:
+            vals["course_start_date"] = line.course_start_date
+        if line.course_end_date:
+            vals["course_end_date"] = line.course_end_date
+        if line.max_freeze_date:
+            vals["max_freeze_date"] = line.max_freeze_date
+        if line.course_days:
+            vals["course_days"] = line.course_days
+        
+        # Plan legacy (compatibilidad)
+        if line.plan_id:
+            vals["plan_id"] = line.plan_id.id
+        
+        # Fase y nivel como registros (compatibilidad)
+        if line.phase_id:
+            vals["current_phase_id"] = line.phase_id.id
+        if line.level_id:
+            vals["current_level_id"] = line.level_id.id
+            
+        return vals
 
     def action_import(self):
         self.ensure_one()
@@ -1010,15 +1260,50 @@ class StudentImportBatch(models.Model):
 
                     if line.action_decision == "create":
                         student = Student.create(vals)
+                        
+                        # ═══════════════════════════════════════════════════════════
+                        # CREACIÓN AUTOMÁTICA DE MATRÍCULA (Feb 2026)
+                        # ═══════════════════════════════════════════════════════════
+                        enrollment = None
+                        enrollment_message = ""
+                        
+                        if line.program_id and line.commercial_plan_id:
+                            try:
+                                enrollment_vals = self._prepare_enrollment_vals(student, line)
+                                enrollment = self.env["benglish.enrollment"].create(enrollment_vals)
+                                enrollment_message = _(
+                                    " Matrícula creada: %s (Nivel %d)"
+                                ) % (enrollment.code, enrollment.current_level)
+                                _logger.info(
+                                    f"[IMPORT] Matrícula creada automáticamente: "
+                                    f"estudiante={student.name}, "
+                                    f"programa={line.program_id.name}, "
+                                    f"plan={line.commercial_plan_id.name}, "
+                                    f"nivel={enrollment.current_level}"
+                                )
+                            except Exception as enroll_exc:
+                                enrollment_message = _(
+                                    " Error al crear matrícula: %s"
+                                ) % str(enroll_exc)
+                                _logger.warning(
+                                    f"[IMPORT] Error al crear matrícula para {student.name}: {enroll_exc}"
+                                )
+                        elif line.program_id or line.commercial_plan_id:
+                            enrollment_message = _(
+                                " Matrícula no creada: faltan datos (programa y/o plan comercial)."
+                            )
+                        
+                        result_message = _("Estudiante creado.") + enrollment_message
+                        
                         line.with_context(skip_import_recompute=True).write(
                             {
                                 "result_state": "created",
-                                "result_message": _("Estudiante creado."),
+                                "result_message": result_message,
                                 "processed_at": fields.Datetime.now(),
                                 "processed_by": self.env.user.id,
                             }
                         )
-                        self._log("info", _("Estudiante creado."), line=line)
+                        self._log("info", result_message, line=line)
                         line.with_context(skip_import_recompute=True).write(
                             {"existing_student_id": student.id}
                         )
@@ -1031,15 +1316,56 @@ class StudentImportBatch(models.Model):
                                 _("No hay estudiante objetivo para actualizar.")
                             )
                         target.write(vals)
+                        
+                        # ═══════════════════════════════════════════════════════════
+                        # ACTUALIZACIÓN/CREACIÓN DE MATRÍCULA AL ACTUALIZAR ESTUDIANTE
+                        # ═══════════════════════════════════════════════════════════
+                        enrollment_message = ""
+                        
+                        if line.program_id and line.commercial_plan_id:
+                            # Verificar si ya tiene matrícula activa
+                            existing_enrollment = self.env["benglish.enrollment"].search([
+                                ("student_id", "=", target.id),
+                                ("program_id", "=", line.program_id.id),
+                                ("commercial_plan_id", "=", line.commercial_plan_id.id),
+                                ("state", "in", ["active", "enrolled", "in_progress"]),
+                            ], limit=1)
+                            
+                            if existing_enrollment:
+                                # Actualizar nivel si se especifica uno diferente
+                                if line.starting_level and existing_enrollment.current_level != line.starting_level:
+                                    existing_enrollment.write({"current_level": line.starting_level})
+                                    enrollment_message = _(
+                                        " Matrícula existente actualizada: %s (Nivel %d)"
+                                    ) % (existing_enrollment.code, line.starting_level)
+                                else:
+                                    enrollment_message = _(
+                                        " Matrícula existente: %s"
+                                    ) % existing_enrollment.code
+                            else:
+                                # Crear nueva matrícula
+                                try:
+                                    enrollment_vals = self._prepare_enrollment_vals(target, line)
+                                    enrollment = self.env["benglish.enrollment"].create(enrollment_vals)
+                                    enrollment_message = _(
+                                        " Nueva matrícula creada: %s (Nivel %d)"
+                                    ) % (enrollment.code, enrollment.current_level)
+                                except Exception as enroll_exc:
+                                    enrollment_message = _(
+                                        " Error al crear matrícula: %s"
+                                    ) % str(enroll_exc)
+                        
+                        result_message = _("Estudiante actualizado.") + enrollment_message
+                        
                         line.with_context(skip_import_recompute=True).write(
                             {
                                 "result_state": "updated",
-                                "result_message": _("Estudiante actualizado."),
+                                "result_message": result_message,
                                 "processed_at": fields.Datetime.now(),
                                 "processed_by": self.env.user.id,
                             }
                         )
-                        self._log("info", _("Estudiante actualizado."), line=line)
+                        self._log("info", result_message, line=line)
 
             except Exception as exc:  # pragma: no cover - audit trail
                 errors_found = True

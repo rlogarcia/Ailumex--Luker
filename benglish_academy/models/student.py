@@ -351,6 +351,27 @@ class Student(models.Model):
         help="Asignatura actual del estudiante (de matrículas activas)",
     )
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # NIVEL/UNIDAD DE INICIO (Feb 2026 - Matrícula por Nivel)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Estos campos reflejan el punto de partida del estudiante según su matrícula
+    
+    starting_unit = fields.Integer(
+        string="Unidad de Inicio",
+        compute="_compute_current_academic_info",
+        store=True,
+        help="Unidad/Nivel en la que el estudiante fue matriculado inicialmente. "
+        "Este es el punto de partida según su matrícula activa.",
+    )
+    
+    current_unit = fields.Integer(
+        string="Unidad Actual",
+        compute="_compute_current_academic_info",
+        store=True,
+        help="Unidad/Nivel actual del estudiante según su matrícula activa. "
+        "Puede ser mayor a starting_unit si ha avanzado.",
+    )
+
     # Unidad máxima completada según historial académico (PROGRESO REAL)
     max_unit_completed = fields.Integer(
         string="Unidad Máxima Completada",
@@ -862,22 +883,65 @@ class Student(models.Model):
         "enrollment_ids.enrollment_progress_ids",
         "enrollment_ids.enrollment_progress_ids.state",
         "enrollment_ids.state",
+        "active_enrollment_ids",
+        "active_enrollment_ids.starting_level",
+        "active_enrollment_ids.current_level",
+        "active_enrollment_ids.commercial_plan_id",
         "plan_id",
         "plan_id.progress_calculation_method",
+        "commercial_plan_id",
     )
     def _compute_academic_progress(self):
         """
-        RF-04: Calcula el progreso académico según el método del plan.
+        RF-04: Calcula el progreso académico.
+        
+        LÓGICA (Feb 2026 - Matrícula por Nivel):
+        - El progreso se calcula basándose en la unidad de inicio vs unidad máxima del plan
+        - Si starting_level = 22 y el plan va hasta 24, el progreso base es (22-1)/24 = 87.5%
+        - El historial académico puede incrementar el progreso más allá del punto base
 
         Métodos soportados:
         - by_subjects: Progreso por asignaturas completadas
         - by_hours: Progreso por horas académicas completadas
         - mixed: Promedio de ambos métodos (50% + 50%)
-
-        NUEVO: Ahora usa enrollment_progress_ids (progreso por asignatura)
-        en lugar de contar matrículas completas (modelo antiguo).
+        - by_levels: Progreso por niveles (nuevo método Feb 2026)
         """
         for student in self:
+            # ═══════════════════════════════════════════════════════════════════════
+            # NUEVO (Feb 2026): Calcular progreso basándose en matrícula por nivel
+            # ═══════════════════════════════════════════════════════════════════════
+            active_enrollment = student.active_enrollment_ids[:1] if student.active_enrollment_ids else None
+            
+            if active_enrollment and active_enrollment.commercial_plan_id:
+                # Usar el plan comercial para calcular progreso
+                commercial_plan = active_enrollment.commercial_plan_id
+                starting_level = active_enrollment.starting_level or active_enrollment.current_level or 1
+                max_level = commercial_plan.level_end or 24
+                
+                # El progreso base es la unidad de inicio - 1 (unidades ya "completadas")
+                # dividido por la unidad máxima del plan
+                if max_level > 0:
+                    # Las unidades completadas son starting_level - 1
+                    completed_units = max(0, starting_level - 1)
+                    base_progress = (completed_units / max_level) * 100
+                    
+                    # También considerar el max_unit_completed (puede ser mayor si hay historial)
+                    if student.max_unit_completed > completed_units:
+                        base_progress = (student.max_unit_completed / max_level) * 100
+                    
+                    student.academic_progress_percentage = min(base_progress, 100.0)
+                    student.completed_hours = 0.0  # Las horas se calculan si hay historial
+                    
+                    _logger.info(
+                        f"📊 [STUDENT {student.code}] Progreso por Nivel: "
+                        f"starting={starting_level}, max_unit_completed={student.max_unit_completed}, "
+                        f"max_level={max_level} → {student.academic_progress_percentage:.1f}%"
+                    )
+                    continue
+            
+            # ═══════════════════════════════════════════════════════════════════════
+            # LEGACY: Calcular progreso con plan_id (método antiguo)
+            # ═══════════════════════════════════════════════════════════════════════
             if not student.plan_id:
                 student.academic_progress_percentage = 0.0
                 student.completed_hours = 0.0
@@ -886,17 +950,8 @@ class Student(models.Model):
             method = student.plan_id.progress_calculation_method or "by_subjects"
 
             # Obtener matrícula activa
-            active_enrollment = (
-                student.active_enrollment_ids[:1]
-                if student.active_enrollment_ids
-                else False
-            )
-
             if not active_enrollment:
-                # Si no hay matrícula activa, intentar con cualquier matrícula
-                active_enrollment = (
-                    student.enrollment_ids[:1] if student.enrollment_ids else False
-                )
+                active_enrollment = student.enrollment_ids[:1] if student.enrollment_ids else False
 
             if not active_enrollment:
                 student.academic_progress_percentage = 0.0
@@ -967,6 +1022,8 @@ class Student(models.Model):
     @api.depends(
         "active_enrollment_ids",
         "active_enrollment_ids.current_level_id",
+        "active_enrollment_ids.current_level",
+        "active_enrollment_ids.starting_level",
         "active_enrollment_ids.level_id",
         "active_enrollment_ids.current_subject_id",
         "active_enrollment_ids.subject_id",
@@ -977,6 +1034,8 @@ class Student(models.Model):
         """
         Calcula el nivel, fase y asignatura actual del estudiante basándose
         en sus matrículas activas.
+        
+        También calcula los campos de unidad de inicio y actual (Feb 2026).
         """
         for student in self:
             active_enrollments = student.active_enrollment_ids
@@ -1003,6 +1062,24 @@ class Student(models.Model):
                     f"{[(l.name, l.phase_id.name) for l in levels]}"
                 )
 
+                # Obtener la matrícula activa más reciente
+                latest_enrollment = active_enrollments.sorted(
+                    key=lambda e: e.enrollment_date, reverse=True
+                )[0]
+                
+                # ═══════════════════════════════════════════════════════════════════
+                # UNIDAD DE INICIO Y ACTUAL (Feb 2026 - Matrícula por Nivel)
+                # ═══════════════════════════════════════════════════════════════════
+                # Usar current_level (Integer) que contiene el número de UNIDAD
+                student.current_unit = latest_enrollment.current_level or 0
+                student.starting_unit = latest_enrollment.starting_level or latest_enrollment.current_level or 0
+                
+                _logger.info(
+                    f"📊 [STUDENT {student.code}] Unidades desde matrícula:\n"
+                    f"  • Unidad de Inicio: {student.starting_unit}\n"
+                    f"  • Unidad Actual: {student.current_unit}"
+                )
+
                 if levels:
                     # Ordenar por secuencia y tomar el último
                     sorted_levels = levels.sorted(
@@ -1011,10 +1088,6 @@ class Student(models.Model):
                     student.current_level_id = sorted_levels[-1]
                     student.current_phase_id = sorted_levels[-1].phase_id
 
-                    # Obtener la asignatura de la matrícula activa más reciente
-                    latest_enrollment = active_enrollments.sorted(
-                        key=lambda e: e.enrollment_date, reverse=True
-                    )[0]
                     # Priorizar current_subject_id sobre subject_id (legacy)
                     student.current_subject_id = (
                         latest_enrollment.current_subject_id
@@ -1025,19 +1098,25 @@ class Student(models.Model):
                         f"✅ [STUDENT {student.code}] Info académica actualizada:\n"
                         f"  • Fase: {student.current_phase_id.name if student.current_phase_id else 'N/A'}\n"
                         f"  • Nivel: {student.current_level_id.name if student.current_level_id else 'N/A'}\n"
-                        f"  • Asignatura: {student.current_subject_id.name if student.current_subject_id else 'N/A'}"
+                        f"  • Asignatura: {student.current_subject_id.name if student.current_subject_id else 'N/A'}\n"
+                        f"  • Unidad Inicio: {student.starting_unit}\n"
+                        f"  • Unidad Actual: {student.current_unit}"
                     )
                 else:
                     student.current_level_id = False
                     student.current_phase_id = False
                     student.current_subject_id = False
+                    # Nota: starting_unit y current_unit ya se calcularon arriba
                     _logger.warning(
-                        f"⚠️ [STUDENT {student.code}] No se encontraron niveles en matrículas activas"
+                        f"⚠️ [STUDENT {student.code}] No se encontraron niveles en matrículas activas. "
+                        f"Unidad de inicio: {student.starting_unit}, Unidad actual: {student.current_unit}"
                     )
             else:
                 student.current_level_id = False
                 student.current_phase_id = False
                 student.current_subject_id = False
+                student.starting_unit = 0
+                student.current_unit = 0
                 _logger.warning(
                     f"⚠️ [STUDENT {student.code}] No tiene matrículas activas. "
                     f"Total matrículas en sistema: {len(all_enrollments)}"
@@ -1047,17 +1126,21 @@ class Student(models.Model):
         "academic_history_ids",
         "academic_history_ids.attendance_status",
         "academic_history_ids.subject_id",
-        "current_level_id",  # ← AGREGADO: Para recalcular cuando cambia el nivel
+        "active_enrollment_ids",
+        "active_enrollment_ids.starting_level",
+        "active_enrollment_ids.current_level",
     )
     def _compute_max_unit_from_history(self):
         """
-        Calcula la unidad máxima completada basándose en el historial académico REAL del estudiante.
-
-        LÓGICA CORRECTA REFACTORIZADA:
+        Calcula la unidad máxima completada considerando:
+        1. El starting_level de la matrícula como punto de partida (unidades previas "completadas")
+        2. El historial académico REAL para progreso adicional
+        
+        LÓGICA (Feb 2026 - Matrícula por Nivel):
+        - Si el estudiante se matriculó en UNIT 22 (starting_level=22), 
+          ya "completó" las unidades 1-21 (max_unit_completed = 21)
+        - El historial académico permite avanzar más allá de ese punto base
         - Una unidad está completa SOLO si tiene B-check + 4 skills
-        - Cuenta TODAS las skills sin importar bskill_number
-        - Usa set() para contar skills únicas (permite repeticiones)
-        - Avanza solo hasta la última unidad COMPLETA
 
         Este método es CRÍTICO para:
         - Validar acceso a Oral Tests
@@ -1065,59 +1148,36 @@ class Student(models.Model):
         - Mostrar progreso real en portal y backend
         """
         for student in self:
-            # Buscar todas las asignaturas completadas en historial académico
+            # ═══════════════════════════════════════════════════════════════════════
+            # PASO 1: Obtener el punto de partida desde la matrícula (starting_level)
+            # ═══════════════════════════════════════════════════════════════════════
+            base_completed = 0
+            active_enrollment = student.active_enrollment_ids[:1] if student.active_enrollment_ids else None
+            
+            if active_enrollment:
+                # El starting_level indica desde dónde inicia el estudiante
+                # Si starting_level = 22, significa que las unidades 1-21 ya están "completadas"
+                starting_level = active_enrollment.starting_level or active_enrollment.current_level or 0
+                if starting_level > 1:
+                    base_completed = starting_level - 1
+            
+            # ═══════════════════════════════════════════════════════════════════════
+            # PASO 2: Verificar progreso adicional desde historial académico
+            # ═══════════════════════════════════════════════════════════════════════
             completed_subjects = student.academic_history_ids.filtered(
                 lambda h: h.attendance_status == "attended" and h.subject_id
             )
 
             if not completed_subjects:
-                # ═══════════════════════════════════════════════════════════════════════
-                # CORRECCIÓN CRÍTICA: Calcular unidad máxima completada correctamente
-                # cuando NO hay historial académico (ej: matrícula manual)
-                # ═══════════════════════════════════════════════════════════════════════
-                # ANTES: Usaba current_level_id.max_unit directamente
-                # PROBLEMA: Si se matricula en UNIT 8, max_unit=8 pero debería ser 7
-                # SOLUCIÓN: Buscar la unidad MÍNIMA de las asignaturas del nivel actual
-                #           y restar 1 para obtener la última unidad completada
-                
-                if student.current_level_id:
-                    # Buscar asignaturas del nivel actual para determinar la unidad mínima
-                    current_level_subjects = self.env['benglish.subject'].search([
-                        ('level_id', '=', student.current_level_id.id),
-                        ('active', '=', True),
-                        ('unit_number', '>', 0)
-                    ], order='unit_number ASC')
-                    
-                    if current_level_subjects:
-                        # Obtener la unidad mínima del nivel actual
-                        min_unit_current_level = min(current_level_subjects.mapped('unit_number'))
-                        # La unidad máxima completada es la anterior a la mínima del nivel actual
-                        student.max_unit_completed = max(0, min_unit_current_level - 1)
-                        
-                        _logger.info(
-                            f"📊 [STUDENT {student.code}] Sin historial académico. "
-                            f"Nivel={student.current_level_id.name}, "
-                            f"Unit mínima del nivel={min_unit_current_level}, "
-                            f"Unit máxima completada (inferida)={student.max_unit_completed}"
-                        )
-                    else:
-                        # Fallback: usar max_unit del nivel si no hay asignaturas
-                        student.max_unit_completed = student.current_level_id.max_unit or 0
-                        _logger.warning(
-                            f"⚠️ [STUDENT {student.code}] Nivel sin asignaturas. "
-                            f"Usando max_unit={student.max_unit_completed}"
-                        )
-                else:
-                    student.max_unit_completed = 0
-                    _logger.warning(
-                        f"⚠️ [STUDENT {student.code}] Sin historial ni nivel asignado. "
-                        f"max_unit_completed = 0"
-                    )
+                # Sin historial: usar solo el punto base de la matrícula
+                student.max_unit_completed = base_completed
+                _logger.info(
+                    f"📊 [STUDENT {student.code}] Sin historial académico. "
+                    f"Usando base de matrícula: max_unit_completed = {base_completed}"
+                )
                 continue
 
-            # ═════════════════════════════════════════════════════════════
-            # LÓGICA CORRECTA: Agrupar por unidad y verificar completitud
-            # ═════════════════════════════════════════════════════════════
+            # Agrupar por unidad y verificar completitud
             units_progress = {}
             for history in completed_subjects:
                 subject = history.subject_id
@@ -1134,30 +1194,29 @@ class Student(models.Model):
                 if subject.subject_category == 'bcheck':
                     units_progress[unit]['bcheck'] = True
                 elif subject.subject_category == 'bskills':
-                    # Agregar a set para evitar duplicados
-                    # Contar TODAS las skills (incluso bskill_number > 4)
                     units_progress[unit]['skills'].add(subject.id)
             
-            # Encontrar última unidad COMPLETA (B-check + 4 skills)
-            max_complete = 0
+            # Encontrar última unidad COMPLETA desde historial
+            max_from_history = 0
             for unit in sorted(units_progress.keys()):
                 progress = units_progress[unit]
                 is_complete = progress['bcheck'] and len(progress['skills']) >= 4
                 
                 if is_complete:
-                    max_complete = unit
+                    max_from_history = unit
                 else:
                     # Primera unidad incompleta, detener
                     break
             
-            student.max_unit_completed = max_complete
+            # Usar el máximo entre la base de matrícula y el historial real
+            student.max_unit_completed = max(base_completed, max_from_history)
             
             # Log detallado
             _logger.info(
-                f"📊 [STUDENT {student.code}] Progreso Real Calculado (Lógica Correcta):\n"
-                f"  • Asignaturas completadas: {len(completed_subjects)}\n"
-                f"  • Unidades con progreso: {sorted(units_progress.keys())}\n"
-                f"  • Unidad máxima COMPLETA: {student.max_unit_completed}"
+                f"📊 [STUDENT {student.code}] Progreso Calculado:\n"
+                f"  • Base matrícula (starting_level-1): {base_completed}\n"
+                f"  • Desde historial: {max_from_history}\n"
+                f"  • Unidad máxima FINAL: {student.max_unit_completed}"
             )
             
             # Log de progreso por unidad
@@ -3042,10 +3101,14 @@ Contacto creado automáticamente desde el sistema académico.
         """
         Genera historial académico retroactivo para estudiantes importados.
         Crea registros 'attended' para todas las clases de unidades anteriores
-        a la unidad actual del estudiante.
+        a la UNIDAD DE INICIO (starting_level) del estudiante.
         
-        NOTA: Refactorizado para trabajar sin level_id/phase_id en asignaturas.
-        Las asignaturas ahora son globales y se identifican por program_id y unit_number.
+        LÓGICA (Feb 2026 - Matrícula por Nivel):
+        - starting_level: Unidad en la que el estudiante fue matriculado
+        - Se genera historial para unidades 1 hasta (starting_level - 1)
+        - Si starting_level = 17, genera historial para unidades 1-16
+        
+        NOTA: Las asignaturas son globales y se identifican por program_id y unit_number.
         """
         from datetime import timedelta
 
@@ -3070,58 +3133,53 @@ Contacto creado automáticamente desde el sistema académico.
                         continue
 
                     enrollment = active_enrollments[0]
-                    current_level = enrollment.current_level_id or enrollment.level_id  # Fallback a level_id legacy
                     program = enrollment.program_id
-                    plan = enrollment.plan_id  # El plan viene de la matrícula, NO del estudiante
+                    # Usar commercial_plan_id (nuevo) o plan_id (legacy) como fallback
+                    commercial_plan = enrollment.commercial_plan_id
+                    legacy_plan = enrollment.plan_id
 
-                    if not program or not plan:
+                    if not program:
                         results.append(
-                            "⚠️ %s: Sin programa/plan (Programa: %s, Plan: %s)"
-                            % (
-                                student.name,
-                                program.name if program else "N/A",
-                                plan.name if plan else "N/A",
-                            )
+                            "⚠️ %s: Sin programa (Programa: N/A)"
+                            % student.name
                         )
                         continue
                     
                     # ═════════════════════════════════════════════════════════════════════
-                    # SIMPLIFICADO: Las asignaturas ya no tienen level_id
-                    # Usar unit_number del nivel actual para determinar la unidad actual
+                    # NUEVA LÓGICA (Feb 2026): Usar starting_level de la matrícula
+                    # starting_level = unidad en la que fue matriculado el estudiante
+                    # El historial retroactivo es para unidades 1 hasta (starting_level - 1)
                     # ═════════════════════════════════════════════════════════════════════
                     
-                    # Obtener la unidad actual desde el nivel (si existe)
-                    if current_level:
-                        min_unit_current_level = current_level.max_unit or 1
-                    else:
-                        # Fallback: buscar el unit_number más bajo en asignaturas del programa
-                        program_subjects = Subject.search(
-                            [
-                                ("program_id", "=", program.id),
-                                ("active", "=", True),
-                                ("unit_number", ">", 0),
-                            ],
-                            order="unit_number ASC",
-                            limit=1,
-                        )
-                        min_unit_current_level = program_subjects[0].unit_number if program_subjects else 1
+                    # Obtener la unidad de inicio desde la matrícula
+                    starting_unit = enrollment.starting_level or enrollment.current_level or 0
                     
-                    # Calcular unidad actual basándose en el nivel
-                    current_unit = min_unit_current_level - 1 if min_unit_current_level > 1 else 0
-
+                    # Si no hay starting_level, intentar obtenerlo del current_level_id (fallback)
+                    if not starting_unit and enrollment.current_level_id:
+                        starting_unit = enrollment.current_level_id.max_unit or 1
+                    
                     _logger.info(
                         f"[HISTORIAL] {student.name}: Programa={program.name}, "
-                        f"Unit mín nivel={min_unit_current_level}, Unit máx completada={current_unit}"
+                        f"Plan Comercial={commercial_plan.name if commercial_plan else 'N/A'}, "
+                        f"Unidad de Inicio (starting_level)={starting_unit}"
                     )
 
-                    if current_unit < 1:
+                    # El historial es para unidades ANTERIORES a la unidad de inicio
+                    # Si starting_unit = 17, generamos historial para 1-16
+                    max_completed_unit = starting_unit - 1 if starting_unit > 1 else 0
+
+                    if max_completed_unit < 1:
                         results.append(
-                            "✓ %s: En Unit %d - Sin historial previo"
-                            % (student.name, min_unit_current_level)
+                            "✓ %s: Inicia en Unit %d - Sin historial previo necesario"
+                            % (student.name, starting_unit or 1)
                         )
                         continue
 
-                    previous_units = list(range(1, current_unit + 1))
+                    previous_units = list(range(1, max_completed_unit + 1))
+                    
+                    _logger.info(
+                        f"[HISTORIAL] {student.name}: Generando historial para unidades {previous_units}"
+                    )
 
                     # BUSCAR TODAS las asignaturas de unidades previas (bcheck, bskills, oral_test, etc.)
                     # La construcción del dominio con operadores |/& anidados resultaba incorrecta
@@ -3130,7 +3188,7 @@ Contacto creado automáticamente desde el sistema académico.
                     # lógica esperada:
                     # - Para categorías no 'bskills': unit_number in previous_units
                     # - Para 'bskills': unit_number in previous_units and bskill_number <= 4
-                    # - Para 'oral_test': unit_block_end <= current_unit
+                    # - Para 'oral_test': unit_block_end <= max_completed_unit
                     all_program_subjects = Subject.search(
                         [("program_id", "=", program.id), ("active", "=", True)]
                     )
@@ -3154,7 +3212,7 @@ Contacto creado automáticamente desde el sistema académico.
                         try:
                             # Explicit cases first
                             if s.subject_category == "oral_test":
-                                return bool(s.unit_block_end and s.unit_block_end <= current_unit)
+                                return bool(s.unit_block_end and s.unit_block_end <= max_completed_unit)
                             if s.subject_category == "bskills":
                                 return bool(
                                     s.unit_number
@@ -3177,7 +3235,8 @@ Contacto creado automáticamente desde el sistema académico.
                     # Debug counts: how many subjects selected and how many of them lack unit_number
                     fallback_included_count = len([s for s in subjects_to_complete if not s.unit_number])
                     _logger.info(
-                        f"Estudiante {student.name}: Unit actual={current_unit}, "
+                        f"Estudiante {student.name}: Unidad inicio={starting_unit}, "
+                        f"Máx completada={max_completed_unit}, "
                         f"Units previas={previous_units}, "
                         f"Asignaturas encontradas={len(subjects_to_complete)}, "
                         f"fallback_included_count={fallback_included_count}"
@@ -3206,12 +3265,8 @@ Contacto creado automáticamente desde el sistema académico.
                         lambda s: s.id not in existing_subject_ids
                     )
 
-                    # Buscar matrícula al plan para actualizar progreso
-                    plan_enrollment = student.enrollment_ids.filtered(
-                        lambda e: e.plan_id == plan
-                        and e.state in ["enrolled", "in_progress", "active"]
-                    ).sorted("enrollment_date", reverse=True)
-                    plan_enrollment = plan_enrollment[0] if plan_enrollment else False
+                    # Buscar matrícula para actualizar progreso (usar la matrícula actual)
+                    plan_enrollment = enrollment  # Usar la matrícula activa directamente
 
                     Progress = self.env["benglish.enrollment.progress"].sudo()
                     created_count = 0
@@ -3228,7 +3283,7 @@ Contacto creado automáticamente desde el sistema académico.
                                 "subject_id": subject.id,
                                 "enrollment_id": False,  # No hay session enrollment para historial retroactivo
                                 "program_id": program.id,
-                                "plan_id": plan.id if plan else False,
+                                "plan_id": legacy_plan.id if legacy_plan else False,
                                 "phase_id": False,  # Las asignaturas ya no tienen phase_id
                                 "level_id": False,  # Las asignaturas ya no tienen level_id
                                 "session_date": historical_date,

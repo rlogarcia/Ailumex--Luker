@@ -219,6 +219,72 @@ class Enrollment(models.Model):
     )
 
     # ═══════════════════════════════════════════════════════════════════════════
+    # MATRÍCULA POR NIVEL (Feb 2026 - Reunión)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # La matrícula se realiza por NIVEL, no por asignatura.
+    # El nivel es un valor entero que representa la posición del estudiante
+    # dentro del rango del plan comercial (level_start a level_end).
+    # Regla de negocio: La primera asignatura de cada nivel siempre es Bcheck.
+
+    current_level = fields.Integer(
+        string="Nivel Actual",
+        default=1,
+        required=True,
+        tracking=True,
+        index=True,
+        help="Nivel actual del estudiante (valor numérico 1-24). "
+        "Este es el campo principal para controlar el progreso por niveles. "
+        "Debe estar dentro del rango del plan comercial (level_start - level_end).",
+    )
+
+    starting_level = fields.Integer(
+        string="Nivel de Inicio",
+        readonly=True,
+        tracking=True,
+        help="Nivel en el que el estudiante inició según el plan comercial. "
+        "Se establece automáticamente al asignar el plan comercial.",
+    )
+
+    max_level = fields.Integer(
+        string="Nivel Máximo",
+        related="commercial_plan_id.level_end",
+        store=True,
+        readonly=True,
+        help="Nivel máximo que puede alcanzar según su plan comercial.",
+    )
+
+    min_level = fields.Integer(
+        string="Nivel Mínimo",
+        related="commercial_plan_id.level_start",
+        store=True,
+        readonly=True,
+        help="Nivel mínimo del plan comercial.",
+    )
+
+    levels_completed = fields.Integer(
+        string="Niveles Completados",
+        compute="_compute_levels_progress",
+        store=True,
+        help="Cantidad de niveles que el estudiante ha completado.",
+    )
+
+    level_progress_percentage = fields.Float(
+        string="% Progreso por Niveles",
+        compute="_compute_levels_progress",
+        store=True,
+        digits=(5, 2),
+        help="Porcentaje de avance basado en niveles completados vs niveles totales del plan.",
+    )
+
+    bcheck_current_level_completed = fields.Boolean(
+        string="Bcheck del Nivel Completado",
+        compute="_compute_bcheck_status",
+        store=True,
+        help="Indica si el Bcheck (prerrequisito) del nivel actual está completado. "
+        "Regla de negocio: El Bcheck debe completarse antes de ver otras asignaturas del nivel.",
+    )
+
+    # ═══════════════════════════════════════════════════════════════════════════
     # CAMPOS LEGACY (COMPATIBILIDAD BACKWARD)
     # ═══════════════════════════════════════════════════════════════════════════
     # DEPRECADOS: Estos campos se mantienen para compatibilidad con datos antiguos
@@ -778,6 +844,81 @@ class Enrollment(models.Model):
             else:
                 enrollment.commercial_progress_percentage = 0.0
 
+    @api.depends("current_level", "commercial_plan_id.level_start", "commercial_plan_id.level_end")
+    def _compute_levels_progress(self):
+        """
+        Calcula el progreso por niveles (Feb 2026 - Matrícula por Nivel).
+        
+        REGLA DE NEGOCIO:
+        - levels_completed = current_level - level_start del plan comercial
+        - level_progress_percentage = niveles completados / total niveles del plan * 100
+        """
+        for enrollment in self:
+            if enrollment.commercial_plan_id and enrollment.current_level:
+                start = enrollment.commercial_plan_id.level_start or 1
+                total_levels = enrollment.commercial_plan_id.total_levels or 1
+                
+                # Niveles completados = nivel actual - nivel de inicio
+                # (si estás en nivel 1 y empezaste en 1, has completado 0 niveles)
+                enrollment.levels_completed = max(0, enrollment.current_level - start)
+                
+                # Porcentaje de progreso
+                if total_levels > 0:
+                    enrollment.level_progress_percentage = (
+                        enrollment.levels_completed / total_levels
+                    ) * 100
+                else:
+                    enrollment.level_progress_percentage = 0.0
+                    
+                _logger.debug(
+                    f"[ENROLLMENT] Progreso por niveles calculado para {enrollment.code}: "
+                    f"nivel actual={enrollment.current_level}, completados={enrollment.levels_completed}, "
+                    f"porcentaje={enrollment.level_progress_percentage:.2f}%"
+                )
+            else:
+                enrollment.levels_completed = 0
+                enrollment.level_progress_percentage = 0.0
+
+    @api.depends("current_level", "commercial_progress_ids.completed_selection", "commercial_progress_ids.level_sequence")
+    def _compute_bcheck_status(self):
+        """
+        Verifica si el Bcheck del nivel actual está completado (Feb 2026).
+        
+        REGLA DE NEGOCIO CRÍTICA:
+        - La primera asignatura de cualquier nivel siempre es "Bcheck"
+        - El Bcheck es el prerrequisito para ver otras asignaturas del nivel
+        - Se verifica mirando el campo completed_selection del progreso comercial del nivel actual
+        
+        En el modelo de progreso comercial:
+        - selection = B-check (1 por nivel normalmente)
+        - Si completed_selection >= expected_selection para el nivel actual, Bcheck está completado
+        """
+        for enrollment in self:
+            if not enrollment.commercial_plan_id or not enrollment.current_level:
+                enrollment.bcheck_current_level_completed = False
+                continue
+            
+            # Buscar el registro de progreso comercial para el nivel actual
+            current_level_progress = enrollment.commercial_progress_ids.filtered(
+                lambda p: p.level_sequence == enrollment.current_level
+            )
+            
+            if current_level_progress:
+                # El Bcheck está completado si completed_selection >= expected_selection
+                progress = current_level_progress[0]
+                enrollment.bcheck_current_level_completed = (
+                    progress.completed_selection >= progress.expected_selection 
+                    and progress.expected_selection > 0
+                )
+                
+                _logger.debug(
+                    f"[ENROLLMENT] Bcheck status para {enrollment.code} nivel {enrollment.current_level}: "
+                    f"completed={progress.completed_selection}, expected={progress.expected_selection}, "
+                    f"completado={enrollment.bcheck_current_level_completed}"
+                )
+            else:
+                enrollment.bcheck_current_level_completed = False
+
     @api.depends("student_id", "subject_id", "student_id.approved_subject_ids")
     def _compute_prerequisites_met(self):
         """
@@ -823,6 +964,41 @@ class Enrollment(models.Model):
         if self.student_id:
             self.program_id = self.student_id.program_id
             self.plan_id = self.student_id.plan_id
+
+    @api.onchange("commercial_plan_id")
+    def _onchange_commercial_plan_id(self):
+        """
+        Establece el nivel inicial automáticamente al seleccionar plan comercial (Feb 2026).
+        
+        REGLA DE NEGOCIO:
+        - El nivel actual se establece al nivel inicial del plan comercial
+        - El starting_level se guarda para referencia histórica
+        - Si el plan comercial cambia, se actualiza el nivel actual
+        """
+        if self.commercial_plan_id:
+            level_start = self.commercial_plan_id.level_start or 1
+            
+            # Solo establecer si no hay un nivel actual o si es una nueva matrícula
+            if not self.current_level or self.current_level < level_start:
+                self.current_level = level_start
+                
+            # Siempre actualizar starting_level con el nivel inicial del plan
+            self.starting_level = level_start
+            
+            _logger.info(
+                f"[ENROLLMENT] Plan comercial seleccionado: {self.commercial_plan_id.name}. "
+                f"Nivel inicial establecido en {level_start}, rango: {level_start}-{self.commercial_plan_id.level_end}"
+            )
+            
+            return {
+                "warning": {
+                    "title": _("Plan Comercial Configurado"),
+                    "message": _(
+                        "Se ha configurado el nivel inicial en %d.\n"
+                        "Rango de niveles del plan: %d - %d"
+                    ) % (level_start, level_start, self.commercial_plan_id.level_end),
+                }
+            }
 
     @api.onchange("group_id")
     def _onchange_group_id(self):
@@ -971,6 +1147,67 @@ class Enrollment(models.Model):
                         )
                     )
 
+    @api.constrains("current_level", "commercial_plan_id")
+    def _check_level_within_plan_range(self):
+        """
+        Valida que el nivel actual esté dentro del rango del plan comercial (Feb 2026).
+        
+        REGLA DE NEGOCIO:
+        - El nivel actual debe estar entre level_start y level_end del plan comercial
+        - Si no hay plan comercial, solo valida que el nivel sea positivo
+        """
+        for enrollment in self:
+            if not enrollment.current_level:
+                continue
+                
+            if enrollment.current_level < 1:
+                raise ValidationError(
+                    _("❌ NIVEL INVÁLIDO\n\n"
+                      "El nivel actual debe ser mayor a 0.\n"
+                      "Nivel ingresado: %d") % enrollment.current_level
+                )
+            
+            if enrollment.commercial_plan_id:
+                plan = enrollment.commercial_plan_id
+                
+                if enrollment.current_level < plan.level_start:
+                    raise ValidationError(
+                        _(
+                            "❌ NIVEL FUERA DE RANGO\n\n"
+                            "El nivel actual (%d) no puede ser menor al nivel inicial del plan comercial (%d).\n\n"
+                            "📋 Plan Comercial: %s\n"
+                            "📊 Rango de niveles: %d - %d"
+                        ) % (
+                            enrollment.current_level,
+                            plan.level_start,
+                            plan.name,
+                            plan.level_start,
+                            plan.level_end,
+                        )
+                    )
+                    
+                if enrollment.current_level > plan.level_end:
+                    raise ValidationError(
+                        _(
+                            "❌ NIVEL FUERA DE RANGO\n\n"
+                            "El nivel actual (%d) no puede exceder el nivel máximo del plan comercial (%d).\n\n"
+                            "📋 Plan Comercial: %s\n"
+                            "📊 Rango de niveles: %d - %d\n\n"
+                            "💡 El estudiante ha completado todos los niveles de este plan."
+                        ) % (
+                            enrollment.current_level,
+                            plan.level_end,
+                            plan.name,
+                            plan.level_start,
+                            plan.level_end,
+                        )
+                    )
+                    
+                _logger.debug(
+                    f"[ENROLLMENT] Nivel validado para {enrollment.code}: "
+                    f"nivel={enrollment.current_level}, rango={plan.level_start}-{plan.level_end}"
+                )
+
     @api.constrains("student_id", "subject_id")
     def _check_prerequisites(self):
         """
@@ -1115,16 +1352,35 @@ class Enrollment(models.Model):
         # ═══════════════════════════════════════════════════════════════════════
         # INICIALIZACIÓN DESDE PLAN COMERCIAL (si no hay plan legacy)
         # ═══════════════════════════════════════════════════════════════════════
-        if vals.get("commercial_plan_id") and not vals.get("current_level_id"):
+        if vals.get("commercial_plan_id"):
             commercial_plan = self.env["benglish.commercial.plan"].browse(vals["commercial_plan_id"])
-            if commercial_plan and commercial_plan.level_ids:
-                # Obtener el primer nivel del plan comercial (ordenado por secuencia)
-                first_level = commercial_plan.level_ids.sorted(lambda l: (l.sequence, l.id))[:1]
-                if first_level:
-                    vals["current_level_id"] = first_level.id
-                    # Obtener la fase del nivel
-                    if first_level.phase_id:
-                        vals["current_phase_id"] = first_level.phase_id.id
+            if commercial_plan:
+                # ═══════════════════════════════════════════════════════════════
+                # INICIALIZACIÓN DE NIVEL (Feb 2026 - Matrícula por Nivel)
+                # ═══════════════════════════════════════════════════════════════
+                # Establecer current_level y starting_level desde el plan comercial
+                level_start = commercial_plan.level_start or 1
+                
+                if not vals.get("current_level"):
+                    vals["current_level"] = level_start
+                    
+                if not vals.get("starting_level"):
+                    vals["starting_level"] = level_start
+                    
+                _logger.info(
+                    f"[ENROLLMENT] Inicializando matrícula con plan comercial {commercial_plan.name}: "
+                    f"current_level={vals.get('current_level')}, starting_level={vals.get('starting_level')}"
+                )
+                
+                # current_level_id para compatibilidad (si existen niveles como registros)
+                if not vals.get("current_level_id") and commercial_plan.level_ids:
+                    # Obtener el primer nivel del plan comercial (ordenado por secuencia)
+                    first_level = commercial_plan.level_ids.sorted(lambda l: (l.sequence, l.id))[:1]
+                    if first_level:
+                        vals["current_level_id"] = first_level.id
+                        # Obtener la fase del nivel
+                        if first_level.phase_id:
+                            vals["current_phase_id"] = first_level.phase_id.id
 
         # Crear la matrícula
         enrollment = super(Enrollment, self).create(vals)
@@ -1368,80 +1624,111 @@ class Enrollment(models.Model):
 
     def action_advance_level(self):
         """
-        Avanza manualmente el nivel del estudiante (RF5 Día 2 Parte 2).
+        Avanza manualmente el nivel del estudiante (Feb 2026 - Matrícula por Nivel).
         
-        Reglas:
-        - Actualiza Progreso (current_level_id, current_phase_id).
-        - Genera nuevos requisitos del nivel destino.
-        - No elimina ni modifica requisitos históricos.
+        REGLAS DE NEGOCIO:
+        1. Verifica que el nivel actual esté completado en el progreso comercial
+        2. Verifica que el Bcheck del nivel actual esté completado (prerrequisito)
+        3. Incrementa current_level en 1
+        4. Valida que no exceda el nivel máximo del plan comercial
+        5. Actualiza current_level_id y current_phase_id para compatibilidad
         """
         self.ensure_one()
 
-        if not self.current_level_id:
+        if not self.commercial_plan_id:
             raise ValidationError(
-                _("No hay nivel actual definido. No se puede avanzar.")
+                _("❌ No hay plan comercial asignado. No se puede avanzar de nivel.")
             )
 
-        # Buscar siguiente nivel en la misma fase
-        next_level = self.env["benglish.level"].search(
-            [
-                ("phase_id", "=", self.current_phase_id.id),
-                ("sequence", ">", self.current_level_id.sequence),
-            ],
-            order="sequence ASC",
-            limit=1,
+        if not self.current_level:
+            raise ValidationError(
+                _("❌ No hay nivel actual definido. No se puede avanzar.")
+            )
+
+        # Verificar que no exceda el nivel máximo del plan
+        if self.current_level >= self.commercial_plan_id.level_end:
+            raise ValidationError(
+                _(
+                    "🎓 ¡PLAN COMPLETADO!\n\n"
+                    "El estudiante ya está en el nivel máximo del plan comercial (%d).\n"
+                    "No hay más niveles disponibles en el plan '%s'."
+                ) % (self.commercial_plan_id.level_end, self.commercial_plan_id.name)
+            )
+
+        # Verificar que el Bcheck del nivel actual esté completado
+        if not self.bcheck_current_level_completed:
+            raise ValidationError(
+                _(
+                    "❌ BCHECK NO COMPLETADO\n\n"
+                    "No se puede avanzar al siguiente nivel porque el Bcheck "
+                    "(prerrequisito) del nivel %d no está completado.\n\n"
+                    "💡 El estudiante debe completar el Bcheck antes de avanzar de nivel."
+                ) % self.current_level
+            )
+
+        # Verificar completitud del nivel actual en progreso comercial
+        current_level_progress = self.commercial_progress_ids.filtered(
+            lambda p: p.level_sequence == self.current_level
         )
-
-        if not next_level:
-            # Buscar siguiente fase del programa
-            next_phase = self.env["benglish.phase"].search(
-                [
-                    ("program_id", "=", self.plan_id.program_id.id),
-                    ("sequence", ">", self.current_phase_id.sequence),
-                ],
-                order="sequence ASC",
-                limit=1,
-            )
-
-            if next_phase:
-                next_level = self.env["benglish.level"].search(
-                    [("phase_id", "=", next_phase.id)],
-                    order="sequence ASC",
-                    limit=1,
-                )
-                if next_level:
-                    self.write({
-                        "current_phase_id": next_phase.id,
-                        "current_level_id": next_level.id,
-                    })
-                else:
-                    raise ValidationError(
-                        _("La siguiente fase '%s' no tiene niveles configurados.")
-                        % next_phase.name
-                    )
-            else:
+        
+        if current_level_progress:
+            progress = current_level_progress[0]
+            if progress.level_status != 'completed':
                 raise ValidationError(
-                    _("El estudiante ha completado todos los niveles del plan. "
-                      "No hay más niveles disponibles.")
+                    _(
+                        "❌ NIVEL NO COMPLETADO\n\n"
+                        "No se puede avanzar porque el nivel %d no está completado.\n\n"
+                        "📊 Estado actual:\n"
+                        "   • Total esperado: %d\n"
+                        "   • Completado: %d\n"
+                        "   • Pendiente: %d\n"
+                        "   • Porcentaje: %.1f%%\n\n"
+                        "💡 Complete todas las asignaturas del nivel antes de avanzar."
+                    ) % (
+                        self.current_level,
+                        progress.expected_total,
+                        progress.completed_total,
+                        progress.pending_total,
+                        progress.progress_percentage,
+                    )
                 )
-        else:
-            self.write({"current_level_id": next_level.id})
 
-        # Generar requisitos para el nuevo nivel (sin afectar los anteriores)
-        self._generate_requirement_statuses(level=next_level)
-
-        # Buscar primera asignatura del programa (ya no dependen del nivel)
-        first_subject = self.env["benglish.subject"].search(
-            [("program_id", "=", self.plan_id.program_id.id)],
-            order="sequence ASC",
-            limit=1,
+        # Todo validado - Avanzar al siguiente nivel
+        new_level = self.current_level + 1
+        
+        _logger.info(
+            f"[ENROLLMENT] Avanzando nivel para {self.code}: "
+            f"{self.current_level} → {new_level}"
         )
-        if first_subject:
-            self.write({"current_subject_id": first_subject.id})
+        
+        # Actualizar nivel actual (campo entero principal)
+        vals_to_update = {
+            'current_level': new_level,
+        }
+        
+        # Actualizar current_level_id para compatibilidad (si existe nivel con esa secuencia)
+        if self.commercial_plan_id.level_ids:
+            new_level_record = self.commercial_plan_id.level_ids.filtered(
+                lambda l: l.sequence == new_level
+            )
+            if new_level_record:
+                vals_to_update['current_level_id'] = new_level_record[0].id
+                if new_level_record[0].phase_id:
+                    vals_to_update['current_phase_id'] = new_level_record[0].phase_id.id
+        
+        self.write(vals_to_update)
 
+        # Generar requisitos para el nuevo nivel si hay un record de nivel
+        if self.current_level_id:
+            self._generate_requirement_statuses(level=self.current_level_id)
+
+        # Log en chatter
         self.message_post(
-            body=_("Estudiante avanzado al nivel %s (fase %s).")
-            % (next_level.name, next_level.phase_id.name),
+            body=_(
+                "⬆️ AVANCE DE NIVEL\n\n"
+                "El estudiante ha avanzado del nivel %d al nivel %d.\n"
+                "Plan comercial: %s"
+            ) % (self.current_level - 1, self.current_level, self.commercial_plan_id.name),
             subject=_("Avance de Nivel"),
         )
 
@@ -1449,8 +1736,8 @@ class Enrollment(models.Model):
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": _("Nivel Avanzado"),
-                "message": _("El estudiante ha avanzado al nivel %s.") % next_level.name,
+                "title": _("✅ Nivel Avanzado"),
+                "message": _("El estudiante ha avanzado al nivel %d.") % self.current_level,
                 "type": "success",
                 "sticky": False,
             },

@@ -68,8 +68,30 @@ class StudentImportLine(models.Model):
     # Académico
     program_id = fields.Many2one("benglish.program", string="Programa")
     program_match_error = fields.Boolean(string="Error programa", default=False)
-    plan_id = fields.Many2one("benglish.plan", string="Plan")
+    plan_id = fields.Many2one("benglish.plan", string="Plan (Legacy)")
     plan_match_error = fields.Boolean(string="Error plan", default=False)
+    
+    # Plan Comercial (Feb 2026 - Nuevo modelo de matrícula)
+    commercial_plan_id = fields.Many2one(
+        "benglish.commercial.plan", 
+        string="Plan Comercial",
+        help="Plan comercial para la matrícula automática"
+    )
+    commercial_plan_match_error = fields.Boolean(
+        string="Error plan comercial", 
+        default=False
+    )
+    
+    # Nivel numérico (1-24) para matrícula por nivel
+    starting_level = fields.Integer(
+        string="Nivel/Unidad de Inicio",
+        help="Nivel numérico (1-24) en el que inicia el estudiante"
+    )
+    starting_level_parse_error = fields.Boolean(
+        string="Error nivel inicio",
+        default=False
+    )
+    
     phase_id = fields.Many2one("benglish.phase", string="Fase")
     phase_match_error = fields.Boolean(string="Error fase", default=False)
     level_id = fields.Many2one("benglish.level", string="Nivel")
@@ -221,6 +243,8 @@ class StudentImportLine(models.Model):
         "delivery_mode_parse_error",
         "program_match_error",
         "plan_match_error",
+        "commercial_plan_match_error",
+        "starting_level_parse_error",
         "phase_match_error",
         "level_match_error",
         "campus_match_error",
@@ -273,7 +297,11 @@ class StudentImportLine(models.Model):
             if line.program_match_error:
                 warnings.append(_("Programa no encontrado o ambíguo."))
             if line.plan_match_error:
-                warnings.append(_("Plan no encontrado o ambíguo."))
+                warnings.append(_("Plan (legacy) no encontrado o ambíguo."))
+            if line.commercial_plan_match_error:
+                warnings.append(_("Plan comercial no encontrado o ambíguo."))
+            if line.starting_level_parse_error:
+                warnings.append(_("Nivel/Unidad de inicio inválido (debe ser número 1-24)."))
             if line.phase_match_error:
                 warnings.append(_("Fase no encontrada o ambigua."))
             if line.level_match_error:
@@ -380,6 +408,18 @@ class StudentImportLine(models.Model):
         for line in self:
             if line.plan_id:
                 line.plan_match_error = False
+
+    @api.onchange("commercial_plan_id")
+    def _onchange_commercial_plan_id(self):
+        for line in self:
+            if line.commercial_plan_id:
+                line.commercial_plan_match_error = False
+
+    @api.onchange("starting_level")
+    def _onchange_starting_level(self):
+        for line in self:
+            if line.starting_level and 1 <= line.starting_level <= 24:
+                line.starting_level_parse_error = False
 
     @api.onchange("preferred_campus_id")
     def _onchange_preferred_campus_id(self):

@@ -17,15 +17,18 @@
                 <field name="enrollment_date" string="Fecha de Matrícula" />
                 <field name="student_id" widget="many2one_avatar_user" string="Estudiante" />
                 <field name="commercial_plan_id" string="Plan Comercial" />
+                <field name="current_level" string="Nivel Actual" />
                 <field name="delivery_mode" widget="badge" string="Modalidad de Asistencia"
                     decoration-success="delivery_mode == 'presential'"
                     decoration-info="delivery_mode == 'virtual'"
-                    decoration-warning="delivery_mode == 'hybrid'" />
-                <field name="start_date" string="Fecha de Inicio" />
-                <field name="end_date" string="Fecha de Fin" />
+                    decoration-warning="delivery_mode == 'hybrid'" optional="hide" />
+                <field name="start_date" string="Fecha de Inicio" optional="hide" />
+                <field name="end_date" string="Fecha de Fin" optional="hide" />
+                <field name="level_progress_percentage" widget="progressbar"
+                    string="% Avance Niveles" />
                 <field name="commercial_progress_percentage" widget="progressbar"
-                    string="% Avance (Comercial)" />
-                <field name="final_grade" string="Calificación Final" />
+                    string="% Avance Asignaturas" optional="hide" />
+                <field name="final_grade" string="Calificación Final" optional="hide" />
                 <field name="state" widget="badge" string="Estado"
                     decoration-success="state in ['active', 'finished'] and is_approved"
                     decoration-info="state == 'active'"
@@ -191,6 +194,27 @@
                                 options="{'no_create': True}" />
                             <field name="current_phase_id" />
                             <field name="current_level_id" />
+                        </group>
+                    </group>
+
+                    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+                    <!-- CONTROL DE NIVELES (Feb 2026 - Matrícula por Nivel) -->
+                    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+                    <group string="📈 Control de Niveles (Matrícula por Nivel)"
+                        invisible="not commercial_plan_id">
+                        <group>
+                            <field name="current_level" required="1"
+                                readonly="state in ['finished', 'withdrawn', 'cancelled']" />
+                            <field name="starting_level" readonly="1" />
+                            <field name="min_level" readonly="1" />
+                            <field name="max_level" readonly="1" />
+                        </group>
+                        <group>
+                            <field name="levels_completed" readonly="1" />
+                            <field name="level_progress_percentage" widget="progressbar"
+                                readonly="1" />
+                            <field name="bcheck_current_level_completed" widget="boolean_toggle"
+                                readonly="1" />
                         </group>
                     </group>
 

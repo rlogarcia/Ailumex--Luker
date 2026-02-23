@@ -185,8 +185,11 @@ class StudentEnrollmentImportWizard(models.TransientModel):
 
     ESTADO_MAPPING = {
         "ACTIVO": "active",
+        "VIGENTE": "active", 
         "SUSPENDIDO": "inactive",
+        "INACTIVO": "inactive",
         "FINALIZADO": "graduated",
+        "GRADUADO": "graduated",
         "N/A": "inactive",
         "": "inactive",
     }
@@ -473,6 +476,9 @@ class StudentEnrollmentImportWizard(models.TransientModel):
 
         CRÍTICO: Filtra por programa para evitar confusión entre planes con mismo nombre
         (ej: Plan PREMIUM de Benglish vs Plan PREMIUM de B-Teens)
+        
+        Feb 2026: Busca PRIMERO en benglish.commercial.plan (nuevo modelo)
+        y luego en benglish.plan (legacy) para compatibilidad.
         """
         if not plan_excel:
             return None
@@ -480,21 +486,86 @@ class StudentEnrollmentImportWizard(models.TransientModel):
         plan_norm = plan_excel.strip().upper()
         plan_sistema = f"PLAN {plan_norm}"
 
-        # Intentos de búsqueda tolerante (de más específico a más general)
-        Plan = self.env["benglish.plan"]
+        # ═══════════════════════════════════════════════════════════════════════
+        # BÚSQUEDA EN PLAN COMERCIAL (Feb 2026 - Nuevo modelo)
+        # ═══════════════════════════════════════════════════════════════════════
+        CommercialPlan = self.env["benglish.commercial.plan"]
+        
+        # Construir dominio base con programa si está disponible
+        commercial_base_domain = [("state", "=", "active")]
+        if programa:
+            commercial_base_domain.append(("program_id", "=", programa.id))
 
+        _logger.info(
+            f"🔍 Buscando plan comercial '{plan_excel}' para programa {programa.name if programa else 'None'}"
+        )
+
+        # Normalizar texto para comparación case-insensitive
+        def normalize_for_compare(text):
+            """Normaliza texto para comparación sin acentos ni mayúsculas"""
+            import unicodedata
+            text = str(text).strip()
+            text = unicodedata.normalize("NFKD", text)
+            text = "".join(ch for ch in text if not unicodedata.combining(ch))
+            return text.lower()
+
+        plan_norm_lower = normalize_for_compare(plan_norm)
+        plan_sistema_lower = normalize_for_compare(plan_sistema)
+
+        # Buscar en todos los planes comerciales activos y comparar manualmente
+        all_commercial_plans = CommercialPlan.search(commercial_base_domain)
+        
+        for commercial_plan in all_commercial_plans:
+            plan_name_lower = normalize_for_compare(commercial_plan.name)
+            
+            # Coincidencia exacta con "PLAN X"
+            if plan_name_lower == plan_sistema_lower:
+                _logger.info(
+                    f"✅ Plan comercial encontrado (nombre sistema): {commercial_plan.name} (ID: {commercial_plan.id})"
+                )
+                return commercial_plan
+            
+            # Coincidencia exacta sin "PLAN"
+            if plan_name_lower == plan_norm_lower:
+                _logger.info(
+                    f"✅ Plan comercial encontrado (nombre simple): {commercial_plan.name} (ID: {commercial_plan.id})"
+                )
+                return commercial_plan
+            
+            # Coincidencia parcial (el nombre del plan contiene el término o viceversa)
+            if plan_norm_lower in plan_name_lower or plan_name_lower in plan_sistema_lower:
+                _logger.info(
+                    f"✅ Plan comercial encontrado (coincidencia parcial): {commercial_plan.name} (ID: {commercial_plan.id})"
+                )
+                return commercial_plan
+
+        # Si no encuentra en planes comerciales, mostrar disponibles
+        if programa:
+            available_commercial = CommercialPlan.search([
+                ("program_id", "=", programa.id),
+                ("state", "=", "active")
+            ])
+            _logger.info(
+                f"🔍 Planes comerciales disponibles para {programa.name}: {[p.name for p in available_commercial]}"
+            )
+
+        # ═══════════════════════════════════════════════════════════════════════
+        # BÚSQUEDA EN PLAN LEGACY (para compatibilidad con datos antiguos)
+        # ═══════════════════════════════════════════════════════════════════════
+        Plan = self.env["benglish.plan"]
+        
         # Construir dominio base con programa si está disponible
         base_domain = [("program_id", "=", programa.id)] if programa else []
 
         _logger.info(
-            f"🔍 Buscando plan '{plan_excel}' para programa {programa.name if programa else 'None'}"
+            f"🔍 Buscando plan legacy '{plan_excel}' para programa {programa.name if programa else 'None'}"
         )
 
         # Intento 1: Buscar por "PLAN X" + programa
         plan = Plan.search(base_domain + [("name", "=ilike", plan_sistema)], limit=1)
         if plan:
             _logger.info(
-                f"✅ Plan encontrado (nombre sistema): {plan.name} (ID: {plan.id})"
+                f"✅ Plan legacy encontrado (nombre sistema): {plan.name} (ID: {plan.id})"
             )
             return plan
 
@@ -502,7 +573,7 @@ class StudentEnrollmentImportWizard(models.TransientModel):
         plan = Plan.search(base_domain + [("name", "=ilike", plan_norm)], limit=1)
         if plan:
             _logger.info(
-                f"✅ Plan encontrado (nombre simple): {plan.name} (ID: {plan.id})"
+                f"✅ Plan legacy encontrado (nombre simple): {plan.name} (ID: {plan.id})"
             )
             return plan
 
@@ -510,7 +581,7 @@ class StudentEnrollmentImportWizard(models.TransientModel):
         plan = Plan.search(base_domain + [("code", "=ilike", plan_norm)], limit=1)
         if plan:
             _logger.info(
-                f"✅ Plan encontrado (por código): {plan.name} (ID: {plan.id})"
+                f"✅ Plan legacy encontrado (por código): {plan.name} (ID: {plan.id})"
             )
             return plan
 
@@ -523,7 +594,7 @@ class StudentEnrollmentImportWizard(models.TransientModel):
         if programa:
             available_plans = Plan.search([("program_id", "=", programa.id)])
             _logger.info(
-                f"🔍 Planes disponibles para {programa.name}: {[p.name for p in available_plans]}"
+                f"🔍 Planes legacy disponibles para {programa.name}: {[p.name for p in available_plans]}"
             )
 
         return None
@@ -555,11 +626,9 @@ class StudentEnrollmentImportWizard(models.TransientModel):
             return None
 
         # Buscar la fase en el sistema (case-insensitive)
+        # Las fases son genéricas (BASIC, INTERMEDIATE, ADVANCED) y no pertenecen a un programa específico
         domain = [("name", "=ilike", fase_norm)]
-        # Si nos pasó el programa, filtrar por programa para distinguir BE vs BT
-        if programa and getattr(programa, "id", False):
-            domain.append(("program_id", "=", programa.id))
-            _logger.info(f"🔍 Buscando fase con dominio: {domain}")
+        _logger.info(f"🔍 Buscando fase con dominio: {domain}")
 
         fase = self.env["benglish.phase"].search(domain, limit=1)
 
@@ -570,16 +639,13 @@ class StudentEnrollmentImportWizard(models.TransientModel):
                 else "(<sin programa>)"
             )
             _logger.warning(
-                f"❌ Fase permitida ('{fase_norm}') no encontrada para el programa {prog_name} — será ignorada"
+                f"❌ Fase permitida ('{fase_norm}') no encontrada en el sistema — será ignorada"
             )
-            # Mostrar fases disponibles para este programa
-            if programa:
-                available_phases = self.env["benglish.phase"].search(
-                    [("program_id", "=", programa.id)]
-                )
-                _logger.info(
-                    f"🔍 Fases disponibles para {programa.name}: {[p.name for p in available_phases]}"
-                )
+            # Mostrar fases disponibles en el sistema
+            available_phases = self.env["benglish.phase"].search([])
+            _logger.info(
+                f"🔍 Fases disponibles en el sistema: {[p.name for p in available_phases]}"
+            )
             return None
 
         _logger.info(f"✅ Fase encontrada: {fase.name} (ID: {fase.id})")
@@ -1248,23 +1314,42 @@ class StudentEnrollmentImportWizard(models.TransientModel):
         return student
 
     def _create_enrollment(self, student, programa, plan, fase, data, row_num=None):
-        """Crea la matrícula del estudiante"""
+        """
+        Crea la matrícula del estudiante.
+        
+        Feb 2026: Soporta tanto planes comerciales (benglish.commercial.plan)
+        como planes legacy (benglish.plan).
+        """
 
         fecha_inicio = (
             self._parse_fecha(data.get("F. INICIO CURSO")) or fields.Date.today()
         )
         fecha_fin = self._parse_fecha(data.get("FECHA FIN CURSO MÁS CONG."))
 
+        # Detectar si el plan es comercial o legacy
+        is_commercial_plan = plan._name == "benglish.commercial.plan"
+        
         # Antes de crear, comprobar si ya existe una matrícula activa para el mismo estudiante y plan
         closed_states = ["finished", "cancelled", "withdrawn", "failed", "completed"]
-        existing = self.env["benglish.enrollment"].search(
-            [
-                ("student_id", "=", student.id),
-                ("plan_id", "=", plan.id),
-                ("state", "not in", closed_states),
-            ],
-            limit=1,
-        )
+        
+        if is_commercial_plan:
+            existing = self.env["benglish.enrollment"].search(
+                [
+                    ("student_id", "=", student.id),
+                    ("commercial_plan_id", "=", plan.id),
+                    ("state", "not in", closed_states),
+                ],
+                limit=1,
+            )
+        else:
+            existing = self.env["benglish.enrollment"].search(
+                [
+                    ("student_id", "=", student.id),
+                    ("plan_id", "=", plan.id),
+                    ("state", "not in", closed_states),
+                ],
+                limit=1,
+            )
 
         if existing:
             # Registrar y omitir la creación: el usuario pidió "omitir" en caso de duplicados
@@ -1278,8 +1363,19 @@ class StudentEnrollmentImportWizard(models.TransientModel):
         values = {
             "student_id": student.id,
             "program_id": programa.id,
-            "plan_id": plan.id,
         }
+        
+        # Asignar el plan según su tipo (comercial o legacy)
+        if is_commercial_plan:
+            values["commercial_plan_id"] = plan.id
+            # Asignar nivel de inicio desde el plan comercial
+            level_start = plan.level_start or 1
+            values["current_level"] = level_start
+            values["starting_level"] = level_start
+            _logger.info(f"✅ Plan comercial asignado: {plan.name} (nivel inicial: {level_start})")
+        else:
+            values["plan_id"] = plan.id
+            _logger.info(f"✅ Plan legacy asignado: {plan.name}")
 
         # Establecer modalidad de la matrícula: preferir valor del Excel, si no usar preferencia del estudiante
         modalidad_val = (
@@ -1298,9 +1394,10 @@ class StudentEnrollmentImportWizard(models.TransientModel):
         else:
             _logger.warning(f"⚠️ No se asignó fase para matrícula de {student.code}")
 
-        # Asignar nivel actual basado en fase y número de nivel
+        # Asignar nivel actual basado en fase y número de nivel (para planes legacy)
+        # Para planes comerciales, el nivel ya se asignó arriba
         nivel_id = None
-        if fase and data.get("NIVEL"):
+        if not is_commercial_plan and fase and data.get("NIVEL"):
             unidad_final = self._parse_nivel(data.get("NIVEL"))
             _logger.info(
                 f"🔍 Buscando nivel para fase {fase.name}, unidad final: {unidad_final}"
@@ -1345,9 +1442,85 @@ class StudentEnrollmentImportWizard(models.TransientModel):
                 _logger.warning(
                     f"⚠️ No se pudo parsear el nivel desde: {data.get('NIVEL')}"
                 )
-        elif not fase:
+        elif is_commercial_plan and data.get("NIVEL"):
+            # Para planes comerciales, usar el nivel del Excel directamente
+            unidad_final = self._parse_nivel(data.get("NIVEL"))
+            if unidad_final and plan.level_start <= unidad_final <= plan.level_end:
+                values["current_level"] = unidad_final
+                values["starting_level"] = unidad_final
+                _logger.info(f"✅ Nivel ajustado desde Excel: {unidad_final}")
+                
+                # Asignar current_level_id (Many2one) buscando el nivel
+                # IMPORTANTE: Usar la FASE del Excel para filtrar correctamente
+                # Los niveles están organizados por fases:
+                #   - BASIC: niveles 1-8 
+                #   - INTERMEDIATE: niveles 9-16
+                #   - ADVANCED: niveles 17-24
+                
+                nivel_record = None
+                
+                # Estrategia 1: Si tenemos la fase del Excel, buscar por fase + nombre exacto
+                if fase:
+                    # Buscar por nombre exacto "UNIT X" dentro de la fase
+                    nivel_record = self.env["benglish.level"].search(
+                        [
+                            ("phase_id", "=", fase.id),
+                            "|",
+                            ("name", "=", f"UNIT {unidad_final}"),
+                            ("name", "=", f"UNIT{unidad_final}"),
+                        ],
+                        limit=1
+                    )
+                    if nivel_record:
+                        _logger.info(f"✅ Nivel encontrado via fase + nombre exacto: {nivel_record.name}")
+                    
+                    # Si no encontró, buscar por nombre que contenga el número (más flexible)
+                    if not nivel_record:
+                        # Buscar niveles de la fase y filtrar por el que termine en el número
+                        niveles_fase = self.env["benglish.level"].search([
+                            ("phase_id", "=", fase.id)
+                        ])
+                        for niv in niveles_fase:
+                            # Verificar que el nombre termine exactamente con el número
+                            import re
+                            match = re.search(r'(\d+)\s*$', niv.name)
+                            if match and int(match.group(1)) == unidad_final:
+                                nivel_record = niv
+                                _logger.info(f"✅ Nivel encontrado via fase + regex: {nivel_record.name}")
+                                break
+                
+                # Estrategia 2: Usar plan.level_ids si está disponible
+                if not nivel_record and plan.level_ids:
+                    nivel_index = unidad_final - plan.level_start  # Índice 0-based dentro del plan
+                    niveles_ordenados = plan.level_ids.sorted(lambda l: (l.sequence, l.id))
+                    if 0 <= nivel_index < len(niveles_ordenados):
+                        nivel_record = niveles_ordenados[nivel_index]
+                        _logger.info(f"✅ Nivel encontrado via plan.level_ids: {nivel_record.name}")
+                
+                # Estrategia 3: Buscar por secuencia global (solo si coincide exactamente)
+                if not nivel_record:
+                    nivel_record = self.env["benglish.level"].search(
+                        [("sequence", "=", unidad_final)],
+                        limit=1
+                    )
+                    if nivel_record:
+                        _logger.info(f"✅ Nivel encontrado via secuencia global: {nivel_record.name}")
+                
+                if nivel_record:
+                    values["current_level_id"] = nivel_record.id
+                    # Solo actualizar fase si no viene del Excel
+                    if not fase and nivel_record.phase_id:
+                        values["current_phase_id"] = nivel_record.phase_id.id
+                    _logger.info(f"✅ Nivel ID asignado: {nivel_record.name} (ID: {nivel_record.id})")
+                else:
+                    _logger.warning(f"⚠️ No se encontró nivel para unidad {unidad_final} (fase: {fase.name if fase else 'None'})")
+            elif unidad_final:
+                _logger.warning(
+                    f"⚠️ Nivel {unidad_final} fuera del rango del plan ({plan.level_start}-{plan.level_end})"
+                )
+        elif not fase and not is_commercial_plan:
             _logger.warning(f"⚠️ No se puede asignar nivel porque no hay fase")
-        elif not data.get("NIVEL"):
+        elif not data.get("NIVEL") and not is_commercial_plan:
             _logger.warning(
                 f"⚠️ No se puede asignar nivel porque el campo NIVEL está vacío"
             )
@@ -1359,7 +1532,7 @@ class StudentEnrollmentImportWizard(models.TransientModel):
                 "course_start_date": fecha_inicio,
                 "course_end_date": fecha_fin,
                 "categoria": data.get("CATEGORÍA"),
-                "state": "enrolled",
+                "state": "active",  # Estado "Activa" para matrículas vigentes
             }
         )
 
@@ -1367,15 +1540,22 @@ class StudentEnrollmentImportWizard(models.TransientModel):
 
         _logger.info(f"✅ Creada matrícula {enrollment.code} para {student.code}")
 
-        # IMPORTANTE: Actualizar program_id y plan_id en el estudiante
+        # IMPORTANTE: Actualizar program_id y plan_id/commercial_plan_id en el estudiante
         # (estos campos son readonly y solo se actualizan desde matrícula)
         student_vals = {}
         if programa and not student.program_id:
             student_vals["program_id"] = programa.id
             _logger.info(f"✅ Actualizando program_id del estudiante: {programa.name}")
-        if plan and not student.plan_id:
-            student_vals["plan_id"] = plan.id
-            _logger.info(f"✅ Actualizando plan_id del estudiante: {plan.name}")
+        
+        # Asignar plan según tipo (comercial o legacy)
+        if is_commercial_plan:
+            if plan and not student.commercial_plan_id:
+                student_vals["commercial_plan_id"] = plan.id
+                _logger.info(f"✅ Actualizando commercial_plan_id del estudiante: {plan.name}")
+        else:
+            if plan and not student.plan_id:
+                student_vals["plan_id"] = plan.id
+                _logger.info(f"✅ Actualizando plan_id del estudiante: {plan.name}")
 
         if student_vals:
             student.write(student_vals)
@@ -1390,7 +1570,10 @@ class StudentEnrollmentImportWizard(models.TransientModel):
     ):
         """
         Marca asistencia histórica en enrollment_progress_ids
-        según el campo NIVEL del Excel
+        según el campo NIVEL del Excel.
+        
+        Soporta tanto Plan Comercial (benglish.commercial.plan) como
+        Plan Legacy (benglish.plan).
         """
 
         # Parsear nivel
@@ -1398,13 +1581,29 @@ class StudentEnrollmentImportWizard(models.TransientModel):
 
         _logger.info(f"Procesando asistencia histórica hasta unidad {unidad_final}")
 
-        # Obtener todas las asignaturas del plan
-        plan = enrollment.plan_id
-
-        # Buscar asignaturas a través de: plan -> fases -> niveles -> asignaturas
-        subjects = self.env["benglish.subject"].search(
-            [("level_id.phase_id.id", "in", plan.phase_ids.ids)], order="sequence"
-        )
+        # Determinar si es plan comercial o legacy
+        commercial_plan = enrollment.commercial_plan_id
+        legacy_plan = enrollment.plan_id
+        
+        subjects = self.env["benglish.subject"]
+        
+        if commercial_plan:
+            # Plan comercial: obtener asignaturas a través de los niveles del plan
+            level_ids = commercial_plan.level_ids
+            if level_ids:
+                subjects = self.env["benglish.subject"].search(
+                    [("level_id", "in", level_ids.ids)], order="level_id, sequence"
+                )
+            _logger.info(f"Plan comercial: {commercial_plan.name}, {len(subjects)} asignaturas encontradas")
+        elif legacy_plan and hasattr(legacy_plan, 'phase_ids') and legacy_plan.phase_ids:
+            # Plan legacy: buscar asignaturas a través de las fases
+            subjects = self.env["benglish.subject"].search(
+                [("level_id.phase_id.id", "in", legacy_plan.phase_ids.ids)], order="sequence"
+            )
+            _logger.info(f"Plan legacy: {legacy_plan.name}, {len(subjects)} asignaturas encontradas")
+        else:
+            _logger.warning(f"Enrollment {enrollment.id} no tiene plan comercial ni plan legacy configurado")
+            return
 
         # Si el estado es FINALIZADO, marcar TODAS como asistidas
         estado_norm = (estado_excel or "").strip().upper()
@@ -1528,11 +1727,17 @@ class StudentEnrollmentImportWizard(models.TransientModel):
         # Actualizar estado de la matrícula
         # Estados válidos: draft, pending, enrolled, active, in_progress,
         #                  suspended, completed, failed, finished, homologated, withdrawn, cancelled
-        enrollment_state = "enrolled"
+        # 
+        # Mapeo:
+        #   - estudiante 'active' (VIGENTE/ACTIVO) → matrícula 'active' (Activa)
+        #   - estudiante 'graduated' (FINALIZADO) → matrícula 'finished'
+        #   - estudiante 'inactive' (SUSPENDIDO) → matrícula 'suspended'
+        enrollment_state = "active"  # Por defecto "Activa"
         if estado == "graduated":
             enrollment_state = "finished"
         elif estado == "inactive":
             enrollment_state = "suspended"
+        # Si estado es 'active', la matrícula permanece 'active' (por defecto)
 
         enrollment.write({"state": enrollment_state})
 

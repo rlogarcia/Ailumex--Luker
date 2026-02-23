@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Benglish - Gestión Académica",
-    "version": "18.0.1.10.1",
+    "version": "18.0.1.14.0",
     "category": "Education",
     "summary": "Sistema de gestión académica para academia de inglés",
     "description": """
@@ -13,7 +13,7 @@
         - Gestión de prerrequisitos entre asignaturas
         - Gestión de sedes y multisedes
         - Programación de clases y horarios
-        - Matrícula interna de estudiantes
+        - Matrícula interna de estudiantes (por Nivel - Feb 2026)
         - Reemplazo de docentes
         - Reportes y agenda semanal
         - Publicación de agenda académica

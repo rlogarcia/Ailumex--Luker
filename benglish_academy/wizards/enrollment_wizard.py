@@ -89,6 +89,52 @@ class EnrollmentWizard(models.TransientModel):
         help="Plan comercial que define las cantidades de asignaturas por tipo. "
         "Ejemplos: Plan Plus (78 asig.), Plan Gold (126 asig.), Módulo (42 asig.)",
     )
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # NIVEL INICIAL (Feb 2026 - Matrícula por Nivel)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # El nivel es el campo principal para el control de progreso.
+    # Se establece automáticamente desde el plan comercial pero puede modificarse.
+    
+    current_level = fields.Integer(
+        string="Nivel Inicial (Número)",
+        default=1,
+        required=True,
+        help="Número del nivel en el que el estudiante iniciará su matrícula. "
+        "Por defecto es el nivel inicial del plan comercial, pero puede modificarse "
+        "si el estudiante tiene estudios previos o placement test.",
+    )
+    
+    # Campo para seleccionar el nivel real desde los disponibles
+    current_level_id = fields.Many2one(
+        comodel_name="benglish.level",
+        string="Nivel Inicial",
+        domain="[('id', 'in', available_level_ids)]",
+        help="Seleccione el nivel en el que el estudiante iniciará su matrícula.",
+    )
+    
+    # Niveles disponibles según el plan comercial
+    available_level_ids = fields.Many2many(
+        comodel_name="benglish.level",
+        string="Niveles Disponibles",
+        compute="_compute_available_levels",
+        help="Niveles disponibles según el plan comercial seleccionado.",
+    )
+    
+    level_start = fields.Integer(
+        string="Nivel Mínimo del Plan",
+        related="commercial_plan_id.level_start",
+        readonly=True,
+        help="Nivel mínimo según el plan comercial seleccionado.",
+    )
+    
+    level_end = fields.Integer(
+        string="Nivel Máximo del Plan",
+        related="commercial_plan_id.level_end",
+        readonly=True,
+        help="Nivel máximo según el plan comercial seleccionado.",
+    )
+    
     # Legacy - mantener para compatibilidad con matrículas antiguas
     plan_id = fields.Many2one(
         comodel_name="benglish.plan",
@@ -258,6 +304,79 @@ class EnrollmentWizard(models.TransientModel):
             wizard.has_capacity_warning = False
             wizard.capacity_warning_message = ""
 
+    @api.depends("commercial_plan_id", "commercial_plan_id.level_ids", "commercial_plan_id.program_id", "commercial_plan_id.level_start", "commercial_plan_id.level_end")
+    def _compute_available_levels(self):
+        """
+        Calcula los niveles disponibles según el plan comercial seleccionado.
+        
+        LÓGICA (Feb 2026):
+        1. Primero intenta usar level_ids del plan comercial (si existen)
+        2. Si no hay level_ids, busca niveles directamente a través de los 
+           planes de estudio del programa
+        3. Filtra por el rango level_start - level_end
+        """
+        Level = self.env["benglish.level"]
+        
+        for wizard in self:
+            if not wizard.commercial_plan_id:
+                wizard.available_level_ids = False
+                continue
+            
+            # Opción 1: Usar level_ids del plan comercial si existen
+            if wizard.commercial_plan_id.level_ids:
+                wizard.available_level_ids = wizard.commercial_plan_id.level_ids
+                _logger.info(
+                    f"[WIZARD] Niveles desde plan comercial: {len(wizard.available_level_ids)}"
+                )
+                continue
+            
+            # Opción 2: Buscar niveles a través de los planes de estudio del programa
+            program = wizard.commercial_plan_id.program_id
+            level_start = wizard.commercial_plan_id.level_start or 1
+            level_end = wizard.commercial_plan_id.level_end or 24
+            
+            if program:
+                # Buscar planes de estudio del programa
+                study_plans = self.env["benglish.plan"].search([
+                    ("program_id", "=", program.id),
+                    ("active", "=", True),
+                ])
+                
+                if study_plans:
+                    # Obtener todos los niveles de los planes de estudio
+                    all_levels = study_plans.mapped("level_ids").sorted(lambda l: (l.sequence, l.id))
+                    
+                    if all_levels:
+                        # Filtrar por rango de secuencia
+                        levels_in_range = all_levels.filtered(
+                            lambda l: l.sequence >= level_start and l.sequence <= level_end
+                        )
+                        if levels_in_range:
+                            wizard.available_level_ids = levels_in_range
+                            _logger.info(
+                                f"[WIZARD] Niveles desde planes de estudio: {len(levels_in_range)} "
+                                f"(rango: {level_start}-{level_end})"
+                            )
+                            continue
+            
+            # Opción 3: Buscar todos los niveles activos en el rango de secuencia
+            levels = Level.search([
+                ("active", "=", True),
+                ("sequence", ">=", level_start),
+                ("sequence", "<=", level_end),
+            ], order="sequence, id")
+            
+            if levels:
+                wizard.available_level_ids = levels
+                _logger.info(
+                    f"[WIZARD] Niveles encontrados por secuencia general: {len(levels)}"
+                )
+            else:
+                wizard.available_level_ids = False
+                _logger.warning(
+                    f"[WIZARD] No se encontraron niveles para el plan {wizard.commercial_plan_id.name}"
+                )
+
     # ONCHANGES
 
     @api.onchange("student_id")
@@ -295,12 +414,64 @@ class EnrollmentWizard(models.TransientModel):
 
     @api.onchange("commercial_plan_id")
     def _onchange_commercial_plan_id(self):
-        """Selecciona automáticamente la asignatura al cambiar plan comercial"""
-        if self.commercial_plan_id and self.commercial_plan_id.program_id:
-            # Asignar primera asignatura del programa
-            subject = self._get_default_subject_by_program(self.commercial_plan_id.program_id.id)
-            if subject:
-                self.subject_id = subject
+        """
+        Selecciona automáticamente el nivel inicial al cambiar plan comercial.
+        
+        REGLA DE NEGOCIO (Feb 2026 - Matrícula por Nivel):
+        - El nivel inicial se establece desde los niveles disponibles
+        - La asignatura ya NO es requerida
+        """
+        if self.commercial_plan_id:
+            # Forzar recálculo de niveles disponibles
+            self._compute_available_levels()
+            
+            # Establecer nivel inicial numérico
+            self.current_level = self.commercial_plan_id.level_start or 1
+            
+            # Seleccionar el primer nivel disponible
+            if self.available_level_ids:
+                # Ordenar por secuencia (usar ids reales, no NewId)
+                first_level = self.available_level_ids.sorted(key=lambda l: l.sequence)[:1]
+                if first_level:
+                    self.current_level_id = first_level
+                    _logger.info(
+                        f"[ENROLLMENT WIZARD] Plan comercial: {self.commercial_plan_id.name}. "
+                        f"Nivel seleccionado: {first_level.name} (secuencia: {first_level.sequence})"
+                    )
+            else:
+                self.current_level_id = False
+                _logger.warning(
+                    f"[ENROLLMENT WIZARD] Plan comercial {self.commercial_plan_id.name} - "
+                    f"No se encontraron niveles disponibles en el rango "
+                    f"{self.commercial_plan_id.level_start}-{self.commercial_plan_id.level_end}"
+                )
+            
+            _logger.info(
+                f"[ENROLLMENT WIZARD] Nivel inicial: {self.current_level} "
+                f"(rango permitido: {self.commercial_plan_id.level_start}-{self.commercial_plan_id.level_end})"
+            )
+        else:
+            self.current_level_id = False
+            self.current_level = 1
+
+    @api.onchange("current_level_id")
+    def _onchange_current_level_id(self):
+        """
+        Sincroniza el nivel Integer con el nivel seleccionado.
+        
+        El current_level (Integer) debe corresponder a max_unit del nivel,
+        que representa el número de la UNIDAD (1, 2, 3... hasta 24).
+        
+        IMPORTANTE: max_unit es el campo que indica la unidad real.
+        sequence es solo para ordenar dentro de la fase.
+        """
+        if self.current_level_id:
+            # Usar max_unit del nivel - este es el número real de la UNIDAD
+            self.current_level = self.current_level_id.max_unit or self.current_level_id.sequence
+            _logger.info(
+                f"[WIZARD] Nivel seleccionado: {self.current_level_id.name} "
+                f"(max_unit/unidad: {self.current_level})"
+            )
 
     @api.onchange("plan_id")
     def _onchange_plan_id(self):
@@ -341,47 +512,43 @@ class EnrollmentWizard(models.TransientModel):
                 )
             )
 
-        # Si no hay asignatura inicial, asignar la primera del programa automáticamente
-        if not self.subject_id:
-            # Buscar la primera asignatura usando los planes de estudio del programa
-            first_subject = self._get_default_subject_by_program(self.program_id.id)
-            if first_subject:
-                self.subject_id = first_subject
-            else:
+        # ═══════════════════════════════════════════════════════════════════════
+        # MATRÍCULA POR NIVEL (Feb 2026)
+        # ═══════════════════════════════════════════════════════════════════════
+        # Ya NO se requiere asignatura inicial - la matrícula es por NIVEL
+        # El campo subject_id es opcional (legacy/referencia)
+        
+        # Forzar recálculo de niveles disponibles
+        self._compute_available_levels()
+        
+        # Validar nivel si hay niveles disponibles
+        if self.available_level_ids:
+            if not self.current_level_id:
                 raise ValidationError(
                     _(
-                        "No se encontraron asignaturas en el programa '%s'.\n\n"
-                        "💡 Debe configurar al menos una asignatura en el programa antes de matricular."
+                        "Debe seleccionar un Nivel Inicial para la matrícula.\n\n"
+                        "💡 El nivel define en qué punto del plan comercial inicia el estudiante."
                     )
-                    % self.program_id.name
                 )
-
-        # NOTA: No validamos que la asignatura esté en un plan específico.
-        # El Plan Comercial define CANTIDADES por tipo de asignatura, no asignaturas fijas.
-        # La asignatura inicial es solo un punto de partida opcional para el estudiante.
-
-        # Validación de prerrequisitos (solo informativo para asignatura inicial)
-        if not self.prerequisites_met and not self.prerequisite_override:
-            raise ValidationError(
-                _(
-                    'El estudiante no cumple con los prerrequisitos para iniciar en la asignatura "%s".\n\n'
-                    "Prerrequisitos faltantes: %s\n\n"
-                    "Debe aprobar estas asignaturas antes de iniciar en este punto del plan."
+            
+            # Validar que el nivel pertenezca a los niveles disponibles
+            if self.current_level_id not in self.available_level_ids:
+                raise ValidationError(
+                    _(
+                        "El nivel seleccionado '%s' no está disponible para el plan comercial '%s'.\n\n"
+                        "💡 Seleccione un nivel dentro del rango del plan."
+                    ) % (self.current_level_id.name, self.commercial_plan_id.name)
                 )
-                % (self.subject_id.name, self.missing_prerequisites)
+        else:
+            # Si no hay niveles configurados, usar el nivel numérico directamente
+            _logger.warning(
+                f"[ENROLLMENT] No hay niveles configurados. Usando nivel numérico: {self.current_level}"
             )
-
-        # Validar justificación de excepción si aplica
-        if self.prerequisite_override and not self.override_reason:
-            raise ValidationError(
-                _(
-                    "Debe proporcionar una justificación para autorizar la excepción de prerrequisitos."
-                )
-            )
-
-        # ═══════════════════════════════════════════════════════════════════════
-        # CREAR MATRÍCULA CON PLAN COMERCIAL
-        # ═══════════════════════════════════════════════════════════════════════
+            # Validar que el nivel esté dentro del rango
+            if self.current_level < self.commercial_plan_id.level_start:
+                self.current_level = self.commercial_plan_id.level_start
+            if self.current_level > self.commercial_plan_id.level_end:
+                self.current_level = self.commercial_plan_id.level_end
 
         enrollment_vals = {
             # Estudiante
@@ -389,11 +556,17 @@ class EnrollmentWizard(models.TransientModel):
             # PLAN COMERCIAL (obligatorio - elemento principal)
             "program_id": self.program_id.id,
             "commercial_plan_id": self.commercial_plan_id.id,
+            # ═══════════════════════════════════════════════════════════════════
+            # NIVEL INICIAL (Feb 2026 - Matrícula por Nivel)
+            # ═══════════════════════════════════════════════════════════════════
+            # Usar max_unit del nivel como current_level (número real de la UNIDAD)
+            "current_level": self.current_level_id.max_unit if self.current_level_id else self.current_level,
+            "starting_level": self.current_level_id.max_unit if self.current_level_id else self.current_level,
+            "current_level_id": self.current_level_id.id if self.current_level_id else False,
             # Legacy: plan_id si se seleccionó
             "plan_id": self.plan_id.id if self.plan_id else False,
-            # Progresión actual (punto de inicio) - Las asignaturas ya no tienen level_id/phase_id
-            "current_phase_id": False,
-            "current_level_id": False,
+            # Progresión actual (punto de inicio)
+            "current_phase_id": self.current_level_id.phase_id.id if self.current_level_id and self.current_level_id.phase_id else False,
             "current_subject_id": self.subject_id.id if self.subject_id else False,
             # Modalidad
             "delivery_mode": self.delivery_mode,

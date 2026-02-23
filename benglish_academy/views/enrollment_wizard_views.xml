@@ -88,6 +88,29 @@
                                         options="{'no_create': True}"
                                         placeholder="Seleccione el plan comercial" />
                                 </group>
+                                <!-- ═══════════════════════════════════════════════════════════ -->
+                                <!-- NIVEL INICIAL (Feb 2026 - Matrícula por Nivel) -->
+                                <!-- ═══════════════════════════════════════════════════════════ -->
+                                <group string="🎯 Nivel Inicial">
+                                    <field name="available_level_ids" invisible="1" />
+                                    <field name="current_level_id"
+                                        options="{'no_create': True}"
+                                        placeholder="Seleccione el nivel inicial"
+                                        help="Nivel en el que el estudiante inicia su matrícula"
+                                        invisible="not available_level_ids" />
+                                    <field name="current_level"
+                                        string="Nivel (Número)"
+                                        invisible="available_level_ids"
+                                        help="Número del nivel de inicio" />
+                                    <label for="level_start" string="Rango del Plan:" />
+                                    <div class="o_row">
+                                        <field name="level_start" readonly="1" nolabel="1" />
+                                        <span> - </span>
+                                        <field name="level_end" readonly="1" nolabel="1" />
+                                    </div>
+                                </group>
+                            </group>
+                            <group>
                                 <group string="Asignatura Inicial (Opcional)">
                                     <field name="subject_id"
                                         required="0"

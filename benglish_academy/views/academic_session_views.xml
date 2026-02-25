@@ -22,7 +22,7 @@
                     <field name="weekday" />
                     <field name="time_start_label" string="Hora Inicio" />
                     <field name="time_end_label" string="Hora Fin" />
-                    <field name="subject_id" />
+                    <field name="subject_display_name" string="Asignatura" />
                     <field name="student_alias" />
                     <field name="campus_id" />
                     <field name="subcampus_id" />
@@ -113,6 +113,9 @@
                                 <!-- Campo auxiliar para invisible -->
                                 <field name="is_elective_session" invisible="1" />
 
+
+                            </group>
+                            <group>
                                 <!-- Electivas: visible solo cuando el tipo de asignatura es pool de
                                 electivas -->
                                 <field name="elective_pool_id"
@@ -121,8 +124,6 @@
                                     options="{'no_create': True}"
                                     invisible="not is_elective_session"
                                     required="is_elective_session" />
-                            </group>
-                            <group>
                                 <!-- Asignatura filtrada por tipo seleccionado - oculta si es
                                 electiva -->
                                 <field name="subject_id"
@@ -148,8 +149,10 @@
                                     options="{'no_create': True}" />
                                 <field name="location_city" invisible="1" />
                                 <field name="campus_id" readonly="1" />
+                                <field name="is_virtual_agenda" invisible="1" />
                                 <field name="delivery_mode" widget="radio"
-                                    options="{'horizontal': true}" />
+                                    options="{'horizontal': true}"
+                                    readonly="is_virtual_agenda" />
                                 <field name="subcampus_id"
                                     invisible="delivery_mode == 'virtual'"
                                     context="{'show_only_name': True}"

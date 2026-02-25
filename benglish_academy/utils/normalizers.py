@@ -19,22 +19,28 @@ import unicodedata
 
 def normalize_to_uppercase(text):
     """
-    Normaliza texto a MAYÚSCULAS sin tildes.
+    Normaliza texto a MAYÚSCULAS sin tildes, pero preservando la Ñ.
 
     Elimina:
-    - Tildes y acentos
+    - Tildes y acentos (á→A, é→E, etc.)
     - Espacios múltiples
     - Espacios al inicio/fin
+
+    Preserva:
+    - La letra Ñ/ñ (se convierte a Ñ)
 
     Args:
         text (str): Texto a normalizar
 
     Returns:
-        str: Texto en MAYÚSCULAS sin tildes, o cadena vacía si es None
+        str: Texto en MAYÚSCULAS sin tildes pero con Ñ, o cadena vacía si es None
 
     Examples:
         >>> normalize_to_uppercase("García Pérez")
         "GARCIA PEREZ"
+
+        >>> normalize_to_uppercase("Muñoz Ñoño")
+        "MUÑOZ ÑOÑO"
 
         >>> normalize_to_uppercase("  Múltiples   espacios  ")
         "MULTIPLES ESPACIOS"
@@ -48,12 +54,20 @@ def normalize_to_uppercase(text):
     # Convertir a string por si acaso
     text = str(text)
 
+    # Preservar las Ñ antes de la normalización
+    # Reemplazamos temporalmente ñ/Ñ por un placeholder único
+    placeholder = "###ENIE###"
+    text = text.replace("ñ", placeholder).replace("Ñ", placeholder)
+
     # Eliminar tildes/acentos usando NFD (Normalization Form Decomposed)
     text = unicodedata.normalize("NFD", text)
     text = "".join(char for char in text if unicodedata.category(char) != "Mn")
 
     # Convertir a mayúsculas
     text = text.upper()
+
+    # Restaurar las Ñ
+    text = text.replace(placeholder, "Ñ")
 
     # Eliminar espacios múltiples y espacios al inicio/fin
     text = re.sub(r"\s+", " ", text.strip())

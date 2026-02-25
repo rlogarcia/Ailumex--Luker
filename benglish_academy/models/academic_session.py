@@ -153,6 +153,14 @@ class AcademicSession(models.Model):
         help="Sede heredada del horario",
     )
 
+    # Campo auxiliar para detectar si la agenda tiene sede virtual
+    is_virtual_agenda = fields.Boolean(
+        string="Es Agenda Virtual",
+        compute="_compute_is_virtual_agenda",
+        store=True,
+        help="Indica si la agenda tiene una sede virtual. Si es True, la modalidad debe ser virtual.",
+    )
+
     # Campos auxiliares para dominios dinámicos de disponibilidad
     available_teacher_ids = fields.Many2many(
         comodel_name="hr.employee",
@@ -257,6 +265,33 @@ class AcademicSession(models.Model):
         readonly=True,
     )
 
+    # Campo computado para mostrar asignatura o electiva en la lista
+    subject_display_name = fields.Char(
+        string="Asignatura",
+        compute="_compute_subject_display_name",
+        store=True,
+        help="Muestra el nombre de la asignatura o del pool de electivas",
+    )
+
+    @api.depends('subject_id', 'subject_id.name', 'subject_id.code', 'elective_pool_id', 'elective_pool_id.name', 'elective_pool_id.code', 'is_elective_session')
+    def _compute_subject_display_name(self):
+        """Computa el nombre a mostrar: asignatura regular o pool de electivas"""
+        for record in self:
+            if record.is_elective_session and record.elective_pool_id:
+                # Para electivas, mostrar el pool
+                if record.elective_pool_id.code:
+                    record.subject_display_name = f"{record.elective_pool_id.code} - {record.elective_pool_id.name}"
+                else:
+                    record.subject_display_name = record.elective_pool_id.name
+            elif record.subject_id:
+                # Para asignaturas regulares
+                if record.subject_id.code:
+                    record.subject_display_name = f"{record.subject_id.code} - {record.subject_id.name}"
+                else:
+                    record.subject_display_name = record.subject_id.name
+            else:
+                record.subject_display_name = False
+
     # ========================================================================
     # MÉTODOS ONCHANGE
     # ========================================================================
@@ -336,12 +371,35 @@ class AcademicSession(models.Model):
         ADEMÁS (R2 - FASE 1):
         Genera automáticamente el código único de sesión (session_code) usando secuencia
         con reutilización de huecos.
+        
+        ADEMÁS: Si la agenda tiene sede virtual, forzar modalidad virtual y capacidad 15.
         """
         for vals in vals_list:
             # R2: Generar código único de sesión si no existe (con reutilización de huecos)
             if not vals.get('session_code') or vals.get('session_code') == '/':
                 vals['session_code'] = self._get_next_reusable_session_code()
                 _logger.info("[ACADEMIC_SESSION CREATE] Código de sesión generado: %s", vals['session_code'])
+            
+            # Verificar si la agenda tiene sede virtual y ajustar modalidad/capacidad
+            agenda_id = vals.get("agenda_id")
+            if agenda_id:
+                agenda = self.env["benglish.academic.agenda"].browse(agenda_id)
+                if agenda and agenda.campus_id:
+                    campus = agenda.campus_id
+                    if campus.is_virtual_sede or campus.campus_type == 'online':
+                        # Forzar modalidad virtual
+                        vals['delivery_mode'] = 'virtual'
+                        # Establecer capacidad por defecto 15 si no se especificó
+                        if not vals.get('max_capacity'):
+                            vals['max_capacity'] = 15
+                        _logger.info(
+                            "[ACADEMIC_SESSION CREATE] Sede virtual detectada - delivery_mode=virtual, max_capacity=%s",
+                            vals.get('max_capacity')
+                        )
+            
+            # Si es modalidad virtual y no tiene capacidad, poner 15
+            if vals.get('delivery_mode') == 'virtual' and not vals.get('max_capacity'):
+                vals['max_capacity'] = 15
             
             _logger.info(
                 "[ACADEMIC_SESSION CREATE] Valores recibidos: subject_id=%s, program_id=%s, agenda_id=%s",
@@ -526,10 +584,10 @@ class AcademicSession(models.Model):
             ("hybrid", "Híbrida"),
         ],
         string="Modalidad",
-        default="presential",
+        default=lambda self: self._get_default_delivery_mode(),
         required=True,
         tracking=True,
-        help="Modalidad de entrega de la clase",
+        help="Modalidad de entrega de la clase. Si la agenda tiene sede virtual, este campo será 'Virtual' y no se puede cambiar.",
     )
 
     meeting_link = fields.Char(
@@ -782,8 +840,18 @@ class AcademicSession(models.Model):
     def _check_subcampus_requirement(self):
         """
         RF2: Aula obligatoria para modalidad Presencial o Híbrida.
+        NO aplica para modalidad Virtual ni para agendas con sede virtual.
         """
         for record in self:
+            # Si es modalidad virtual, no requiere aula
+            if record.delivery_mode == 'virtual':
+                continue
+            # Si la agenda tiene sede virtual (verificar directamente), no requiere aula
+            if record.agenda_id and record.agenda_id.campus_id:
+                campus = record.agenda_id.campus_id
+                if campus.is_virtual_sede or campus.campus_type == 'online':
+                    continue
+            # Para presencial o híbrida, requiere aula
             if record.delivery_mode in ['presential', 'hybrid']:
                 if not record.subcampus_id:
                     mode_label = dict(record._fields['delivery_mode'].selection).get(record.delivery_mode)
@@ -829,20 +897,66 @@ class AcademicSession(models.Model):
                     )
 
     # MÉTODOS AUXILIARES
-    
+
+    def _get_default_delivery_mode(self):
+        """
+        Retorna la modalidad por defecto basada en el tipo de sede de la agenda.
+        Si la agenda tiene una sede virtual, retorna 'virtual', de lo contrario 'presential'.
+        """
+        agenda_id = self.env.context.get('default_agenda_id')
+        if agenda_id:
+            agenda = self.env['benglish.academic.agenda'].browse(agenda_id)
+            if agenda.campus_id and (agenda.campus_id.is_virtual_sede or agenda.campus_id.campus_type == 'online'):
+                return 'virtual'
+        return 'presential'
+
+    @api.depends('agenda_id', 'agenda_id.campus_id', 'agenda_id.campus_id.is_virtual_sede', 'agenda_id.campus_id.campus_type')
+    def _compute_is_virtual_agenda(self):
+        """
+        Detecta si la agenda tiene una sede virtual.
+        Una sede es virtual si is_virtual_sede=True o campus_type='online'.
+        """
+        for record in self:
+            campus = record.agenda_id.campus_id if record.agenda_id else False
+            if campus:
+                record.is_virtual_agenda = campus.is_virtual_sede or campus.campus_type == 'online'
+            else:
+                record.is_virtual_agenda = False
+
+    @api.onchange('agenda_id')
+    def _onchange_agenda_id_delivery_mode(self):
+        """
+        Cuando cambia la agenda, ajustar la modalidad si es sede virtual.
+        """
+        if self.agenda_id and self.agenda_id.campus_id:
+            campus = self.agenda_id.campus_id
+            if campus.is_virtual_sede or campus.campus_type == 'online':
+                self.delivery_mode = 'virtual'
+                # También establecer capacidad por defecto para virtual
+                if not self.max_capacity:
+                    self.max_capacity = 15
+
     @api.depends('delivery_mode', 'subcampus_id', 'subcampus_id.capacity', 'max_capacity_virtual')
     def _compute_max_capacity(self):
         """
         R3: Cálculo automático de Capacidad Máxima según modalidad.
         
         Reglas:
-        - Presencial: Capacidad = Capacidad del Aula
-        - Virtual: Capacidad = Cupo Virtual
-        - Híbrida: Capacidad = Capacidad Aula + Cupo Virtual
+        - Presencial: Capacidad = Capacidad del Aula (pero usuario puede reducir)
+        - Virtual: Capacidad = 15 por defecto (editable)
+        - Híbrida: Capacidad = Presencial + Virtual
+        
+        NOTA: Como es readonly=False, el usuario puede editar el valor después.
+        Este método solo establece el valor inicial o cuando cambian las dependencias.
         """
         for record in self:
+            # Si ya tiene un valor guardado en BD y no estamos en modo de creación, mantenerlo
+            # (el usuario puede haberlo editado)
+            if record.id and record.max_capacity and record.max_capacity > 0:
+                continue
+                
             if record.delivery_mode == 'presential':
-                # Modalidad Presencial: capacidad del aula
+                # Modalidad Presencial: capacidad del aula por defecto
                 if record.subcampus_id and record.subcampus_id.capacity:
                     record.max_capacity = record.subcampus_id.capacity
                 else:
@@ -850,19 +964,16 @@ class AcademicSession(models.Model):
                     record.max_capacity = 15
 
             elif record.delivery_mode == 'virtual':
-                # Modalidad Virtual: sin límite numérico. Representar con NULL (False)
-                # `max_capacity_virtual` se mantiene como campo informativo, pero
-                # no debe restringir inscripciones automáticas.
-                record.max_capacity = False
+                # Modalidad Virtual: capacidad por defecto 15
+                record.max_capacity = 15
 
             elif record.delivery_mode == 'hybrid':
-                # Modalidad Híbrida: capacidad presencial = capacidad del aula
-                # y capacidad virtual = cupo definido manualmente por el usuario.
+                # Modalidad Híbrida: capacidad = presencial + virtual
                 aula_capacity = record.subcampus_id.capacity if record.subcampus_id else 0
+                if not record.max_capacity_presential:
+                    record.max_capacity_presential = aula_capacity
                 virtual_capacity = record.max_capacity_virtual or 0
-                # Asegurar que el campo de capacidad presencial refleje la del aula
-                record.max_capacity_presential = aula_capacity
-                record.max_capacity = aula_capacity + virtual_capacity
+                record.max_capacity = (record.max_capacity_presential or 0) + virtual_capacity
 
             else:
                 # Estado por defecto
@@ -950,11 +1061,14 @@ class AcademicSession(models.Model):
             return sessions.name_get()
         return super().name_search(name=name, args=args, operator=operator, limit=limit)
 
-    @api.depends("subject_id.alias", "subject_id.name")
+    @api.depends("subject_id.alias", "subject_id.name", "elective_pool_id.alias", "elective_pool_id.name", "is_elective_session")
     def _compute_student_alias(self):
         for record in self:
-            # Usar subject_id directamente (template_id fue eliminado)
-            if record.subject_id:
+            # Para sesiones electivas, usar el alias del pool de electivas
+            if record.is_elective_session and record.elective_pool_id:
+                record.student_alias = record.elective_pool_id.alias or record.elective_pool_id.name
+            # Para asignaturas regulares, usar el alias de la asignatura
+            elif record.subject_id:
                 record.student_alias = record.subject_id.alias or record.subject_id.name
             else:
                 record.student_alias = "Clase"
@@ -1287,10 +1401,17 @@ class AcademicSession(models.Model):
     @api.onchange("delivery_mode")
     def _onchange_delivery_mode(self):
         """Limpia el aula si la modalidad es virtual y ajusta capacidades."""
+        # Si es agenda virtual, forzar modalidad virtual
+        if self.is_virtual_agenda and self.delivery_mode != "virtual":
+            self.delivery_mode = "virtual"
+            return
+            
         if self.delivery_mode == "virtual":
-            # Modalidad virtual no requiere aula y no debe imponerse `max_capacity`.
+            # Modalidad virtual no requiere aula.
             self.subcampus_id = False
-            self.max_capacity = False
+            # Capacidad por defecto 15 si no está definida
+            if not self.max_capacity:
+                self.max_capacity = 15
 
         # Si cambia de híbrida a otra modalidad, recalcular `max_capacity`
         if self.delivery_mode != "hybrid":
@@ -1298,7 +1419,9 @@ class AcademicSession(models.Model):
             if self.delivery_mode == "presential" and self.subcampus_id and self.subcampus_id.capacity:
                 self.max_capacity = self.subcampus_id.capacity
             elif self.delivery_mode == "virtual":
-                self.max_capacity = False
+                # Mantener capacidad si ya tiene valor, sino 15
+                if not self.max_capacity:
+                    self.max_capacity = 15
             else:
                 # Como fallback, sumar presential+virtual si existen
                 if self.max_capacity_presential or self.max_capacity_virtual:
@@ -1316,9 +1439,13 @@ class AcademicSession(models.Model):
         """Autocompleta la capacidad máxima con la capacidad del aula seleccionada."""
         if self.subcampus_id and self.subcampus_id.capacity:
             if self.delivery_mode == "hybrid":
-                # Para híbrida, la capacidad presencial debe ser exactamente
-                # la capacidad del aula; el cupo virtual lo define el usuario.
-                self.max_capacity_presential = self.subcampus_id.capacity
+                # Para híbrida, inicializar capacidad presencial con capacidad del aula
+                # PERO el usuario puede reducirla después si lo desea.
+                if not self.max_capacity_presential:
+                    self.max_capacity_presential = self.subcampus_id.capacity
+                # Validar que no exceda capacidad del aula
+                elif self.max_capacity_presential > self.subcampus_id.capacity:
+                    self.max_capacity_presential = self.subcampus_id.capacity
                 # No modificar `max_capacity_virtual` automáticamente; el usuario lo define.
                 self.max_capacity = (self.max_capacity_presential or 0) + (self.max_capacity_virtual or 0)
             else:
@@ -1328,9 +1455,10 @@ class AcademicSession(models.Model):
     def _onchange_hybrid_capacities(self):
         """Actualiza max_capacity cuando cambian las capacidades híbridas."""
         if self.delivery_mode == "hybrid":
-            # La capacidad presencial debe reflejar la del aula si existe
+            # Validar que presencial no exceda capacidad del aula
             if self.subcampus_id and self.subcampus_id.capacity:
-                self.max_capacity_presential = self.subcampus_id.capacity
+                if self.max_capacity_presential and self.max_capacity_presential > self.subcampus_id.capacity:
+                    self.max_capacity_presential = self.subcampus_id.capacity
             self.max_capacity = (self.max_capacity_presential or 0) + (self.max_capacity_virtual or 0)
 
     @api.onchange("date", "time_start", "time_end", "agenda_id")
@@ -1457,24 +1585,30 @@ class AcademicSession(models.Model):
             else:
                 # Para modalidad presencial o virtual, usar capacidad única
                 record.enrolled_count = enrolled
-                # Modalidad virtual: ilimitada -> no marcar full ni restar cupos
-                if record.delivery_mode == 'virtual':
-                    record.available_spots = 999999
-                    record.is_full = False
-                    record.occupancy_rate = 0
-                else:
-                    record.available_spots = max(0, (record.max_capacity or 0) - enrolled)
-                    record.is_full = enrolled >= (record.max_capacity or 0)
-                    record.occupancy_rate = (
-                        (enrolled / (record.max_capacity or 1) * 100.0) if record.max_capacity else 0
-                    )
+                # Modalidad virtual: usar capacidad definida (ahora no es infinita)
+                # El usuario puede definir la capacidad que desee
+                record.available_spots = max(0, (record.max_capacity or 15) - enrolled)
+                record.is_full = enrolled >= (record.max_capacity or 15)
+                record.occupancy_rate = (
+                    (enrolled / (record.max_capacity or 15) * 100.0) if record.max_capacity else 0
+                )
 
     # VALIDACIONES
 
     @api.constrains("delivery_mode", "subcampus_id")
     def _check_classroom_required(self):
-        """Valida que el aula sea obligatoria para modalidad presencial o híbrida."""
+        """Valida que el aula sea obligatoria para modalidad presencial o híbrida.
+        NO aplica para modalidad Virtual ni para agendas con sede virtual."""
         for record in self:
+            # Si es modalidad virtual, no requiere aula
+            if record.delivery_mode == 'virtual':
+                continue
+            # Si la agenda tiene sede virtual (verificar directamente), no requiere aula
+            if record.agenda_id and record.agenda_id.campus_id:
+                campus = record.agenda_id.campus_id
+                if campus.is_virtual_sede or campus.campus_type == 'online':
+                    continue
+            # Para presencial o híbrida, requiere aula
             if (
                 record.delivery_mode in ("presential", "hybrid")
                 and not record.subcampus_id
@@ -1488,16 +1622,17 @@ class AcademicSession(models.Model):
         """Valida que las capacidades híbridas sean válidas."""
         for record in self:
             if record.delivery_mode == "hybrid":
-                # Presencial debe corresponder a la capacidad del aula si existe
+                # Presencial debe ser mayor a 0
                 if not record.max_capacity_presential or record.max_capacity_presential <= 0:
                     raise ValidationError(
                         _("La capacidad presencial debe ser mayor a 0 para modalidad híbrida.")
                     )
+                # Presencial no debe exceder la capacidad del aula (pero puede ser menor)
                 if record.subcampus_id and record.subcampus_id.capacity:
-                    if record.max_capacity_presential != record.subcampus_id.capacity:
+                    if record.max_capacity_presential > record.subcampus_id.capacity:
                         raise ValidationError(
                             _(
-                                "En modalidad híbrida, la capacidad presencial debe ser exactamente la capacidad del aula (%(cap)s)."
+                                "En modalidad híbrida, la capacidad presencial no puede exceder la capacidad del aula (%(cap)s)."
                             ) % {"cap": record.subcampus_id.capacity}
                         )
                 if record.max_capacity_virtual is None or record.max_capacity_virtual < 0:
@@ -1505,19 +1640,21 @@ class AcademicSession(models.Model):
                         _("La capacidad virtual debe ser 0 o mayor para modalidad híbrida.")
                     )
             elif record.delivery_mode == 'virtual':
-                # Virtual: no es obligatorio tener max_capacity numérico (ilimitado)
-                continue
+                # Virtual: debe tener capacidad > 0
+                if not record.max_capacity or record.max_capacity <= 0:
+                    record.max_capacity = 15  # Valor por defecto
             else:
-                # Presencial u otros: requerir capacidad > 0 y que sea igual al aula si hay aula
+                # Presencial u otros: requerir capacidad > 0, pero no forzar igualdad con aula
                 if not record.max_capacity or record.max_capacity <= 0:
                     raise ValidationError(
                         _("La capacidad máxima debe ser mayor a 0.")
                     )
+                # Para presencial, validar que no exceda capacidad del aula
                 if record.delivery_mode == 'presential' and record.subcampus_id and record.subcampus_id.capacity:
-                    if record.max_capacity != record.subcampus_id.capacity:
+                    if record.max_capacity > record.subcampus_id.capacity:
                         raise ValidationError(
                             _(
-                                "Para modalidad presencial la capacidad de la sesión debe ser exactamente la capacidad del aula (%(cap)s)."
+                                "Para modalidad presencial la capacidad no puede exceder la capacidad del aula (%(cap)s)."
                             ) % {"cap": record.subcampus_id.capacity}
                         )
 
@@ -2000,20 +2137,34 @@ class AcademicSession(models.Model):
                     )
                 )
 
-            # Validar campos obligatorios
-            required = [
-                record.subject_id,
-                record.date,
-                record.time_start,
-                record.time_end,
-                record.subcampus_id,
-            ]
-            if not all(required):
+            # Validar campos obligatorios según el tipo de sesión
+            missing_fields = []
+            
+            # Validar Asignatura o Pool de Electivas según el tipo
+            if record.is_elective_session:
+                # Para sesiones electivas, se requiere elective_pool_id
+                if not record.elective_pool_id:
+                    missing_fields.append("- Electivas (Pool)")
+            else:
+                # Para sesiones regulares, se requiere subject_id
+                if not record.subject_id:
+                    missing_fields.append("- Asignatura")
+            
+            # Validar fecha y hora (siempre requeridos)
+            if not record.date:
+                missing_fields.append("- Fecha")
+            if not record.time_start or not record.time_end:
+                missing_fields.append("- Hora inicio/fin")
+            
+            # Validar Aula solo si NO es modalidad virtual
+            if record.delivery_mode != 'virtual' and not record.subcampus_id:
+                missing_fields.append("- Aula")
+            
+            if missing_fields:
                 raise UserError(
                     _(
-                        "Complete todos los campos obligatorios antes de iniciar:\n"
-                        "- Asignatura\n- Fecha\n- Hora inicio/fin\n- Aula"
-                    )
+                        "Complete todos los campos obligatorios antes de iniciar:\n%s"
+                    ) % "\n".join(missing_fields)
                 )
 
             if not (record.teacher_id or record.coach_id):

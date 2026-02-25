@@ -690,8 +690,10 @@ class AcademicAgenda(models.Model):
                 continue
                 
             # Campos básicos obligatorios
+            # Para asignatura: subject_id O elective_pool_id (si es sesión electiva)
+            has_subject_or_elective = bool(s.subject_id or (s.is_elective_session and s.elective_pool_id))
             required_fields = [
-                s.subject_id,
+                has_subject_or_elective,  # Asignatura o pool de electivas
                 s.date,
                 s.time_start,
                 s.time_end,
@@ -1050,20 +1052,34 @@ class AcademicAgenda(models.Model):
             duration = self.campus_id.default_session_duration or 2.0
             default_end_time = self.time_start + duration
 
+        # Determinar modalidad por defecto según tipo de sede
+        is_virtual_campus = self.campus_id and (
+            self.campus_id.is_virtual_sede or self.campus_id.campus_type == 'online'
+        )
+        default_delivery_mode = 'virtual' if is_virtual_campus else 'presential'
+        # Capacidad por defecto: 15 para virtual
+        default_capacity = 15 if is_virtual_campus else False
+
+        context = {
+            "default_agenda_id": self.id,
+            "default_location_city": self.location_city,
+            "default_campus_id": self.campus_id.id,
+            "default_date": self.date_start,
+            "default_time_start": self.time_start,
+            "default_time_end": default_end_time,
+            "default_delivery_mode": default_delivery_mode,
+        }
+        # Solo agregar capacidad si tiene valor
+        if default_capacity:
+            context["default_max_capacity"] = default_capacity
+
         return {
             "name": _("Nueva Sesión - %s") % self.display_name,
             "type": "ir.actions.act_window",
             "res_model": "benglish.academic.session",
             "view_mode": "form",
             "target": "new",
-            "context": {
-                "default_agenda_id": self.id,
-                "default_location_city": self.location_city,
-                "default_campus_id": self.campus_id.id,
-                "default_date": self.date_start,
-                "default_time_start": self.time_start,
-                "default_time_end": default_end_time,
-            },
+            "context": context,
         }
 
     # MÉTODOS CRON

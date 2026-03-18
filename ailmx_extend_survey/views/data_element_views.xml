@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    El archivo define como se va a ver la tabla Data_Element en la interfaz
+-->
+
+<odoo>
+    <!-- VISTA LISTA -->
+    <record id="view_data_element_list" model="ir.ui.view">
+        <field name="name">data.element.list</field>
+        <field name="model">data.element</field>
+        <field name="arch" type="xml">
+            <list string="Elementos de Dato">
+                <field name="Nam_Element" string="Nombre"/>
+                <field name="Nam_Data_Domain" string="Dominio"/>
+                <field name="Nam_Sensitivity" string="Sensibilidad"/>
+                <field name="Des_Retention_Policy" string="Retención"/>
+                <field name="Nam_Owner" string="Propietario"/>
+                <field name="active" string="Activo"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- VISTA FORMULARIO -->
+    <record id="view_data_element_form" model="ir.ui.view">
+        <field name="name">data.element.form</field>
+        <field name="model">data.element</field>
+        <field name="arch" type="xml">
+            <form string="Elemento de Dato">
+                <sheet>
+                    <group string="Información general">
+                        <field name="Nam_Element" string="Nombre"/>
+                        <field name="Nam_Data_Domain" string="Dominio del dato"/>
+                        <field name="Des_Element" string="Descripción"/>
+                    </group>
+                    <group string="Gobernanza DAMA">
+                        <field name="Nam_Sensitivity" string="Sensibilidad"/>
+                        <field name="Des_Retention_Policy" string="Política de retención"/>
+                        <field name="Nam_Owner" string="Propietario"/>
+                        <field name="Nam_Steward" string="Custodio"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ACCIÓN - SE DEFINE QUE VISTA SE ABRE CUANDO EL USUARIO ABRE EL MENÚ -->
+    <record id="action_data_element" model="ir.actions.act_window">
+        <field name="name">Elementos de Dato</field>
+        <field name="res_model">data.element</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- MENÚ -->
+    <menuitem
+        id="menu_data_element"
+        name="Elementos de Dato"
+        parent="menu_survey_config"
+        action="action_data_element"
+        sequence="20"/>
+</odoo>

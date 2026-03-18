@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_survey_question_type_admin,survey.question.type admin,model_survey_question_type,base.group_system,1,1,1,1
+access_survey_question_type_user,survey.question.type user,model_survey_question_type,base.group_user,1,0,0,0
+access_data_element_admin,data.element admin,model_data_element,base.group_system,1,1,1,1
+access_data_element_user,data.element user,model_data_element,base.group_user,1,0,0,0
+access_survey_response_line_admin,survey.response.line admin,model_survey_response_line,base.group_system,1,1,1,1
+access_survey_response_line_user,survey.response.line user,model_survey_response_line,base.group_user,1,1,1,0

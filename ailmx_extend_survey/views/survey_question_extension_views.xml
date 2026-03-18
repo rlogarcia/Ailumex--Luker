@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    Este archivo extiende la vista del formulario de preguntas
+    que ya existe en Odoo. No reemplaza la vista original,
+    sino que le agrega una sección nueva con los campos
+    que se crearon en survey_question_extension.py
+    
+    inherit_id apunta a la vista original de Odoo que se va
+    a extender. Es como agregar un anexo a un documento
+    sin modificar el documento original.
+-->
+
+<odoo>
+    <record id="view_survey_question_extension_form" model="ir.ui.view">
+        <field name="name">survey.question.extension.form</field>
+        <field name="model">survey.question</field>
+
+        <field name="inherit_id" ref="survey.survey_question_form"/> <!-- Apunta a la vista original de preguntas de Odoo -->
+        <field name="arch" type="xml">
+            <!-- 
+                xpath le dice a Odoo donde insertar los campos nuevos en la vista original    
+                expr apunta al elemento donde insertar
+                position="inside" indica que se inserta dentro del elemento
+            -->
+            <xpath expr="//form" position="inside">
+            
+                <!-- Sección nueva con los campos de la extensión -->
+                <group string="Configuración AiLumex">
+
+                    <!-- FK al catálogo de tipos de pregunta -->
+                    <field
+                        name="Id_Question_Type"
+                        string="Tipo de Pregunta"/>
+
+                    <!-- Configuración específica en JSON -->
+                    <field
+                        name="Des_Config_JSON"
+                        string="Configuración JSON"/>
+
+                    <!-- Si la pregunta es obligatoria -->
+                    <field
+                        name="Flg_Required"
+                        string="Es obligatoria"/>
+
+                    <!-- FK al elemento DAMA -->
+                    <field
+                        name="Id_Data_Element"
+                        string="Elemento de dato DAMA"/>                 
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,132 @@
+<!-- Este archivo carga los registros iniciales de la tabla y se ejecuta automáticamente al instalar -->
+
+<odoo>
+    <data noupdate = '1'>
+
+        <!-- 1. TEXTO CORTO -->
+        <record id = 'question_type_text_short' model = 'survey.question.type'>
+            <field name = 'Cod_Question_Type'>text_short</field>
+            <field name = 'Nam_Question_Type'>Texto corto</field>
+            <field name = 'Typ_Data'>string</field>
+            <field name = 'Nam_UI_Component'>InputText</field>
+            <field name = 'Flg_Supports_Multiple' eval = 'False'/>
+            <field name = 'Flg_Supports_Media' eval = 'False'/>
+            <field name = 'Flg_Supports_GPS' eval = 'False'/>
+            <field name = 'Flg_Supports_Score' eval = 'False'/>
+            <field name = 'Flg_Supports_Offline' eval = 'True'/>
+            <field name = 'active' eval = 'True'/>
+        </record>
+
+        <!-- 2. TEXTO LARGO -->
+        <record id="question_type_text_long" model="survey.question.type">
+            <field name="Cod_Question_Type">text_long</field>
+            <field name="Nam_Question_Type">Texto largo</field>
+            <field name="Typ_Data">string</field>
+            <field name="Nam_UI_Component">Textarea</field>
+            <field name="Flg_Supports_Multiple" eval="False"/>
+            <field name="Flg_Supports_Media" eval="False"/>
+            <field name="Flg_Supports_GPS" eval="False"/>
+            <field name="Flg_Supports_Score" eval="False"/>
+            <field name="Flg_Supports_Offline" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 3. NUMERO -->
+        <record id="question_type_number" model="survey.question.type">
+            <field name="Cod_Question_Type">number</field>
+            <field name="Nam_Question_Type">Número</field>
+            <field name="Typ_Data">number</field>
+            <field name="Nam_UI_Component">InputNumber</field>
+            <field name="Flg_Supports_Multiple" eval="False"/>
+            <field name="Flg_Supports_Media" eval="False"/>
+            <field name="Flg_Supports_GPS" eval="False"/>
+            <field name="Flg_Supports_Score" eval="True"/>
+            <field name="Flg_Supports_Offline" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 4. FECHA -->
+        <record id="question_type_date" model="survey.question.type">
+            <field name="Cod_Question_Type">date</field>
+            <field name="Nam_Question_Type">Fecha</field>
+            <field name="Typ_Data">date</field>
+            <field name="Nam_UI_Component">DatePicker</field>
+            <field name="Flg_Supports_Multiple" eval="False"/>
+            <field name="Flg_Supports_Media" eval="False"/>
+            <field name="Flg_Supports_GPS" eval="False"/>
+            <field name="Flg_Supports_Score" eval="False"/>
+            <field name="Flg_Supports_Offline" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 5. FECHA Y HORA -->
+        <record id="question_type_datetime" model="survey.question.type">
+            <field name="Cod_Question_Type">datetime</field>
+            <field name="Nam_Question_Type">Fecha y hora</field>
+            <field name="Typ_Data">datetime</field>
+            <field name="Nam_UI_Component">DateTimePicker</field>
+            <field name="Flg_Supports_Multiple" eval="False"/>
+            <field name="Flg_Supports_Media" eval="False"/>
+            <field name="Flg_Supports_GPS" eval="False"/>
+            <field name="Flg_Supports_Score" eval="False"/>
+            <field name="Flg_Supports_Offline" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 6. OPCION ÚNICA (RADIO)-->
+        <record id="question_type_radio" model="survey.question.type">
+            <field name="Cod_Question_Type">radio</field>
+            <field name="Nam_Question_Type">Opción única</field>
+            <field name="Typ_Data">string</field>
+            <field name="Nam_UI_Component">RadioGroup</field>
+            <field name="Flg_Supports_Multiple" eval="False"/>
+            <field name="Flg_Supports_Media" eval="False"/>
+            <field name="Flg_Supports_GPS" eval="False"/>
+            <field name="Flg_Supports_Score" eval="True"/>
+            <field name="Flg_Supports_Offline" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 7. OPCION MULTIPLE (CHECKBOX)-->
+        <record id="question_type_checkbox" model="survey.question.type">
+            <field name="Cod_Question_Type">checkbox</field>
+            <field name="Nam_Question_Type">Opción múltiple</field>
+            <field name="Typ_Data">json</field>
+            <field name="Nam_UI_Component">CheckboxGroup</field>
+            <field name="Flg_Supports_Multiple" eval="True"/>
+            <field name="Flg_Supports_Media" eval="False"/>
+            <field name="Flg_Supports_GPS" eval="False"/>
+            <field name="Flg_Supports_Score" eval="True"/>
+            <field name="Flg_Supports_Offline" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 8. MATRIZ -->
+        <record id="question_type_matrix" model="survey.question.type">
+            <field name="Cod_Question_Type">matrix</field>
+            <field name="Nam_Question_Type">Matriz</field>
+            <field name="Typ_Data">json</field>
+            <field name="Nam_UI_Component">MatrixGrid</field>
+            <field name="Flg_Supports_Multiple" eval="True"/>
+            <field name="Flg_Supports_Media" eval="False"/>
+            <field name="Flg_Supports_GPS" eval="False"/>
+            <field name="Flg_Supports_Score" eval="True"/>
+            <field name="Flg_Supports_Offline" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 9. ESCALA-->
+        <record id="question_type_scale" model="survey.question.type">
+            <field name="Cod_Question_Type">scale</field>
+            <field name="Nam_Question_Type">Escala</field>
+            <field name="Typ_Data">number</field>
+            <field name="Nam_UI_Component">ScaleSlider</field>
+            <field name="Flg_Supports_Multiple" eval="False"/>
+            <field name="Flg_Supports_Media" eval="False"/>
+            <field name="Flg_Supports_GPS" eval="False"/>
+            <field name="Flg_Supports_Score" eval="True"/>
+            <field name="Flg_Supports_Offline" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

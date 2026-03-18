@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    Este archivo define cómo se ve la tabla Survey_Question_Type
+    en la interfaz de Odoo.
+-->
+
+<odoo>
+    <!-- VISTA DE LISTA -->
+    <record id="view_survey_question_type_list" model="ir.ui.view">
+        <field name="name">survey.question.type.list</field>
+        <field name="model">survey.question.type</field>
+        <field name="arch" type="xml">
+            <list string="Tipos de Pregunta">
+                <field name="Cod_Question_Type" string="Código"/>
+                <field name="Nam_Question_Type" string="Nombre"/>
+                <field name="Typ_Data" string="Tipo de dato"/>
+                <field name="Nam_UI_Component" string="Componente UI"/>
+                <field name="Flg_Supports_Multiple" string="Múltiple"/>
+                <field name="Flg_Supports_Offline" string="Offline"/>
+                <field name="active" string="Activo"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- VISTA DE FORMULARIO -->
+    <!-- Muestra el detalle de un tipo de pregunta para crear o editar -->
+    <record id="view_survey_question_type_form" model="ir.ui.view">
+        <field name="name">survey.question.type.form</field>
+        <field name="model">survey.question.type</field>
+        <field name="arch" type="xml">
+            <form string="Tipo de Pregunta">
+                <sheet>
+                    <!-- Fila superior con código y nombre -->
+                    <group>
+                        <field name="Cod_Question_Type" string="Código técnico"/>
+                        <field name="Nam_Question_Type" string="Nombre"/>
+                        <field name="Typ_Data" string="Tipo de dato"/>
+                        <field name="Nam_UI_Component" string="Componente UI"/>
+                    </group>
+
+                    <!-- Fila de capacidades -->
+                    <group string="Capacidades">
+                        <field name="Flg_Supports_Multiple" string="Permite múltiples respuestas"/>
+                        <field name="Flg_Supports_Media" string="Admite evidencia o foto"/>
+                        <field name="Flg_Supports_GPS" string="Captura GPS"/>
+                        <field name="Flg_Supports_Score" string="Admite puntaje"/>
+                        <field name="Flg_Supports_Offline" string="Soporta offline"/>
+                    </group>
+
+                    <!-- Esquema de validación -->
+                    <group string="Validación">
+                        <field name="Des_Validation_Schema" placeholder='{"required": true, "min": 0, "max": 100}'/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ACCIÓN -->
+    <record id="action_survey_question_type" model="ir.actions.act_window">
+        <field name="name">Tipos de Pregunta</field>
+        <field name="res_model">survey.question.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- MENÚ -->
+    <!-- Crea un submenú "Configuración" en el menú raíz de Encuestas, y allí se agrega 'Tipos de pregunta' -->
+    
+    <!-- Submenú Configuración bajo el menú raíz de Encuestas -->
+    <menuitem
+        id="menu_survey_config"
+        name="Configuración"
+        parent="survey.menu_surveys"
+        sequence="90"/>
+
+    <!-- Tipos de Pregunta dentro de Configuración -->
+    <menuitem
+        id="menu_survey_question_type"
+        name="Tipos de Pregunta"
+        parent="menu_survey_config"
+        action="action_survey_question_type"
+        sequence="10"/>
+
+</odoo>

@@ -9,6 +9,7 @@
         <field name="arch" type="xml">
             <list string="Líneas de Respuesta">
                 <field name="Id_Response_Header" string="Encabezado"/>
+                <field name="Nam_User" string="Participante"/>
                 <field name="Id_Question" string="Pregunta"/>
                 <field name="Typ_Response" string="Tipo"/>
                 <field name="Val_Text" string="Texto"/>
@@ -16,6 +17,8 @@
                 <field name="Val_Date" string="Fecha"/>
                 <field name="Flg_Omitted" string="Omitida"/>
                 <field name="Num_Score" string="Puntaje"/>
+                <field name="Dat_Created_At" string="Fecha creación"/>
+                <!--<field name="Nam_Device" string="Dispositivo"/>-->
             </list>
         </field>
     </record>
@@ -53,6 +56,8 @@
                         <field name="Flg_Omitted" string="Fue omitida"/>
                         <field name="Num_Score" string="Puntaje"/>
                         <field name="Dat_Created_At" string="Fecha de creación"/>
+                        <field name="Nam_User" string="Participante"/>
+                        <field name="Nam_Device" string="Dispositivo"/>
                     </group>
 
                 </sheet>

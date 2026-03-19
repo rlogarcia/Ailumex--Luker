@@ -101,10 +101,24 @@ class SurveyResponseLine(models.Model):
     )
 
     # Campos de auditoría
-    # Registra quien creó el registro y cuando
+    # FECHA
     Dat_Created_At = fields.Datetime(
         string='Fecha de creación',
         default=fields.Datetime.now,
+        readonly=True
+    )
+
+    # PARTICIPANTE
+    # Vacío si el participante respondió de forma anónima
+    Nam_User = fields.Char(
+        string='Usuario', 
+        readonly=True
+    )
+
+    # DISPOSITIVO
+    # lA IP del dispositivo desde donde se respondió Sirve como referencia del dispositivo
+    Nam_Device = fields.Char(
+        string='Dispositivo', 
         readonly=True
     )
 
@@ -154,6 +168,8 @@ class SurveyResponseLine(models.Model):
             'Id_Instrument': response_header.survey_id.id,
             'Id_Question': question_id,
             'Typ_Response': type_code,
+            'Nam_User': response_header.partner_id.name or 'Anónimo',
+            'Nam_Device': response_header.access_token or 'Desconocido',
         }
 
         # LÓGICA DE PERSISTENCIA

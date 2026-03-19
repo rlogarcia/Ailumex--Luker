@@ -16,6 +16,10 @@ class SurveyUserInputLineExtension(models.Model):
             try:
                 value = self._extract_value(record) # Se extrae el valor de la respuesta
 
+                # Se valida el valor contra el esquema del tipo de pregunta
+                # Si el valor no cumple las reglas, lanza un ValueError
+                record.question_id.validate_response(value)
+
                 # Se llama el metodo save_response que decide en que columna guardar
                 self.env['survey.response.line'].save_response(
                     response_header_id=record.user_input_id.id,

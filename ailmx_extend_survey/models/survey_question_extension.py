@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 import json
 
 class SurveyQuestionExtension(models.Model):
@@ -88,6 +89,22 @@ class SurveyQuestionExtension(models.Model):
         self.write({'Des_Config_JSON': config})
 
         return True
+
+    # MÉTODO API 4.1: _check_data_element
+    # Validación de integridad — se ejecuta automáticamente al crear o editar una pregunta.
+    # Exige que toda pregunta con tipo AILUMEX tenga un Elemento de dato DAMA asignado.
+    
+    @api.constrains('Id_Data_Element')
+    def _check_data_element(self):
+        # Este método se ejecuta automáticamente cada vez que se crea o edita una pregunta
+        for record in self:
+            # Solo valida preguntas que tienen tipo AILUMEX asignado
+            # Las preguntas de sección u otras sin tipo se omiten
+            if record.Id_Question_Type and not record.Id_Data_Element:
+                raise ValidationError(
+                    'La pregunta "%s" debe tener un Elemento de dato DAMA asignado.'
+                    % record.title
+                )
 
     # MÉTODO API 5: validate_response
     # Valida que una respuesta cumpla las reglas

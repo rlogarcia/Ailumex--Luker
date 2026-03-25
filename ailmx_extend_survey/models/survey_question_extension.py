@@ -37,10 +37,30 @@ class SurveyQuestionExtension(models.Model):
         help='Elemento del catálogo DAMA que define la gobernanza de este dato'
     )
 
+    # CAMPOS PARA TEMPORIZADOR
+    # Indica si esta pregunta específica tiene un cronómetro activo
+    has_time_limit = fields.Boolean(
+        string='¿Tiene límite de tiempo?',
+        default=False,
+        help='Si está marcada, el usuario tendrá un tiempo limitado para responder a esta pregunta.'
+    )
+
+    # Permite elegir entre segundos o minutos
+    time_limit_unit = fields.Selection([
+        ('seconds', 'Segundos'),
+        ('minutes', 'Minutos')
+    ], string='Unidad de tiempo', default='seconds')
+
+    # El valor numérico del tiempo
+    time_limit_value = fields.Integer(
+        string='Valor del tiempo',
+        default=0,
+        help='Tiempo permitido para esta pregunta'
+    )
+
     # MÉTODO API 3: create_question_with_type
     # Permite crear una pregunta completa desde código,
     # asignándole tipo y configuración en una sola operación.
-
     @api.model
     def create_question_with_type(self, survey_id, question_type_code, vals):
 
@@ -93,7 +113,6 @@ class SurveyQuestionExtension(models.Model):
     # MÉTODO API 4.1: _check_data_element
     # Validación de integridad — se ejecuta automáticamente al crear o editar una pregunta.
     # Exige que toda pregunta con tipo AILUMEX tenga un Elemento de dato DAMA asignado.
-    
     @api.constrains('Id_Data_Element')
     def _check_data_element(self):
         # Este método se ejecuta automáticamente cada vez que se crea o edita una pregunta
@@ -109,7 +128,6 @@ class SurveyQuestionExtension(models.Model):
     # MÉTODO API 5: validate_response
     # Valida que una respuesta cumpla las reglas
     # definidas en Des_Validation_Schema del tipo.
-
     def validate_response(self, value):
 
         # Obtiene el tipo de pregunta asociado

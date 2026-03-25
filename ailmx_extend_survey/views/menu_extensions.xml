@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ACCIONES (LO QUE ABRE CADA MENÚ) -->
+
+    <!-- Acción para Maestro participantes -->
+    <record id="action_maestro_participantes" model="ir.actions.act_window">
+        <field name="name">Maestro participantes</field>
+        <field name="res_model">ailmx.participant</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Acción para Contexto organizacional -->
+    <record id="action_contexto_organizacional" model="ir.actions.act_window">
+        <field name="name">Contexto organizacional</field>
+        <field name="res_model">survey.user_input</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Acción para Atributos dinámicos -->
+    <record id="action_atributos_dinamicos" model="ir.actions.act_window">
+        <field name="name">Atributos dinámicos</field>
+        <field name="res_model">survey.user_input</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- MENÚS -->
+    <!-- Submenú 1 -->
+    <menuitem
+        id="menu_maestro_participantes"
+        name="Maestro participantes"
+        parent="survey.menu_survey_type_form1"
+        action="action_maestro_participantes"
+        sequence="10"/>
+
+    <!-- Submenú 2 -->
+    <menuitem
+        id="menu_contexto_organizacional"
+        name="Contexto organizacional"
+        parent="survey.menu_survey_type_form1"
+        action="action_contexto_organizacional"
+        sequence="20"/>
+
+    <!-- Submenú 3 -->
+    <menuitem
+        id="menu_atributos_dinamicos"
+        name="Atributos dinámicos"
+        parent="survey.menu_survey_type_form1"
+        action="action_atributos_dinamicos"
+        sequence="30"/>
+
+</odoo>

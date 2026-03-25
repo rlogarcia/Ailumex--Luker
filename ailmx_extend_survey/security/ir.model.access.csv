@@ -5,3 +5,5 @@ access_data_element_admin,data.element admin,model_data_element,base.group_syste
 access_data_element_user,data.element user,model_data_element,base.group_user,1,0,0,0
 access_survey_response_line_admin,survey.response.line admin,model_survey_response_line,base.group_system,1,1,1,1
 access_survey_response_line_user,survey.response.line user,model_survey_response_line,base.group_user,1,1,1,0
+access_ailmx_participant_admin,ailmx.participant admin,model_ailmx_participant,base.group_system,1,1,1,1
+access_ailmx_participant_user,ailmx.participant user,model_ailmx_participant,base.group_user,1,1,1,0

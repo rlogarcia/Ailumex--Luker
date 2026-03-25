@@ -15,6 +15,9 @@
         'views/data_element_views.xml',
         'views/survey_question_extension_views.xml',
         'views/survey_response_line_views.xml',
+        'views/participant_views.xml',
+        'views/survey_form_inherit.xml',
+        'views/menu_extensions.xml',
 
         # DATOS INICIALES
         'data/survey_question_type_data.xml'
@@ -22,4 +25,5 @@
     'installable': True,
     'application': False,
     'auto_install': False, # No se instala automáticamente cuando se instala Survey
+    'post_init_hook': 'post_init_hook', # Se ejecuta después de instalar o actualizar el módulo
 }

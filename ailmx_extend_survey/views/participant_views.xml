@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- VISTA LIST (TABLA) -->
+    <record id="view_participant_list" model="ir.ui.view">
+        <field name="name">ailmx.participant.list</field>
+        <field name="model">ailmx.participant</field>
+        <field name="arch" type="xml">
+            <list>
+
+                <field name="name"/>
+                <field name="type"/>
+                <field name="primary_identity"/>
+                <field name="current_context"/>
+                <field name="state"/>
+                <field name="sync"/>
+                <field name="last_sync"/>
+
+            </list>
+        </field>
+    </record>
+
+</odoo>

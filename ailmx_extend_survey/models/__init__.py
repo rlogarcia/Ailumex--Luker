@@ -14,3 +14,9 @@ from . import survey_response_line
 
 # Interceptor de respuestas nativas de Odoo para copiarlas a survey_response_line
 from . import survey_user_input_line_extension
+
+# Configuración de menús
+from . import menu_setup
+
+# Modelo de participantes
+from . import participant

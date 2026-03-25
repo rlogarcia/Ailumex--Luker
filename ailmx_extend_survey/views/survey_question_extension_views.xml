@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!--
-    Este archivo extiende la vista del formulario de preguntas
-    que ya existe en Odoo. No reemplaza la vista original,
-    sino que le agrega una sección nueva con los campos
-    que se crearon en survey_question_extension.py
-    
-    inherit_id apunta a la vista original de Odoo que se va
-    a extender. Es como agregar un anexo a un documento
-    sin modificar el documento original.
+    Este archivo extiende la vista del formulario de preguntas (survey.survey_question_form).
+    No reemplaza la vista original de Odoo, sino que "inyecta" nuevos campos 
+    en lugares específicos usando XPath.
 -->
 
 <odoo>
@@ -16,12 +11,45 @@
         <field name="name">survey.question.extension.form</field>
         <field name="model">survey.question</field>
 
-        <field name="inherit_id" ref="survey.survey_question_form"/> <!-- Apunta a la vista original de preguntas de Odoo -->
+        <!-- Apunta a la vista original de preguntas de Odoo -->
+        <field name="inherit_id" ref="survey.survey_question_form"/> 
+        
         <field name="arch" type="xml">
+
             <!-- 
-                xpath le dice a Odoo donde insertar los campos nuevos en la vista original    
-                expr apunta al elemento donde insertar
-                position="inside" indica que se inserta dentro del elemento
+                CONFIGURACIÓN DE TIEMPO (TIMER)
+                Se coloca a la derecha del selector de "Tipo de pregunta".
+                Se busca el grupo que contiene 'question_type' y y se utiliza position="after"
+                para crear una segunda columna a la derecha.
+            -->
+            <xpath expr="//group[field[@name='question_type']]" position="after">
+                
+                <group string="Temporizador de preguntas." name="timer_settings">
+                    <!-- Checkbox para activar la funcionalidad -->
+                    <field name="has_time_limit" string="¿Activar temporizador?"/>
+                    
+                    <!-- 
+                        CAMPOS CONDICIONALES:
+                        En Odoo 18 se usa invisible="not campo" directamente.
+                        - widget="radio" con options horizontal hace que se vea moderno.
+                    -->
+                    <field name="time_limit_unit" 
+                        string="Unidad"
+                        widget="radio" 
+                        options="{'horizontal': true}"
+                        invisible="not has_time_limit"/>
+                    
+                    <field name="time_limit_value"
+                        string="Cantidad"
+                        invisible="not has_time_limit"
+                        placeholder="ej. 30"/>
+                </group>
+
+            </xpath>
+
+            <!-- 
+                CONFIGURACIÓN AILUMEX
+                Este inserta los campos de gobernanza al final del formulario.
             -->
             <xpath expr="//form" position="inside">
             

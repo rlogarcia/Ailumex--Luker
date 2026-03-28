@@ -1,0 +1,124 @@
+/**
+ * SISPAR - Estilos del cronómetro de preguntas
+ * Archivo: static/src/css/sispar_survey_timer.css
+ *
+ * Estos estilos controlan cómo se ve el bloque del cronómetro
+ * en el header de cada pregunta de la encuesta.
+ *
+ * Se carga automáticamente en el frontend porque lo declaramos
+ * en __manifest__.py bajo 'web.assets_frontend'.
+ */
+
+
+/* ══════════════════════════════════════════════════════════
+   CONTENEDOR PRINCIPAL del cronómetro
+   Se ubica en el header de la pregunta (survey_templates.xml)
+   ══════════════════════════════════════════════════════════ */
+#sispar_timer_container {
+    display: flex;               /* Usamos flex para alinear elementos verticalmente */
+    flex-direction: column;
+    gap: 6px;                    /* Espacio entre la fila del contador y la barra */
+    background-color: #f0f4ff;  /* Fondo azul muy suave para diferenciarlo de la pregunta */
+    border: 1px solid #c7d4f5;
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 16px;         /* Espacio entre el timer y el título de la pregunta */
+    max-width: 400px;            /* No queremos que ocupe todo el ancho */
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   FILA DEL CONTADOR: ícono + número + etiqueta en línea
+   ══════════════════════════════════════════════════════════ */
+.sispar-timer-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;                    /* Espacio entre ícono, número y texto */
+}
+
+/* Ícono del reloj (SVG) */
+.sispar-timer-icon {
+    color: #3b5bdb;              /* Azul oscuro para el ícono */
+    flex-shrink: 0;              /* Evita que el ícono se comprima */
+}
+
+/* Número grande MM:SS */
+.sispar-timer-display {
+    font-size: 1.4rem;           /* Número prominente pero no gigante */
+    font-weight: 700;
+    color: #1e3a8a;              /* Azul fuerte */
+    font-variant-numeric: tabular-nums; /* Evita que el número "salte" visualmente */
+    min-width: 52px;             /* Ancho fijo para que no se mueva el layout */
+    letter-spacing: 0.5px;
+}
+
+/* Texto "Tiempo restante" */
+.sispar-timer-label {
+    font-size: 0.8rem;
+    color: #5c7099;
+    font-weight: 500;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   BARRA DE PROGRESO
+   ══════════════════════════════════════════════════════════ */
+
+/* Fondo (pista gris) de la barra */
+.sispar-progress-wrapper {
+    width: 100%;
+    background-color: #dce4f5;
+    border-radius: 999px;        /* Bordes completamente redondeados (píldora) */
+    height: 8px;
+    overflow: hidden;            /* Para que la barra hija no se salga del borde */
+}
+
+/* Barra de progreso rellena (azul → se achica con el tiempo) */
+.sispar-progress-bar {
+    height: 100%;
+    background-color: #3b5bdb;  /* Azul principal */
+    border-radius: 999px;
+    /* Transición suave de 0.9s (un poco menos que 1s para que no se vea con retraso) */
+    transition: width 0.9s linear, background-color 0.5s ease;
+    /* Inicia al 100%, el JS lo va reduciendo */
+    width: 100%;
+}
+
+/* ──────────────────────────────────────────────────────────
+   ESTADO DE ALERTA (cuando quedan ≤ 10 segundos)
+   El JS añade la clase .sispar-progress-danger automáticamente
+   ────────────────────────────────────────────────────────── */
+.sispar-progress-bar.sispar-progress-danger {
+    background-color: #e03131;  /* Rojo de urgencia */
+    /* Animación de pulso para llamar la atención del usuario */
+    animation: sispar-pulse 0.7s ease-in-out infinite alternate;
+}
+
+/* Número también se pone rojo cuando quedan ≤ 10 segundos */
+.sispar-timer-display.sispar-counter-danger {
+    color: #c92a2a;             /* Rojo oscuro para el número */
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   ANIMACIÓN DE PULSO (alerta final)
+   ══════════════════════════════════════════════════════════ */
+@keyframes sispar-pulse {
+    from { opacity: 1.0; }
+    to   { opacity: 0.6; }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVO para pantallas pequeñas (móvil)
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 576px) {
+    #sispar_timer_container {
+        max-width: 100%;         /* En móvil, que ocupe el ancho disponible */
+        padding: 8px 12px;
+    }
+
+    .sispar-timer-display {
+        font-size: 1.2rem;
+    }
+}

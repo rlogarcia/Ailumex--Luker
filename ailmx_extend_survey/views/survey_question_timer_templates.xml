@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Este template hereda el contenedor de la pregunta
+    que ve el usuario cuando responde la encuesta.
+-->
+<odoo>
+
+    <template id="survey_question_timer_inject"
+              name="AILUMEX Timer - Inyección en contenedor de pregunta"
+              inherit_id="survey.question_container">
+
+        <xpath expr="." position="inside">
+
+            <!--
+                Solo se muestra el timer si:
+                1. existe la pregunta actual
+                2. tiene el temporizador activado
+                3. tiene una cantidad mayor a 0
+            -->
+            <t t-if="question and question.has_time_limit and question.time_limit_value > 0">
+
+                <!--
+                    Contenedor del cronómetro.
+                    El JS leerá estos atributos data-* para construir
+                    el temporizador visual y arrancar la cuenta regresiva.
+                -->
+                <div id="sispar_timer_container"
+                     t-att-data-time-limit="question.time_limit_value"
+                     t-att-data-time-unit="question.time_limit_unit"
+                     class="mb-3">
+                </div>
+            </t>
+        </xpath>
+    </template>
+</odoo>

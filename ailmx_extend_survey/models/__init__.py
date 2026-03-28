@@ -20,3 +20,6 @@ from . import menu_setup
 
 # Modelo de participantes
 from . import participant
+
+# Extensión del modelo de instrumentos/encuestas
+from . import survey_instrument_extension

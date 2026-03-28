@@ -1,0 +1,213 @@
+/* ═══════════════════════════════════════════════════
+   AILUMEX — Survey Form Styles
+   Paleta: Azul corporativo, estilo sutil y elegante
+═══════════════════════════════════════════════════ */
+
+/* ── VARIABLES DE COLOR ── */
+:root {
+    --ailmx-blue-dark:    #1A3C5E;
+    --ailmx-blue-mid:     #1F5C99;
+    --ailmx-blue-light:   #D6E4F0;
+    --ailmx-blue-pale:    #EAF2FB;
+    --ailmx-text-dark:    #1A1A2E;
+    --ailmx-text-mid:     #444466;
+    --ailmx-text-light:   #7A8BA0;
+    --ailmx-border:       #C8D8E8;
+    --ailmx-white:        #FFFFFF;
+    --ailmx-shadow:       0 2px 8px rgba(26, 60, 94, 0.10);
+    --ailmx-shadow-hover: 0 4px 16px rgba(26, 60, 94, 0.18);
+    --ailmx-radius:       10px;
+    --ailmx-radius-sm:    6px;
+}
+
+/* ═══════════════════════════════════════════════════
+   SECCIÓN SUPERIOR — NOMBRE | CÓDIGO | DOMINIO
+═══════════════════════════════════════════════════ */
+
+.ailmx_header_section {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 0 4px;
+}
+
+.ailmx_header_card {
+    flex: 1;
+    background: var(--ailmx-white);
+    border: 1px solid var(--ailmx-border);
+    border-top: 3px solid var(--ailmx-blue-mid);
+    border-radius: var(--ailmx-radius);
+    padding: 16px 20px;
+    box-shadow: var(--ailmx-shadow);
+    transition: box-shadow 0.2s ease, border-top-color 0.2s ease;
+}
+
+.ailmx_header_card:hover {
+    box-shadow: var(--ailmx-shadow-hover);
+    border-top-color: var(--ailmx-blue-dark);
+}
+
+.ailmx_header_label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--ailmx-blue-mid);
+    margin-bottom: 8px;
+}
+
+.ailmx_header_value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ailmx-text-dark);
+}
+
+.ailmx_header_value.o_field_widget {
+    width: 100%;
+}
+
+.ailmx_header_value .o_field_widget input,
+.ailmx_header_value input.o_input {
+    border: none;
+    border-bottom: 1.5px solid var(--ailmx-border);
+    border-radius: 0;
+    padding: 4px 0;
+    font-size: 15px;
+    color: var(--ailmx-text-dark);
+    background: transparent;
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+.ailmx_header_value .o_field_widget input:focus,
+.ailmx_header_value input.o_input:focus {
+    border-bottom-color: var(--ailmx-blue-mid);
+    outline: none;
+    box-shadow: none;
+}
+
+.ailmx_empty_field {
+    font-size: 13px;
+    color: var(--ailmx-text-light);
+    font-style: italic;
+}
+
+/* ═══════════════════════════════════════════════════
+   SECCIÓN MEDIA — DESCRIPCIÓN
+═══════════════════════════════════════════════════ */
+
+.ailmx_description_section {
+    background: var(--ailmx-white);
+    border: 1px solid var(--ailmx-border);
+    border-left: 4px solid var(--ailmx-blue-mid);
+    border-radius: var(--ailmx-radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--ailmx-shadow);
+}
+
+.ailmx_section_title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--ailmx-blue-mid);
+    margin-bottom: 12px;
+}
+
+.ailmx_description_field .o_field_widget,
+.ailmx_description_field .odoo-editor-editable,
+.ailmx_description_field textarea {
+    min-height: 100px;
+    width: 100%;
+    border: 1px solid var(--ailmx-border);
+    border-radius: var(--ailmx-radius-sm);
+    padding: 10px 14px;
+    font-size: 14px;
+    color: var(--ailmx-text-dark);
+    resize: vertical;
+    transition: border-color 0.2s;
+}
+
+.ailmx_description_field .o_field_widget:focus-within,
+.ailmx_description_field textarea:focus {
+    border-color: var(--ailmx-blue-mid);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(31, 92, 153, 0.10);
+}
+
+/* ═══════════════════════════════════════════════════
+   SECCIÓN INFERIOR — MÉTRICAS
+═══════════════════════════════════════════════════ */
+
+.ailmx_footer_section {
+    display: flex;
+    gap: 14px;
+    padding: 0 4px;
+    flex-wrap: wrap;
+}
+
+.ailmx_footer_card {
+    flex: 1;
+    min-width: 160px;
+    background: var(--ailmx-blue-pale);
+    border: 1px solid var(--ailmx-blue-light);
+    border-radius: var(--ailmx-radius);
+    padding: 14px 18px;
+    box-shadow: var(--ailmx-shadow);
+    transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.ailmx_footer_card:hover {
+    background: var(--ailmx-blue-light);
+    box-shadow: var(--ailmx-shadow-hover);
+}
+
+.ailmx_footer_label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--ailmx-blue-dark);
+    margin-bottom: 6px;
+}
+
+.ailmx_footer_value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ailmx-text-dark);
+}
+
+.ailmx_footer_value .o_field_widget {
+    width: 100%;
+}
+
+.ailmx_footer_value select.o_input,
+.ailmx_footer_value .o_select_menu {
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: var(--ailmx-text-dark);
+    width: 100%;
+    padding: 0;
+}
+
+.ailmx_footer_unit {
+    font-size: 11px;
+    color: var(--ailmx-text-light);
+    margin-top: 2px;
+}
+
+/* ── Checkbox en footer ── */
+.ailmx_footer_value .o_field_boolean {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ailmx_footer_value .o_field_boolean input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--ailmx-blue-mid);
+    cursor: pointer;
+}

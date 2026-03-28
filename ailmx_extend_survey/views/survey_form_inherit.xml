@@ -1,16 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-    <!-- HEREDAR FORMULARIO DE INSTRUMENTOS -->
     <record id="view_survey_form_inherit_ailmx" model="ir.ui.view">
         <field name="name">survey.survey.form.ailmx</field>
         <field name="model">survey.survey</field>
-
-        <!-- VISTA ORIGINAL-->
         <field name="inherit_id" ref="survey.survey_survey_view_form"/>
         <field name="arch" type="xml">
 
-            <!-- 1. RENOMBRAR PESTAÑAS -->
+            <!-- RENOMBRAR PESTAÑAS -->
             <xpath expr="//page[@name='questions']" position="attributes">
                 <attribute name="string">Estructura</attribute>
             </xpath>
@@ -24,16 +20,12 @@
                 <attribute name="string">Mensaje final</attribute>
             </xpath>
 
-            <!-- 2. REORDENAR PESTAÑAS EXISTENTES -->
-            
-            <!-- Posición 1: Mover 'Información General' antes de 'Estructura' -->
+            <!-- MOVER INFORMACIÓN GENERAL AL INICIO -->
             <xpath expr="//page[@name='questions']" position="before">
                 <xpath expr="//page[@name='description']" position="move"/>
             </xpath>
 
-            <!-- 3. CREAR E INSERTAR NUEVAS PESTAÑAS (Posiciones 3 y 4) -->
-            
-            <!-- Insertar 'Versiones' y 'Compatibilidad' justo después de 'Estructura' -->
+            <!-- AGREGAR PESTAÑAS NUEVAS -->
             <xpath expr="//page[@name='questions']" position="after">
                 <page string="Versiones" name="versions">
                     <group>
@@ -47,67 +39,69 @@
                 </page>
             </xpath>
 
-            <!-- 4. AJUSTAR LAS ÚLTIMAS POSICIONES (5 y 6) -->
-
-            <!-- Posición 5: Mover 'Mensaje final' después de 'Compatibilidad' -->
+            <!-- MOVER MENSAJE FINAL Y OPCIONES AL FINAL -->
             <xpath expr="//page[@name='compatibility']" position="after">
                 <xpath expr="//page[@name='description_done']" position="move"/>
             </xpath>
-
-            <!-- Posición 6: Mover 'Opciones' al final de todo -->
             <xpath expr="//notebook" position="inside">
                 <xpath expr="//page[@name='options']" position="move"/>
             </xpath>
 
-
-            <!-- PERSONALIZACIONES: INFORMACIÓN GENERAL -->
+            <!-- REEMPLAZAR CONTENIDO DE INFORMACIÓN GENERAL -->
             <xpath expr="//page[@name='description']/field[@name='description']" position="replace">
-                <group>
-                    <!-- NOMBRE-->
-                    <group>
-                        <field name="title" string="Nombre"/>
-                    </group>
 
-                    <!-- CÓDIGO -->
-                    <group>
-                        <label for="id" string="Código"/>
-                        <div class="o_row">
-                            <field name="id" readonly="1"/>
+                <!-- SECCIÓN SUPERIOR: NOMBRE | CÓDIGO | DOMINIO -->
+                <div class="ailmx_header_section">
+                    <div class="ailmx_header_card">
+                        <div class="ailmx_header_label">Nombre</div>
+                        <field name="title" string="" nolabel="1"
+                            class="ailmx_header_value"/>
+                    </div>
+                    <div class="ailmx_header_card">
+                        <div class="ailmx_header_label">Código</div>
+                        <field name="Cod_Instrument" readonly="1" string="" nolabel="1"
+                            class="ailmx_header_value"/>
+                    </div>
+                    <div class="ailmx_header_card">
+                        <div class="ailmx_header_label">Dominio</div>
+                        <div class="ailmx_header_value ailmx_empty_field">
+                            Sin contenido
                         </div>
-                    </group>
+                    </div>
+                </div>
 
-                    <!-- DOMINIO -->
-                    <!--
-                    <group>
-                        <field name="category_id" string="Dominio"/>
-                    </group>
-                    -->
+                <!-- SECCIÓN MEDIA: DESCRIPCIÓN -->
+                <div class="ailmx_description_section">
+                    <div class="ailmx_section_title">Descripción</div>
+                    <field name="description" string="" nolabel="1"
+                           class="ailmx_description_field"/>
+                </div>
 
-                    <!-- DESCRIPCIÓN -->
-                    <group col="4">
-                        <field name="description" string="Descripción"/>
-                    </group>
+                <!-- SECCIÓN INFERIOR: MÉTRICAS -->
+                <div class="ailmx_footer_section">
+                    <div class="ailmx_footer_card">
+                        <div class="ailmx_footer_label">Tiempo estimado</div>
+                        <field name="time_limit" string="" nolabel="1"
+                               class="ailmx_footer_value"/>
+                        <div class="ailmx_footer_unit">minutos</div>
+                    </div>
+                    <div class="ailmx_footer_card">
+                        <div class="ailmx_footer_label">Requiere evaluador</div>
+                        <field name="scoring_type" string="" nolabel="1"
+                               class="ailmx_footer_value"/>
+                    </div>
+                    <div class="ailmx_footer_card">
+                        <div class="ailmx_footer_label">Presentación</div>
+                        <field name="questions_layout" string="" nolabel="1"
+                               class="ailmx_footer_value"/>
+                    </div>
+                    <div class="ailmx_footer_card">
+                        <div class="ailmx_footer_label">Aplicación offline</div>
+                        <field name="is_time_limited" string="" nolabel="1"
+                               class="ailmx_footer_value"/>
+                    </div>
+                </div>
 
-                    <!-- TIEMPO ESTIMADO (MINUTOS) -->
-                    <group>
-                        <field name="time_limit" string="Tiempo estimado (min)"/>
-                    </group>
-
-                    <!-- REQUIERE EVALUADOR -->
-                    <group>
-                        <field name="scoring_type" string="Requiere evaluador"/>
-                    </group>
-
-                    <!-- PRESENTACIÓN -->
-                    <group>
-                        <field name="questions_layout" string="Presentación"/>
-                    </group>
-
-                    <!-- APLICACIÓN OFFLINE -->
-                    <group>
-                        <field name="is_time_limited" string="Aplicación offline"/>
-                    </group>
-                </group>
             </xpath>
         </field>
     </record>

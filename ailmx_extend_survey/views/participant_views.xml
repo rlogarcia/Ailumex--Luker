@@ -1,22 +1,311 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- VISTA LIST (TABLA) -->
+    <!-- ========================================================= -->
+    <!-- VISTA LISTA -->
+    <!-- Dejamos las columnas que tú definiste originalmente -->
+    <!-- ========================================================= -->
     <record id="view_participant_list" model="ir.ui.view">
         <field name="name">ailmx.participant.list</field>
         <field name="model">ailmx.participant</field>
         <field name="arch" type="xml">
-            <list>
+            <list string="Participantes">
 
+                <!-- Nombre completo del participante -->
                 <field name="name"/>
-                <field name="type"/>
+
+                <!-- Tipo de participante -->
+                <field name="participant_type"/>
+
+                <!-- Identidad primaria -->
                 <field name="primary_identity"/>
+
+                <!-- Contexto actual -->
                 <field name="current_context"/>
+
+                <!-- Estado -->
                 <field name="state"/>
+
+                <!-- Sync -->
                 <field name="sync"/>
+
+                <!-- Última sincronización -->
                 <field name="last_sync"/>
 
             </list>
+        </field>
+    </record>
+
+    <!-- ========================================================= -->
+    <!-- VISTA FORMULARIO -->
+    <!-- ========================================================= -->
+    <record id="view_participant_form" model="ir.ui.view">
+        <field name="name">ailmx.participant.form</field>
+        <field name="model">ailmx.participant</field>
+        <field name="arch" type="xml">
+            <form string="Participante">
+
+                <!-- ===================================================== -->
+                <!-- HEADER -->
+                <!-- Solo dejamos la barra visual de estados -->
+                <!-- ===================================================== -->
+                <header>
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="draft,active,inactive,archived"/>
+                </header>
+
+                <sheet>
+
+                    <!-- ===================================================== -->
+                    <!-- TARJETAS SUPERIORES -->
+                    <!-- ===================================================== -->
+                    <div class="ailmx_header_section">
+
+                        <!-- Card: Participante -->
+                        <div class="ailmx_header_card ailmx_participant_main_card">
+                            <div class="ailmx_header_label">
+                                Participante
+                            </div>
+
+                            <div class="ailmx_header_value ailmx_participant_name_value">
+                                <field name="name" readonly="1" placeholder="Nuevo participante"/>
+                            </div>
+                        </div>
+
+                        <!-- Card: Código -->
+                        <div class="ailmx_header_card">
+                            <div class="ailmx_header_label">
+                                Código
+                            </div>
+
+                            <div class="ailmx_header_value ailmx_participant_code_value">
+                                <field name="code" readonly="1"/>
+                            </div>
+                        </div>
+
+                        <!-- Card: Fecha de registro -->
+                        <div class="ailmx_header_card">
+                            <div class="ailmx_header_label">
+                                Fecha de registro
+                            </div>
+
+                            <div class="ailmx_header_value">
+                                <field name="registration_date" readonly="1"/>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ===================================================== -->
+                    <!-- PESTAÑAS -->
+                    <!-- ===================================================== -->
+                    <notebook>
+
+                        <!-- ================================================= -->
+                        <!-- PESTAÑA GENERAL -->
+                        <!-- ================================================= -->
+                        <page string="General">
+
+                            <div class="ailmx_form_area">
+
+                                <!-- FILA 1 -->
+                                <!-- Tipo de participante | Estado | Fecha nacimiento -->
+                                <div class="ailmx_form_grid ailmx_grid_3">
+
+                                    <!-- Campo: Tipo de participante -->
+                                    <div class="ailmx_form_card">
+                                        <label for="participant_type" class="o_form_label ailmx_field_label"/>
+                                        <div class="ailmx_field_box ailmx_select_box">
+                                            <field name="participant_type"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Campo: Estado -->
+                                    <div class="ailmx_form_card">
+                                        <label for="state" class="o_form_label ailmx_field_label"/>
+                                        <div class="ailmx_field_box ailmx_select_box">
+                                            <field name="state"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Campo: Fecha de nacimiento -->
+                                    <div class="ailmx_form_card">
+                                        <label for="birth_date" class="o_form_label ailmx_field_label"/>
+                                        <div class="ailmx_field_box">
+                                            <field name="birth_date"/>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- FILA 2 -->
+                                <!-- Primer nombre | Segundo nombre | Primer apellido | Segundo apellido -->
+                                <div class="ailmx_form_grid ailmx_grid_4">
+
+                                    <!-- Campo: Primer nombre -->
+                                    <div class="ailmx_form_card">
+                                        <label for="first_name" class="o_form_label ailmx_field_label"/>
+                                        <div class="ailmx_field_box">
+                                            <field name="first_name"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Campo: Segundo nombre -->
+                                    <div class="ailmx_form_card">
+                                        <label for="second_name" class="o_form_label ailmx_field_label"/>
+                                        <div class="ailmx_field_box">
+                                            <field name="second_name"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Campo: Primer apellido -->
+                                    <div class="ailmx_form_card">
+                                        <label for="first_lastname" class="o_form_label ailmx_field_label"/>
+                                        <div class="ailmx_field_box">
+                                            <field name="first_lastname"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Campo: Segundo apellido -->
+                                    <div class="ailmx_form_card">
+                                        <label for="second_lastname" class="o_form_label ailmx_field_label"/>
+                                        <div class="ailmx_field_box">
+                                            <field name="second_lastname"/>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- FILA 3 -->
+                                <!-- Género | Teléfono | Correo -->
+                                <div class="ailmx_form_grid ailmx_grid_3">
+
+                                    <!-- Campo: Género -->
+                                    <div class="ailmx_form_card">
+                                        <label for="gender" class="o_form_label ailmx_field_label"/>
+                                        <div class="ailmx_field_box ailmx_select_box">
+                                            <field name="gender"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Campo: Teléfono -->
+                                    <div class="ailmx_form_card">
+                                        <label for="phone" class="o_form_label ailmx_field_label"/>
+                                        <div class="ailmx_field_box">
+                                            <field name="phone"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Campo: Correo -->
+                                    <div class="ailmx_form_card">
+                                        <label for="email" class="o_form_label ailmx_field_label"/>
+                                        <div class="ailmx_field_box">
+                                            <field name="email"/>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </page>
+
+                        <!-- ================================================= -->
+                        <!-- PESTAÑA IDENTIDADES -->
+                        <!-- ================================================= -->
+                        <page string="Identidades">
+                            <group>
+                                <div class="text-muted">
+                                    Sección vacía por ahora.
+                                </div>
+                            </group>
+                        </page>
+
+                        <!-- ================================================= -->
+                        <!-- PESTAÑA CONTEXTO -->
+                        <!-- ================================================= -->
+                        <page string="Contexto">
+                            <group>
+                                <div class="text-muted">
+                                    Sección vacía por ahora.
+                                </div>
+                            </group>
+                        </page>
+
+                        <!-- ================================================= -->
+                        <!-- PESTAÑA CARACTERIZACIÓN -->
+                        <!-- ================================================= -->
+                        <page string="Caracterización">
+                            <group>
+                                <div class="text-muted">
+                                    Sección vacía por ahora.
+                                </div>
+                            </group>
+                        </page>
+
+                        <!-- ================================================= -->
+                        <!-- PESTAÑA TRAZABILIDAD -->
+                        <!-- ================================================= -->
+                        <page string="Trazabilidad">
+                            <group>
+                                <div class="text-muted">
+                                    Sección vacía por ahora.
+                                </div>
+                            </group>
+                        </page>
+
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================================= -->
+    <!-- VISTA DE BÚSQUEDA -->
+    <!-- ========================================================= -->
+    <record id="view_participant_search" model="ir.ui.view">
+        <field name="name">ailmx.participant.search</field>
+        <field name="model">ailmx.participant</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Participantes">
+
+                <!-- Campos de búsqueda -->
+                <field name="code"/>
+                <field name="name"/>
+                <field name="participant_type"/>
+                <field name="state"/>
+                <field name="email"/>
+
+                <!-- Filtros -->
+                <filter string="Borrador"
+                        name="filter_draft"
+                        domain="[('state', '=', 'draft')]"/>
+
+                <filter string="Activo"
+                        name="filter_active"
+                        domain="[('state', '=', 'active')]"/>
+
+                <filter string="Inactivo"
+                        name="filter_inactive"
+                        domain="[('state', '=', 'inactive')]"/>
+
+                <filter string="Archivado"
+                        name="filter_archived"
+                        domain="[('state', '=', 'archived')]"/>
+
+                <!-- Agrupar -->
+                <group expand="0" string="Agrupar por">
+                    <filter string="Tipo de participante"
+                            name="group_by_type"
+                            context="{'group_by': 'participant_type'}"/>
+
+                    <filter string="Estado"
+                            name="group_by_state"
+                            context="{'group_by': 'state'}"/>
+                </group>
+
+            </search>
         </field>
     </record>
 

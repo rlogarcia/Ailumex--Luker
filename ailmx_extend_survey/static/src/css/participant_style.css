@@ -1,0 +1,308 @@
+/* Estilos completos del formulario de participantes */
+
+/* HEADER SUPERIOR (CARDS DE ARRIBA) */
+
+.ailmx_header_section {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 0 4px;
+    flex-wrap: wrap;
+}
+
+.ailmx_header_card {
+    flex: 1;
+    min-width: 240px;
+
+    background: #FFFFFF;
+    border: 1px solid #C8D8E8;
+    border-top: 4px solid #1F5C99;
+    border-radius: 14px;
+
+    padding: 20px 24px;
+
+    box-shadow: 0 6px 18px rgba(26, 60, 94, 0.10);
+    transition: all 0.2s ease;
+}
+
+.ailmx_header_card:hover {
+    box-shadow: 0 10px 24px rgba(26, 60, 94, 0.16);
+    transform: translateY(-2px);
+}
+
+.ailmx_header_label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #1F5C99;
+    margin-bottom: 12px;
+}
+
+.ailmx_header_value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1A1A2E;
+}
+
+.ailmx_participant_main_card {
+    flex: 1.25;
+}
+
+.ailmx_participant_name_value {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.ailmx_participant_code_value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1F5C99;
+}
+
+
+/* ÁREA DEL FORMULARIO */
+
+.ailmx_form_area {
+    padding: 8px 0;
+}
+
+
+/* GRID */
+
+.ailmx_form_grid {
+    display: grid;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.ailmx_grid_3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.ailmx_grid_4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+
+/* TARJETAS DE CAMPOS */
+
+.ailmx_form_card {
+    background: #FFFFFF;
+    border: 1px solid #D9E4EF;
+    border-radius: 14px;
+
+    padding: 16px 18px;
+
+    box-shadow: 0 4px 12px rgba(26, 60, 94, 0.08);
+
+    transition: all 0.2s ease;
+
+    min-height: 92px;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.ailmx_form_card:hover {
+    box-shadow: 0 8px 18px rgba(26, 60, 94, 0.14);
+    transform: translateY(-1px);
+}
+
+
+/* LABELS */
+
+.ailmx_field_label {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #1F5C99 !important;
+    margin-bottom: 10px !important;
+}
+
+
+/* CAJA INTERNA DEL CAMPO */
+
+.ailmx_field_box {
+    background: #F9FBFE;
+    border: 1px solid #D9E4EF;
+    border-radius: 10px;
+
+    min-height: 44px;
+
+    padding: 10px 12px;
+
+    display: flex;
+    align-items: center;
+
+    transition: all 0.2s ease;
+}
+
+/* Hover */
+.ailmx_form_card:hover .ailmx_field_box {
+    background: #FFFFFF;
+}
+
+/* Focus */
+.ailmx_field_box:focus-within {
+    border-color: #1F5C99;
+    box-shadow: 0 0 0 3px rgba(31, 92, 153, 0.10);
+    background: #FFFFFF;
+}
+
+
+/* INPUTS (TEXTOS) */
+
+.ailmx_field_box input,
+.ailmx_field_box textarea {
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+
+    font-size: 15px;
+    color: #1A1A2E;
+}
+
+
+/* SELECTS (LISTAS DESPLEGABLES)
+   IMPORTANTE: mejora visual del campo cerrado */
+
+.ailmx_field_box select {
+    width: 100%;
+
+    border: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+
+    padding-right: 42px !important;
+
+    font-size: 15px;
+    font-weight: 600;
+    color: #1A1A2E;
+
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    cursor: pointer;
+
+    position: relative;
+    z-index: 2;
+}
+
+.ailmx_field_box select::-ms-expand {
+    display: none;
+}
+
+
+/* DIFERENCIA VISUAL PARA SELECTS */
+
+.ailmx_select_box {
+    position: relative;
+    background: #F4F8FC;
+    border-color: #BCD0E3;
+    padding-right: 40px; /* espacio extra interno para la flecha */
+}
+
+/* Flecha SIEMPRE visible */
+.ailmx_select_box::after {
+    content: "";
+    position: absolute;
+
+    right: 16px; 
+    top: 50%;
+    transform: translateY(-50%);
+
+    width: 16px;
+    height: 16px;
+
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231F5C99' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-size: 16px 16px;
+    background-position: center;
+
+    pointer-events: none; /* para no bloquear el click del select */
+    opacity: 1;
+    z-index: 3;
+}
+
+/* ELIMINAR COMPLETAMENTE FLECHA NATIVA DEL SELECT */
+
+/* Forzar eliminación en todos los navegadores */
+.ailmx_field_box select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+
+    /* 👇 esto es lo más importante */
+    background-image: none !important;
+}
+
+/* IE / Edge antiguo */
+.ailmx_field_box select::-ms-expand {
+    display: none !important;
+}
+
+/* Hover y focus (Odoo vuelve a meter estilos aquí) */
+.ailmx_field_box select:hover,
+.ailmx_field_box select:focus {
+    background-image: none !important;
+}
+
+/* Hover */
+.ailmx_form_card:hover .ailmx_select_box {
+    background: #EEF5FB;
+}
+
+/* Focus */
+.ailmx_select_box:focus-within {
+    border-color: #1F5C99;
+    box-shadow: 0 0 0 3px rgba(31, 92, 153, 0.12);
+    background: #FFFFFF;
+}
+
+
+/* TEXTO EN MODO LECTURA */
+
+.ailmx_field_box .o_field_widget {
+    width: 100%;
+    font-size: 15px;
+}
+
+
+/* NOTEBOOK (TABS) */
+
+.o_form_view .o_notebook {
+    margin-top: 10px;
+}
+
+
+/* TEXTO VACÍO */
+
+.text-muted {
+    color: #7A8BA0;
+    font-style: italic;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 1200px) {
+    .ailmx_grid_4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .ailmx_grid_3,
+    .ailmx_grid_4 {
+        grid-template-columns: 1fr;
+    }
+
+    .ailmx_header_section {
+        flex-direction: column;
+    }
+}

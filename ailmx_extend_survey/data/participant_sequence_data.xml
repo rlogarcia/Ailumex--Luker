@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ========================================================= -->
+    <!-- SECUENCIA PARA ESTUDIANTES -->
+    <!-- Resultado esperado: LUKEST-0001 -->
+    <!-- ========================================================= -->
+    <record id="seq_participant_student" model="ir.sequence">
+        <field name="name">Participant Student</field>
+        <field name="code">ailmx.participant.student</field>
+        <field name="prefix">LUKEST-</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+    </record>
+
+    <!-- ========================================================= -->
+    <!-- SECUENCIA PARA DOCENTES -->
+    <!-- Resultado esperado: LUKDOC-0001 -->
+    <!-- ========================================================= -->
+    <record id="seq_participant_teacher" model="ir.sequence">
+        <field name="name">Participant Teacher</field>
+        <field name="code">ailmx.participant.teacher</field>
+        <field name="prefix">LUKDOC-</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+    </record>
+
+    <!-- ========================================================= -->
+    <!-- SECUENCIA PARA EMPLEADOS -->
+    <!-- Resultado esperado: LUKEMP-0001 -->
+    <!-- ========================================================= -->
+    <record id="seq_participant_employee" model="ir.sequence">
+        <field name="name">Participant Employee</field>
+        <field name="code">ailmx.participant.employee</field>
+        <field name="prefix">LUKEMP-</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+    </record>
+
+</odoo>

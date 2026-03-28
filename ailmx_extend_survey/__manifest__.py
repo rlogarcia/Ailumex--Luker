@@ -5,7 +5,7 @@
     'summary': 'Extend Survey Module',
     'author': 'AiLumex',
     'category': 'Customizations',
-    'depends': ['survey'], # Lista de modulos que deben estar instalados antes de este
+    'depends': ['survey', 'web'], # Lista de modulos que deben estar instalados antes de este
     'data': [ # Aquí se van a cargar los tipos de pregunta al instalar el 
         # PERMISOS
         'security/ir.model.access.csv',
@@ -18,10 +18,31 @@
         'views/participant_views.xml',
         'views/survey_form_inherit.xml',
         'views/menu_extensions.xml',
+        'views/survey_question_timer_templates.xml',
 
         # DATOS INICIALES
-        'data/survey_question_type_data.xml'
+        'data/survey_question_type_data.xml',
+        'data/survey_sequence_data.xml',
+        'data/participant_sequence_data.xml',
     ],
+    'assets': {
+        # Bundle para la parte administrativa (Backend)
+        'web.assets_backend': [
+            'ailmx_extend_survey/static/src/css/survey_style.css',
+            'ailmx_extend_survey/static/src/css/participant_style.css',
+        ],
+        # Bundle para la parte pública (Frontend)
+        'web.assets_frontend': [
+            'ailmx_extend_survey/static/src/css/survey_timer.css',
+            'ailmx_extend_survey/static/src/js/survey_timer.js',
+        ],
+        # Las encuestas públicas usan este bundle minimal
+        'web.assets_frontend_minimal': [
+            'ailmx_extend_survey/static/src/js/survey_timer.js',
+            'ailmx_extend_survey/static/src/css/survey_timer.css',
+        ],
+
+    },
     'installable': True,
     'application': False,
     'auto_install': False, # No se instala automáticamente cuando se instala Survey

@@ -1,6 +1,7 @@
 # Archivo que Odoo va a leer para saber su nombre y características
 {
     'name': 'Ailmx Extend Survey',
+    'license': 'LGPL-3',
     'version': '18.0.1.0.0',
     'summary': 'Extend Survey Module',
     'author': 'AiLumex',
@@ -14,11 +15,13 @@
         'views/survey_question_type_views.xml',
         'views/data_element_views.xml',
         'views/survey_question_extension_views.xml',
+        'views/survey_question_reading_grid_views.xml',
         'views/survey_response_line_views.xml',
         'views/participant_views.xml',
         'views/survey_form_inherit.xml',
         'views/menu_extensions.xml',
         'views/survey_question_timer_templates.xml',
+        'views/survey_question_reading_grid_templates.xml',
 
         # DATOS INICIALES
         'data/survey_question_type_data.xml',
@@ -34,12 +37,16 @@
         # Bundle para la parte pública (Frontend)
         'web.assets_frontend': [
             'ailmx_extend_survey/static/src/css/survey_timer.css',
+            'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
             'ailmx_extend_survey/static/src/js/survey_timer.js',
+            'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
         ],
         # Las encuestas públicas usan este bundle minimal
         'web.assets_frontend_minimal': [
-            'ailmx_extend_survey/static/src/js/survey_timer.js',
             'ailmx_extend_survey/static/src/css/survey_timer.css',
+            'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
+            'ailmx_extend_survey/static/src/js/survey_timer.js',
+            'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
         ],
 
     },

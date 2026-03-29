@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    Vista específica para configuración de preguntas tipo GRID lectura.
+    Aquí mostramos filas, columnas y contenido de la grilla
+    solo cuando el tipo de pregunta seleccionado es "GRID lectura".
+-->
+
+<odoo>
+    <record id="view_survey_question_reading_grid_form" model="ir.ui.view">
+        <field name="name">survey.question.reading.grid.form</field>
+        <field name="model">survey.question</field>
+
+        <!-- Heredamos el formulario original de pregunta -->
+        <field name="inherit_id" ref="survey.survey_question_form"/>
+
+        <field name="arch" type="xml">
+
+            <!--
+                Insertamos un bloque nuevo después del grupo donde está
+                el campo question_type.
+            -->
+            <xpath expr="//group[field[@name='question_type']]" position="after">
+
+                <group string="Configuración GRID lectura"
+                       invisible="question_type != 'reading_grid'">
+
+                    <!-- Cantidad de filas -->
+                    <field name="reading_grid_rows"
+                           string="Cantidad de filas"/>
+
+                    <!-- Cantidad de columnas -->
+                    <field name="reading_grid_cols"
+                           string="Cantidad de columnas"/>
+
+                    <!--
+                        Contenido de la grilla.
+                        Formato propuesto:
+                        sol|mesa|tren
+                        árbol|luna|gato
+                    -->
+                    <field name="reading_grid_content"
+                           string="Contenido de la grilla"
+                           placeholder="Ejemplo:
+sol|mesa|tren
+árbol|luna|gato"/>
+
+                </group>
+
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

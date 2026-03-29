@@ -23,3 +23,6 @@ from . import participant
 
 # Extensión del modelo de instrumentos/encuestas
 from . import survey_instrument_extension
+
+# Modelo de preguntas GRID lectura
+from . import survey_question_reading_grid

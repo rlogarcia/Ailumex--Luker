@@ -8,21 +8,23 @@
 // 3. Construye el cronómetro visual
 // 4. Hace cuenta regresiva
 // 5. Avanza automáticamente cuando llega a 0
-// 6. Se reinicializa cuando Odoo cambia de pregunta
+// 6. Solo se reinicializa cuando realmente cambia la pregunta
 // ==========================================================
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // Variable global del archivo para guardar el intervalo actual
-    // y poder detenerlo antes de crear uno nuevo.
+    // Intervalo actualmente activo
     var currentIntervalId = null;
 
-    // Flag para evitar reinicializaciones múltiples simultáneas
+    // Referencia al contenedor del timer actualmente inicializado
+    var currentTimerContainer = null;
+
+    // Evita dobles inicializaciones simultáneas
     var isInitializingTimer = false;
 
     /**
      * FUNCIÓN: formatTime
-     * Convierte segundos a MM:SS
+     * Convierte segundos a formato MM:SS
      */
     function formatTime(seconds) {
         if (seconds < 0) {
@@ -72,41 +74,42 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
-     * FUNCIÓN PRINCIPAL: initTimer
-     * Busca el contenedor y arma el cronómetro.
+     * FUNCIÓN: initTimer
+     * Inicializa el cronómetro para un contenedor específico.
+     *
+     * IMPORTANTE:
+     * Solo reinicializa si el contenedor cambió realmente.
      */
-    function initTimer() {
-        // Evita que initTimer se ejecute varias veces al mismo tiempo
+    function initTimer(container) {
         if (isInitializingTimer) {
+            return;
+        }
+
+        if (!container) {
+            return;
+        }
+
+        // Si estamos viendo exactamente el mismo contenedor que ya estaba activo,
+        // no hacemos nada. Esto evita que un clic, datepicker o cambio menor
+        // mate el timer actual.
+        if (currentTimerContainer === container) {
             return;
         }
 
         isInitializingTimer = true;
 
         try {
-            // Primero detenemos cualquier timer anterior
+            // Como sí cambió el contenedor/pregunta, detenemos el timer anterior
             stopCurrentTimer();
 
-            // Buscamos el contenedor del timer
-            var container = document.getElementById('sispar_timer_container');
-
-            // Si no existe, salimos silenciosamente
-            if (!container) {
-                return;
-            }
-
-            // Si ya fue inicializado para esta misma pregunta, no repetir
-            if (container.dataset.timerInitialized === '1') {
-                return;
-            }
-
-            // Leemos datos
+            // Leemos los datos del temporizador
             var timeLimit = parseInt(container.getAttribute('data-time-limit'), 10);
             var timeUnit = container.getAttribute('data-time-unit') || 'seconds';
 
-            // Si no hay tiempo válido, ocultamos y salimos
+            // Si el valor no es válido, ocultamos el contenedor
             if (!timeLimit || timeLimit <= 0) {
                 container.style.display = 'none';
+                currentTimerContainer = null;
                 return;
             }
 
@@ -114,14 +117,14 @@ document.addEventListener('DOMContentLoaded', function () {
             var totalSeconds = (timeUnit === 'minutes') ? timeLimit * 60 : timeLimit;
             var remainingSeconds = totalSeconds;
 
-            // Limpiamos contenido previo
+            // Limpiamos contenido anterior
             container.innerHTML = '';
 
-            // ===== Fila del timer =====
+            // ===== Fila superior =====
             var timerRow = document.createElement('div');
             timerRow.className = 'sispar-timer-row';
 
-            // SVG del reloj
+            // Ícono SVG
             var iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             iconSvg.setAttribute('viewBox', '0 0 24 24');
             iconSvg.setAttribute('width', '20');
@@ -158,19 +161,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
             progressWrapper.appendChild(progressBar);
 
-            // Pintamos en el contenedor
+            // Renderizar timer
             container.appendChild(timerRow);
             container.appendChild(progressWrapper);
             container.style.display = 'block';
 
-            // Marcamos que este contenedor ya fue inicializado
-            container.dataset.timerInitialized = '1';
+            // Guardamos referencia al contenedor actual
+            currentTimerContainer = container;
 
             // ===== Iniciar countdown =====
             currentIntervalId = setInterval(function () {
                 remainingSeconds--;
 
-                // Actualiza display
+                // Actualiza texto
                 counterDisplay.textContent = formatTime(remainingSeconds);
 
                 // Actualiza barra
@@ -180,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 progressBar.style.width = percentage + '%';
 
-                // Estado de alerta
+                // Estado crítico cuando quedan 10 segundos o menos
                 if (remainingSeconds <= 10) {
                     progressBar.classList.add('sispar-progress-danger');
                     counterDisplay.classList.add('sispar-counter-danger');
@@ -189,6 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Fin del tiempo
                 if (remainingSeconds <= 0) {
                     stopCurrentTimer();
+                    currentTimerContainer = null;
                     advanceToNextQuestion();
                 }
             }, 1000);
@@ -199,51 +203,43 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
+     * FUNCIÓN: getCurrentTimerContainer
+     * Busca el contenedor actual del timer en el DOM.
+     */
+    function getCurrentTimerContainer() {
+        return document.getElementById('sispar_timer_container');
+    }
+
+    /**
      * FUNCIÓN: bootTimerWhenReady
-     * Espera a que el contenedor principal de la encuesta exista.
+     * Espera a que exista el cuerpo de la encuesta y monta el observer.
      */
     function bootTimerWhenReady() {
         var surveyBody = document.querySelector('.o_survey_form_content');
 
-        // Si aún no existe, reintentar en breve
         if (!surveyBody) {
             setTimeout(bootTimerWhenReady, 400);
             return;
         }
 
-        // Inicializa la primera pregunta
-        initTimer();
+        // Inicialización inicial
+        initTimer(getCurrentTimerContainer());
 
-        // Observer para cambios de pregunta
-        var observer = new MutationObserver(function (mutationsList) {
-            var shouldReinit = false;
+        // Observer para detectar cambios reales de pregunta
+        var observer = new MutationObserver(function () {
+            var newContainer = getCurrentTimerContainer();
 
-            for (var i = 0; i < mutationsList.length; i++) {
-                var mutation = mutationsList[i];
-
-                // Solo nos interesan nodos agregados/eliminados
-                if (mutation.type !== 'childList') {
-                    continue;
-                }
-
-                // Ignoramos cambios que ocurran dentro del propio timer
-                var target = mutation.target;
-                if (target && target.closest && target.closest('#sispar_timer_container')) {
-                    continue;
-                }
-
-                // Si se agregaron nodos reales, probablemente cambió la pregunta
-                if (mutation.addedNodes && mutation.addedNodes.length > 0) {
-                    shouldReinit = true;
-                    break;
-                }
+            // Solo reinicializar si apareció un contenedor distinto al actual
+            if (newContainer && newContainer !== currentTimerContainer) {
+                setTimeout(function () {
+                    initTimer(newContainer);
+                }, 100);
             }
 
-            if (shouldReinit) {
-                // Pequeño delay para dejar que Odoo termine de renderizar
-                setTimeout(function () {
-                    initTimer();
-                }, 100);
+            // Si ya no hay contenedor, limpiamos referencia e intervalo
+            if (!newContainer && currentTimerContainer) {
+                stopCurrentTimer();
+                currentTimerContainer = null;
             }
         });
 

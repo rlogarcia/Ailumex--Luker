@@ -1,0 +1,206 @@
+/* ============================= */
+/* TABLA */
+/* ============================= */
+.ailmx_reading_grid_table {
+    margin-top: 8px;
+    border-collapse: separate;
+    border-spacing: 4px; /* separa celdas tipo tarjetas */
+}
+
+
+/* ============================= */
+/* CELDA BASE (TARJETA) */
+/* ============================= */
+.ailmx_reading_grid_cell {
+    cursor: pointer;
+    user-select: none;
+
+    padding: 14px !important;
+    min-width: 90px;
+    min-height: 52px;
+
+    text-align: center;
+    vertical-align: middle;
+
+    font-weight: 600;
+    font-size: 14px;
+
+    background-color: #ffffff !important;
+
+    border-radius: 8px; /* hace efecto tarjeta */
+    border: 1px solid #e5e7eb !important;
+
+    transition: all 0.2s ease;
+}
+
+
+/* ============================= */
+/* HOVER */
+/* ============================= */
+.ailmx_reading_grid_cell:hover {
+    background-color: #f1f5f9 !important;
+    transform: translateY(-1px);
+}
+
+
+/* ============================= */
+/* CELDA ACTIVA */
+/* ============================= */
+.ailmx_reading_grid_cell.ailmx_cell_active {
+    background-color: #eef5ff !important;
+    border: 2px solid #1F5C99 !important;
+    box-shadow: 0 0 0 3px rgba(31, 92, 153, 0.15) !important;
+}
+
+
+/* ============================= */
+/* ESTADO INICIAL */
+/* ============================= */
+.ailmx_reading_grid_cell.ailmx_cell_empty {
+    background-color: #ffffff !important;
+    color: inherit !important;
+}
+
+
+/* ============================= */
+/* CORRECTO */
+/* ============================= */
+.ailmx_reading_grid_cell.ailmx_cell_ok {
+    background-color: #d1fae5 !important; /* verde suave */
+    color: #065f46 !important;
+
+    border: none !important;
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+}
+
+
+/* ============================= */
+/* ERROR */
+/* ============================= */
+.ailmx_reading_grid_cell.ailmx_cell_err {
+    background-color: #fee2e2 !important; /* rojo suave */
+    color: #7f1d1d !important;
+
+    border: none !important;
+    box-shadow: inset 0 0 0 2px rgba(220, 38, 38, 0.25) !important;
+}
+
+
+/* ============================= */
+/* OMITIDO */
+/* ============================= */
+.ailmx_reading_grid_cell.ailmx_cell_skip {
+    background-color: #fef3c7 !important; /* amarillo suave */
+    color: #78350f !important;
+
+    border: none !important;
+    box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.25) !important;
+}
+
+
+/* ============================= */
+/* PARADA */
+/* ============================= */
+.ailmx_reading_grid_cell.ailmx_cell_stop {
+    background-color: #e0e7ff !important; /* azul suave */
+    color: #1e3a8a !important;
+
+    font-weight: 700 !important;
+
+    border: none !important;
+    box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.35) !important;
+}
+
+
+/* ============================= */
+/* EFECTO CLICK */
+/* ============================= */
+.ailmx_reading_grid_cell:active {
+    transform: scale(0.96);
+}
+
+
+/* ============================= */
+/* BARRA SUPERIOR */
+/* ============================= */
+.ailmx_grid_topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    margin-bottom: 6px;
+}
+
+
+/* ============================= */
+/* PROGRESO */
+/* ============================= */
+.ailmx_grid_progress {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+
+/* ============================= */
+/* CONTADOR */
+/* ============================= */
+.ailmx_grid_stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+
+    font-size: 13px;
+    color: #374151;
+}
+
+.ailmx_grid_stats b {
+    font-weight: 700;
+}
+
+
+/* ============================= */
+/* HISTORIAL */
+/* ============================= */
+.ailmx_grid_log {
+    font-size: 13px;
+
+    max-height: 140px;
+    overflow-y: auto;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+
+    padding: 8px;
+    background: #fafafa;
+}
+
+
+/* Scroll bonito */
+.ailmx_grid_log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ailmx_grid_log::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 3px;
+}
+
+
+/* ============================= */
+/* BOTÓN PARADA */
+/* ============================= */
+.ailmx_grid_stop_btn {
+    font-size: 13px;
+    font-weight: 500;
+
+    border-radius: 6px;
+    padding: 4px 10px;
+}
+
+.ailmx_grid_stop_btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

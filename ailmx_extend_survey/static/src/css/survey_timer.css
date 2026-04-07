@@ -1,16 +1,4 @@
-/**
- * SISPAR - Estilos del cronómetro de preguntas
- * Archivo: static/src/css/sispar_survey_timer.css
- *
- * Estos estilos controlan cómo se ve el bloque del cronómetro
- * en el header de cada pregunta de la encuesta.
- *
- * Se carga automáticamente en el frontend porque lo declaramos
- * en __manifest__.py bajo 'web.assets_frontend'.
- */
-
-
-/* ══════════════════════════════════════════════════════════
+    /* ══════════════════════════════════════════════════════════
    CONTENEDOR PRINCIPAL del cronómetro
    Se ubica en el header de la pregunta (survey_templates.xml)
    ══════════════════════════════════════════════════════════ */
@@ -121,4 +109,49 @@
     .sispar-timer-display {
         font-size: 1.2rem;
     }
+}
+
+/* =========================================================
+   HEADER ENCUESTA (TITULO + TIMER)
+   ========================================================= */
+
+/* Contenedor principal */
+.ailmx_survey_header_row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+/* Contenedor del título */
+.ailmx_survey_header_title {
+    flex: 1 1 auto;
+    min-width: 0; /* IMPORTANTE para que el texto respete el contenedor */
+}
+
+/* TEXTO DEL TÍTULO (SALTO DE LÍNEA) */
+.ailmx_survey_header_title_text {
+    display: block;
+
+    white-space: normal;       /* permite salto de línea */
+    word-break: break-word;    /* rompe palabras largas */
+    overflow-wrap: anywhere;   /* evita desbordes */
+
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+
+    color: #1A1A2E;
+}
+
+/* CONTENEDOR DEL TIMER */
+.ailmx_survey_header_timer {
+    flex: 0 0 auto;
+    min-width: 120px;
+
+    display: flex;
+    justify-content: flex-end;
 }

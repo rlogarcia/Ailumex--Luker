@@ -215,33 +215,182 @@
                         <!-- PESTAÑA IDENTIDADES -->
                         <!-- ================================================= -->
                         <page string="Identidades">
-                            <group>
-                                <div class="text-muted">
-                                    Sección vacía por ahora.
+
+                            <div class="ailmx_form_area">
+
+                                <!-- TÍTULO -->
+                                <separator string="Identidades del Participante"/>
+
+                                <!-- TEXTO DE APOYO -->
+                                <div class="ailmx_identity_helper_text">
+                                    Solo puede existir <strong>una identidad primaria activa</strong> por participante en un momento dado.
                                 </div>
-                            </group>
+
+                                <!-- TABLA -->
+                                <div class="ailmx_form_card">
+                                    <table class="table ailmx_identity_table">
+                                        <thead>
+                                            <tr>
+                                                <th>Tipo</th>
+                                                <th>Número</th>
+                                                <th>Vigencia inicio</th>
+                                                <th>Vigencia fin</th>
+                                                <th>Primaria</th>
+                                                <th>Estado</th>
+                                                <th>Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="7" class="text-muted text-center">
+                                                    Sin identidades por mostrar
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- ACCIÓN VISUAL -->
+                                <!--<div class="ailmx_identity_action_placeholder">
+                                    + Agregar identidad
+                                </div>-->
+
+                            </div>
+
                         </page>
 
                         <!-- ================================================= -->
                         <!-- PESTAÑA CONTEXTO -->
                         <!-- ================================================= -->
                         <page string="Contexto">
-                            <group>
-                                <div class="text-muted">
-                                    Sección vacía por ahora.
+
+                            <div class="ailmx_form_area">
+
+                                <!-- ===================================================== -->
+                                <!-- CONTEXTO ACTUAL -->
+                                <!-- ===================================================== -->
+                                <separator string="Contexto Actual"/>
+
+                                <!-- FILA 1 -->
+                                <div class="ailmx_form_grid ailmx_grid_2">
+
+                                    <div class="ailmx_form_card">
+                                        <div class="o_form_label ailmx_field_label">Institución</div>
+                                        <div class="ailmx_field_box">
+                                            <span class="text-muted">Sin datos</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="ailmx_form_card">
+                                        <div class="o_form_label ailmx_field_label">Sede</div>
+                                        <div class="ailmx_field_box">
+                                            <span class="text-muted">Sin datos</span>
+                                        </div>
+                                    </div>
+
                                 </div>
-                            </group>
+
+                                <!-- FILA 2 -->
+                                <div class="ailmx_form_grid ailmx_grid_3">
+
+                                    <div class="ailmx_form_card">
+                                        <div class="o_form_label ailmx_field_label">Grado</div>
+                                        <div class="ailmx_field_box">
+                                            <span class="text-muted">Sin datos</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="ailmx_form_card">
+                                        <div class="o_form_label ailmx_field_label">Grupo</div>
+                                        <div class="ailmx_field_box">
+                                            <span class="text-muted">Sin datos</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="ailmx_form_card">
+                                        <div class="o_form_label ailmx_field_label">Jornada</div>
+                                        <div class="ailmx_field_box">
+                                            <span class="text-muted">Sin datos</span>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- ===================================================== -->
+                                <!-- HISTÓRICO -->
+                                <!-- ===================================================== -->
+                                <separator string="Histórico de Asignaciones"/>
+
+                                <div class="ailmx_form_card">
+                                    <div class="ailmx_history_table_wrapper">
+                                        <table class="table ailmx_history_table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Institución</th>
+                                                    <th>Sede</th>
+                                                    <th>Grado</th>
+                                                    <th>Grupo</th>
+                                                    <th>Jornada</th>
+                                                    <th>Desde</th>
+                                                    <th>Hasta</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td colspan="7" class="text-muted text-center">
+                                                        Sin registros por mostrar
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                            </div>
+
                         </page>
 
                         <!-- ================================================= -->
                         <!-- PESTAÑA CARACTERIZACIÓN -->
+                        <!-- SOLO ESTRUCTURA VISUAL POR AHORA -->
                         <!-- ================================================= -->
                         <page string="Caracterización">
-                            <group>
-                                <div class="text-muted">
-                                    Sección vacía por ahora.
+
+                            <div class="ailmx_form_area">
+
+                                <!-- TÍTULO -->
+                                <separator string="Atributos Dinámicos"/>
+
+                                <!-- TABLA -->
+                                <div class="ailmx_form_card">
+                                    <table class="table ailmx_characterization_table">
+                                        <thead>
+                                            <tr>
+                                                <th>Atributo</th>
+                                                <th>Tipo de dato</th>
+                                                <th>Valor</th>
+                                                <th>Vigencia inicio</th>
+                                                <th>Vigencia fin</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="6" class="text-muted text-center">
+                                                    Sin atributos por mostrar
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
-                            </group>
+
+                                <!-- ACCIÓN VISUAL -->
+                                <!--<div class="ailmx_characterization_action_placeholder">
+                                    + Agregar atributo
+                                </div>-->
+
+                            </div>
+
                         </page>
 
                         <!-- ================================================= -->

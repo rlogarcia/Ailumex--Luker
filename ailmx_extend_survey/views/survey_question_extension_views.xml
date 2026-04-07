@@ -2,8 +2,14 @@
 
 <!--
     Este archivo extiende la vista del formulario de preguntas (survey.survey_question_form).
-    No reemplaza la vista original de Odoo, sino que "inyecta" nuevos campos 
-    en lugares específicos usando XPath.
+    Aquí dejamos:
+    - temporizador
+    - adjuntar imagen
+    - configuración AiLumex
+    - marca de respuesta correcta en opciones
+
+    IMPORTANTE:
+    Temporizador y Adjuntar imagen quedan como funcionalidades separadas.
 -->
 
 <odoo>
@@ -11,72 +17,87 @@
         <field name="name">survey.question.extension.form</field>
         <field name="model">survey.question</field>
 
-        <!-- Apunta a la vista original de preguntas de Odoo -->
-        <field name="inherit_id" ref="survey.survey_question_form"/> 
-        
+        <!-- Vista original de preguntas de Odoo -->
+        <field name="inherit_id" ref="survey.survey_question_form"/>
+
         <field name="arch" type="xml">
 
-            <!-- 
-                CONFIGURACIÓN DE TIEMPO (TIMER)
-                Se coloca a la derecha del selector de "Tipo de pregunta".
-                Se busca el grupo que contiene 'question_type' y y se utiliza position="after"
-                para crear una segunda columna a la derecha.
-            -->
+            <!-- ===================================================== -->
+            <!-- CONFIGURACIÓN DE TIEMPO (TIMER) -->
+            <!-- ===================================================== -->
             <xpath expr="//group[field[@name='question_type']]" position="after">
-                
-                <group string="Temporizador de preguntas." name="timer_settings">
-                    <!-- Checkbox para activar la funcionalidad -->
+
+                <group string="Temporizador de preguntas" name="timer_settings">
+
+                    <!-- Checkbox para activar temporizador -->
                     <field name="has_time_limit" string="¿Activar temporizador?"/>
-                    
-                    <!-- 
-                        CAMPOS CONDICIONALES:
-                        En Odoo 18 se usa invisible="not campo" directamente.
-                        - widget="radio" con options horizontal hace que se vea moderno.
-                    -->
-                    <field name="time_limit_unit" 
-                        string="Unidad"
-                        widget="radio" 
-                        options="{'horizontal': true}"
-                        invisible="not has_time_limit"/>
-                    
+
+                    <!-- Unidad: segundos o minutos -->
+                    <field name="time_limit_unit"
+                           string="Unidad"
+                           widget="radio"
+                           options="{'horizontal': true}"
+                           invisible="not has_time_limit"/>
+
+                    <!-- Cantidad -->
                     <field name="time_limit_value"
-                        string="Cantidad"
-                        invisible="not has_time_limit"
-                        placeholder="ej. 30"/>
+                           string="Cantidad"
+                           invisible="not has_time_limit"
+                           placeholder="Ej. 30"/>
+
                 </group>
 
             </xpath>
 
-            <!-- 
-                CONFIGURACIÓN AILUMEX
-                Este inserta los campos de gobernanza al final del formulario.
-            -->
+            <!-- ===================================================== -->
+            <!-- ADJUNTAR IMAGEN -->
+            <!-- ===================================================== -->
+            <xpath expr="//group[field[@name='question_type']]" position="after">
+
+                <group string="Adjuntar imagen" name="image_attachment_settings">
+
+                    <!-- Permitir adjuntar imagen -->
+                    <field name="Flg_Allow_Image_Attachment"
+                           string="¿Permitir adjuntar imagen?"/>
+
+                </group>
+
+            </xpath>
+
+            <!-- ===================================================== -->
+            <!-- CONFIGURACIÓN AILUMEX -->
+            <!-- ===================================================== -->
             <xpath expr="//form" position="inside">
-            
-                <!-- Sección nueva con los campos de la extensión -->
+
                 <group string="Configuración AiLumex">
 
                     <!-- FK al catálogo de tipos de pregunta -->
-                    <field
-                        name="Id_Question_Type"
-                        string="Tipo de Pregunta"/>
+                    <field name="Id_Question_Type"
+                           string="Tipo de Pregunta"/>
 
                     <!-- Configuración específica en JSON -->
-                    <field
-                        name="Des_Config_JSON"
-                        string="Configuración JSON"/>
+                    <field name="Des_Config_JSON"
+                           string="Configuración JSON"/>
 
                     <!-- Si la pregunta es obligatoria -->
-                    <field
-                        name="Flg_Required"
-                        string="Es obligatoria"/>
+                    <field name="Flg_Required"
+                           string="Es obligatoria"/>
 
                     <!-- FK al elemento DAMA -->
-                    <field
-                        name="Id_Data_Element"
-                        string="Elemento de dato DAMA"/>                 
+                    <field name="Id_Data_Element"
+                           string="Elemento de dato DAMA"/>
+
                 </group>
+
             </xpath>
+
+            <!-- ===================================================== -->
+            <!-- MARCAR RESPUESTA CORRECTA EN OPCIONES -->
+            <!-- ===================================================== -->
+            <xpath expr="//field[@name='suggested_answer_ids']/list/field[last()]" position="after">
+                <field name="Flg_Is_Correct" string="Es correcta"/>
+            </xpath>
+
         </field>
     </record>
 </odoo>

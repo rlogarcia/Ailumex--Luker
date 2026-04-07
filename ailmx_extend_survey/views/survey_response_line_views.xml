@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <odoo>
+    <!-- ========================================================= -->
     <!-- VISTA DE LISTA -->
-    <!-- Muestra todas las líneas de respuesta en formato tabla -->
+    <!-- Muestra las respuestas de forma funcional -->
+    <!-- ========================================================= -->
     <record id="view_survey_response_line_list" model="ir.ui.view">
         <field name="name">survey.response.line.list</field>
         <field name="model">survey.response.line</field>
         <field name="arch" type="xml">
-            <list string="Líneas de Respuesta">
-                <field name="Id_Response_Header" string="Encabezado"/>
+            <list string="Aplicaciones">
                 <field name="Nam_User" string="Participante"/>
+                <field name="Id_Instrument" string="Instrumento"/>
+                <field name="Id_Response_Header" string="Aplicación"/>
                 <field name="Id_Question" string="Pregunta"/>
                 <field name="Typ_Response" string="Tipo"/>
                 <field name="Val_Text" string="Texto"/>
@@ -23,26 +26,29 @@
         </field>
     </record>
 
+    <!-- ========================================================= -->
     <!-- VISTA DE FORMULARIO -->
     <!-- Muestra el detalle de una línea de respuesta -->
+    <!-- ========================================================= -->
     <record id="view_survey_response_line_form" model="ir.ui.view">
         <field name="name">survey.response.line.form</field>
         <field name="model">survey.response.line</field>
         <field name="arch" type="xml">
-            <form string="Línea de Respuesta">
+            <form string="Respuesta de Aplicación">
                 <sheet>
 
-                    <!-- Información de la respuesta -->
+                    <!-- Información general -->
                     <group string="Información general">
-                        <field name="Id_Response_Header" string="Encabezado de respuesta"/>
+                        <field name="Nam_User" string="Participante"/>
                         <field name="Id_Instrument" string="Instrumento"/>
+                        <field name="Id_Response_Header" string="Aplicación"/>
                         <field name="Id_Question" string="Pregunta"/>
                         <field name="Id_Section" string="Sección"/>
                         <field name="Typ_Response" string="Tipo de respuesta"/>
                         <field name="Id_Question_Option" string="Opción seleccionada"/>
                     </group>
 
-                    <!-- Valores según el tipo -->
+                    <!-- Valores -->
                     <group string="Valores">
                         <field name="Val_Text" string="Valor texto"/>
                         <field name="Val_Number" string="Valor numérico"/>
@@ -56,7 +62,6 @@
                         <field name="Flg_Omitted" string="Fue omitida"/>
                         <field name="Num_Score" string="Puntaje"/>
                         <field name="Dat_Created_At" string="Fecha de creación"/>
-                        <field name="Nam_User" string="Participante"/>
                         <field name="Nam_Device" string="Dispositivo"/>
                     </group>
 
@@ -65,14 +70,67 @@
         </field>
     </record>
 
-    <!-- ACCIÓN -->
-    <record id="action_survey_response_line" model="ir.actions.act_window">
-        <field name="name">Líneas de Respuesta</field>
-        <field name="res_model">survey.response.line</field>
-        <field name="view_mode">list,form</field>
+    <!-- ========================================================= -->
+    <!-- VISTA DE BÚSQUEDA -->
+    <!-- Sirve para buscar y agrupar por participante -->
+    <!-- ========================================================= -->
+    <record id="view_survey_response_line_search" model="ir.ui.view">
+        <field name="name">survey.response.line.search</field>
+        <field name="model">survey.response.line</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Aplicaciones">
+
+                <!-- Campos de búsqueda -->
+                <field name="Nam_User" string="Participante"/>
+                <field name="Id_Instrument" string="Instrumento"/>
+                <field name="Id_Response_Header" string="Aplicación"/>
+                <field name="Id_Question" string="Pregunta"/>
+                <field name="Typ_Response" string="Tipo"/>
+
+                <!-- Filtros -->
+                <filter string="Omitidas"
+                        name="filter_omitted"
+                        domain="[('Flg_Omitted', '=', True)]"/>
+
+                <!-- Agrupaciones -->
+                <group expand="0" string="Agrupar por">
+                    <filter string="Participante"
+                            name="group_by_participant"
+                            context="{'group_by': 'Nam_User'}"/>
+
+                    <filter string="Instrumento"
+                            name="group_by_instrument"
+                            context="{'group_by': 'Id_Instrument'}"/>
+
+                    <filter string="Aplicación"
+                            name="group_by_application"
+                            context="{'group_by': 'Id_Response_Header'}"/>
+
+                    <filter string="Fecha"
+                            name="group_by_date"
+                            context="{'group_by': 'Dat_Created_At'}"/>
+                </group>
+
+            </search>
+        </field>
     </record>
 
-    <!-- MENU -->
+    <!-- ========================================================= -->
+    <!-- ACCIÓN FUNCIONAL -->
+    <!-- Esta acción será usada por el menú raíz "Aplicaciones" -->
+    <!-- ========================================================= -->
+    <record id="action_survey_response_line" model="ir.actions.act_window">
+        <field name="name">Aplicaciones</field>
+        <field name="res_model">survey.response.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_survey_response_line_search"/>
+        <field name="context">{'search_default_group_by_participant': 1}</field>
+    </record>
+
+    <!-- ========================================================= -->
+    <!-- MENÚ TÉCNICO -->
+    <!-- Se mantiene por ahora en Configuración -->
+    <!-- ========================================================= -->
     <menuitem
         id="menu_survey_response_line"
         name="Líneas de Respuesta"

@@ -1,139 +1,193 @@
+
+// Funcionalidades actuales:
+// - Render interactivo por celda
+// - Clic normal     -> correcta
+// - Doble clic      -> error
+// - Clic derecho    -> omitida
+// - Contadores en tiempo real
+// - Historial / trazabilidad visual
+// - Serialización local en input hidden
+// - Progreso actual
+// - Botón de parada
+
 document.addEventListener('DOMContentLoaded', function () {
 
+    /**
+     * Inicializa todas las grillas de lectura presentes en la página.
+     */
     function initReadingGrids() {
         var wrappers = document.querySelectorAll('.ailmx_reading_grid_wrapper');
 
         wrappers.forEach(function (wrapper) {
-            if (wrapper.dataset.gridInitialized === '1') return;
+            if (wrapper.dataset.gridInitialized === '1') {
+                return;
+            }
 
             wrapper.dataset.gridInitialized = '1';
-            wrapper.dataset.currentIndex = '0';
             wrapper.dataset.stopped = '0';
+            wrapper.dataset.lastSelectedIndex = '';
 
             var cells = wrapper.querySelectorAll('.ailmx_reading_grid_cell');
             var hiddenInput = wrapper.querySelector('.ailmx_reading_grid_response');
             var stopBtn = wrapper.querySelector('.ailmx_grid_stop_btn');
 
             cells.forEach(function (cell, index) {
-
+                // Guardamos índice y estado inicial
                 cell.dataset.index = index;
                 cell.dataset.state = 'empty';
 
-                if (index === 0) {
-                    cell.classList.add('ailmx_cell_active');
-                }
+                // ======================================================
+                // CLIC NORMAL -> CORRECTA
+                // ======================================================
+                cell.addEventListener('click', function (event) {
+                    event.preventDefault();
 
-                // CLICK NORMAL
-                cell.addEventListener('click', function (e) {
-                    e.preventDefault();
+                    if (isStopped(wrapper)) {
+                        return;
+                    }
 
-                    if (isStopped(wrapper)) return;
-                    if (!isCurrentCell(wrapper, cell)) return;
+                    // Guardamos esta celda como la última seleccionada
+                    setLastSelectedCell(wrapper, cell);
 
-                    if (cell.dataset.pendingClick === '1') return;
+                    // Evitamos conflicto entre click y dblclick
+                    if (cell.dataset.pendingClick === '1') {
+                        return;
+                    }
 
                     cell.dataset.pendingClick = '1';
 
                     setTimeout(function () {
+                        // Si sigue pendiente, fue clic simple
                         if (cell.dataset.pendingClick === '1') {
                             markCell(wrapper, cell, 'ok', hiddenInput);
                         }
+
                         cell.dataset.pendingClick = '0';
                     }, 200);
                 });
 
-                // DOBLE CLICK
-                cell.addEventListener('dblclick', function (e) {
-                    e.preventDefault();
+                // ======================================================
+                // DOBLE CLIC -> ERROR
+                // ======================================================
+                cell.addEventListener('dblclick', function (event) {
+                    event.preventDefault();
 
-                    if (isStopped(wrapper)) return;
-                    if (!isCurrentCell(wrapper, cell)) return;
+                    if (isStopped(wrapper)) {
+                        return;
+                    }
 
+                    // Guardamos esta celda como la última seleccionada
+                    setLastSelectedCell(wrapper, cell);
+
+                    // Cancelamos el clic simple pendiente
                     cell.dataset.pendingClick = '0';
+
                     markCell(wrapper, cell, 'err', hiddenInput);
                 });
 
-                // CLICK DERECHO
-                cell.addEventListener('contextmenu', function (e) {
-                    e.preventDefault();
+                // ======================================================
+                // CLIC DERECHO -> OMITIDA
+                // ======================================================
+                cell.addEventListener('contextmenu', function (event) {
+                    event.preventDefault();
 
-                    if (isStopped(wrapper)) return;
-                    if (!isCurrentCell(wrapper, cell)) return;
+                    if (isStopped(wrapper)) {
+                        return;
+                    }
 
+                    // Guardamos esta celda como la última seleccionada
+                    setLastSelectedCell(wrapper, cell);
+
+                    // Cancelamos clic simple pendiente si existía
                     cell.dataset.pendingClick = '0';
+
                     markCell(wrapper, cell, 'skip', hiddenInput);
                 });
             });
 
+            // ==========================================================
             // BOTÓN PARADA
+            // Marca como parada la última celda sobre la que el usuario
+            // haya interactuado.
+            // ==========================================================
             if (stopBtn) {
                 stopBtn.addEventListener('click', function () {
+                    if (isStopped(wrapper)) {
+                        return;
+                    }
 
-                    if (isStopped(wrapper)) return;
+                    var selectedCell = getLastSelectedCell(wrapper);
 
-                    var currentCell = getCurrentCell(wrapper);
-                    if (!currentCell) return;
+                    // Si todavía no se ha tocado ninguna celda, no hacemos nada
+                    if (!selectedCell) {
+                        return;
+                    }
 
-                    markStop(wrapper, currentCell, hiddenInput);
+                    markStop(wrapper, selectedCell, hiddenInput);
                 });
             }
 
+            // Inicializamos visuales
             updateSerializedResponse(wrapper, hiddenInput);
             updateStats(wrapper);
             updateProgress(wrapper);
         });
     }
 
+    /**
+     * Indica si la grilla está detenida.
+     */
     function isStopped(wrapper) {
         return wrapper.dataset.stopped === '1';
     }
 
-    function isCurrentCell(wrapper, cell) {
-        return parseInt(wrapper.dataset.currentIndex) === parseInt(cell.dataset.index);
-    }
-
-    function getCurrentCell(wrapper) {
-        var index = wrapper.dataset.currentIndex;
-        return wrapper.querySelector('.ailmx_reading_grid_cell[data-index="' + index + '"]');
+    /**
+     * Guarda la última celda con la que el usuario interactuó.
+     */
+    function setLastSelectedCell(wrapper, cell) {
+        wrapper.dataset.lastSelectedIndex = cell.dataset.index || '';
     }
 
     /**
-     * MARCAR CELDA (CORREGIDO)
+     * Recupera la última celda seleccionada/interactuada.
+     */
+    function getLastSelectedCell(wrapper) {
+        var index = wrapper.dataset.lastSelectedIndex;
+        if (index === '') {
+            return null;
+        }
+
+        return wrapper.querySelector(
+            '.ailmx_reading_grid_cell[data-index="' + index + '"]'
+        );
+    }
+
+    /**
+     * Marca una celda con un estado específico.
+     * Esta versión NO avanza automáticamente a otra celda.
      */
     function markCell(wrapper, cell, state, hiddenInput) {
-
-        // LIMPIAR TODAS LAS CLASES DE ESTADO
+        // Limpiar estados visuales previos
         cell.classList.remove(
             'ailmx_cell_ok',
             'ailmx_cell_err',
             'ailmx_cell_skip',
             'ailmx_cell_stop',
-            'ailmx_cell_active',
             'ailmx_cell_empty'
         );
 
-        // ASIGNAR NUEVO ESTADO
+        // Asignar nuevo estado
         if (state === 'ok') {
             cell.classList.add('ailmx_cell_ok');
         } else if (state === 'err') {
             cell.classList.add('ailmx_cell_err');
         } else if (state === 'skip') {
             cell.classList.add('ailmx_cell_skip');
+        } else {
+            cell.classList.add('ailmx_cell_empty');
         }
 
         cell.dataset.state = state;
-
-        // AVANZAR
-        var nextIndex = parseInt(wrapper.dataset.currentIndex) + 1;
-        wrapper.dataset.currentIndex = nextIndex;
-
-        var nextCell = wrapper.querySelector(
-            '.ailmx_reading_grid_cell[data-index="' + nextIndex + '"]'
-        );
-
-        if (nextCell) {
-            nextCell.classList.add('ailmx_cell_active');
-        }
 
         updateSerializedResponse(wrapper, hiddenInput);
         updateStats(wrapper);
@@ -142,24 +196,29 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
-     * PARADA
+     * Marca una celda como parada y bloquea la grilla.
      */
     function markStop(wrapper, cell, hiddenInput) {
-
+        // Limpiar estados previos de esa celda
         cell.classList.remove(
             'ailmx_cell_ok',
             'ailmx_cell_err',
             'ailmx_cell_skip',
-            'ailmx_cell_active'
+            'ailmx_cell_empty'
         );
 
+        // Marcar estado stop
         cell.classList.add('ailmx_cell_stop');
         cell.dataset.state = 'stop';
 
+        // La grilla queda detenida
         wrapper.dataset.stopped = '1';
 
+        // Desactivar botón de parada
         var stopBtn = wrapper.querySelector('.ailmx_grid_stop_btn');
-        if (stopBtn) stopBtn.disabled = true;
+        if (stopBtn) {
+            stopBtn.disabled = true;
+        }
 
         updateSerializedResponse(wrapper, hiddenInput);
         updateStats(wrapper);
@@ -167,8 +226,14 @@ document.addEventListener('DOMContentLoaded', function () {
         appendLog(wrapper, cell, 'stop');
     }
 
+    /**
+     * Serializa el estado actual de toda la grilla
+     * y lo guarda en el input oculto local.
+     */
     function updateSerializedResponse(wrapper, hiddenInput) {
-        if (!hiddenInput) return;
+        if (!hiddenInput) {
+            return;
+        }
 
         var cells = wrapper.querySelectorAll('.ailmx_reading_grid_cell');
         var values = [];
@@ -176,57 +241,110 @@ document.addEventListener('DOMContentLoaded', function () {
         cells.forEach(function (cell) {
             values.push({
                 index: cell.dataset.index,
+                row: cell.dataset.row || null,
+                col: cell.dataset.col || null,
                 text: cell.innerText.trim(),
-                state: cell.dataset.state
+                state: cell.dataset.state || 'empty'
             });
         });
 
         hiddenInput.value = JSON.stringify(values);
     }
 
+    /**
+     * Actualiza contadores visuales:
+     * correctas, errores, omitidas y total.
+     */
     function updateStats(wrapper) {
+        var ok = 0;
+        var err = 0;
+        var skip = 0;
 
-        var ok = 0, err = 0, skip = 0;
+        var cells = wrapper.querySelectorAll('.ailmx_reading_grid_cell');
 
-        wrapper.querySelectorAll('.ailmx_reading_grid_cell').forEach(function (cell) {
+        cells.forEach(function (cell) {
+            var state = cell.dataset.state;
 
-            if (cell.dataset.state === 'ok') ok++;
-            else if (cell.dataset.state === 'err') err++;
-            else if (cell.dataset.state === 'skip') skip++;
-
+            if (state === 'ok') {
+                ok++;
+            } else if (state === 'err') {
+                err++;
+            } else if (state === 'skip') {
+                skip++;
+            }
         });
 
-        wrapper.querySelector('.stat_ok').innerText = ok;
-        wrapper.querySelector('.stat_err').innerText = err;
-        wrapper.querySelector('.stat_skip').innerText = skip;
-        wrapper.querySelector('.stat_total').innerText = ok + err + skip;
+        var okNode = wrapper.querySelector('.stat_ok');
+        var errNode = wrapper.querySelector('.stat_err');
+        var skipNode = wrapper.querySelector('.stat_skip');
+        var totalNode = wrapper.querySelector('.stat_total');
+
+        if (okNode) {
+            okNode.innerText = ok;
+        }
+        if (errNode) {
+            errNode.innerText = err;
+        }
+        if (skipNode) {
+            skipNode.innerText = skip;
+        }
+        if (totalNode) {
+            totalNode.innerText = ok + err + skip;
+        }
     }
 
+    /**
+     * Actualiza el progreso actual.
+     *
+     * Ahora ya no muestra "siguiente celda obligatoria",
+     * sino cuántas celdas han sido marcadas frente al total.
+     */
     function updateProgress(wrapper) {
+        var cells = wrapper.querySelectorAll('.ailmx_reading_grid_cell');
+        var total = cells.length;
+        var completed = 0;
 
-        var total = wrapper.querySelectorAll('.ailmx_reading_grid_cell').length;
-        var current = parseInt(wrapper.dataset.currentIndex) + 1;
+        cells.forEach(function (cell) {
+            var state = cell.dataset.state;
+            if (state && state !== 'empty') {
+                completed++;
+            }
+        });
 
-        if (current > total) current = total;
+        var currentNode = wrapper.querySelector('.ailmx_progress_current');
+        var totalNode = wrapper.querySelector('.ailmx_progress_total');
 
-        wrapper.querySelector('.ailmx_progress_current').innerText = current;
-        wrapper.querySelector('.ailmx_progress_total').innerText = total;
+        if (currentNode) {
+            currentNode.innerText = completed;
+        }
+
+        if (totalNode) {
+            totalNode.innerText = total;
+        }
     }
 
+    /**
+     * Agrega una línea al historial / trazabilidad visual.
+     */
     function appendLog(wrapper, cell, state) {
-
         var log = wrapper.querySelector('.ailmx_grid_log');
-        if (!log) return;
+        if (!log) {
+            return;
+        }
 
-        var index = parseInt(cell.dataset.index) + 1;
+        var index = parseInt(cell.dataset.index || '0', 10) + 1;
         var text = cell.innerText.trim();
 
-        var symbol = {
-            ok: '✔',
-            err: '✖',
-            skip: '⚠',
-            stop: '⛔'
-        }[state];
+        var symbol = '';
+        if (state === 'ok') {
+            symbol = '✔';
+        } else if (state === 'err') {
+            symbol = '✖';
+        } else if (state === 'skip') {
+            symbol = '⚠';
+        } else if (state === 'stop') {
+            symbol = '⛔';
+        }
 
         var line = document.createElement('div');
         line.textContent = index + ' - ' + text + ' - ' + symbol;
@@ -234,8 +352,15 @@ document.addEventListener('DOMContentLoaded', function () {
         log.appendChild(line);
     }
 
+    /**
+     * Inicialización inicial.
+     */
     initReadingGrids();
 
+    /**
+     * Si Odoo cambia de pregunta dinámicamente,
+     * volvemos a revisar si hay nuevas grillas.
+     */
     var surveyBody = document.querySelector('.o_survey_form_content');
 
     if (surveyBody) {

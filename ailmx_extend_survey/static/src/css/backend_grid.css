@@ -1,0 +1,12 @@
+/* =========================================================
+   AILMX - GRID backend
+   Estilos mínimos para no romper el popup
+   ========================================================= */
+
+.o_field_one2many[name="reading_grid_cell_ids"] {
+    margin-top: 10px;
+}
+
+.o_field_one2many[name="reading_grid_cell_ids"] table {
+    width: 100%;
+}

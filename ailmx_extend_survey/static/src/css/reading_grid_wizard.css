@@ -1,0 +1,48 @@
+/* ============================= */
+/* WIZARD GRID LECTURA           */
+/* ============================= */
+.ailmx_wizard_grid_wrapper {
+    overflow-x: auto;
+    padding: 4px 0 12px 0;
+}
+
+.ailmx_wizard_cell_input {
+    width: 110px;
+    min-height: 52px;
+    padding: 10px 8px;
+
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: #1f2937;
+
+    background: #ffffff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    outline: none;
+
+    transition: all 0.18s ease;
+    box-sizing: border-box;
+    cursor: text;
+}
+
+.ailmx_wizard_cell_input:focus {
+    border-color: #1F5C99;
+    box-shadow: 0 0 0 3px rgba(31, 92, 153, 0.15);
+    background: #eef5ff;
+}
+
+.ailmx_wizard_cell_input:not(:placeholder-shown) {
+    border-color: #93c5fd;
+    background: #f0f7ff;
+}
+
+.ailmx_wizard_cell_input::placeholder {
+    color: #d1d5db;
+    font-weight: 400;
+    font-size: 11px;
+}
+
+.ailmx_wizard_cell_input:active {
+    transform: scale(0.97);
+}

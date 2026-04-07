@@ -2,6 +2,15 @@
 <!--
     Este template hereda el contenedor de la pregunta
     que ve el usuario cuando responde la encuesta.
+
+    RECOMENDACIÓN:
+    Editar ESTE archivo existente.
+    No crear uno nuevo, porque el problema está en la herencia
+    del template del timer actual.
+
+    CORRECCIÓN PRINCIPAL:
+    Volvemos a usar survey.question_container, porque esa fue
+    la estrategia que sí funcionaba antes del GRID de lectura.
 -->
 <odoo>
 
@@ -29,7 +38,10 @@
                      t-att-data-time-unit="question.time_limit_unit"
                      class="mb-3">
                 </div>
+
             </t>
+
         </xpath>
     </template>
+
 </odoo>

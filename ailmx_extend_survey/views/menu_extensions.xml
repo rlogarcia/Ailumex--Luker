@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <!-- ========================================================= -->
+    <!-- MENÚ APLICACIONES -->
+    <!-- ========================================================= -->
+
+    <!-- Asignar la acción directamente al menú raíz Aplicaciones -->
+    <record id="survey.survey_menu_questions" model="ir.ui.menu">
+        <field name="action" ref="action_survey_application"/>
+    </record>
+
+    <!-- ========================================================= -->
     <!-- ACCIONES (LO QUE ABRE CADA MENÚ) -->
+    <!-- ========================================================= -->
 
     <!-- Acción para Maestro participantes -->
     <record id="action_maestro_participantes" model="ir.actions.act_window">
@@ -23,7 +35,10 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- MENÚS -->
+    <!-- ========================================================= -->
+    <!-- MENÚS DE PARTICIPANTES -->
+    <!-- ========================================================= -->
+
     <!-- Submenú 1 -->
     <menuitem
         id="menu_maestro_participantes"

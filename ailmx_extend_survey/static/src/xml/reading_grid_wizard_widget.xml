@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+    <t t-name="ailmx_extend_survey.ReadingGridWizardWidget">
+        <div class="ailmx_wizard_grid_wrapper">
+            <table style="border-collapse: separate; border-spacing: 6px;">
+                <tbody>
+                    <t t-foreach="state.grid" t-as="row" t-key="row_index">
+                        <tr>
+                            <t t-foreach="row" t-as="cell" t-key="cell_index">
+                                <td style="padding:0; border:none; vertical-align:middle;">
+                                    <input
+                                        t-att-id="'ailmx_cell_' + cell.rowIndex + '_' + cell.colIndex"
+                                        type="text"
+                                        t-att-value="cell.value"
+                                        t-att-placeholder="'(' + cell.rowIndex + ',' + cell.colIndex + ')'"
+                                        class="ailmx_wizard_cell_input"
+                                        t-on-input="(ev) => this.onInput(cell.rowIndex, cell.colIndex, ev.target.value)"
+                                        t-on-keydown="(ev) => this.onKeyDown(ev, cell.rowIndex, cell.colIndex)"
+                                    />
+                                </td>
+                            </t>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </div>
+    </t>
+
+</templates>

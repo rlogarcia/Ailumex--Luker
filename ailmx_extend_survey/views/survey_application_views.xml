@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- ========================================================= -->
+<!-- ARCHIVO: views/survey_application_views.xml -->
+<!-- ========================================================= -->
+<odoo>
+
+    <!-- ===================================================== -->
+    <!-- VISTA DE LISTA -->
+    <!-- ===================================================== -->
+    <record id="view_survey_application_list" model="ir.ui.view">
+        <field name="name">survey.application.list</field>
+        <field name="model">survey.user_input</field>
+        <field name="arch" type="xml">
+            <list string="Aplicaciones" create="0">
+                <field name="id" string="ID"/>
+                <field name="Nam_Participant" string="Participante"/>
+                <field name="Nam_Instrument" string="Instrumento"/>
+                <field name="Dat_Application_Created" string="Fecha"/>
+                <field name="Num_Response_Count" string="Respuestas"/>
+                <field name="Num_Total_Score" string="Puntaje total"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ===================================================== -->
+    <!-- VISTA DE FORMULARIO -->
+    <!-- ===================================================== -->
+    <record id="view_survey_application_form" model="ir.ui.view">
+        <field name="name">survey.application.form</field>
+        <field name="model">survey.user_input</field>
+        <field name="arch" type="xml">
+            <form string="Aplicación" create="0" delete="0">
+                <sheet>
+
+                    <!-- ================================================= -->
+                    <!-- ENCABEZADO GENERAL -->
+                    <!-- ================================================= -->
+                    <group string="Aplicación">
+                        <group>
+                            <field name="id" string="ID" readonly="1"/>
+                            <field name="Dat_Application_Created" string="Fecha de aplicación" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="Num_Response_Count" string="Cantidad de respuestas" readonly="1"/>
+                            <field name="Num_Total_Score" string="Puntaje total" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ================================================= -->
+                    <!-- BLOQUE: PARTICIPANTE -->
+                    <!-- ================================================= -->
+                    <group string="Participante">
+                        <group>
+                            <field name="Nam_Participant" string="Nombre del participante" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ================================================= -->
+                    <!-- BLOQUE: INSTRUMENTO -->
+                    <!-- ================================================= -->
+                    <group string="Instrumento">
+                        <group>
+                            <field name="Nam_Instrument" string="Nombre del instrumento" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ================================================= -->
+                    <!-- NOTEBOOK -->
+                    <!-- ================================================= -->
+                    <notebook>
+
+                        <!-- ============================================= -->
+                        <!-- RESPUESTAS CAPTURADAS -->
+                        <!-- ============================================= -->
+                        <page string="Respuestas capturadas">
+                            <field name="response_line_ids" readonly="1">
+                                <list string="Respuestas capturadas" create="0" delete="0">
+                                    <field name="Id_Question" string="Pregunta"/>
+                                    <field name="Typ_Response" string="Tipo"/>
+                                    <field name="Nam_Response_Display" string="Respuesta capturada"/>
+                                    <field name="Flg_Omitted" string="Omitida"/>
+                                    <field name="Num_Score" string="Puntaje"/>
+                                    <field name="Dat_Created_At" string="Fecha creación"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ============================================= -->
+                        <!-- DETALLE TÉCNICO -->
+                        <!-- ============================================= -->
+                        <page string="Detalle técnico">
+                            <group string="Encabezado técnico">
+                                <group>
+                                    <field name="survey_id" string="Instrumento" readonly="1"/>
+                                    <field name="partner_id" string="Partner" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="access_token" string="Access token" readonly="1"/>
+                                    <field name="create_date" string="Creado en" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+
+                    </notebook>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================================================== -->
+    <!-- VISTA DE BÚSQUEDA -->
+    <!-- ===================================================== -->
+    <record id="view_survey_application_search" model="ir.ui.view">
+        <field name="name">survey.application.search</field>
+        <field name="model">survey.user_input</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Aplicaciones">
+
+                <field name="id" string="ID"/>
+                <field name="Nam_Participant" string="Participante"/>
+                <field name="Nam_Instrument" string="Instrumento"/>
+                <field name="survey_id" string="Instrumento"/>
+
+                <group expand="0" string="Agrupar por">
+                    <filter string="Participante"
+                            name="group_by_participant"
+                            context="{'group_by': 'partner_id'}"/>
+
+                    <filter string="Instrumento"
+                            name="group_by_instrument"
+                            context="{'group_by': 'survey_id'}"/>
+
+                    <filter string="Fecha"
+                            name="group_by_date"
+                            context="{'group_by': 'create_date'}"/>
+                </group>
+
+            </search>
+        </field>
+    </record>
+
+    <!-- ===================================================== -->
+    <!-- ACCIÓN PRINCIPAL DE APLICACIONES -->
+    <!-- ===================================================== -->
+    <record id="action_survey_application" model="ir.actions.act_window">
+        <field name="name">Aplicaciones</field>
+        <field name="res_model">survey.user_input</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_survey_application_search"/>
+        <field name="context">{}</field>
+    </record>
+
+</odoo>

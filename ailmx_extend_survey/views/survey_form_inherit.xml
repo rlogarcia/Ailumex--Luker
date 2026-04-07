@@ -6,6 +6,70 @@
         <field name="inherit_id" ref="survey.survey_survey_view_form"/>
         <field name="arch" type="xml">
 
+            <!-- ========================================================= -->
+            <!-- CAMBIO 1: BOTONES DEL FLUJO + BARRA DE ESTADO -->
+            <!-- ========================================================= -->
+            <xpath expr="//form/header" position="inside">
+
+                <!-- BOTÓN: Pasar a revisión -->
+                <!-- Solo visible en Borrador -->
+                <button name="action_set_to_review"
+                        string="Pasar a revisión"
+                        type="object"
+                        class="btn-primary"
+                        invisible="Instrument_State != 'draft'"/>
+
+                <!-- BOTÓN: Publicar -->
+                <!-- Solo visible en En revisión -->
+                <button name="action_publish_instrument"
+                        string="Publicar"
+                        type="object"
+                        class="btn-success"
+                        invisible="Instrument_State != 'in_review'"/>
+
+                <!-- BOTÓN: Despublicar -->
+                <!-- Solo visible en Publicado -->
+                <button name="action_unpublish_instrument"
+                        string="Despublicar"
+                        type="object"
+                        class="btn-warning"
+                        invisible="Instrument_State != 'published'"/>
+
+                <!-- BARRA DE ESTADO -->
+                <field name="Instrument_State"
+                       widget="statusbar"
+                       statusbar_visible="draft,in_review,published,archived"/>
+
+            </xpath>
+
+            <!-- ========================================================= -->
+            <!-- CAMBIO 1.1: OCULTAR BOTÓN NATIVO "CERRAR" -->
+            <!-- ========================================================= -->
+            <!--
+                El botón nativo "Cerrar" realmente usa:
+                name="action_archive"
+
+                Regla:
+                - Solo debe mostrarse cuando el instrumento está en En revisión
+            -->
+            <xpath expr="//form/header/button[@name='action_archive']" position="attributes">
+                <attribute name="invisible">Instrument_State != 'in_review'</attribute>
+            </xpath>
+
+            <!-- ========================================================= -->
+            <!-- CAMBIO 2: CINTA VERDE CUANDO ESTÁ PUBLICADO -->
+            <!-- ========================================================= -->
+            <!--
+                La cinta se inserta antes del primer elemento del sheet
+                para que quede arriba a la derecha, como la cinta de Archivado.
+            -->
+            <xpath expr="//sheet/*[1]" position="before">
+                <widget name="web_ribbon"
+                        title="PUBLICADO"
+                        bg_color="text-bg-success"
+                        invisible="Instrument_State != 'published'"/>
+            </xpath>
+
             <!-- RENOMBRAR PESTAÑAS -->
             <xpath expr="//page[@name='questions']" position="attributes">
                 <attribute name="string">Estructura</attribute>
@@ -52,16 +116,28 @@
 
                 <!-- SECCIÓN SUPERIOR: NOMBRE | CÓDIGO | DOMINIO -->
                 <div class="ailmx_header_section">
+
+                    <!-- NOMBRE -->
                     <div class="ailmx_header_card">
                         <div class="ailmx_header_label">Nombre</div>
-                        <field name="title" string="" nolabel="1"
-                            class="ailmx_header_value"/>
+                        <field name="title"
+                               readonly="1"
+                               string=""
+                               nolabel="1"
+                               class="ailmx_header_value"/>
                     </div>
+
+                    <!-- CÓDIGO -->
                     <div class="ailmx_header_card">
                         <div class="ailmx_header_label">Código</div>
-                        <field name="Cod_Instrument" readonly="1" string="" nolabel="1"
-                            class="ailmx_header_value"/>
+                        <field name="Cod_Instrument"
+                               readonly="1"
+                               string=""
+                               nolabel="1"
+                               class="ailmx_header_value"/>
                     </div>
+
+                    <!-- DOMINIO -->
                     <div class="ailmx_header_card">
                         <div class="ailmx_header_label">Dominio</div>
                         <div class="ailmx_header_value ailmx_empty_field">
@@ -73,31 +149,51 @@
                 <!-- SECCIÓN MEDIA: DESCRIPCIÓN -->
                 <div class="ailmx_description_section">
                     <div class="ailmx_section_title">Descripción</div>
-                    <field name="description" string="" nolabel="1"
+                    <field name="description"
+                           string=""
+                           nolabel="1"
                            class="ailmx_description_field"/>
                 </div>
 
                 <!-- SECCIÓN INFERIOR: MÉTRICAS -->
                 <div class="ailmx_footer_section">
+
+                    <!-- TIEMPO ESTIMADO -->
                     <div class="ailmx_footer_card">
                         <div class="ailmx_footer_label">Tiempo estimado</div>
-                        <field name="time_limit" string="" nolabel="1"
+                        <field name="time_limit"
+                               string=""
+                               nolabel="1"
                                class="ailmx_footer_value"/>
                         <div class="ailmx_footer_unit">minutos</div>
                     </div>
+
+                    <!-- REQUIERE EVALUADOR -->
                     <div class="ailmx_footer_card">
                         <div class="ailmx_footer_label">Requiere evaluador</div>
-                        <field name="scoring_type" string="" nolabel="1"
-                               class="ailmx_footer_value"/>
+                        <div class="ailmx_footer_value ailmx_footer_select_box">
+                            <field name="requires_evaluator"
+                                   string=""
+                                   nolabel="1"/>
+                        </div>
                     </div>
+
+                    <!-- PRESENTACIÓN -->
                     <div class="ailmx_footer_card">
                         <div class="ailmx_footer_label">Presentación</div>
-                        <field name="questions_layout" string="" nolabel="1"
-                               class="ailmx_footer_value"/>
+                        <div class="ailmx_footer_value ailmx_footer_select_box">
+                            <field name="questions_layout"
+                                   string=""
+                                   nolabel="1"/>
+                        </div>
                     </div>
+
+                    <!-- APLICACIÓN OFFLINE -->
                     <div class="ailmx_footer_card">
                         <div class="ailmx_footer_label">Aplicación offline</div>
-                        <field name="is_time_limited" string="" nolabel="1"
+                        <field name="is_time_limited"
+                               string=""
+                               nolabel="1"
                                class="ailmx_footer_value"/>
                     </div>
                 </div>

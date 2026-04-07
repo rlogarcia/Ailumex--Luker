@@ -76,6 +76,10 @@
     margin-bottom: 18px;
 }
 
+.ailmx_grid_2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
 .ailmx_grid_3 {
     grid-template-columns: repeat(3, 1fr);
 }
@@ -83,7 +87,6 @@
 .ailmx_grid_4 {
     grid-template-columns: repeat(4, 1fr);
 }
-
 
 /* TARJETAS DE CAMPOS */
 
@@ -264,14 +267,12 @@
     background: #FFFFFF;
 }
 
-
 /* TEXTO EN MODO LECTURA */
 
 .ailmx_field_box .o_field_widget {
     width: 100%;
     font-size: 15px;
 }
-
 
 /* NOTEBOOK (TABS) */
 
@@ -287,6 +288,236 @@
     font-style: italic;
 }
 
+/* ================================
+   CONTEXTO PARTICIPANTE
+================================ */
+
+/* CONTENEDOR GENERAL (opcional si quieres más control) */
+.ailmx_context_section {
+    margin-top: 10px;
+}
+
+/* GRID (aunque ahora usamos form_grid, lo dejamos por si lo reutilizas) */
+.ailmx_context_grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 12px;
+}
+
+/* COLUMNAS */
+.ailmx_context_col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ITEM CONTEXTO (label + valor en línea) */
+.ailmx_context_item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* LABEL */
+.ailmx_context_label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #1F5C99;
+    min-width: 110px;
+}
+
+/* VALOR */
+.ailmx_context_value {
+    font-size: 14px;
+    color: #6B7A90;
+    font-style: italic;
+}
+
+/* TEXTO VACÍO */
+.ailmx_context_history_empty {
+    color: #6B7A90;
+    font-style: italic;
+    margin-top: 8px;
+}
+
+
+/* ================================
+   HISTÓRICO DE ASIGNACIONES (TABLA)
+================================ */
+
+.ailmx_history_table_wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+/* TABLA BASE */
+.ailmx_history_table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+}
+
+/* HEADER */
+.ailmx_history_table thead th {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #5F7086;
+
+    padding: 10px 12px;
+
+    border-bottom: 1px solid #D9E4EF;
+    background: transparent;
+    text-align: left;
+}
+
+/* BODY */
+.ailmx_history_table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #EEF3F8;
+
+    font-size: 14px;
+    color: #1A1A2E;
+}
+
+/* ÚLTIMA FILA SIN BORDE */
+.ailmx_history_table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* FILA HOVER (opcional pero recomendable) */
+.ailmx_history_table tbody tr:hover {
+    background: #F8FBFF;
+}
+
+
+/* ================================
+   AJUSTES PARA TARJETAS CONTEXTO
+================================ */
+
+/* Para asegurar que las cards del contexto mantengan altura uniforme */
+.ailmx_form_card .ailmx_field_box span {
+    width: 100%;
+    display: block;
+}
+
+/* Mejora visual del texto dentro del field_box */
+.ailmx_field_box span.text-muted {
+    font-size: 14px;
+    color: #7A8BA0;
+}
+
+/* ================================
+   IDENTIDADES PARTICIPANTE
+================================ */
+
+.ailmx_identity_helper_text {
+    margin-bottom: 16px;
+    color: #5F7086;
+    font-size: 14px;
+}
+
+.ailmx_identity_table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+}
+
+.ailmx_identity_table thead th {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #5F7086;
+    padding: 10px 12px;
+    border-bottom: 1px solid #D9E4EF;
+    background: transparent;
+    text-align: left;
+}
+
+.ailmx_identity_table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #EEF3F8;
+    font-size: 14px;
+    color: #1A1A2E;
+}
+
+.ailmx_identity_table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.ailmx_identity_table tbody tr:hover {
+    background: #F8FBFF;
+}
+
+.ailmx_identity_action_placeholder {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 10px 16px;
+    border: 1px solid #D9E4EF;
+    border-radius: 10px;
+    background: #FFFFFF;
+    color: #1A1A2E;
+    font-weight: 500;
+}
+
+/* ================================
+   CARACTERIZACIÓN PARTICIPANTE
+================================ */
+
+.ailmx_characterization_helper_text {
+    margin-bottom: 16px;
+    color: #5F7086;
+    font-size: 14px;
+}
+
+.ailmx_characterization_table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+}
+
+.ailmx_characterization_table thead th {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #5F7086;
+    padding: 10px 12px;
+    border-bottom: 1px solid #D9E4EF;
+    background: transparent;
+    text-align: left;
+}
+
+.ailmx_characterization_table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #EEF3F8;
+    font-size: 14px;
+    color: #1A1A2E;
+}
+
+.ailmx_characterization_table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.ailmx_characterization_table tbody tr:hover {
+    background: #F8FBFF;
+}
+
+.ailmx_characterization_action_placeholder {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 10px 16px;
+    border: 1px solid #D9E4EF;
+    border-radius: 10px;
+    background: #FFFFFF;
+    color: #1A1A2E;
+    font-weight: 500;
+}
 
 /* RESPONSIVE */
 
@@ -297,6 +528,7 @@
 }
 
 @media (max-width: 768px) {
+    .ailmx_grid_2,
     .ailmx_grid_3,
     .ailmx_grid_4 {
         grid-template-columns: 1fr;
@@ -304,5 +536,21 @@
 
     .ailmx_header_section {
         flex-direction: column;
+    }
+}
+
+@media (max-width: 768px) {
+    .ailmx_context_grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ailmx_context_item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .ailmx_context_label {
+        min-width: auto;
     }
 }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+
+    <template id="survey_question_image_attachment_inject"
+              name="AILUMEX Image Attachment - Inyección en contenedor de pregunta"
+              inherit_id="survey.question_container">
+
+        <xpath expr="." position="inside">
+
+            <div class="ailmx_image_attachment_block mt-3">
+                <label class="form-label">
+                    Adjuntar imagen
+                </label>
+
+                <input type="file"
+                       class="form-control ailmx_image_attachment_input"
+                       accept="image/*"
+                       t-att-data-question-id="question.id"/>
+
+                <div class="text-muted mt-1 ailmx_image_attachment_status"
+                     t-att-data-question-id="question.id">
+                    No se ha cargado ninguna imagen.
+                </div>
+            </div>
+
+        </xpath>
+    </template>
+
+</odoo>

@@ -34,12 +34,12 @@ class SurveyQuestionAnswer(models.Model):
     #
     # NOTA:
     # El nombre técnico del campo nativo de Odoo es question_id.
-    # Desde ahí accedemos al tipo de pregunta.
+    # Desde ahí se accede al tipo de pregunta.
     # =========================================================
     @api.constrains('Flg_Is_Correct', 'question_id')
     def _check_single_choice_only_one_correct(self):
         for record in self:
-            # Si no hay pregunta asociada, no validamos
+            # Si no hay pregunta asociada, no se valida
             if not record.question_id:
                 continue
 

@@ -1,99 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<!--
-    Este archivo extiende la vista del formulario de preguntas (survey.survey_question_form).
-    Aquí dejamos:
-    - temporizador
-    - adjuntar imagen
-    - configuración AiLumex
-    - marca de respuesta correcta en opciones
-
-    IMPORTANTE:
-    Temporizador y Adjuntar imagen quedan como funcionalidades separadas.
--->
-
 <odoo>
     <record id="view_survey_question_extension_form" model="ir.ui.view">
         <field name="name">survey.question.extension.form</field>
         <field name="model">survey.question</field>
-
-        <!-- Vista original de preguntas de Odoo -->
         <field name="inherit_id" ref="survey.survey_question_form"/>
-
         <field name="arch" type="xml">
 
-            <!-- ===================================================== -->
-            <!-- CONFIGURACIÓN DE TIEMPO (TIMER) -->
-            <!-- ===================================================== -->
+            <!-- TEMPORIZADOR -->
             <xpath expr="//group[field[@name='question_type']]" position="after">
-
                 <group string="Temporizador de preguntas" name="timer_settings">
-
-                    <!-- Checkbox para activar temporizador -->
                     <field name="has_time_limit" string="¿Activar temporizador?"/>
-
-                    <!-- Unidad: segundos o minutos -->
                     <field name="time_limit_unit"
-                           string="Unidad"
-                           widget="radio"
-                           options="{'horizontal': true}"
-                           invisible="not has_time_limit"/>
-
-                    <!-- Cantidad -->
+                            string="Unidad"
+                            widget="radio"
+                            options="{'horizontal': true}"
+                            invisible="not has_time_limit"/>
                     <field name="time_limit_value"
-                           string="Cantidad"
-                           invisible="not has_time_limit"
-                           placeholder="Ej. 30"/>
-
+                            string="Cantidad"
+                            invisible="not has_time_limit"
+                            placeholder="Ej. 30"/>
                 </group>
-
             </xpath>
 
-            <!-- ===================================================== -->
-            <!-- ADJUNTAR IMAGEN -->
-            <!-- ===================================================== -->
+            <!-- ADJUNTAR IMÁGENES -->
             <xpath expr="//group[field[@name='question_type']]" position="after">
-
                 <group string="Adjuntar imagen" name="image_attachment_settings">
-
-                    <!-- Permitir adjuntar imagen -->
                     <field name="Flg_Allow_Image_Attachment"
-                           string="¿Permitir adjuntar imagen?"/>
+                            string="¿Permitir adjuntar imagen?"/>
 
+                    <field name="Question_Image_Attachment_Ids"
+                            string="Imágenes"
+                            widget="many2many_binary"
+                            invisible="not Flg_Allow_Image_Attachment"/>
+
+                    <field name="Img_Question_Attachment"
+                            string="Imagen única (compatibilidad)"
+                            widget="image"
+                            invisible="1"/>
                 </group>
-
             </xpath>
 
-            <!-- ===================================================== -->
             <!-- CONFIGURACIÓN AILUMEX -->
-            <!-- ===================================================== -->
             <xpath expr="//form" position="inside">
-
                 <group string="Configuración AiLumex">
-
-                    <!-- FK al catálogo de tipos de pregunta -->
-                    <field name="Id_Question_Type"
-                           string="Tipo de Pregunta"/>
-
-                    <!-- Configuración específica en JSON -->
-                    <field name="Des_Config_JSON"
-                           string="Configuración JSON"/>
-
-                    <!-- Si la pregunta es obligatoria -->
-                    <field name="Flg_Required"
-                           string="Es obligatoria"/>
-
-                    <!-- FK al elemento DAMA -->
-                    <field name="Id_Data_Element"
-                           string="Elemento de dato DAMA"/>
-
+                    <field name="Id_Question_Type" string="Tipo de Pregunta"/>
+                    <field name="Des_Config_JSON" string="Configuración JSON"/>
+                    <field name="Flg_Required" string="Es obligatoria"/>
+                    <field name="Id_Data_Element" string="Elemento de dato DAMA"/>
                 </group>
-
             </xpath>
 
-            <!-- ===================================================== -->
-            <!-- MARCAR RESPUESTA CORRECTA EN OPCIONES -->
-            <!-- ===================================================== -->
+            <!-- RESPUESTA CORRECTA -->
             <xpath expr="//field[@name='suggested_answer_ids']/list/field[last()]" position="after">
                 <field name="Flg_Is_Correct" string="Es correcta"/>
             </xpath>

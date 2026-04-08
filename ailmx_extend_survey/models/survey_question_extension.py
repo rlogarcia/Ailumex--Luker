@@ -6,31 +6,25 @@ import json
 
 
 class SurveyQuestionExtension(models.Model):
-    # _inherit le dice a odoo que no es una tabla nueva, sino que se agregan campos nuevos
     _inherit = 'survey.question'
 
-    # Many2one significa que muchas preguntas pueden tener el mismo tipo
-    # Ejemplo: 100 preguntas pueden ser de tipo 'radio'
     Id_Question_Type = fields.Many2one(
         comodel_name='survey.question.type',
         string='Tipo de pregunta',
         help='Selecciona el tipo de este pregunta del catálogo'
     )
 
-    # Se guarda la configuración específica de la pregunta en JSON
     Des_Config_JSON = fields.Json(
         string='Configuración JSON',
         help='Configuración específica de la pregunta en formato JSON'
     )
 
-    # Indica si la pregunta es obligatoria o no
     Flg_Required = fields.Boolean(
         string='Es obligatoria',
         default=False,
         help='Si es True el usuario no puede dejar esta pregunta sin responder'
     )
 
-    # Conecta esta pregunta con su elemento DAMA
     Id_Data_Element = fields.Many2one(
         comodel_name='data.element',
         string='Elemento de dato DAMA',
@@ -38,9 +32,8 @@ class SurveyQuestionExtension(models.Model):
     )
 
     # =========================================================
-    # CAMPOS PARA TEMPORIZADOR
+    # TEMPORIZADOR
     # =========================================================
-
     has_time_limit = fields.Boolean(
         string='¿Tiene límite de tiempo?',
         default=False,
@@ -59,23 +52,35 @@ class SurveyQuestionExtension(models.Model):
     )
 
     # =========================================================
-    # CAMPO PARA ADJUNTAR IMAGEN
-    # =========================================================
-    # Esta funcionalidad es independiente del temporizador.
-    # Solo indica si la pregunta permite o no adjuntar imagen.
+    # IMÁGENES DE LA PREGUNTA
     # =========================================================
     Flg_Allow_Image_Attachment = fields.Boolean(
-        string='Permitir adjuntar imagen',
+        string='¿Permitir adjuntar imagen?',
         default=False,
-        help='Si está activado, el participante podrá adjuntar una imagen al responder esta pregunta.'
+        help='Si está activado, esta pregunta podrá mostrar imágenes cargadas desde backend.'
     )
 
-    # =========================================================
-    # MÉTODO API 3: create_question_with_type
-    # =========================================================
+    # Campo anterior, lo dejamos por compatibilidad temporal
+    Img_Question_Attachment = fields.Image(
+        string='Imagen de la pregunta',
+        max_width=1920,
+        max_height=1920,
+        help='Imagen única de compatibilidad. Puede retirarse más adelante.'
+    )
+
+    # Nuevo campo: una o más imágenes
+    Question_Image_Attachment_Ids = fields.Many2many(
+        comodel_name='ir.attachment',
+        relation='survey_question_image_attachment_rel',
+        column1='question_id',
+        column2='attachment_id',
+        string='Imágenes de la pregunta',
+        domain="[('mimetype', 'ilike', 'image/')]",
+        help='Permite cargar una o varias imágenes para mostrar en la pregunta.'
+    )
+
     @api.model
     def create_question_with_type(self, survey_id, question_type_code, vals):
-
         if not survey_id:
             raise ValueError('El campo survey_id es obligatorio.')
 
@@ -95,24 +100,15 @@ class SurveyQuestionExtension(models.Model):
         vals['Id_Question_Type'] = question_type.id
 
         new_question = self.create(vals)
-
         return new_question
 
-    # =========================================================
-    # MÉTODO API 4: set_question_config
-    # =========================================================
     def set_question_config(self, config):
-
         if not isinstance(config, dict):
             raise ValueError('La configuración debe ser un diccionario JSON.')
 
         self.write({'Des_Config_JSON': config})
-
         return True
 
-    # =========================================================
-    # MÉTODO API 4.1: _check_data_element
-    # =========================================================
     @api.constrains('Id_Data_Element')
     def _check_data_element(self):
         for record in self:
@@ -122,9 +118,6 @@ class SurveyQuestionExtension(models.Model):
                     % record.title
                 )
 
-    # =========================================================
-    # VALIDACIÓN: RESPUESTAS CORRECTAS
-    # =========================================================
     @api.constrains('question_type', 'suggested_answer_ids', 'suggested_answer_ids.Flg_Is_Correct')
     def _check_correct_answers_for_choice_questions(self):
         for record in self:
@@ -140,7 +133,6 @@ class SurveyQuestionExtension(models.Model):
                         'La pregunta "%s" es de selección única y debe tener exactamente una opción correcta.'
                         % record.title
                     )
-
                 if correct_count > 1:
                     raise ValidationError(
                         'La pregunta "%s" es de selección única y no puede tener más de una opción correcta.'
@@ -154,18 +146,13 @@ class SurveyQuestionExtension(models.Model):
                         % record.title
                     )
 
-    # =========================================================
-    # MÉTODO API 5: validate_response
-    # =========================================================
     def validate_response(self, value):
-
         question_type = self.Id_Question_Type
 
         if not question_type:
             return True
 
         schema_raw = question_type.Des_Validation_Schema
-
         if not schema_raw:
             return True
 

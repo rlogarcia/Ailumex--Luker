@@ -18,6 +18,9 @@ from . import survey_response_line
 # Interceptor de respuestas nativas de Odoo para copiarlas a survey_response_line
 from . import survey_user_input_line_extension
 
+# Guardado de preguntas personalizadas del survey
+from . import survey_user_input_custom_save
+
 # Modelo de aplicaciones
 from . import survey_application
 

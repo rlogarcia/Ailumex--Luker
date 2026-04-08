@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<!-- ========================================================= -->
-<!-- ARCHIVO: views/survey_application_views.xml -->
-<!-- ========================================================= -->
 <odoo>
 
     <!-- ===================================================== -->
@@ -33,9 +29,7 @@
             <form string="Aplicación" create="0" delete="0">
                 <sheet>
 
-                    <!-- ================================================= -->
                     <!-- ENCABEZADO GENERAL -->
-                    <!-- ================================================= -->
                     <group string="Aplicación">
                         <group>
                             <field name="id" string="ID" readonly="1"/>
@@ -47,42 +41,40 @@
                         </group>
                     </group>
 
-                    <!-- ================================================= -->
-                    <!-- BLOQUE: PARTICIPANTE -->
-                    <!-- ================================================= -->
+                    <!-- PARTICIPANTE -->
                     <group string="Participante">
                         <group>
                             <field name="Nam_Participant" string="Nombre del participante" readonly="1"/>
                         </group>
                     </group>
 
-                    <!-- ================================================= -->
-                    <!-- BLOQUE: INSTRUMENTO -->
-                    <!-- ================================================= -->
+                    <!-- INSTRUMENTO -->
                     <group string="Instrumento">
                         <group>
                             <field name="Nam_Instrument" string="Nombre del instrumento" readonly="1"/>
                         </group>
                     </group>
 
-                    <!-- ================================================= -->
-                    <!-- NOTEBOOK -->
-                    <!-- ================================================= -->
                     <notebook>
 
                         <!-- ============================================= -->
-                        <!-- RESPUESTAS CAPTURADAS -->
+                        <!-- REVISIÓN TIPO EXAMEN -->
                         <!-- ============================================= -->
-                        <page string="Respuestas capturadas">
-                            <field name="response_line_ids" readonly="1">
-                                <list string="Respuestas capturadas" create="0" delete="0">
-                                    <field name="Id_Question" string="Pregunta"/>
-                                    <field name="Typ_Response" string="Tipo"/>
-                                    <field name="Nam_Response_Display" string="Respuesta capturada"/>
-                                    <field name="Flg_Omitted" string="Omitida"/>
-                                    <field name="Num_Score" string="Puntaje"/>
-                                    <field name="Dat_Created_At" string="Fecha creación"/>
-                                </list>
+                        <page string="Revisión tipo examen">
+                            <field name="response_line_ids" readonly="1" nolabel="1">
+                                <kanban class="o_kanban_mobile">
+                                    <field name="Nam_Review_Status"/>
+                                    <field name="Flg_Is_Correct_Response"/>
+                                    <field name="Des_Review_HTML"/>
+
+                                    <templates>
+                                        <t t-name="card">
+                                            <div class="p-2">
+                                                <div t-out="record.Des_Review_HTML.raw_value"/>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
                             </field>
                         </page>
 

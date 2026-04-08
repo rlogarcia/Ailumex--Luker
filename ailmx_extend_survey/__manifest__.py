@@ -51,7 +51,6 @@
             'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
             'ailmx_extend_survey/static/src/js/survey_timer.js',
             'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
-            'ailmx_extend_survey/static/src/js/survey_image_attachment.js',
         ],
         
         # Las encuestas públicas usan este bundle minimal
@@ -60,7 +59,6 @@
             'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
             'ailmx_extend_survey/static/src/js/survey_timer.js',
             'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
-            'ailmx_extend_survey/static/src/js/survey_image_attachment.js',
         ],
 
         # Bundle de encuestas — Odoo 18 usa este para el frontend de surveys
@@ -69,7 +67,6 @@
             'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
             'ailmx_extend_survey/static/src/js/survey_timer.js',
             'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
-            'ailmx_extend_survey/static/src/js/survey_image_attachment.js',
         ],
 
     },

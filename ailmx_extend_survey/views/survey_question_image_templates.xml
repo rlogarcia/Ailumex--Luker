@@ -1,28 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-
     <template id="survey_question_image_attachment_inject"
-              name="AILUMEX Image Attachment - Inyección en contenedor de pregunta"
+              name="AILUMEX Question Image Display"
               inherit_id="survey.question_container">
 
-        <xpath expr="." position="inside">
+        <!--
+            Insertamos las imágenes después del bloque:
+            <div class="mb-4">
+            que contiene:
+            - título
+            - descripción
 
-            <div class="ailmx_image_attachment_block mt-3">
-                <label class="form-label">
-                    Adjuntar imagen
-                </label>
+            Así el orden queda:
+            1. Título
+            2. Descripción
+            3. Imágenes
+            4. Campo de respuesta
+        -->
+        <xpath expr="//div[hasclass('mb-4')]" position="after">
 
-                <input type="file"
-                       class="form-control ailmx_image_attachment_input"
-                       accept="image/*"
-                       t-att-data-question-id="question.id"/>
+            <t t-if="question and question.Flg_Allow_Image_Attachment">
 
-                <div class="text-muted mt-1 ailmx_image_attachment_status"
-                     t-att-data-question-id="question.id">
-                    No se ha cargado ninguna imagen.
-                </div>
-            </div>
+                <!-- Varias imágenes -->
+                <t t-if="question.Question_Image_Attachment_Ids">
+                    <div class="mt-3"
+                         style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start;">
+
+                        <t t-foreach="question.Question_Image_Attachment_Ids" t-as="img_attachment">
+                            <div style="text-align: center;">
+                                <img t-att-src="'/web/image/ir.attachment/%s/datas' % img_attachment.id"
+                                     alt="Imagen de la pregunta"
+                                     style="max-width: 100%; width: 100%; max-height: 220px; object-fit: contain; display: block; margin: 0 auto;"/>
+                            </div>
+                        </t>
+
+                    </div>
+                </t>
+
+                <!-- Compatibilidad: una sola imagen -->
+                <t t-elif="question.Img_Question_Attachment">
+                    <div class="mt-3"
+                         style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start;">
+
+                        <div style="text-align: center;">
+                            <img t-att-src="image_data_uri(question.Img_Question_Attachment)"
+                                 alt="Imagen de la pregunta"
+                                 style="max-width: 100%; width: 100%; max-height: 220px; object-fit: contain; display: block; margin: 0 auto;"/>
+                        </div>
+
+                    </div>
+                </t>
+
+            </t>
 
         </xpath>
     </template>

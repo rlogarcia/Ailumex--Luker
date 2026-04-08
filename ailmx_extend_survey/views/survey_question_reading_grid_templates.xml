@@ -53,8 +53,6 @@
 
                     <!-- ============================= -->
                     <!-- TABLA -->
-                    <!-- Recorremos filas y columnas según dimensiones -->
-                    <!-- y buscamos la celda correspondiente en reading_grid_cell_ids -->
                     <!-- ============================= -->
                     <table class="table table-bordered text-center ailmx_reading_grid_table">
                         <tbody>
@@ -89,9 +87,16 @@
                         </tbody>
                     </table>
 
-                    <!-- Campo oculto local -->
+                    <!-- ================================================= -->
+                    <!-- CAMPO OCULTO DE RESPUESTA REAL -->
+                    <!-- ================================================= -->
+                    <!--
+                        CAMBIO CLAVE:
+                        Debe enviarse con el nombre de la pregunta,
+                        no con un name fijo.
+                    -->
                     <input type="hidden"
-                           name="reading_grid_response"
+                           t-att-name="question.id"
                            class="ailmx_reading_grid_response"/>
 
                 </div>

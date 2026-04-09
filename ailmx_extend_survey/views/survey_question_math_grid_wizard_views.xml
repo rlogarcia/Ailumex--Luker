@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_survey_math_grid_wizard_form" model="ir.ui.view">
+        <field name="name">survey.question.math.grid.wizard.form</field>
+        <field name="model">survey.question.math.grid.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Editar grilla matemática">
+                <sheet>
+
+                    <div style="margin-bottom: 12px;">
+                        <div style="font-size: 16px; font-weight: 700; color: #1F5C99;">
+                            <field name="question_id" readonly="1" nolabel="1"/>
+                        </div>
+                        <div style="font-size: 13px; color: #6b7280; margin-top: 2px;">
+                            <field name="rows" readonly="1" nolabel="1"/> filas ×
+                            <field name="cols" readonly="1" nolabel="1"/> columnas
+                        </div>
+                    </div>
+
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:8px 12px; font-size:13px; color:#1e40af; margin-bottom:14px;">
+                        Cada celda tiene un <b>contenido visible</b> (lo que ve el participante)
+                        y un <b>valor correcto</b> (para evaluación).
+                        Usa <b>Tab</b> o <b>Enter</b> para avanzar.
+                    </div>
+
+                    <field name="grid_data_json" invisible="1"/>
+
+                    <field name="wizard_cell_ids"
+                           widget="math_grid_wizard_widget"
+                           nolabel="1"/>
+
+                </sheet>
+
+                <footer>
+                    <button name="action_save"
+                            string="Guardar contenido"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancelar"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_survey_question_math_grid_form" model="ir.ui.view">
+        <field name="name">survey.question.math.grid.form</field>
+        <field name="model">survey.question</field>
+        <field name="inherit_id" ref="survey.survey_question_form"/>
+
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+
+                <group string="Configuración GRID matemático"
+                       invisible="question_type != 'math_grid'">
+
+                    <group>
+                        <field name="math_grid_rows"/>
+                        <field name="math_grid_cols"/>
+                        <field name="math_grid_total_cells" readonly="1"/>
+                    </group>
+
+                    <div colspan="2" style="margin-bottom: 8px;">
+                        <button name="action_open_math_grid_wizard"
+                                string="✏️ Editar contenido"
+                                type="object"
+                                class="btn btn-primary"/>
+                    </div>
+
+                </group>
+
+            </xpath>
+        </field>
+    </record>
+</odoo>

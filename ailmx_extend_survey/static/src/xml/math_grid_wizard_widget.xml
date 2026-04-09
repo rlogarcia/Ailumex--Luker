@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ailmx_extend_survey.MathGridWizardWidget">
+        <div class="ailmx_math_wizard_wrapper">
+
+            <div class="ailmx_math_mode_selector">
+                <button type="button"
+                        class="ailmx_mode_btn"
+                        t-att-class="state.editMode === 'value' ? 'ailmx_mode_btn ailmx_mode_active' : 'ailmx_mode_btn'"
+                        t-on-click="() => this.setEditMode('value')">
+                    Contenido visible
+                </button>
+
+                <button type="button"
+                        class="ailmx_mode_btn"
+                        t-att-class="state.editMode === 'correct' ? 'ailmx_mode_btn ailmx_mode_active' : 'ailmx_mode_btn'"
+                        t-on-click="() => this.setEditMode('correct')">
+                    Valor correcto
+                </button>
+            </div>
+
+            <div class="ailmx_math_mode_hint">
+                <t t-if="state.editMode === 'value'">
+                    Editando el contenido que verá el participante.
+                </t>
+                <t t-else="">
+                    Editando la respuesta correcta usada para evaluación.
+                </t>
+            </div>
+
+            <table class="table table-bordered text-center ailmx_math_grid_table">
+                <tbody>
+                    <t t-foreach="state.grid" t-as="row" t-key="row_index">
+                        <tr>
+                            <t t-foreach="row" t-as="cell" t-key="cell.colIndex">
+                                <td>
+                                    <input
+                                        type="text"
+                                        class="ailmx_wizard_cell_input"
+                                        t-att-class="state.editMode === 'correct' ? 'ailmx_wizard_cell_input ailmx_cell_correct_mode' : 'ailmx_wizard_cell_input'"
+                                        t-att-id="'ailmx_math_' + state.editMode + '_' + cell.rowIndex + '_' + cell.colIndex"
+                                        t-att-placeholder="state.editMode === 'value' ? 'Visible' : 'Correcto'"
+                                        t-att-value="state.editMode === 'value' ? cell.cell_value : cell.correct_value"
+                                        t-on-input="(ev) => this.onInput(cell.rowIndex, cell.colIndex, state.editMode === 'value' ? 'cell_value' : 'correct_value', ev.target.value)"
+                                        t-on-keydown="(ev) => this.onKeyDown(ev, cell.rowIndex, cell.colIndex)"
+                                    />
+                                </td>
+                            </t>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+
+        </div>
+    </t>
+
+</templates>

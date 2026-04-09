@@ -1,0 +1,314 @@
+/* ============================= */
+/* TABLA GRID MATEMÁTICO         */
+/* ============================= */
+.ailmx_math_grid_table {
+    margin-top: 8px;
+    border-collapse: separate;
+    border-spacing: 4px;
+}
+
+.ailmx_math_grid_cell {
+    cursor: pointer;
+    user-select: none;
+    padding: 14px !important;
+    min-width: 90px;
+    min-height: 52px;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 600;
+    font-size: 14px;
+    background-color: #ffffff !important;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb !important;
+    transition: all 0.2s ease;
+}
+
+.ailmx_math_grid_cell:hover {
+    background-color: #f1f5f9 !important;
+    transform: translateY(-1px);
+}
+
+.ailmx_math_grid_cell.ailmx_cell_ok {
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+    border: none !important;
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+}
+
+.ailmx_math_grid_cell.ailmx_cell_err {
+    background-color: #fee2e2 !important;
+    color: #7f1d1d !important;
+    border: none !important;
+    box-shadow: inset 0 0 0 2px rgba(220, 38, 38, 0.25) !important;
+}
+
+.ailmx_math_grid_cell.ailmx_cell_skip {
+    background-color: #fef3c7 !important;
+    color: #78350f !important;
+    border: none !important;
+    box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.25) !important;
+}
+
+.ailmx_math_grid_cell.ailmx_cell_stop {
+    background-color: #e0e7ff !important;
+    color: #1e3a8a !important;
+    font-weight: 700 !important;
+    border: none !important;
+    box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.35) !important;
+}
+
+.ailmx_math_grid_cell:active {
+    transform: scale(0.96);
+}
+
+/* ============================= */
+/* WIZARD — SELECTOR DE MODO     */
+/* ============================= */
+.ailmx_math_wizard_wrapper {
+    overflow-x: auto;
+    padding: 4px 0 12px 0;
+}
+
+.ailmx_math_mode_selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.ailmx_mode_btn {
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: 1.5px solid #e5e7eb;
+    background: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ailmx_mode_btn:hover {
+    border-color: #1F5C99;
+    color: #1F5C99;
+}
+
+.ailmx_mode_btn.ailmx_mode_active {
+    background: #1F5C99;
+    border-color: #1F5C99;
+    color: #ffffff;
+}
+
+.ailmx_math_mode_hint {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 12px;
+    font-style: italic;
+}
+
+/* ============================= */
+/* WIZARD — CELDAS               */
+/* ============================= */
+.ailmx_wizard_cell_input {
+    width: 110px;
+    min-height: 52px;
+    padding: 10px 8px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: #1f2937;
+    background: #ffffff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.18s ease;
+    box-sizing: border-box;
+    cursor: text;
+}
+
+.ailmx_wizard_cell_input:focus {
+    border-color: #1F5C99;
+    box-shadow: 0 0 0 3px rgba(31, 92, 153, 0.15);
+    background: #eef5ff;
+}
+
+.ailmx_wizard_cell_input:not(:placeholder-shown) {
+    border-color: #93c5fd;
+    background: #f0f7ff;
+}
+
+.ailmx_wizard_cell_input.ailmx_cell_correct_mode:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+    background: #ecfdf5;
+}
+
+.ailmx_wizard_cell_input.ailmx_cell_correct_mode:not(:placeholder-shown) {
+    border-color: #6ee7b7;
+    background: #f0fdf4;
+}
+
+.ailmx_wizard_cell_input::placeholder {
+    color: #d1d5db;
+    font-weight: 400;
+    font-size: 11px;
+}
+
+/* ============================= */
+/* GRABADOR DE AUDIO             */
+/* ============================= */
+.ailmx_audio_recorder {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 20px;
+    background: #f9fafb;
+    margin-top: 16px;
+}
+
+.ailmx_rec_title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 12px;
+}
+
+/* Controles */
+.ailmx_rec_controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+/* Botón base */
+.ailmx_rec_controls button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+/* Grabar */
+.ailmx_btn_record {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.ailmx_btn_record:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+}
+
+/* Punto rojo animado */
+.ailmx_rec_dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffffff;
+    animation: ailmx_blink 1s infinite;
+    display: inline-block;
+}
+
+@keyframes ailmx_blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.2; }
+}
+
+/* Detener */
+.ailmx_btn_stop {
+    background: #374151;
+    color: #ffffff;
+}
+
+.ailmx_btn_stop:hover {
+    background: #1f2937;
+}
+
+/* Reproducir */
+.ailmx_btn_play {
+    background: #1F5C99;
+    color: #ffffff;
+}
+
+.ailmx_btn_play:hover {
+    background: #1a4f85;
+}
+
+/* Eliminar */
+.ailmx_btn_delete {
+    background: #ffffff;
+    color: #dc2626;
+    border: 1.5px solid #dc2626 !important;
+}
+
+.ailmx_btn_delete:hover {
+    background: #fee2e2;
+}
+
+/* Timer */
+.ailmx_rec_timer {
+    font-size: 18px;
+    font-weight: 700;
+    color: #374151;
+    font-variant-numeric: tabular-nums;
+    min-width: 48px;
+}
+
+/* Onda animada */
+.ailmx_rec_wave {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 32px;
+    margin-bottom: 10px;
+}
+
+.ailmx_rec_wave span {
+    display: inline-block;
+    width: 5px;
+    background: #dc2626;
+    border-radius: 3px;
+    animation: ailmx_wave 0.8s ease-in-out infinite;
+}
+
+.ailmx_rec_wave span:nth-child(1) { animation-delay: 0.0s; }
+.ailmx_rec_wave span:nth-child(2) { animation-delay: 0.1s; }
+.ailmx_rec_wave span:nth-child(3) { animation-delay: 0.2s; }
+.ailmx_rec_wave span:nth-child(4) { animation-delay: 0.3s; }
+.ailmx_rec_wave span:nth-child(5) { animation-delay: 0.4s; }
+.ailmx_rec_wave span:nth-child(6) { animation-delay: 0.3s; }
+.ailmx_rec_wave span:nth-child(7) { animation-delay: 0.2s; }
+.ailmx_rec_wave span:nth-child(8) { animation-delay: 0.1s; }
+
+@keyframes ailmx_wave {
+    0%, 100% { height: 6px; }
+    50%       { height: 28px; }
+}
+
+/* Estado / mensaje */
+.ailmx_rec_status {
+    font-size: 13px;
+    color: #6b7280;
+    min-height: 20px;
+}
+
+.ailmx_rec_status.ailmx_rec_recording {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.ailmx_rec_status.ailmx_rec_ok {
+    color: #059669;
+    font-weight: 500;
+}
+
+.ailmx_rec_status.ailmx_rec_error {
+    color: #dc2626;
+    font-weight: 500;
+}

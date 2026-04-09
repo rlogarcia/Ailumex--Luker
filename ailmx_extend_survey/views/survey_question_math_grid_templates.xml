@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="survey_question_math_grid_inject"
+              name="AILUMEX - GRID matemático"
+              inherit_id="survey.question_container">
+
+        <xpath expr="." position="inside">
+
+            <t t-if="question and question.question_type == 'math_grid'">
+
+                <div class="mt-3 ailmx_math_grid_wrapper"
+                     t-att-data-question-id="question.id">
+
+                    <div class="ailmx_grid_topbar mb-2">
+                        <div class="ailmx_grid_progress">
+                            Progreso:
+                            <b class="ailmx_progress_current">0</b>
+                            de
+                            <b class="ailmx_progress_total">
+                                <t t-esc="len(question.math_grid_cell_ids)"/>
+                            </b>
+                        </div>
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm ailmx_grid_stop_btn">
+                            Marcar parada
+                        </button>
+                    </div>
+
+                    <div class="ailmx_grid_stats mb-2">
+                        <span>[+] Correctas: <b class="stat_ok">0</b></span>
+                        <span>[x] Errores: <b class="stat_err">0</b></span>
+                        <span>[!] Omitidas: <b class="stat_skip">0</b></span>
+                        <span>[#] Total: <b class="stat_total">0</b></span>
+                    </div>
+
+                    <div class="ailmx_grid_log mb-2"></div>
+
+                    <table class="table table-bordered text-center ailmx_math_grid_table">
+                        <tbody>
+                            <t t-foreach="range(question.math_grid_rows)" t-as="row_index">
+                                <tr>
+                                    <t t-foreach="range(question.math_grid_cols)" t-as="col_index">
+                                        <t t-set="cell_record"
+                                           t-value="question.math_grid_cell_ids.filtered(lambda c: c.row_index == row_index and c.col_index == col_index)[:1]"/>
+                                        <td class="ailmx_math_grid_cell"
+                                            data-state="empty"
+                                            t-att-data-row="row_index"
+                                            t-att-data-col="col_index"
+                                            t-att-data-correct="cell_record.correct_value if cell_record else ''">
+                                            <span t-esc="cell_record.cell_value if cell_record else ''"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <div class="ailmx_audio_recorder mt-3">
+
+                        <div class="ailmx_rec_title">
+                            🎙 Grabación de respuesta oral
+                        </div>
+
+                        <div class="ailmx_rec_controls">
+
+                            <button type="button" class="ailmx_btn_record">
+                                <span class="ailmx_rec_dot"></span>
+                                Grabar
+                            </button>
+
+                            <button type="button" class="ailmx_btn_stop" style="display:none;">
+                                ⏹ Detener
+                            </button>
+
+                            <button type="button" class="ailmx_btn_play" style="display:none;">
+                                ▶ Reproducir
+                            </button>
+
+                            <button type="button" class="ailmx_btn_delete" style="display:none;">
+                                🗑 Eliminar
+                            </button>
+
+                            <span class="ailmx_rec_timer">0:00</span>
+
+                        </div>
+
+                        <div class="ailmx_rec_wave" style="display:none;">
+                            <span></span><span></span><span></span>
+                            <span></span><span></span><span></span>
+                            <span></span><span></span>
+                        </div>
+
+                        <div class="ailmx_rec_status">
+                            Presiona grabar para iniciar.
+                        </div>
+
+                        <audio class="ailmx_audio_playback" style="display:none;"></audio>
+
+                    </div>
+
+                    <input type="hidden"
+                           t-att-name="'question_%s' % question.id"
+                           class="ailmx_math_grid_response"/>
+
+                </div>
+
+            </t>
+
+        </xpath>
+
+    </template>
+
+</odoo>

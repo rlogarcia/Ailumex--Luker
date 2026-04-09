@@ -15,6 +15,9 @@ from . import survey_question_answer
 # Tabla de líneas de respuesta extensible
 from . import survey_response_line
 
+# Tabla de audios de respuesta
+from . import survey_response_audio
+
 # Interceptor de respuestas nativas de Odoo para copiarlas a survey_response_line
 from . import survey_user_input_line_extension
 
@@ -39,5 +42,14 @@ from . import survey_question_reading_grid
 # Modelo de celdas de GRID lectura
 from . import survey_question_reading_grid_cell
 
-# Wizard para editar la grilla de lectura
+# Wizard para editar la GRID de lectura
 from . import survey_question_reading_grid_wizard
+
+# Modelo de preguntas GRID matemático
+from . import survey_question_math_grid
+
+# Modelo de celdas de GRID matemático
+from . import survey_question_math_grid_cell
+
+# Wizard para editar la GRID matemática
+from . import survey_question_math_grid_wizard

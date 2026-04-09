@@ -1,30 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Importamos los módulos base de Odoo
 from odoo import models, fields, api
 from markupsafe import Markup, escape
 
 
 class SurveyResponseLine(models.Model):
-    """
-    Modelo extensible para almacenar respuestas de encuesta
-    en una estructura propia del módulo.
-    """
     _name = "survey.response.line"
     _description = "Línea de respuesta extensible"
-
-    # =========================================================
-    # IDENTIFICADOR
-    # =========================================================
 
     Id_Response_Line = fields.Integer(
         string='ID Línea Respuesta',
         readonly=True
     )
-
-    # =========================================================
-    # RELACIONES PRINCIPALES
-    # =========================================================
 
     Id_Response_Header = fields.Many2one(
         comodel_name='survey.user_input',
@@ -53,10 +40,6 @@ class SurveyResponseLine(models.Model):
         help='Sección a la que pertenece esta pregunta'
     )
 
-    # =========================================================
-    # TIPO Y OPCIÓN DE RESPUESTA
-    # =========================================================
-
     Typ_Response = fields.Char(
         string='Tipo de respuesta',
         help='Indica el tipo de dato guardado: text, number, date, boolean, json'
@@ -67,10 +50,6 @@ class SurveyResponseLine(models.Model):
         string='Opción seleccionada',
         help='Opción seleccionada por el usuario en preguntas de tipo radio o checkbox'
     )
-
-    # =========================================================
-    # VALORES SEGÚN TIPO
-    # =========================================================
 
     Val_Text = fields.Text(
         string='Valor texto',
@@ -97,10 +76,6 @@ class SurveyResponseLine(models.Model):
         help='Para respuestas de tipo checkbox, matriz, GRID lectura o datos complejos'
     )
 
-    # =========================================================
-    # RESULTADO / METADATOS
-    # =========================================================
-
     Flg_Omitted = fields.Boolean(
         string='Fue omitida',
         default=False,
@@ -112,10 +87,6 @@ class SurveyResponseLine(models.Model):
         default=0.0,
         help='Puntaje obtenido en esta respuesta'
     )
-
-    # =========================================================
-    # AUDITORÍA
-    # =========================================================
 
     Dat_Created_At = fields.Datetime(
         string='Fecha de creación',
@@ -132,10 +103,6 @@ class SurveyResponseLine(models.Model):
         string='Dispositivo',
         readonly=True
     )
-
-    # =========================================================
-    # CAMPOS FUNCIONALES
-    # =========================================================
 
     Nam_Response_Display = fields.Char(
         string='Respuesta capturada',
@@ -172,15 +139,9 @@ class SurveyResponseLine(models.Model):
         'Id_Question_Option'
     )
     def _compute_response_display(self):
-        """
-        Construye un valor legible de la respuesta capturada.
-        """
         for record in self:
             display_value = ''
 
-            # =====================================================
-            # CASO ESPECIAL: GRID LECTURA
-            # =====================================================
             if record.Typ_Response == 'reading_grid' and isinstance(record.Val_JSON, list):
                 ok = 0
                 err = 0
@@ -191,11 +152,9 @@ class SurveyResponseLine(models.Model):
                 for item in record.Val_JSON:
                     if not isinstance(item, dict):
                         continue
-
                     state = item.get('state')
                     if state and state != 'empty':
                         total += 1
-
                     if state == 'ok':
                         ok += 1
                     elif state == 'err':
@@ -213,7 +172,36 @@ class SurveyResponseLine(models.Model):
                     f'Total marcado: {total}'
                 )
 
-            # Si hay opción seleccionada, es lo primero que intentamos mostrar
+            elif record.Typ_Response == 'math_grid' and isinstance(record.Val_JSON, list):
+                ok = 0
+                err = 0
+                skip = 0
+                stop = 0
+                total = 0
+
+                for item in record.Val_JSON:
+                    if not isinstance(item, dict):
+                        continue
+                    state = item.get('state')
+                    if state and state != 'empty':
+                        total += 1
+                    if state == 'ok':
+                        ok += 1
+                    elif state == 'err':
+                        err += 1
+                    elif state == 'skip':
+                        skip += 1
+                    elif state == 'stop':
+                        stop += 1
+
+                display_value = (
+                    f'Correctas: {ok} | '
+                    f'Errores: {err} | '
+                    f'Omitidas: {skip} | '
+                    f'Paradas: {stop} | '
+                    f'Total marcado: {total}'
+                )
+
             elif record.Id_Question_Option:
                 display_value = (
                     record.Id_Question_Option.value
@@ -260,6 +248,10 @@ class SurveyResponseLine(models.Model):
         'Id_Question.Flg_Allow_Image_Attachment',
         'Id_Question.Question_Image_Attachment_Ids',
         'Id_Question.Img_Question_Attachment',
+        'Id_Question.reading_grid_rows',
+        'Id_Question.reading_grid_cols',
+        'Id_Question.math_grid_rows',
+        'Id_Question.math_grid_cols',
     )
     def _compute_review_fields(self):
         for record in self:
@@ -268,20 +260,43 @@ class SurveyResponseLine(models.Model):
 
             if record.Flg_Omitted:
                 status = 'Omitida'
+
             elif record.Id_Question and record.Id_Question.question_type == 'simple_choice':
-                is_correct = bool(record.Id_Question_Option and record.Id_Question_Option.Flg_Is_Correct)
+                is_correct = False
+
+                if record.Id_Question_Option:
+                    is_correct = bool(record.Id_Question_Option.Flg_Is_Correct)
+
+                elif record.Val_Text:
+                    selected_text = (record.Val_Text or '').strip()
+
+                    correct_option = record.Id_Question.suggested_answer_ids.filtered(
+                        lambda opt: opt.Flg_Is_Correct and (opt.value or opt.display_name or '').strip() == selected_text
+                    )[:1]
+
+                    is_correct = bool(correct_option)
+
                 status = 'Correcta' if is_correct else 'Incorrecta'
+
             elif record.Id_Question and record.Id_Question.question_type == 'multiple_choice':
                 selected_ids, selected_values = record._get_selected_multiple_choice_data()
+
                 correct_options = record.Id_Question.suggested_answer_ids.filtered('Flg_Is_Correct')
                 correct_ids = set(correct_options.ids)
-                correct_values = set((opt.value or opt.display_name or '').strip() for opt in correct_options)
+                correct_values = set(
+                    (opt.value or opt.display_name or '').strip()
+                    for opt in correct_options
+                    if (opt.value or opt.display_name or '').strip()
+                )
 
-                matched_by_id = selected_ids and (selected_ids == correct_ids)
-                matched_by_value = selected_values and (selected_values == correct_values)
+                selected_values = set(v.strip() for v in selected_values if v and v.strip())
+
+                matched_by_id = bool(selected_ids) and (selected_ids == correct_ids)
+                matched_by_value = bool(selected_values) and (selected_values == correct_values)
 
                 is_correct = bool(matched_by_id or matched_by_value)
                 status = 'Correcta' if is_correct else 'Incorrecta'
+
             else:
                 status = 'Respondida'
 
@@ -297,43 +312,103 @@ class SurveyResponseLine(models.Model):
 
         value = self.Val_JSON
 
+        def _normalize_option_value(option_value):
+            if isinstance(option_value, dict):
+                for key in ('es_419', 'es_ES', 'en_US'):
+                    if option_value.get(key):
+                        return str(option_value.get(key)).strip()
+                for val in option_value.values():
+                    if val:
+                        return str(val).strip()
+                return ''
+            return str(option_value).strip() if option_value else ''
+
+        def _add_clean_text(text_value):
+            clean_text = _normalize_option_value(text_value)
+            if clean_text:
+                selected_values.add(clean_text)
+
+        def _is_truthy_checkbox(val):
+            if val is True:
+                return True
+            if val in (1, '1', 'true', 'True', 'TRUE', 'on', 'yes', 'y', 'selected'):
+                return True
+            return False
+
         if isinstance(value, list):
             for item in value:
                 if isinstance(item, int):
                     selected_ids.add(item)
+
                 elif isinstance(item, str):
-                    selected_values.add(item.strip())
+                    _add_clean_text(item)
+
                 elif isinstance(item, dict):
+                    if any(k in item for k in ('en_US', 'es_419', 'es_ES')):
+                        _add_clean_text(item)
+                        continue
+
                     item_id = item.get('id')
                     item_value = item.get('value')
+
                     if isinstance(item_id, int):
                         selected_ids.add(item_id)
+
                     if item_value:
-                        selected_values.add(str(item_value).strip())
+                        _add_clean_text(item_value)
+
+                    for key in ['text', 'label', 'name']:
+                        extra_value = item.get(key)
+                        if extra_value:
+                            _add_clean_text(extra_value)
 
         elif isinstance(value, dict):
-            for key, item in value.items():
-                if isinstance(item, int):
-                    selected_ids.add(item)
-                elif isinstance(item, str):
-                    selected_values.add(item.strip())
-                elif isinstance(item, dict):
-                    item_id = item.get('id')
-                    item_value = item.get('value')
-                    if isinstance(item_id, int):
-                        selected_ids.add(item_id)
-                    if item_value:
-                        selected_values.add(str(item_value).strip())
-                elif key:
-                    selected_values.add(str(key).strip())
+            if any(k in value for k in ('en_US', 'es_419', 'es_ES')):
+                _add_clean_text(value)
+
+            else:
+                for key, item in value.items():
+                    if isinstance(item, (bool, int, str)):
+                        if _is_truthy_checkbox(item):
+                            _add_clean_text(key)
+                        continue
+
+                    if isinstance(item, dict):
+                        item_id = item.get('id')
+                        item_value = item.get('value')
+                        is_selected = item.get('selected')
+
+                        if isinstance(item_id, int) and _is_truthy_checkbox(is_selected):
+                            selected_ids.add(item_id)
+
+                        if _is_truthy_checkbox(is_selected):
+                            if item_value:
+                                _add_clean_text(item_value)
+                            else:
+                                _add_clean_text(key)
+
+                        for extra_key in ['text', 'label', 'name']:
+                            extra_value = item.get(extra_key)
+                            if extra_value and _is_truthy_checkbox(is_selected):
+                                _add_clean_text(extra_value)
+
+        if self.Val_Text:
+            raw_text = self.Val_Text.strip()
+            if raw_text:
+                if ',' in raw_text:
+                    for part in raw_text.split(','):
+                        _add_clean_text(part)
+                else:
+                    _add_clean_text(raw_text)
 
         if self.Id_Question_Option:
             selected_ids.add(self.Id_Question_Option.id)
-            if self.Id_Question_Option.value:
-                selected_values.add(self.Id_Question_Option.value.strip())
 
-        if self.Val_Text:
-            selected_values.add(self.Val_Text.strip())
+            option_text = _normalize_option_value(
+                self.Id_Question_Option.value or self.Id_Question_Option.display_name
+            )
+            if option_text:
+                selected_values.add(option_text)
 
         return selected_ids, selected_values
 
@@ -406,16 +481,24 @@ class SurveyResponseLine(models.Model):
             html_parts.extend(image_blocks)
             html_parts.append("</div>")
 
-        # =====================================================
-        # RENDER PARA TIPO EXAMEN
-        # =====================================================
         if question.question_type in ('simple_choice', 'multiple_choice'):
             selected_ids, selected_values = self._get_selected_multiple_choice_data()
+
+            def _normalize_option_label(option_value):
+                if isinstance(option_value, dict):
+                    for key in ('es_419', 'es_ES', 'en_US'):
+                        if option_value.get(key):
+                            return str(option_value.get(key)).strip()
+                    for val in option_value.values():
+                        if val:
+                            return str(val).strip()
+                    return ''
+                return str(option_value).strip() if option_value else ''
 
             html_parts.append('<div style="display:flex; flex-direction:column; gap:10px;">')
 
             for answer_option in question.suggested_answer_ids:
-                option_label = answer_option.value or answer_option.display_name or ''
+                option_label = _normalize_option_label(answer_option.value or answer_option.display_name)
                 is_selected = False
 
                 if question.question_type == 'simple_choice':
@@ -462,47 +545,125 @@ class SurveyResponseLine(models.Model):
 
             html_parts.append('</div>')
 
-        # =====================================================
-        # RENDER ESPECIAL: GRID LECTURA
-        # =====================================================
         elif self.Typ_Response == 'reading_grid' and isinstance(self.Val_JSON, list):
-            ok = 0
-            err = 0
-            skip = 0
-            stop = 0
-            total = 0
+            cells = self.Val_JSON
+            ok = sum(1 for c in cells if isinstance(c, dict) and c.get('state') == 'ok')
+            err = sum(1 for c in cells if isinstance(c, dict) and c.get('state') == 'err')
+            skip = sum(1 for c in cells if isinstance(c, dict) and c.get('state') == 'skip')
+            stop_cells = [c for c in cells if isinstance(c, dict) and c.get('state') == 'stop']
+            stop = len(stop_cells)
+            total = ok + err + skip + stop
 
-            for item in self.Val_JSON:
-                if not isinstance(item, dict):
-                    continue
+            rows = question.reading_grid_rows or 1
+            cols = question.reading_grid_cols or 1
 
-                state = item.get('state')
-                if state and state != 'empty':
-                    total += 1
+            cell_map = {}
+            for cell in cells:
+                if isinstance(cell, dict):
+                    cell_map[str(cell.get('index', ''))] = cell
 
-                if state == 'ok':
-                    ok += 1
-                elif state == 'err':
-                    err += 1
-                elif state == 'skip':
-                    skip += 1
-                elif state == 'stop':
-                    stop += 1
+            state_styles = {
+                'ok':    ('#d1fae5', '#065f46', '#6ee7b7', '✓'),
+                'err':   ('#fee2e2', '#7f1d1d', '#fca5a5', '✗'),
+                'skip':  ('#fef3c7', '#78350f', '#fcd34d', '!'),
+                'stop':  ('#e0e7ff', '#1e3a8a', '#a5b4fc', '⏹'),
+                'empty': ('#f9fafb', '#9ca3af', '#e5e7eb', ''),
+            }
 
-            html_parts.append(
-                f"""
-                <div style="border:1px solid #d1d5db; border-radius:10px; padding:12px 14px; background:#f9fafb;">
-                    <div style="font-size:13px; color:#6b7280; margin-bottom:6px;">Resumen GRID lectura</div>
-                    <div style="font-size:15px; color:#111827;">
-                        Correctas: {ok}<br/>
-                        Errores: {err}<br/>
-                        Omitidas: {skip}<br/>
-                        Paradas: {stop}<br/>
-                        Total marcado: {total}
-                    </div>
-                </div>
-                """
+            table_html = '<table style="border-collapse:separate; border-spacing:4px; margin-bottom:12px;">'
+            cell_index = 0
+            for r in range(rows):
+                table_html += '<tr>'
+                for c in range(cols):
+                    cell = cell_map.get(str(cell_index), {})
+                    state = cell.get('state', 'empty') if cell else 'empty'
+                    text = str(cell.get('text', '')) if cell else ''
+                    bg, color, border, symbol = state_styles.get(state, state_styles['empty'])
+                    table_html += (
+                        f'<td style="'
+                        f'background:{bg};color:{color};border:1px solid {border};'
+                        f'border-radius:6px;padding:8px 10px;text-align:center;'
+                        f'vertical-align:middle;font-weight:600;font-size:13px;min-width:70px;">'
+                        f'{escape(text)}'
+                        f'<span style="font-size:10px;display:block;margin-top:2px;">{symbol}</span>'
+                        f'</td>'
+                    )
+                    cell_index += 1
+                table_html += '</tr>'
+            table_html += '</table>'
+
+            summary_html = (
+                f'<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#374151;margin-bottom:8px;">'
+                f'<span><b style="color:#065f46;">✓ Correctas: {ok}</b></span>'
+                f'<span><b style="color:#7f1d1d;">✗ Errores: {err}</b></span>'
+                f'<span><b style="color:#78350f;">! Omitidas: {skip}</b></span>'
+                f'<span><b style="color:#1e3a8a;">⏹ Paradas: {stop}</b></span>'
+                f'<span><b>Total marcado: {total}</b></span>'
+                f'</div>'
             )
+
+            html_parts.append(summary_html)
+            html_parts.append(table_html)
+
+        elif self.Typ_Response == 'math_grid' and isinstance(self.Val_JSON, list):
+            cells = self.Val_JSON
+            ok = sum(1 for c in cells if isinstance(c, dict) and c.get('state') == 'ok')
+            err = sum(1 for c in cells if isinstance(c, dict) and c.get('state') == 'err')
+            skip = sum(1 for c in cells if isinstance(c, dict) and c.get('state') == 'skip')
+            stop_cells = [c for c in cells if isinstance(c, dict) and c.get('state') == 'stop']
+            stop = len(stop_cells)
+            total = ok + err + skip + stop
+
+            rows = question.math_grid_rows or 1
+            cols = question.math_grid_cols or 1
+
+            cell_map = {}
+            for cell in cells:
+                if isinstance(cell, dict):
+                    cell_map[str(cell.get('index', ''))] = cell
+
+            state_styles = {
+                'ok':    ('#d1fae5', '#065f46', '#6ee7b7', '✓'),
+                'err':   ('#fee2e2', '#7f1d1d', '#fca5a5', '✗'),
+                'skip':  ('#fef3c7', '#78350f', '#fcd34d', '!'),
+                'stop':  ('#e0e7ff', '#1e3a8a', '#a5b4fc', '⏹'),
+                'empty': ('#f9fafb', '#9ca3af', '#e5e7eb', ''),
+            }
+
+            table_html = '<table style="border-collapse:separate; border-spacing:4px; margin-bottom:12px;">'
+            cell_index = 0
+            for r in range(rows):
+                table_html += '<tr>'
+                for c in range(cols):
+                    cell = cell_map.get(str(cell_index), {})
+                    state = cell.get('state', 'empty') if cell else 'empty'
+                    text = str(cell.get('text', '')) if cell else ''
+                    bg, color, border, symbol = state_styles.get(state, state_styles['empty'])
+                    table_html += (
+                        f'<td style="'
+                        f'background:{bg};color:{color};border:1px solid {border};'
+                        f'border-radius:6px;padding:8px 10px;text-align:center;'
+                        f'vertical-align:middle;font-weight:600;font-size:13px;min-width:70px;">'
+                        f'{escape(text)}'
+                        f'<span style="font-size:10px;display:block;margin-top:2px;">{symbol}</span>'
+                        f'</td>'
+                    )
+                    cell_index += 1
+                table_html += '</tr>'
+            table_html += '</table>'
+
+            summary_html = (
+                f'<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#374151;margin-bottom:8px;">'
+                f'<span><b style="color:#065f46;">✓ Correctas: {ok}</b></span>'
+                f'<span><b style="color:#7f1d1d;">✗ Errores: {err}</b></span>'
+                f'<span><b style="color:#78350f;">! Omitidas: {skip}</b></span>'
+                f'<span><b style="color:#1e3a8a;">⏹ Paradas: {stop}</b></span>'
+                f'<span><b>Total marcado: {total}</b></span>'
+                f'</div>'
+            )
+
+            html_parts.append(summary_html)
+            html_parts.append(table_html)
 
         else:
             html_parts.append(
@@ -529,16 +690,7 @@ class SurveyResponseLine(models.Model):
 
         return Markup(''.join(html_parts))
 
-    # =========================================================
-    # MÉTODO: save_response
-    # =========================================================
-
     def save_response(self, response_header_id, question_id, value):
-        """
-        Guarda una respuesta en la tabla extensible survey.response.line.
-        """
-
-        # VALIDAR ENCABEZADO DE RESPUESTA
         response_header = self.env['survey.user_input'].browse(response_header_id)
         if not response_header.exists():
             raise ValueError(
@@ -546,16 +698,12 @@ class SurveyResponseLine(models.Model):
                 % response_header_id
             )
 
-        # VALIDAR PREGUNTA
         question = self.env['survey.question'].browse(question_id)
         if not question.exists():
             raise ValueError(
                 'No existe una pregunta con ID: %s' % question_id
             )
 
-        # =========================================================
-        # EVITAR DUPLICADOS PARA LA MISMA PREGUNTA / APLICACIÓN
-        # =========================================================
         existing_lines = self.search([
             ('Id_Response_Header', '=', response_header_id),
             ('Id_Question', '=', question_id),
@@ -563,34 +711,83 @@ class SurveyResponseLine(models.Model):
         if existing_lines:
             existing_lines.unlink()
 
-        # OBTENER TIPO DE PREGUNTA DESDE EL CATÁLOGO
-        question_type = question.Id_Question_Type
-
-        # Si la pregunta no tiene tipo asignado en el catálogo,
-        # se guarda por defecto como texto.
-        if not question_type:
-            return self.create({
-                'Id_Response_Header': response_header_id,
-                'Id_Instrument': response_header.survey_id.id,
-                'Id_Question': question_id,
-                'Typ_Response': 'text',
-                'Val_Text': str(value) if value else False,
-            })
-
-        # Código técnico del tipo de pregunta
-        type_code = question_type.Cod_Question_Type
-
-        # DICCIONARIO BASE DE VALORES
         vals = {
             'Id_Response_Header': response_header_id,
             'Id_Instrument': response_header.survey_id.id,
             'Id_Question': question_id,
-            'Typ_Response': type_code,
             'Nam_User': response_header.partner_id.name or 'Anónimo',
             'Nam_Device': response_header.access_token or 'Desconocido',
         }
 
-        # LÓGICA DE PERSISTENCIA SEGÚN EL TIPO
+        if question.question_type == 'reading_grid':
+            vals['Typ_Response'] = 'reading_grid'
+
+            if isinstance(value, (list, dict)):
+                vals['Val_JSON'] = value
+            else:
+                vals['Val_Text'] = str(value) if value else False
+
+            return self.create(vals)
+
+        if question.question_type == 'math_grid':
+            vals['Typ_Response'] = 'math_grid'
+
+            if isinstance(value, (list, dict)):
+                vals['Val_JSON'] = value
+            else:
+                vals['Val_Text'] = str(value) if value else False
+
+            return self.create(vals)
+
+        if question.question_type == 'simple_choice':
+            vals['Typ_Response'] = 'radio'
+            vals['Val_Text'] = str(value) if value else False
+
+            if isinstance(value, int):
+                vals['Id_Question_Option'] = value
+            elif value:
+                selected_text = self._normalize_option_value(value)
+                matched_option = question.suggested_answer_ids.filtered(
+                    lambda opt: self._normalize_option_value(opt.value or opt.display_name) == selected_text
+                )[:1]
+
+                if matched_option:
+                    vals['Id_Question_Option'] = matched_option.id
+
+            return self.create(vals)
+
+        if question.question_type == 'multiple_choice':
+            vals['Typ_Response'] = 'checkbox'
+
+            if isinstance(value, list):
+                normalized_values = []
+                for item in value:
+                    clean_item = self._normalize_option_value(item)
+                    if clean_item and clean_item not in normalized_values:
+                        normalized_values.append(clean_item)
+                vals['Val_JSON'] = normalized_values
+
+            elif isinstance(value, dict):
+                vals['Val_JSON'] = value
+
+            elif value:
+                vals['Val_JSON'] = [self._normalize_option_value(value)]
+
+            else:
+                vals['Val_JSON'] = []
+
+            return self.create(vals)
+
+        question_type = question.Id_Question_Type
+
+        if not question_type:
+            vals['Typ_Response'] = 'text'
+            vals['Val_Text'] = str(value) if value else False
+            return self.create(vals)
+
+        type_code = question_type.Cod_Question_Type
+        vals['Typ_Response'] = type_code
+
         if type_code in ('text_short', 'text_long'):
             vals['Val_Text'] = str(value) if value else False
 
@@ -611,8 +808,30 @@ class SurveyResponseLine(models.Model):
 
             if isinstance(value, int):
                 vals['Id_Question_Option'] = value
+            elif value:
+                selected_text = self._normalize_option_value(value)
+                matched_option = question.suggested_answer_ids.filtered(
+                    lambda opt: self._normalize_option_value(opt.value or opt.display_name) == selected_text
+                )[:1]
+                if matched_option:
+                    vals['Id_Question_Option'] = matched_option.id
 
-        elif type_code in ('checkbox', 'matrix', 'reading_grid'):
+        elif type_code == 'checkbox':
+            if isinstance(value, list):
+                normalized_values = []
+                for item in value:
+                    clean_item = self._normalize_option_value(item)
+                    if clean_item and clean_item not in normalized_values:
+                        normalized_values.append(clean_item)
+                vals['Val_JSON'] = normalized_values
+            elif isinstance(value, dict):
+                vals['Val_JSON'] = value
+            elif value:
+                vals['Val_JSON'] = [self._normalize_option_value(value)]
+            else:
+                vals['Val_JSON'] = []
+
+        elif type_code == 'matrix':
             if isinstance(value, (list, dict)):
                 vals['Val_JSON'] = value
             else:
@@ -623,15 +842,18 @@ class SurveyResponseLine(models.Model):
 
         return self.create(vals)
 
-    # =========================================================
-    # MÉTODO: get_typed_value
-    # =========================================================
+    def _normalize_option_value(self, option_value):
+        if isinstance(option_value, dict):
+            for key in ('es_419', 'es_ES', 'en_US'):
+                if option_value.get(key):
+                    return str(option_value.get(key)).strip()
+            for val in option_value.values():
+                if val:
+                    return str(val).strip()
+            return ''
+        return str(option_value).strip() if option_value else ''
 
     def get_typed_value(self):
-        """
-        Devuelve el valor correcto según el tipo de respuesta.
-        Sirve para reportes, lógica o cálculos posteriores.
-        """
         if self.Typ_Response in ('text_short', 'text_long'):
             return self.Val_Text
 
@@ -644,11 +866,203 @@ class SurveyResponseLine(models.Model):
         elif self.Typ_Response == 'datetime':
             return self.Val_Datetime
 
-        elif self.Typ_Response in ('checkbox', 'matrix', 'reading_grid'):
+        elif self.Typ_Response in ('checkbox', 'matrix', 'reading_grid', 'math_grid'):
             return self.Val_JSON
 
         elif self.Typ_Response == 'radio':
             return self.Val_Text
 
         else:
-            return self.Val_Text
+            return self.Val_Text# -*- coding: utf-8 -*-
+
+import json
+from odoo import models
+
+
+class SurveyUserInputCustomSave(models.Model):
+    _inherit = 'survey.user_input'
+
+    def _save_lines(self, question, answer, comment=None, overwrite_existing=False):
+        """
+        Guardado simple para tipos personalizados.
+        Si la pregunta es reading_grid o math_grid, la guardamos nosotros.
+        El resto sigue usando el flujo nativo de Odoo.
+        """
+        self.ensure_one()
+
+        if question.question_type == 'reading_grid':
+            return self._save_lines_reading_grid_simple(question, answer)
+
+        if question.question_type == 'math_grid':
+            return self._save_lines_math_grid_simple(question, answer)
+
+        return super()._save_lines(
+            question,
+            answer,
+            comment=comment,
+            overwrite_existing=overwrite_existing,
+        )
+
+    def _save_lines_reading_grid_simple(self, question, answer):
+        self.ensure_one()
+
+        normalized_answer = ''
+        parsed_answer = []
+
+        if isinstance(answer, (list, dict)):
+            parsed_answer = answer
+            normalized_answer = json.dumps(answer)
+
+        elif isinstance(answer, str):
+            normalized_answer = answer.strip()
+            if normalized_answer:
+                try:
+                    parsed_answer = json.loads(normalized_answer)
+                except (json.JSONDecodeError, TypeError):
+                    parsed_answer = normalized_answer
+
+        elif answer:
+            normalized_answer = str(answer)
+            parsed_answer = normalized_answer
+
+        existing_native = self.user_input_line_ids.filtered(
+            lambda line: line.question_id == question
+        )
+        if existing_native:
+            existing_native.unlink()
+
+        existing_custom = self.env['survey.response.line'].search([
+            ('Id_Response_Header', '=', self.id),
+            ('Id_Question', '=', question.id),
+        ])
+        if existing_custom:
+            existing_custom.unlink()
+
+        if not normalized_answer:
+            return self.env['survey.user_input.line']
+
+        native_line = self.env['survey.user_input.line'].create({
+            'user_input_id': self.id,
+            'question_id': question.id,
+            'answer_type': 'text_box',
+            'value_text_box': normalized_answer,
+            'skipped': False,
+        })
+
+        self.env['survey.response.line'].save_response(
+            response_header_id=self.id,
+            question_id=question.id,
+            value=parsed_answer
+        )
+
+        return native_line
+
+    def _save_lines_math_grid_simple(self, question, answer):
+        """
+        Guardado simple de GRID matemático.
+
+        El frontend envía:
+        {
+            "cells": [...],
+            "audio": {
+                "filename": "...",
+                "mimetype": "audio/webm",
+                "data": "data:audio/webm;base64,..."
+            }
+        }
+
+        Para la tabla nativa survey_user_input_line guardamos una versión
+        reducida SIN el base64 del audio, para no inflar innecesariamente
+        value_text_box.
+        """
+        self.ensure_one()
+
+        normalized_answer = ''
+        parsed_answer = {}
+        native_payload = {}
+
+        if isinstance(answer, (list, dict)):
+            parsed_answer = answer
+            native_payload = self._prepare_native_math_grid_payload(answer)
+            normalized_answer = json.dumps(native_payload)
+
+        elif isinstance(answer, str):
+            raw_answer = answer.strip()
+            normalized_answer = raw_answer
+
+            if raw_answer:
+                try:
+                    parsed_answer = json.loads(raw_answer)
+                except (json.JSONDecodeError, TypeError):
+                    parsed_answer = raw_answer
+
+            native_payload = self._prepare_native_math_grid_payload(parsed_answer)
+            normalized_answer = json.dumps(native_payload)
+
+        elif answer:
+            parsed_answer = str(answer)
+            native_payload = parsed_answer
+            normalized_answer = str(parsed_answer)
+
+        existing_native = self.user_input_line_ids.filtered(
+            lambda line: line.question_id == question
+        )
+        if existing_native:
+            existing_native.unlink()
+
+        existing_custom = self.env['survey.response.line'].search([
+            ('Id_Response_Header', '=', self.id),
+            ('Id_Question', '=', question.id),
+        ])
+        if existing_custom:
+            existing_custom.unlink()
+
+        if not normalized_answer:
+            return self.env['survey.user_input.line']
+
+        native_line = self.env['survey.user_input.line'].create({
+            'user_input_id': self.id,
+            'question_id': question.id,
+            'answer_type': 'text_box',
+            'value_text_box': normalized_answer,
+            'skipped': False,
+        })
+
+        self.env['survey.response.line'].save_response(
+            response_header_id=self.id,
+            question_id=question.id,
+            value=parsed_answer
+        )
+
+        return native_line
+
+    def _prepare_native_math_grid_payload(self, payload):
+        """
+        Devuelve una versión ligera del payload del math_grid para guardar
+        en survey.user_input.line, removiendo el base64 del audio.
+        """
+        if isinstance(payload, list):
+            return {
+                'cells': payload,
+                'audio': {
+                    'has_audio': False,
+                }
+            }
+
+        if not isinstance(payload, dict):
+            return payload
+
+        cells = payload.get('cells', [])
+        audio = payload.get('audio') or {}
+
+        has_audio = bool(audio.get('data'))
+        clean_audio = {
+            'has_audio': has_audio,
+            'filename': audio.get('filename') or '',
+            'mimetype': audio.get('mimetype') or '',
+        }
+
+        return {
+            'cells': cells if isinstance(cells, list) else [],
+            'audio': clean_audio,
+        }

@@ -58,24 +58,10 @@
                     <notebook>
 
                         <!-- ============================================= -->
-                        <!-- REVISIÓN TIPO EXAMEN -->
+                        <!-- DETALLES DE APLICACIÓN -->
                         <!-- ============================================= -->
-                        <page string="Revisión tipo examen">
-                            <field name="response_line_ids" readonly="1" nolabel="1">
-                                <kanban class="o_kanban_mobile">
-                                    <field name="Nam_Review_Status"/>
-                                    <field name="Flg_Is_Correct_Response"/>
-                                    <field name="Des_Review_HTML"/>
-
-                                    <templates>
-                                        <t t-name="card">
-                                            <div class="p-2">
-                                                <div t-out="record.Des_Review_HTML.raw_value"/>
-                                            </div>
-                                        </t>
-                                    </templates>
-                                </kanban>
-                            </field>
+                        <page string="Detalles de aplicación">
+                            <field name="Des_Exam_Review_HTML" widget="html" readonly="1" nolabel="1"/>
                         </page>
 
                         <!-- ============================================= -->

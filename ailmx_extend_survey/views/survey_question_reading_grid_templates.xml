@@ -90,13 +90,9 @@
                     <!-- ================================================= -->
                     <!-- CAMPO OCULTO DE RESPUESTA REAL -->
                     <!-- ================================================= -->
-                    <!--
-                        CAMBIO CLAVE:
-                        Debe enviarse con el nombre de la pregunta,
-                        no con un name fijo.
-                    -->
+
                     <input type="hidden"
-                           t-att-name="question.id"
+                           t-attf-name="question_#{question.id}"
                            class="ailmx_reading_grid_response"/>
 
                 </div>

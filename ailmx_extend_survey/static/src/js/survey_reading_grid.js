@@ -369,4 +369,55 @@ document.addEventListener('DOMContentLoaded', function () {
             subtree: true
         });
     }
+
+    // Interceptar el submit XHR de Odoo Survey para inyectar el valor del GRID
+    var OriginalXHR = window.XMLHttpRequest;
+
+    function PatchedXHR() {
+        var xhr = new OriginalXHR();
+        var originalSend = xhr.send.bind(xhr);
+        var originalOpen = xhr.open.bind(xhr);
+        var currentUrl = '';
+
+        xhr.open = function (method, url) {
+            currentUrl = url;
+            return originalOpen.apply(xhr, arguments);
+        };
+
+        xhr.send = function (body) {
+            if (currentUrl.includes('/survey/submit/') && body) {
+                try {
+                    var data = JSON.parse(body);
+                    var params = data && data.params;
+
+                    if (params) {
+                        var questionId = params.question_id;
+
+                        if (questionId) {
+                            var wrapper = document.querySelector(
+                                '.ailmx_reading_grid_wrapper[data-question-id="' + questionId + '"]'
+                            );
+
+                            if (wrapper) {
+                                var hiddenInput = wrapper.querySelector('.ailmx_reading_grid_response');
+
+                                if (hiddenInput && hiddenInput.value) {
+                                    params[String(questionId)] = hiddenInput.value;
+                                    body = JSON.stringify(data);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                }
+            }
+
+            return originalSend.call(xhr, body);
+        };
+
+        return xhr;
+    }
+
+    PatchedXHR.prototype = OriginalXHR.prototype;
+    window.XMLHttpRequest = PatchedXHR;
 });

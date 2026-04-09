@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import models, fields, api
+from markupsafe import Markup, escape
 
 
 class SurveyApplication(models.Model):
@@ -14,10 +15,16 @@ class SurveyApplication(models.Model):
     # Esta relación permite ver, desde una Aplicación,
     # todas las líneas guardadas en survey.response.line
     # que pertenecen a ese encabezado.
+    #
+    # IMPORTANTE:
+    # Se agrega order para intentar mantener un orden lógico:
+    # primero por sección y luego por pregunta.
+    # =========================================================
     response_line_ids = fields.One2many(
         comodel_name='survey.response.line',
         inverse_name='Id_Response_Header',
-        string='Líneas de respuesta'
+        string='Líneas de respuesta',
+        order='Id_Section, Id_Question'
     )
 
     # =========================================================
@@ -90,6 +97,32 @@ class SurveyApplication(models.Model):
     # La usamos como referencia inicial para mostrar en listas.
 
     # =========================================================
+    # NUEVO CAMPO: HTML DE REVISIÓN TIPO EXAMEN
+    # =========================================================
+    # Este campo construye TODA la vista detallada en vertical.
+    #
+    # ¿Por qué así?
+    # Porque en vistas backend de Odoo no podemos usar libremente
+    # t-foreach como en QWeb frontend.
+    #
+    # Entonces:
+    # - armamos el HTML en Python
+    # - luego el XML solo muestra este campo con widget="html"
+    #
+    # Estructura final:
+    # [SECCIÓN] si aplica
+    # [PREGUNTA 1]
+    # [PREGUNTA 2]
+    # [PREGUNTA 3]
+    # =========================================================
+    Des_Exam_Review_HTML = fields.Html(
+        string='Revisión examen',
+        compute='_compute_exam_review_html',
+        sanitize=False,
+        store=False
+    )
+
+    # =========================================================
     # MÉTODOS COMPUTADOS
     # =========================================================
 
@@ -138,3 +171,112 @@ class SurveyApplication(models.Model):
         for record in self:
             record.Num_Response_Count = len(record.response_line_ids)
             record.Num_Total_Score = sum(record.response_line_ids.mapped('Num_Score'))
+
+    @api.depends(
+        'response_line_ids',
+        'response_line_ids.Id_Section',
+        'response_line_ids.Id_Section.title',
+        'response_line_ids.Id_Question',
+        'response_line_ids.Des_Review_HTML',
+    )
+    def _compute_exam_review_html(self):
+        """
+        Construye la revisión tipo examen en formato vertical.
+
+        Reglas:
+        1. Si cambia la sección, se imprime un encabezado de sección.
+        2. Debajo van las preguntas de esa sección.
+        3. Si una pregunta no tiene sección, se muestra sola.
+        4. Cada pregunta usa el HTML ya calculado en Des_Review_HTML
+           desde survey.response.line.
+        """
+        for record in self:
+            html_parts = []
+
+            # Si no hay respuestas, mostramos un mensaje simple
+            if not record.response_line_ids:
+                record.Des_Exam_Review_HTML = Markup(
+                    """
+                    <div style="padding:16px; border:1px solid #e5e7eb; border-radius:12px; background:#f9fafb; color:#6b7280;">
+                        No hay respuestas registradas para esta aplicación.
+                    </div>
+                    """
+                )
+                continue
+
+            # =====================================================
+            # ORDENAR LÍNEAS
+            # =====================================================
+            # Aunque el One2many tenga order, aquí reforzamos el orden
+            # para que el render sea estable:
+            # - primero por sección
+            # - luego por pregunta
+            # - luego por id de línea
+            # =====================================================
+            ordered_lines = sorted(
+                record.response_line_ids,
+                key=lambda line: (
+                    line.Id_Section.id if line.Id_Section else 0,
+                    line.Id_Question.id if line.Id_Question else 0,
+                    line.id,
+                )
+            )
+
+            current_section_id = None
+
+            for line in ordered_lines:
+                section = line.Id_Section
+                section_id = section.id if section else None
+
+                # =================================================
+                # ENCABEZADO DE SECCIÓN
+                # =================================================
+                # Solo se imprime cuando:
+                # - la línea sí tiene sección
+                # - y cambió respecto de la anterior
+                # =================================================
+                if section and section_id != current_section_id:
+                    section_name = section.title or section.display_name or 'Sección'
+
+                    html_parts.append(
+                        f"""
+                        <div style="
+                            margin-top:18px;
+                            margin-bottom:10px;
+                            padding:10px 14px;
+                            background:#eff6ff;
+                            border:1px solid #bfdbfe;
+                            border-radius:10px;
+                            color:#1d4ed8;
+                            font-size:16px;
+                            font-weight:700;
+                        ">
+                            {escape(section_name)}
+                        </div>
+                        """
+                    )
+
+                    current_section_id = section_id
+
+                # =================================================
+                # BLOQUE DE PREGUNTA
+                # =================================================
+                # Des_Review_HTML ya viene construido desde
+                # survey.response.line, así que aquí solo lo envolvemos
+                # para mantener una estructura vertical limpia.
+                # =================================================
+                html_parts.append(
+                    """
+                    <div style="margin-bottom:14px;">
+                    """
+                )
+
+                html_parts.append(line.Des_Review_HTML or '')
+
+                html_parts.append(
+                    """
+                    </div>
+                    """
+                )
+
+            record.Des_Exam_Review_HTML = Markup(''.join(html_parts))

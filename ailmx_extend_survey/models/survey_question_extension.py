@@ -120,6 +120,12 @@ class SurveyQuestionExtension(models.Model):
 
     @api.constrains('question_type', 'suggested_answer_ids', 'suggested_answer_ids.Flg_Is_Correct')
     def _check_correct_answers_for_choice_questions(self):
+        """
+        Regla final deseada:
+        - Selección única: puede tener 0 o 1 correcta. Nunca más de 1.
+        - Selección múltiple: puede tener 0, 1 o varias correctas.
+        - Es opcional marcar respuestas correctas.
+        """
         for record in self:
             if record.question_type not in ('simple_choice', 'multiple_choice'):
                 continue
@@ -127,24 +133,17 @@ class SurveyQuestionExtension(models.Model):
             correct_answers = record.suggested_answer_ids.filtered('Flg_Is_Correct')
             correct_count = len(correct_answers)
 
-            if record.question_type == 'simple_choice':
-                if correct_count == 0:
-                    raise ValidationError(
-                        'La pregunta "%s" es de selección única y debe tener exactamente una opción correcta.'
-                        % record.title
-                    )
-                if correct_count > 1:
-                    raise ValidationError(
-                        'La pregunta "%s" es de selección única y no puede tener más de una opción correcta.'
-                        % record.title
-                    )
+            # Selección única:
+            # No se exige una correcta obligatoria,
+            # solo se evita que haya más de una.
+            if record.question_type == 'simple_choice' and correct_count > 1:
+                raise ValidationError(
+                    'La pregunta "%s" es de selección única y no puede tener más de una opción correcta.'
+                    % record.title
+                )
 
-            elif record.question_type == 'multiple_choice':
-                if correct_count == 0:
-                    raise ValidationError(
-                        'La pregunta "%s" es de selección múltiple y debe tener al menos una opción correcta.'
-                        % record.title
-                    )
+            # Selección múltiple:
+            # No se exige al menos una correcta.
 
     def validate_response(self, value):
         question_type = self.Id_Question_Type

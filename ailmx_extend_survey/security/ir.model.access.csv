@@ -13,3 +13,7 @@ access_reading_grid_wizard_cell,survey.question.reading.grid.wizard.cell,model_s
 access_math_grid_cell,survey.question.math.grid.cell,model_survey_question_math_grid_cell,survey.group_survey_user,1,1,1,1
 access_math_grid_wizard,survey.question.math.grid.wizard,model_survey_question_math_grid_wizard,survey.group_survey_user,1,1,1,1
 access_math_grid_wizard_cell,survey.question.math.grid.wizard.cell,model_survey_question_math_grid_wizard_cell,survey.group_survey_user,1,1,1,1
+
+access_survey_response_audio_user,survey.response.audio user,model_survey_response_audio,base.group_user,1,1,1,1
+access_survey_response_audio_portal,survey.response.audio portal,model_survey_response_audio,base.group_portal,1,0,0,0
+access_survey_response_audio_public,survey.response.audio public,model_survey_response_audio,base.group_public,1,0,0,0

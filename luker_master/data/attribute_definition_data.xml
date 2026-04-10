@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+  <data>
+
+    <record id="attr_estrato" model="luker.attribute.definition">
+      <field name="cod_atributo">attr_estrato</field>
+      <field name="nom_atributo">Estrato Socioeconómico</field>
+      <field name="tipo_dato">integer</field>
+      <field name="es_requerido">False</field>
+      <field name="tiene_vigencia">True</field>
+      <field name="orden">10</field>
+      <field name="notas_gobierno">Valor entre 1 y 6. Actualizar cuando cambie el domicilio.</field>
+    </record>
+
+    <record id="attr_sisben" model="luker.attribute.definition">
+      <field name="cod_atributo">attr_sisben</field>
+      <field name="nom_atributo">Clasificación SISBEN</field>
+      <field name="tipo_dato">char</field>
+      <field name="es_requerido">False</field>
+      <field name="tiene_vigencia">True</field>
+      <field name="orden">20</field>
+    </record>
+
+    <record id="attr_etnia" model="luker.attribute.definition">
+      <field name="cod_atributo">attr_etnia</field>
+      <field name="nom_atributo">Etnia / Pueblo</field>
+      <field name="tipo_dato">selection</field>
+      <field name="es_requerido">False</field>
+      <field name="tiene_vigencia">True</field>
+      <field name="orden">30</field>
+    </record>
+    <record id="attr_etnia_ninguna" model="luker.attribute.option">
+      <field name="definicion_id" ref="attr_etnia"/>
+      <field name="cod_opcion">ninguna</field>
+      <field name="nom_opcion">Sin pertenencia étnica</field>
+      <field name="orden">10</field>
+    </record>
+    <record id="attr_etnia_indigena" model="luker.attribute.option">
+      <field name="definicion_id" ref="attr_etnia"/>
+      <field name="cod_opcion">indigena</field>
+      <field name="nom_opcion">Indígena</field>
+      <field name="orden">20</field>
+    </record>
+    <record id="attr_etnia_afro" model="luker.attribute.option">
+      <field name="definicion_id" ref="attr_etnia"/>
+      <field name="cod_opcion">afro</field>
+      <field name="nom_opcion">Afrocolombiano / Afrodescendiente</field>
+      <field name="orden">30</field>
+    </record>
+    <record id="attr_etnia_rom" model="luker.attribute.option">
+      <field name="definicion_id" ref="attr_etnia"/>
+      <field name="cod_opcion">rom</field>
+      <field name="nom_opcion">Pueblo ROM / Gitano</field>
+      <field name="orden">40</field>
+    </record>
+
+    <record id="attr_discapacidad" model="luker.attribute.definition">
+      <field name="cod_atributo">attr_discapacidad</field>
+      <field name="nom_atributo">Condición de Discapacidad</field>
+      <field name="tipo_dato">boolean</field>
+      <field name="es_requerido">False</field>
+      <field name="tiene_vigencia">True</field>
+      <field name="orden">40</field>
+    </record>
+
+    <record id="attr_desplazamiento" model="luker.attribute.definition">
+      <field name="cod_atributo">attr_desplazamiento</field>
+      <field name="nom_atributo">Víctima del Conflicto Armado</field>
+      <field name="tipo_dato">boolean</field>
+      <field name="es_requerido">False</field>
+      <field name="tiene_vigencia">True</field>
+      <field name="orden">50</field>
+    </record>
+
+    <record id="attr_repitente" model="luker.attribute.definition">
+      <field name="cod_atributo">attr_repitente</field>
+      <field name="nom_atributo">Repitente del año en curso</field>
+      <field name="tipo_dato">boolean</field>
+      <field name="es_requerido">False</field>
+      <field name="tiene_vigencia">True</field>
+      <field name="orden">60</field>
+      <field name="aplica_tipo_ids" eval="[(4, ref('participant_type_estudiante'))]"/>
+    </record>
+
+    <record id="attr_cargo" model="luker.attribute.definition">
+      <field name="cod_atributo">attr_cargo</field>
+      <field name="nom_atributo">Cargo / Rol Laboral</field>
+      <field name="tipo_dato">char</field>
+      <field name="es_requerido">False</field>
+      <field name="tiene_vigencia">True</field>
+      <field name="orden">70</field>
+      <field name="aplica_tipo_ids" eval="[(4, ref('participant_type_empleado'))]"/>
+    </record>
+
+  </data>
+</odoo>

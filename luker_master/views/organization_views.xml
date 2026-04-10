@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ══ Organization List ══ -->
+    <record id="view_luker_organization_list" model="ir.ui.view">
+        <field name="name">luker.organization.list</field>
+        <field name="model">luker.organization</field>
+        <field name="arch" type="xml">
+            <list string="Instituciones — CTX_Unidad_Organizacional">
+                <field name="image_128" widget="image" optional="show" class="o_image_32_max"/>
+                <field name="nom_unidad" string="Nombre (Nom_Unidad)"/>
+                <field name="cod_unidad" string="Código (Cod_Unidad)" optional="show"/>
+                <field name="tipo_dominio" widget="badge" decoration-info="True"/>
+                <field name="cod_territorio" string="Municipio (Cod_Territorio)" optional="show"/>
+                <field name="sede_count" string="Sedes"/>
+                <field name="participante_count" string="Participantes activos"/>
+                <field name="activo" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══ Organization Form ══ -->
+    <record id="view_luker_organization_form" model="ir.ui.view">
+        <field name="name">luker.organization.form</field>
+        <field name="model">luker.organization</field>
+        <field name="arch" type="xml">
+            <form string="Institución — CTX_Unidad_Organizacional">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-sitemap">
+                            <field name="sede_count" widget="statinfo" string="Sedes"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-users">
+                            <field name="participante_count" widget="statinfo" string="Participantes"/>
+                        </button>
+                        <button name="action_abrir_empresa" type="object"
+                                class="oe_stat_button" icon="fa-building">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Ver Empresa</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title d-flex align-items-center gap-3">
+                        <field name="image_128" widget="image"
+                               style="width:64px;height:64px;object-fit:contain;"/>
+                        <div>
+                            <h1 class="mb-0"><field name="nom_unidad" readonly="1"/></h1>
+                            <div class="text-muted small">
+                                <field name="telefono" readonly="1"/> ·
+                                <field name="email" readonly="1"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mb-3">
+                        <i class="fa fa-info-circle me-2"/>
+                        El nombre y datos de contacto vienen de <strong>Empresas (Contactos)</strong>.
+                        Selecciona la empresa y los datos se cargan automáticamente.
+                    </div>
+                    <group>
+                        <group string="Empresa vinculada (res.partner)">
+                            <field name="partner_id" domain="[('is_company','=',True)]"/>
+                            <field name="cod_territorio" readonly="1" string="Municipio"/>
+                        </group>
+                        <group string="Configuración CTX">
+                            <field name="cod_unidad" string="Código (Cod_Unidad)"/>
+                            <field name="tipo_dominio"/>
+                            <field name="estado"/>
+                            <field name="activo" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Sedes (CTX_Unidad_Organizacional — nivel 2)" name="sedes">
+                            <field name="sede_ids">
+                                <list editable="bottom">
+                                    <field name="nom_sede" string="Nombre sede (Nom_Unidad)"/>
+                                    <field name="cod_sede" string="Código (Cod_Unidad)"/>
+                                    <field name="activo" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notas">
+                            <field name="notas"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══ Unit List ══ -->
+    <record id="view_luker_organization_unit_list" model="ir.ui.view">
+        <field name="name">luker.organization.unit.list</field>
+        <field name="model">luker.organization.unit</field>
+        <field name="arch" type="xml">
+            <list string="Unidades — CTX_Unidad_Organizacional (Grado/Grupo/Área)" editable="top">
+                <field name="institucion_id" string="Institución" optional="show"/>
+                <field name="sede_id" string="Sede (Id_CTX_Sede)"/>
+                <field name="nom_grado" string="Grado (nom_grado)"/>
+                <field name="nom_grupo" string="Grupo (nom_grupo)"/>
+                <field name="jornada" string="Jornada"/>
+                <field name="area" string="Área" optional="show"/>
+                <field name="participante_count" string="Participantes" readonly="1"/>
+                <field name="activo" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══ Actions ══ -->
+    <record id="action_luker_organization" model="ir.actions.act_window">
+        <field name="name">Instituciones — CTX_Unidad_Organizacional</field>
+        <field name="res_model">luker.organization</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_luker_organization_unit" model="ir.actions.act_window">
+        <field name="name">Unidades Organizacionales</field>
+        <field name="res_model">luker.organization.unit</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

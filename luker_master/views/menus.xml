@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════
+         MENÚ RAÍZ — Luker Master
+    ══════════════════════════════════════════════════ -->
+    <menuitem
+        id="menu_luker_master_root"
+        name="Luker Master"
+        sequence="10"
+        web_icon="luker_master,static/src/img/icon.png"/>
+
+    <!-- ══════════════════════════════════════════════════
+         NIVEL 1 — Dashboard
+    ══════════════════════════════════════════════════ -->
+    <menuitem
+        id="menu_luker_dashboard"
+        name="Dashboard"
+        parent="menu_luker_master_root"
+        sequence="10"
+        action="action_luker_dashboard"/>
+
+    <!-- ══════════════════════════════════════════════════
+         NIVEL 1 — Participantes
+    ══════════════════════════════════════════════════ -->
+    <menuitem
+        id="menu_luker_participants"
+        name="Participantes"
+        parent="menu_luker_master_root"
+        sequence="20"/>
+
+    <menuitem
+        id="menu_luker_participant_list"
+        name="Todos los Participantes"
+        parent="menu_luker_participants"
+        sequence="10"
+        action="action_luker_participant"/>
+
+    <menuitem
+        id="menu_luker_participant_graph"
+        name="Análisis y Gráficos"
+        parent="menu_luker_participants"
+        sequence="20"
+        action="action_luker_dashboard"/>
+
+    <!-- ══════════════════════════════════════════════════
+         NIVEL 1 — Resultados
+    ══════════════════════════════════════════════════ -->
+    <menuitem
+        id="menu_luker_results"
+        name="Resultados"
+        parent="menu_luker_master_root"
+        sequence="30"/>
+
+    <menuitem
+        id="menu_luker_results_list"
+        name="Aplicaciones Registradas"
+        parent="menu_luker_results"
+        sequence="10"
+        action="action_luker_application_result"/>
+
+    <menuitem
+        id="menu_luker_results_dashboard"
+        name="Dashboard de Resultados"
+        parent="menu_luker_results"
+        sequence="20"
+        action="action_luker_results_dashboard"/>
+
+    <!-- ══════════════════════════════════════════════════
+         NIVEL 1 — Contexto Organizacional
+    ══════════════════════════════════════════════════ -->
+    <menuitem
+        id="menu_luker_organization"
+        name="Contexto Organizacional"
+        parent="menu_luker_master_root"
+        sequence="40"/>
+
+    <menuitem
+        id="menu_luker_organization_list"
+        name="Instituciones y Organizaciones"
+        parent="menu_luker_organization"
+        sequence="10"
+        action="action_luker_organization"/>
+
+    <menuitem
+        id="menu_luker_organization_unit"
+        name="Unidades (Grados / Grupos / Áreas)"
+        parent="menu_luker_organization"
+        sequence="20"
+        action="action_luker_organization_unit"/>
+
+    <!-- ══════════════════════════════════════════════════
+         NIVEL 1 — Configuración
+    ══════════════════════════════════════════════════ -->
+    <menuitem
+        id="menu_luker_config"
+        name="Configuración"
+        parent="menu_luker_master_root"
+        sequence="90"
+        groups="luker_master.group_luker_admin"/>
+
+    <menuitem
+        id="menu_luker_participant_type"
+        name="Tipos de Participante"
+        parent="menu_luker_config"
+        sequence="10"
+        action="action_luker_participant_type"/>
+
+
+
+    <menuitem
+        id="menu_luker_attribute_catalog"
+        name="Catálogo de Atributos Dinámicos"
+        parent="menu_luker_config"
+        sequence="30"
+        action="action_luker_attribute_definition"
+        groups="luker_master.group_luker_data_lead"/>
+
+
+
+    <!-- ══════════════════════════════════════════════════
+         CARGA MASIVA — bajo el menú Participantes
+    ══════════════════════════════════════════════════ -->
+    <menuitem
+        id="menu_luker_import"
+        name="Carga Masiva"
+        parent="menu_luker_participants"
+        sequence="30"
+        action="action_server_import_participants"/>
+
+    <menuitem
+        id="menu_luker_import_log"
+        name="Historial de Cargas"
+        parent="menu_luker_participants"
+        sequence="40"
+        action="action_luker_import_log"/>
+
+</odoo>

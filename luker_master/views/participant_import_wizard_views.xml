@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══ WIZARD ══ -->
+    <record id="view_luker_import_wizard_form" model="ir.ui.view">
+        <field name="name">luker.participant.import.wizard.form</field>
+        <field name="model">luker.participant.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Carga Masiva — OPE_Carga_Poblacion">
+                <sheet>
+                    <!-- Indicador de pasos -->
+                    <div style="display:flex;border:1px solid #dee2e6;border-radius:8px;overflow:hidden;font-size:12px;margin-bottom:20px;">
+                        <div style="flex:1;padding:10px;text-align:center;background:#714B67;color:#fff;" invisible="step != 'upload'"><b>① Subir archivo</b></div>
+                        <div style="flex:1;padding:10px;text-align:center;background:#f8f9fa;color:#bbb;" invisible="step == 'upload'">① Subir</div>
+                        <div style="flex:1;padding:10px;text-align:center;background:#714B67;color:#fff;" invisible="step != 'mapping'"><b>② Mapear columnas</b></div>
+                        <div style="flex:1;padding:10px;text-align:center;background:#f8f9fa;color:#bbb;" invisible="step == 'mapping'">② Mapear</div>
+                        <div style="flex:1;padding:10px;text-align:center;background:#714B67;color:#fff;" invisible="step != 'validate'"><b>③ Validar</b></div>
+                        <div style="flex:1;padding:10px;text-align:center;background:#f8f9fa;color:#bbb;" invisible="step == 'validate'">③ Validar</div>
+                        <div style="flex:1;padding:10px;text-align:center;background:#28a745;color:#fff;" invisible="step != 'done'"><b>④ Resultado ✓</b></div>
+                        <div style="flex:1;padding:10px;text-align:center;background:#f8f9fa;color:#bbb;" invisible="step == 'done'">④ Resultado</div>
+                    </div>
+
+                    <!-- PASO 1: SUBIR -->
+                    <div invisible="step != 'upload'">
+                        <h4 style="color:#714B67;"><i class="fa fa-upload me-2"/>Paso 1 — Subir archivo</h4>
+                        <group>
+                            <group string="Identificación de la carga — OPE_Carga_Poblacion">
+                                <field name="import_name" string="Nombre de la carga (nom_carga)"
+                                       placeholder="Ej: SIMAT 2025 — I.E. Central del Norte"/>
+                                <field name="source_format" string="Formato de origen (fuente_formato)"/>
+                            </group>
+                            <group string="Archivo (nom_archivo_origen)">
+                                <field name="file_data" widget="binary" filename="file_name"
+                                       string="Seleccionar archivo (.xlsx)"/>
+                                <field name="file_name" invisible="1"/>
+                            </group>
+                        </group>
+                        <div class="alert alert-info mt-3">
+                            <h6><i class="fa fa-info-circle me-2"/>¿Qué pasará?</h6>
+                            El sistema leerá las columnas del archivo y mostrará una tabla donde
+                            podrás indicar a qué campo del modelo de datos corresponde cada columna.
+                            Los campos muestran su nombre exacto del modelo
+                            (<code>nom_identidad</code>, <code>primer_nombre</code>, etc.).
+                        </div>
+                        <div class="alert alert-secondary">
+                            <i class="fa fa-history me-2"/>
+                            Trazabilidad completa: se registra en <b>OPE_Carga_Poblacion</b> con usuario,
+                            fecha, archivo original y resultado fila a fila en <b>OPE_Carga_Poblacion_Detalle</b>.
+                        </div>
+                    </div>
+
+                    <!-- PASO 2: MAPEO -->
+                    <div invisible="step != 'mapping'">
+                        <h4 style="color:#714B67;"><i class="fa fa-columns me-2"/>Paso 2 — Mapear columnas</h4>
+                        <group>
+                            <group string="Conciliación — OPE_Carga_Poblacion">
+                                <field name="reconcile_field" string="Campo de conciliación (campo_conciliacion)"/>
+                                <field name="action_on_existing" string="Si ya existe (accion_existente)"/>
+                            </group>
+                            <group string="Configuración">
+                                <field name="participant_type_id" options="{'no_create': True}"
+                                       string="Tipo participante (tipo_participante_id)"/>
+                                <field name="create_missing_contacts" widget="boolean_toggle"/>
+                                <field name="create_missing_orgs" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+                        <separator string="Columnas detectadas en el archivo"/>
+                        <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+                            <div style="background:#d1ecf1;border-radius:6px;padding:8px 14px;font-size:12px;">
+                                <b style="font-size:18px;color:#0c5460;"><field name="total_columns" readonly="1"/></b>
+                                <span style="color:#0c5460;"> columnas en el archivo</span>
+                            </div>
+                            <div style="background:#d4edda;border-radius:6px;padding:8px 14px;font-size:12px;">
+                                <b style="font-size:18px;color:#155724;"><field name="mapped_count" readonly="1"/></b>
+                                <span style="color:#155724;"> mapeadas</span>
+                            </div>
+                            <div style="background:#e9ecef;border-radius:6px;padding:8px 14px;font-size:12px;">
+                                <b style="font-size:18px;color:#495057;"><field name="skipped_count" readonly="1"/></b>
+                                <span style="color:#495057;"> omitidas</span>
+                            </div>
+                            <div style="background:#fff3cd;border-radius:6px;padding:8px 14px;font-size:12px;">
+                                <b style="font-size:18px;color:#856404;"><field name="auto_count" readonly="1"/></b>
+                                <span style="color:#856404;"> auto-detectadas</span>
+                            </div>
+                        </div>
+                        <div style="font-size:11px;color:#6c757d;margin-bottom:8px;display:flex;gap:16px;">
+                            <span>✓ = Auto-detectada</span><span>✎ = Asignada manualmente</span><span>⊘ = Omitida</span>
+                        </div>
+                        <div class="alert alert-secondary" style="font-size:12px;margin-bottom:8px;">
+                            <b>Campo destino</b> muestra el nombre exacto del modelo de datos
+                            (ej: <code>num_identidad</code> → PAR_Identidad.Num_Identidad,
+                            <code>nom_grado</code> → CTX_Unidad_Organizacional.Nom_Grado).
+                        </div>
+                        <field name="mapping_line_ids">
+                            <list editable="bottom" no_open="1">
+                                <field name="sequence" widget="handle"/>
+                                <field name="status_icon" string="" readonly="1" width="28"/>
+                                <field name="column_name" string="Columna del archivo" readonly="1"
+                                       style="font-family:monospace;font-size:12px;font-weight:700;color:#333;"/>
+                                <field name="sample_value" string="Dato ejemplo" readonly="1"
+                                       style="font-size:11px;color:#6c757d;font-style:italic;"/>
+                                <field name="sample_value2" string="Ejemplo 2" readonly="1" optional="hide"
+                                       style="font-size:11px;color:#6c757d;"/>
+                                <field name="destination_field"
+                                       string="→ Campo del modelo de datos"
+                                       decoration-muted="destination_field == '_skip'"
+                                       decoration-success="destination_field != '_skip' and auto_detected"
+                                       decoration-info="destination_field != '_skip' and not auto_detected"/>
+                                <field name="auto_detected" invisible="1"/>
+                                <field name="is_skipped" invisible="1"/>
+                            </list>
+                        </field>
+                    </div>
+
+                    <!-- PASO 3: VALIDAR -->
+                    <div invisible="step != 'validate'">
+                        <h4 style="color:#714B67;"><i class="fa fa-check-square-o me-2"/>Paso 3 — Validar</h4>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+                            <div style="background:#d1ecf1;border-radius:6px;padding:14px;text-align:center;">
+                                <div style="font-size:32px;font-weight:800;color:#0c5460;"><field name="total_rows_preview" readonly="1"/></div>
+                                <div style="font-size:11px;color:#0c5460;font-weight:600;">Total filas (total_filas)</div>
+                            </div>
+                            <div style="background:#fff3cd;border-radius:6px;padding:14px;text-align:center;">
+                                <div style="font-size:32px;font-weight:800;color:#856404;"><field name="empty_alerts_count" readonly="1"/></div>
+                                <div style="font-size:11px;color:#856404;font-weight:600;">Alertas vacíos</div>
+                            </div>
+                            <div style="background:#f8d7da;border-radius:6px;padding:14px;text-align:center;">
+                                <div style="font-size:32px;font-weight:800;color:#721c24;"><field name="duplicate_preview_count" readonly="1"/></div>
+                                <div style="font-size:11px;color:#721c24;font-weight:600;">Posibles duplicados</div>
+                            </div>
+                        </div>
+                        <field name="validation_warnings" widget="html" readonly="1"/>
+                        <separator string="Vista previa de datos"/>
+                        <field name="preview_html" widget="html" readonly="1"/>
+                    </div>
+
+                    <!-- PASO 4: RESULTADO -->
+                    <div invisible="step != 'done'">
+                        <h4 style="color:#155724;"><i class="fa fa-check-circle me-2"/>Importación finalizada</h4>
+                        <field name="result_summary" widget="html" readonly="1"/>
+                        <div class="alert alert-info mt-3">
+                            <i class="fa fa-history me-2"/>
+                            Log guardado en <b>OPE_Carga_Poblacion</b> con trazabilidad completa
+                            fila a fila en <b>OPE_Carga_Poblacion_Detalle</b>.
+                        </div>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_analyze_file" string="Analizar archivo →"
+                            type="object" class="btn-primary" invisible="step != 'upload'"/>
+                    <button name="action_validate" string="Validar datos →"
+                            type="object" class="btn-primary" invisible="step != 'mapping'"/>
+                    <button name="action_back_to_upload" string="← Atrás"
+                            type="object" class="btn-secondary" invisible="step != 'mapping'"/>
+                    <button name="action_import" string="✓ Importar participantes"
+                            type="object" class="btn-primary" invisible="step != 'validate'"
+                            confirm="¿Confirmas la importación? Se crearán o actualizarán registros PAR_Participante."/>
+                    <button name="action_back_to_mapping" string="← Ajustar mapeo"
+                            type="object" class="btn-secondary" invisible="step != 'validate'"/>
+                    <button name="action_view_log" string="📋 Ver OPE_Carga_Poblacion"
+                            type="object" class="btn-primary" invisible="step != 'done'"/>
+                    <button string="Cerrar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══ LOG List — OPE_Carga_Poblacion ══ -->
+    <record id="view_luker_import_log_list" model="ir.ui.view">
+        <field name="name">luker.participant.import.log.list</field>
+        <field name="model">luker.participant.import.log</field>
+        <field name="arch" type="xml">
+            <list string="Historial de Cargas — OPE_Carga_Poblacion" create="false"
+                  decoration-success="estado_carga == 'completo'"
+                  decoration-warning="estado_carga == 'parcial'"
+                  decoration-danger="estado_carga == 'fallido'">
+                <header>
+                    <button name="action_open_import_wizard" type="object"
+                            string="📥 Nueva Carga Masiva" class="btn-primary"/>
+                </header>
+                <field name="fecha_cargue" string="Fecha (Fecha_Cargue)"/>
+                <field name="nom_carga" string="Nombre carga"/>
+                <field name="usuario_cargue_id" string="Cargado por (Id_SEG_Usuario_Cargue)"/>
+                <field name="nom_archivo_origen" string="Archivo (Nom_Archivo_Origen)" optional="show"/>
+                <field name="fuente_formato" string="Formato"/>
+                <field name="total_filas" string="Total filas"/>
+                <field name="filas_validas" string="Válidas" decoration-success="filas_validas > 0"/>
+                <field name="filas_omitidas" string="Omitidas"/>
+                <field name="filas_invalidas" string="Inválidas" decoration-danger="filas_invalidas > 0"/>
+                <field name="estado_carga" widget="badge"
+                       decoration-success="estado_carga == 'completo'"
+                       decoration-warning="estado_carga == 'parcial'"
+                       decoration-danger="estado_carga == 'fallido'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══ LOG Form — OPE_Carga_Poblacion ══ -->
+    <record id="view_luker_import_log_form" model="ir.ui.view">
+        <field name="name">luker.participant.import.log.form</field>
+        <field name="model">luker.participant.import.log</field>
+        <field name="arch" type="xml">
+            <form string="Log de Carga — OPE_Carga_Poblacion" create="false">
+                <header>
+                    <button name="action_open_import_wizard" string="📥 Nueva Carga Masiva"
+                            type="object" class="btn-primary"/>
+                    <field name="estado_carga" widget="statusbar"
+                           statusbar_visible="borrador,parcial,completo"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_ver_creados" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="filas_validas" widget="statinfo" string="Válidos"/>
+                        </button>
+                    </div>
+                    <div style="background:linear-gradient(135deg,#714B67,#4e3348);color:#fff;
+                                border-radius:8px;padding:16px 20px;margin-bottom:16px;">
+                        <h4 style="color:#fff;margin-bottom:6px;">
+                            <i class="fa fa-history me-2"/>
+                            <field name="nom_carga" readonly="1" style="color:#fff;"/>
+                        </h4>
+                        <div style="font-size:12px;opacity:.85;">
+                            Cargado por <b><field name="usuario_cargue_id" readonly="1"/></b>
+                            · <field name="fecha_cargue" readonly="1"/>
+                            · <b><field name="nom_archivo_origen" readonly="1"/></b>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="Configuración usada — OPE_Carga_Poblacion">
+                            <field name="fuente_formato" readonly="1"/>
+                            <field name="campo_conciliacion" readonly="1"/>
+                            <field name="accion_existente" readonly="1"/>
+                        </group>
+                        <group string="Resultados">
+                            <field name="total_filas" readonly="1"/>
+                            <field name="filas_validas" readonly="1"/>
+                            <field name="filas_omitidas" readonly="1"/>
+                            <field name="filas_invalidas" readonly="1"/>
+                            <field name="alertas_vacios" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Detalle fila a fila — OPE_Carga_Poblacion_Detalle">
+                            <field name="detalle_ids" readonly="1">
+                                <list decoration-success="estado_registro == 'creado'"
+                                      decoration-info="estado_registro == 'actualizado'"
+                                      decoration-warning="estado_registro in ('omitido','advertencia')"
+                                      decoration-danger="estado_registro == 'error'">
+                                    <field name="num_fila" string="Fila (Num_Fila)" width="60"/>
+                                    <field name="estado_registro" widget="badge"
+                                           decoration-success="estado_registro == 'creado'"
+                                           decoration-info="estado_registro == 'actualizado'"
+                                           decoration-warning="estado_registro in ('omitido','advertencia')"
+                                           decoration-danger="estado_registro == 'error'"
+                                           string="Estado (Estado_Registro)"/>
+                                    <field name="participante_id" string="Participante"/>
+                                    <field name="cod_persona_externa" string="ID externo" optional="show"/>
+                                    <field name="mensaje_validacion" string="Detalle (Mensaje_Validacion)"/>
+                                    <field name="campos_vacios_json" string="Vacíos" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Mapeo usado (mapeo_columnas_json)">
+                            <div class="alert alert-secondary" style="font-size:12px;">
+                                Mapeo exacto de columnas → campos del modelo de datos usado en esta carga.
+                            </div>
+                            <field name="mapeo_columnas_json" widget="text" readonly="1"
+                                   style="font-family:monospace;font-size:11px;"/>
+                            <separator string="Columnas omitidas (columnas_omitidas_json)"/>
+                            <field name="columnas_omitidas_json" widget="text" readonly="1"
+                                   style="font-family:monospace;font-size:11px;"/>
+                        </page>
+                        <page string="Archivo original">
+                            <group>
+                                <field name="archivo_data" widget="binary" readonly="1"
+                                       filename="nom_archivo_origen"
+                                       string="Descargar archivo original"/>
+                            </group>
+                        </page>
+                        <page string="Notas">
+                            <field name="notas"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_luker_import_log" model="ir.actions.act_window">
+        <field name="name">Historial de Cargas — OPE_Carga_Poblacion</field>
+        <field name="res_model">luker.participant.import.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

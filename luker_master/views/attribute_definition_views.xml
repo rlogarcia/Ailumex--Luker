@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_luker_attribute_definition_list" model="ir.ui.view">
+        <field name="name">luker.attribute.definition.list</field>
+        <field name="model">luker.attribute.definition</field>
+        <field name="arch" type="xml">
+            <list string="Catálogo de Atributos — ATR_Definicion">
+                <field name="orden" widget="handle"/>
+                <field name="cod_atributo" string="Código (Cod_Atributo)"/>
+                <field name="nom_atributo" string="Nombre (Nom_Atributo)"/>
+                <field name="tipo_dato" widget="badge" decoration-info="True" string="Tipo (Tipo_Dato)"/>
+                <field name="es_requerido" widget="boolean_toggle" string="Es Requerido"/>
+                <field name="tiene_vigencia" widget="boolean_toggle" string="Con Vigencia"/>
+                <field name="aplica_tipo_ids" widget="many2many_tags" optional="show"/>
+                <field name="activo" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_luker_attribute_definition_form" model="ir.ui.view">
+        <field name="name">luker.attribute.definition.form</field>
+        <field name="model">luker.attribute.definition</field>
+        <field name="arch" type="xml">
+            <form string="Atributo Dinámico — ATR_Definicion">
+                <sheet>
+                    <div class="alert alert-warning">
+                        <i class="fa fa-shield me-2"/>
+                        Catálogo gobernado. Solo el <strong>Líder de Datos</strong> debe
+                        crear o modificar atributos en producción.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="cod_atributo" string="Código (Cod_Atributo)"/>
+                            <field name="nom_atributo" string="Nombre (Nom_Atributo)"/>
+                            <field name="tipo_dato" string="Tipo de Dato (Tipo_Dato)"/>
+                            <field name="alcance_entidad" string="Alcance Entidad (Alcance_Entidad)"/>
+                            <field name="orden"/>
+                            <field name="activo" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="es_requerido" widget="boolean_toggle"
+                                   string="Es Requerido (Es_Requerido)"/>
+                            <field name="es_catalogo" readonly="1"
+                                   string="Es Catálogo (Es_Catalogo)"/>
+                            <field name="tiene_vigencia" widget="boolean_toggle"
+                                   string="Con Vigencia"/>
+                            <field name="aplica_tipo_ids" widget="many2many_tags"/>
+                            <field name="responsable_gobierno"
+                                   string="Responsable Gobernanza (Responsable_Gobierno)"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Opciones del catálogo — ATR_Opcion"
+                              invisible="tipo_dato != 'selection'">
+                            <field name="opcion_ids">
+                                <list editable="bottom">
+                                    <field name="orden" widget="handle"/>
+                                    <field name="cod_opcion" string="Código (Cod_Opcion)"/>
+                                    <field name="nom_opcion" string="Etiqueta (Nom_Opcion)"/>
+                                    <field name="activo" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Descripción y Gobernanza">
+                            <field name="descripcion" string="Descripción (Descripcion)"/>
+                            <field name="notas_gobierno" string="Notas de Gobernanza"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_luker_attribute_definition" model="ir.actions.act_window">
+        <field name="name">Catálogo de Atributos — ATR_Definicion</field>
+        <field name="res_model">luker.attribute.definition</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

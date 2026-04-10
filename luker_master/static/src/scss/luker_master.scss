@@ -1,0 +1,69 @@
+// luker_master — estilos personalizados Odoo v18
+// Paleta de colores Luker
+$luker-purple:    #714B67;
+$luker-purple-dk: #4e3348;
+$luker-purple-lt: #f7f0f5;
+$luker-teal:      #017E84;
+$luker-green:     #28a745;
+
+// ── Ficha 360° hero ────────────────────────────────
+.luker_hero_360 {
+    background: linear-gradient(135deg, $luker-purple, $luker-purple-dk);
+    border-radius: 8px;
+    color: #fff;
+    padding: 24px;
+
+    h2, h3 { color: #fff; }
+
+    .luker_hero_kpi {
+        text-align: center;
+        .luker_kpi_val {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .luker_kpi_lbl {
+            font-size: 0.75rem;
+            opacity: 0.75;
+            margin-top: 2px;
+        }
+    }
+}
+
+// ── Sync status dot (list view) ────────────────────
+.luker_sync_synced  { color: $luker-green; }
+.luker_sync_queued  { color: #f0a500; }
+.luker_sync_error   { color: #dc3545; }
+.luker_sync_draft   { color: #1678c2; }
+.luker_sync_conflict{ color: #9b59b6; }
+
+// ── Frozen banner ──────────────────────────────────
+.luker_frozen_banner {
+    background: #fffde7;
+    border: 1px solid #ffe082;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    color: #5d4037;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+
+    &::before {
+        content: "🔒";
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+}
+
+// ── Attribute governance banner ────────────────────
+.luker_governance_banner {
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    color: #5d4037;
+    margin-bottom: 12px;
+}

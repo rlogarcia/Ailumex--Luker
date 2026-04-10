@@ -1,12 +1,6 @@
 // AILUMEX - GRID matemático
-// Funcionalidades:
-// - Clic normal     -> correcta
-// - Doble clic      -> error
-// - Clic derecho    -> omitida
-// - Botón parada    -> marca parada y bloquea
-// NOTA:
-// En esta versión el audio NO se envía al backend todavía.
-// Primero estabilizamos el guardado del grid matemático igual que reading_grid.
+// Guardado igual que reading_grid
+// El audio se serializa en base64 y se envía junto con las celdas
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -26,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             cells.forEach(function (cell, index) {
                 cell.dataset.index = index;
-                cell.dataset.state = 'empty';
+                cell.dataset.state = cell.dataset.state || 'empty';
 
                 cell.addEventListener('click', function (event) {
                     event.preventDefault();
@@ -72,9 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
             updateStats(wrapper);
             updateProgress(wrapper);
 
-            // El grabador puede quedarse visualmente,
-            // pero por ahora NO persiste en backend.
-            initAudioRecorder(wrapper);
+            initAudioRecorder(wrapper, hiddenInput);
         });
     }
 
@@ -109,7 +101,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         cell.dataset.state = state;
-
         updateSerializedResponse(wrapper, hiddenInput);
         updateStats(wrapper);
         updateProgress(wrapper);
@@ -138,24 +129,39 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!hiddenInput) return;
 
         var cells = wrapper.querySelectorAll('.ailmx_math_grid_cell');
-        var values = [];
+        var cellValues = [];
 
-        cells.forEach(function (cell) {
-            values.push({
-                index: cell.dataset.index,
+        cells.forEach(function (cell, index) {
+            cellValues.push({
+                index: String(index),
                 row: cell.getAttribute('data-row'),
                 col: cell.getAttribute('data-col'),
-                text: cell.innerText.trim(),
+                text: cell.textContent.trim(),
                 correct: cell.getAttribute('data-correct') || '',
                 state: cell.dataset.state || 'empty'
             });
         });
 
-        hiddenInput.value = JSON.stringify(values);
+        // El payload incluye celdas y audio (si existe)
+        var audioData = wrapper._audioBase64 || null;
+
+        var payload = {
+            cells: cellValues,
+            audio: {
+                has_audio: !!audioData,
+                base64: audioData || '',
+                mimetype: wrapper._audioMimetype || 'audio/webm',
+                filename: wrapper._audioFilename || 'respuesta.webm'
+            }
+        };
+
+        hiddenInput.value = JSON.stringify(payload);
     }
 
     function updateStats(wrapper) {
-        var ok = 0, err = 0, skip = 0;
+        var ok = 0;
+        var err = 0;
+        var skip = 0;
 
         wrapper.querySelectorAll('.ailmx_math_grid_cell').forEach(function (cell) {
             if (cell.dataset.state === 'ok') ok++;
@@ -180,7 +186,9 @@ document.addEventListener('DOMContentLoaded', function () {
         var completed = 0;
 
         cells.forEach(function (cell) {
-            if (cell.dataset.state && cell.dataset.state !== 'empty') completed++;
+            if (cell.dataset.state && cell.dataset.state !== 'empty') {
+                completed++;
+            }
         });
 
         var currentNode = wrapper.querySelector('.ailmx_progress_current');
@@ -203,24 +211,29 @@ document.addEventListener('DOMContentLoaded', function () {
         log.appendChild(line);
     }
 
-    function initAudioRecorder(wrapper) {
+    function initAudioRecorder(wrapper, hiddenInput) {
         var recorderPanel = wrapper.querySelector('.ailmx_audio_recorder');
         if (!recorderPanel) return;
 
         var btnRecord = recorderPanel.querySelector('.ailmx_btn_record');
-        var btnStop = recorderPanel.querySelector('.ailmx_btn_stop');
-        var btnPlay = recorderPanel.querySelector('.ailmx_btn_play');
+        var btnStop   = recorderPanel.querySelector('.ailmx_btn_stop');
+        var btnPlay   = recorderPanel.querySelector('.ailmx_btn_play');
         var btnDelete = recorderPanel.querySelector('.ailmx_btn_delete');
-        var statusEl = recorderPanel.querySelector('.ailmx_rec_status');
-        var timerEl = recorderPanel.querySelector('.ailmx_rec_timer');
-        var waveEl = recorderPanel.querySelector('.ailmx_rec_wave');
-        var audioEl = recorderPanel.querySelector('.ailmx_audio_playback');
+        var statusEl  = recorderPanel.querySelector('.ailmx_rec_status');
+        var timerEl   = recorderPanel.querySelector('.ailmx_rec_timer');
+        var waveEl    = recorderPanel.querySelector('.ailmx_rec_wave');
+        var audioEl   = recorderPanel.querySelector('.ailmx_audio_playback');
 
-        var mediaRecorder = null;
-        var audioChunks = [];
-        var audioBlob = null;
-        var timerInterval = null;
-        var seconds = 0;
+        var mediaRecorder  = null;
+        var audioChunks    = [];
+        var audioBlob      = null;
+        var timerInterval  = null;
+        var seconds        = 0;
+
+        // Inicializar propiedades en el wrapper
+        wrapper._audioBase64   = null;
+        wrapper._audioMimetype = 'audio/webm';
+        wrapper._audioFilename = 'respuesta.webm';
 
         setState('idle');
 
@@ -233,8 +246,12 @@ document.addEventListener('DOMContentLoaded', function () {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(function (stream) {
                     audioChunks = [];
-                    audioBlob = null;
-                    seconds = 0;
+                    audioBlob   = null;
+                    seconds     = 0;
+
+                    // Limpiar audio anterior del wrapper
+                    wrapper._audioBase64 = null;
+                    updateSerializedResponse(wrapper, hiddenInput);
 
                     mediaRecorder = new MediaRecorder(stream);
 
@@ -245,15 +262,35 @@ document.addEventListener('DOMContentLoaded', function () {
                     };
 
                     mediaRecorder.onstop = function () {
-                        audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        var url = URL.createObjectURL(audioBlob);
+                        var mimeType = mediaRecorder.mimeType || 'audio/webm';
+                        var ext      = mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') ? 'mp4' : 'webm';
+
+                        audioBlob = new Blob(audioChunks, { type: mimeType });
+                        var url   = URL.createObjectURL(audioBlob);
                         audioEl.src = url;
 
                         stream.getTracks().forEach(function (t) { t.stop(); });
 
-                        setState('recorded');
-                        setStatus('Grabación local lista. Aún no se guarda en backend.', 'ok');
-                        stopTimer();
+                        // Convertir a base64 y guardar en el wrapper
+                        var reader = new FileReader();
+                        reader.onloadend = function () {
+                            // result = "data:audio/webm;base64,AAAA..."
+                            // Guardamos solo la parte base64 sin el prefijo
+                            var base64Full = reader.result;
+                            var base64Data = base64Full.split(',')[1] || base64Full;
+
+                            wrapper._audioBase64   = base64Data;
+                            wrapper._audioMimetype = mimeType;
+                            wrapper._audioFilename = 'respuesta_' + Date.now() + '.' + ext;
+
+                            // Actualizar el hidden input con el audio incluido
+                            updateSerializedResponse(wrapper, hiddenInput);
+
+                            setState('recorded');
+                            setStatus('Grabación lista para enviar.', 'ok');
+                            stopTimer();
+                        };
+                        reader.readAsDataURL(audioBlob);
                     };
 
                     mediaRecorder.start(100);
@@ -277,16 +314,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 audioEl.play();
                 setStatus('Reproduciendo...', 'ok');
                 audioEl.onended = function () {
-                    setStatus('Grabación local lista.', 'ok');
+                    setStatus('Grabación lista para enviar.', 'ok');
                 };
             }
         });
 
         btnDelete.addEventListener('click', function () {
-            audioBlob = null;
+            audioBlob  = null;
             audioChunks = [];
             audioEl.src = '';
-            seconds = 0;
+            seconds    = 0;
+
+            wrapper._audioBase64 = null;
+            updateSerializedResponse(wrapper, hiddenInput);
 
             setState('idle');
             setStatus('Grabación eliminada.', '');
@@ -295,10 +335,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function setState(state) {
             btnRecord.style.display = (state === 'idle' || state === 'recorded') ? 'inline-flex' : 'none';
-            btnStop.style.display = (state === 'recording') ? 'inline-flex' : 'none';
-            btnPlay.style.display = (state === 'recorded') ? 'inline-flex' : 'none';
-            btnDelete.style.display = (state === 'recorded') ? 'inline-flex' : 'none';
-            waveEl.style.display = (state === 'recording') ? 'flex' : 'none';
+            btnStop.style.display   = (state === 'recording') ? 'inline-flex' : 'none';
+            btnPlay.style.display   = (state === 'recorded')  ? 'inline-flex' : 'none';
+            btnDelete.style.display = (state === 'recorded')  ? 'inline-flex' : 'none';
+            waveEl.style.display    = (state === 'recording') ? 'flex' : 'none';
 
             if (state === 'idle') {
                 setStatus('Presiona grabar para iniciar.', '');
@@ -309,9 +349,9 @@ document.addEventListener('DOMContentLoaded', function () {
         function setStatus(msg, type) {
             statusEl.textContent = msg;
             statusEl.className = 'ailmx_rec_status';
-            if (type === 'error') statusEl.classList.add('ailmx_rec_error');
+            if (type === 'error')     statusEl.classList.add('ailmx_rec_error');
             if (type === 'recording') statusEl.classList.add('ailmx_rec_recording');
-            if (type === 'ok') statusEl.classList.add('ailmx_rec_ok');
+            if (type === 'ok')        statusEl.classList.add('ailmx_rec_ok');
         }
 
         function startTimer() {
@@ -330,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         function updateTimerDisplay(s) {
-            var m = Math.floor(s / 60);
+            var m   = Math.floor(s / 60);
             var sec = s % 60;
             timerEl.textContent = m + ':' + (sec < 10 ? '0' : '') + sec;
         }
@@ -345,4 +385,5 @@ document.addEventListener('DOMContentLoaded', function () {
             subtree: true
         });
     }
+
 });

@@ -111,33 +111,6 @@ class ResPartnerExt(models.Model):
         ('old_mutual', 'Old Mutual (Inactivo)')
     ], string='Fondo de pensiones')
 
-    # ─── SISBEN ───────────────────────────────────────────────────────────────
-    tiene_sisben = fields.Boolean('SISBEN')
-    sisben_id = fields.Many2one(
-        'res.partner.sisben',
-        string='Clasificación SISBEN',
-    )
-
-    # ─── DISCAPACIDAD ─────────────────────────────────────────────────────────
-    tiene_discapacidad = fields.Boolean('Discapacidad')
-    discapacidad_id = fields.Many2one(
-        'res.partner.discapacidad',
-        string='Tipo de Discapacidad',
-    )
-
-    # ─── ESTRATO SOCIOECONÓMICO ──────────────────────────────────────────────
-    estrato_id = fields.Many2one(
-        'res.partner.estrato',
-        string='Estrato Socioeconómico',
-    )
-
-        # ─── VÍCTIMA DEL CONFLICTO ARMADO ─────────────────────────────────────────
-    es_victima_conflicto = fields.Boolean('Víctima del Conflicto Armado')
-    tipo_victima_id = fields.Many2one(
-        'res.partner.victima.tipo',
-        string='Tipo de Víctima',
-    )
-
     _sql_constraints = [
         ('ref_partner_check', 'CHECK (ref IS NOT NULL)', 'Tercero debe tener identificación!'),
         ('ref_partner_unique', 'UNIQUE (ref, l10n_latam_identification_type_id)', 'El número de identificación no puede ser repetido para el tipo de identificación seleccionado.!'),

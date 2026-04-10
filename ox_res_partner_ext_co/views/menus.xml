@@ -4,9 +4,6 @@
         <menuitem id="men_res_city_main" name="Ciudades" parent="contacts.menu_localisation" action="action_res_city_menu" sequence="50" />
         <menuitem id="men_res_partner_eco_act_main" name="Actividad Economica" parent="contacts.res_partner_menu_config" action="res_partner_economic_activity_action" sequence="500" />
         <menuitem id="men_res_partner_society_type_main" name="Tipo Sociedad" parent="contacts.res_partner_menu_config" action="res_partner_society_action" sequence="501" />
-        <menuitem id="men_res_partner_sisben_main" name="Clasificaciones SISBEN" parent="contacts.res_partner_menu_config" action="res_partner_sisben_action" sequence="510" />
-        <menuitem id="men_res_partner_discapacidad_main" name="Tipos de Discapacidad" parent="contacts.res_partner_menu_config" action="res_partner_discapacidad_action" sequence="511" />
-        <menuitem id="men_res_partner_victima_tipo_main" name="Tipos de Víctima del Conflicto" parent="contacts.res_partner_menu_config" action="res_partner_victima_tipo_action" sequence="512" />
-            <menuitem id="men_res_partner_estrato_main" name="Estratos Socioeconómicos" parent="contacts.res_partner_menu_config" action="res_partner_estrato_action" sequence="513" />
+
     </data>
 </odoo>

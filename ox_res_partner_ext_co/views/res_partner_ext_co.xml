@@ -109,7 +109,6 @@
                             <field name="dev_ref" />
                             <field name="regimen_fiscal"/>
                             <field name="fecha_nacimiento" />
-                            <field name="edad" readonly="1" />
                             <field name="city_exp_ref_id" />
                         </group>
                     </group>
@@ -127,33 +126,6 @@
                             <field name="direccion_residencia" />
                             <field name="zona" />
                         </group>
-                    </group>
-
-                    <!-- SISBEN -->
-                    <group string="SISBEN" invisible="company_type != 'person'">
-                        <group>
-                            <field name="tiene_sisben" widget="boolean_toggle" />
-                            <field name="sisben_id" invisible="not tiene_sisben" options="{'no_create': True}" />
-                        </group>
-                        <group />
-                    </group>
-
-                    <!-- DISCAPACIDAD -->
-                    <group string="Discapacidad" invisible="company_type != 'person'">
-                        <group>
-                            <field name="tiene_discapacidad" widget="boolean_toggle" />
-                            <field name="discapacidad_id" invisible="not tiene_discapacidad" options="{'no_create': True}" />
-                        </group>
-                        <group />
-                    </group>
-
-                    <!-- VÍCTIMA DEL CONFLICTO ARMADO -->
-                    <group string="Víctima del Conflicto Armado" invisible="company_type != 'person'">
-                        <group>
-                            <field name="es_victima_conflicto" widget="boolean_toggle" />
-                            <field name="tipo_victima_id" invisible="not es_victima_conflicto" options="{'no_create': True}" />
-                        </group>
-                        <group />
                     </group>
                     
                     <!-- SECCIÓN DE INFORMACIÓN DE SALUD/EPS (Solo para Personas) -->
@@ -184,14 +156,6 @@
                     
                     <hr />
                     
-                    <!-- ESTRATO SOCIOECONÓMICO -->
-                    <group string="Estrato Socioeconómico">
-                        <group>
-                            <field name="estrato_id" options="{'no_create': True}" />
-                        </group>
-                        <group />
-                    </group>
-
                     <group string="Dirección principal">
                         <group>
                             <field name="street" readonly="1" string="Direccion" placeholder="CLL 44 CRA 44 APTO 5" />

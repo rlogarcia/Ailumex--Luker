@@ -27,10 +27,6 @@
         'views/res_partner_economic_activity.xml',
         'views/res_partner_society.xml',
         'views/res_city.xml',
-        'views/res_partner_sisben.xml',
-        'views/res_partner_discapacidad.xml',
-        'views/res_partner_victima_tipo.xml',
-        'views/res_partner_estrato.xml',
         'views/menus.xml',
     ],
     'assets': {

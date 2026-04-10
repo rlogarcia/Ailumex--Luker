@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Dashboard del módulo Luker Master.
+        Usa cohort / graph / pivot nativos de Odoo v18.
+        Para un dashboard más avanzado con OWL se recomienda
+        extender en una fase posterior.
+    -->
+
+    <!-- ══ Participants by type — Graph ══ -->
+    <record id="view_luker_participant_graph" model="ir.ui.view">
+        <field name="name">luker.participant.graph</field>
+        <field name="model">luker.participant</field>
+        <field name="arch" type="xml">
+            <graph string="Participantes por Tipo" type="bar" stacked="0">
+                <field name="tipo_participante_id" type="row"/>
+                <field name="estado" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ══ Participants pivot ══ -->
+    <record id="view_luker_participant_pivot" model="ir.ui.view">
+        <field name="name">luker.participant.pivot</field>
+        <field name="model">luker.participant</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Participantes" display_quantity="1">
+                <field name="institucion_actual_id" type="row"/>
+                <field name="tipo_participante_id" type="col"/>
+                <field name="sesion_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ══ Results Graph ══ -->
+    <record id="view_luker_application_result_graph" model="ir.ui.view">
+        <field name="name">luker.application.result.graph</field>
+        <field name="model">luker.application.result</field>
+        <field name="arch" type="xml">
+            <graph string="Resultados por Instrumento" type="bar">
+                <field name="nom_instrumento" type="row"/>
+                <field name="cod_nivel" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ══ Results Pivot ══ -->
+    <record id="view_luker_application_result_pivot" model="ir.ui.view">
+        <field name="name">luker.application.result.pivot</field>
+        <field name="model">luker.application.result</field>
+        <field name="arch" type="xml">
+            <pivot string="Resultados" display_quantity="1">
+                <field name="snapshot_institucion" type="row"/>
+                <field name="nom_instrumento" type="col"/>
+                <field name="puntaje_normalizado" type="measure"/>
+                <field name="respuestas_correctas" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ══ Dashboard action (kanban-style using activity view) ══ -->
+    <record id="action_luker_dashboard" model="ir.actions.act_window">
+        <field name="name">Dashboard — Luker Master</field>
+        <field name="res_model">luker.participant</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="context">{
+            'search_default_active': 1
+        }</field>
+    </record>
+
+    <!-- ══ Results Dashboard action ══ -->
+    <record id="action_luker_results_dashboard" model="ir.actions.act_window">
+        <field name="name">Dashboard — Resultados</field>
+        <field name="res_model">luker.application.result</field>
+        <field name="view_mode">graph,pivot,list</field>
+    </record>
+
+</odoo>

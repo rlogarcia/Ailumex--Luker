@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- ══════════════════════════════════════════════════
+             CATEGORÍA DE MÓDULO
+        ══════════════════════════════════════════════════ -->
+        <record id="module_category_luker" model="ir.module.category">
+            <field name="name">Luker Platform</field>
+            <field name="description">Módulos de la Plataforma Luker — Fundación Luker</field>
+            <field name="sequence">100</field>
+        </record>
+
+        <!-- ══════════════════════════════════════════════════
+             GRUPOS
+        ══════════════════════════════════════════════════ -->
+
+        <!-- Solo lectura -->
+        <record id="group_luker_user" model="res.groups">
+            <field name="name">Usuario (Solo lectura)</field>
+            <field name="category_id" ref="module_category_luker"/>
+            <field name="comment">
+                Puede consultar participantes, contextos y resultados.
+                No puede crear ni modificar registros.
+            </field>
+        </record>
+
+        <!-- Evaluador / Aplicador -->
+        <record id="group_luker_evaluator" model="res.groups">
+            <field name="name">Evaluador / Aplicador</field>
+            <field name="category_id" ref="module_category_luker"/>
+            <field name="implied_ids" eval="[(4, ref('group_luker_user'))]"/>
+            <field name="comment">
+                Puede crear y editar participantes, asignar contexto,
+                registrar caracterización dinámica y ver resultados.
+            </field>
+        </record>
+
+        <!-- Líder funcional / Coordinador -->
+        <record id="group_luker_manager" model="res.groups">
+            <field name="name">Coordinador / Líder Funcional</field>
+            <field name="category_id" ref="module_category_luker"/>
+            <field name="implied_ids" eval="[(4, ref('group_luker_evaluator'))]"/>
+            <field name="comment">
+                Puede gestionar organizaciones, configurar tipos de participante
+                y ver todos los resultados y dashboards.
+            </field>
+        </record>
+
+        <!-- Líder de Datos — catálogo de atributos -->
+        <record id="group_luker_data_lead" model="res.groups">
+            <field name="name">Líder de Datos / Gobernanza</field>
+            <field name="category_id" ref="module_category_luker"/>
+            <field name="implied_ids" eval="[(4, ref('group_luker_manager'))]"/>
+            <field name="comment">
+                Acceso exclusivo al catálogo de atributos dinámicos y
+                reglas de gobernanza. Solo este rol puede crear o modificar atributos.
+            </field>
+        </record>
+
+        <!-- Administrador -->
+        <record id="group_luker_admin" model="res.groups">
+            <field name="name">Administrador</field>
+            <field name="category_id" ref="module_category_luker"/>
+            <field name="implied_ids" eval="[(4, ref('group_luker_data_lead'))]"/>
+            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+            <field name="comment">
+                Acceso completo a toda la configuración del módulo.
+            </field>
+        </record>
+
+    </data>
+</odoo>

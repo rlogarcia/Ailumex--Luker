@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_luker_application_result_search" model="ir.ui.view">
+        <field name="name">luker.application.result.search</field>
+        <field name="model">luker.application.result</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Sesiones — APP_Sesion">
+                <field name="participante_id" string="Participante"/>
+                <field name="survey_id" string="Encuesta"/>
+                <field name="snapshot_institucion" string="Institución"/>
+                <separator/>
+                <filter name="sincronizadas" string="Sincronizadas"
+                        domain="[('estado_sesion','=','sincronizada')]"/>
+                <filter name="con_audio" string="Con audio" domain="[('tiene_audio','=',True)]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="g_part"    string="Participante" context="{'group_by':'participante_id'}"/>
+                    <filter name="g_survey"  string="Encuesta"     context="{'group_by':'survey_id'}"/>
+                    <filter name="g_nivel"   string="Nivel"        context="{'group_by':'cod_nivel'}"/>
+                    <filter name="g_mes"     string="Mes"          context="{'group_by':'fecha_hora_inicio_dispositivo:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_luker_application_result_list" model="ir.ui.view">
+        <field name="name">luker.application.result.list</field>
+        <field name="model">luker.application.result</field>
+        <field name="arch" type="xml">
+            <list string="Aplicaciones — APP_Sesion"
+                  decoration-success="cod_nivel == 'avanzado'"
+                  decoration-warning="cod_nivel == 'basico'"
+                  decoration-danger="cod_nivel == 'inicial' and puntaje_normalizado > 0">
+                <field name="participante_id" string="Participante"/>
+                <field name="survey_id" string="Encuesta / Instrumento"/>
+                <field name="fecha_hora_inicio_dispositivo" string="Fecha"/>
+                <field name="snapshot_institucion" string="Institución" optional="show"/>
+                <field name="snapshot_grado_grupo" string="Contexto" optional="show"/>
+                <field name="puntaje_normalizado" string="Puntaje %"/>
+                <field name="cod_nivel" widget="badge"
+                       decoration-success="cod_nivel == 'avanzado'"
+                       decoration-info="cod_nivel == 'medio'"
+                       decoration-warning="cod_nivel == 'basico'"
+                       decoration-danger="cod_nivel == 'inicial'"/>
+                <field name="estado_sesion" widget="badge"
+                       decoration-success="estado_sesion == 'sincronizada'"
+                       decoration-danger="estado_sesion in ('error_sync','conflicto')"/>
+                <field name="tiene_audio" widget="boolean" string="🎙" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_luker_application_result_form" model="ir.ui.view">
+        <field name="name">luker.application.result.form</field>
+        <field name="model">luker.application.result</field>
+        <field name="arch" type="xml">
+            <form string="Sesión — APP_Sesion">
+                <header>
+                    <button name="action_ver_encuesta" string="Ver Respuesta Encuesta"
+                            type="object" class="btn-secondary"
+                            invisible="not survey_input_id"/>
+                    <button name="action_ver_participante" string="Ver Participante"
+                            type="object" class="btn-secondary"/>
+                    <field name="estado_sesion" widget="statusbar"
+                           statusbar_visible="borrador_local,en_cola,sincronizada"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning">
+                        <i class="fa fa-lock me-2"/>
+                        <strong>Contexto congelado (Snapshot).</strong>
+                        Participante, instrumento y contexto se fijaron al iniciar la sesión.
+                    </div>
+                    <group>
+                        <group string="Participante — PAR_Participante">
+                            <field name="participante_id" readonly="1"/>
+                        </group>
+                        <group string="Instrumento / Encuesta">
+                            <field name="survey_input_id"/>
+                            <field name="survey_id" readonly="1"/>
+                            <field name="estado_encuesta" readonly="1"/>
+                        </group>
+                        <group string="Contexto (snapshot)">
+                            <field name="snapshot_institucion" readonly="1"/>
+                            <field name="snapshot_sede" readonly="1"/>
+                            <field name="snapshot_grado_grupo" readonly="1"/>
+                            <field name="snapshot_jornada" readonly="1"/>
+                        </group>
+                        <group string="Resultados — RES_Global">
+                            <field name="puntaje_normalizado" readonly="1"/>
+                            <field name="cod_nivel" readonly="1"/>
+                            <field name="respuestas_correctas" readonly="1"/>
+                            <field name="respuestas_totales" readonly="1"/>
+                        </group>
+                        <group string="Tiempos — APP_Sesion">
+                            <field name="fecha_hora_inicio_dispositivo" readonly="1"/>
+                            <field name="fecha_hora_fin_dispositivo" readonly="1"/>
+                            <field name="fecha_hora_recepcion_servidor" readonly="1"/>
+                        </group>
+                        <group string="Sync">
+                            <field name="uuid_local" readonly="1"/>
+                            <field name="estado_sesion" readonly="1"/>
+                            <field name="enviado_offline" readonly="1"/>
+                            <field name="dispositivo_id" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_luker_application_result" model="ir.actions.act_window">
+        <field name="name">Aplicaciones — APP_Sesion</field>
+        <field name="res_model">luker.application.result</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_luker_application_result_search"/>
+    </record>
+</odoo>

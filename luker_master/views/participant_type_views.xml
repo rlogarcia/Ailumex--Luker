@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_luker_participant_type_list" model="ir.ui.view">
+        <field name="name">luker.participant.type.list</field>
+        <field name="model">luker.participant.type</field>
+        <field name="arch" type="xml">
+            <list string="Tipos de Participante — PAR_Tipo_Participante" editable="bottom">
+                <field name="orden" widget="handle"/>
+                <field name="cod_tipo_participante" string="Código"/>
+                <field name="nom_tipo_participante" string="Nombre"/>
+                <field name="participante_count" string="Participantes" readonly="1"/>
+                <field name="activo" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_luker_participant_type_form" model="ir.ui.view">
+        <field name="name">luker.participant.type.form</field>
+        <field name="model">luker.participant.type</field>
+        <field name="arch" type="xml">
+            <form string="Tipo de Participante — PAR_Tipo_Participante">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_ver_participantes" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="participante_count" widget="statinfo" string="Participantes"/>
+                        </button>
+                    </div>
+                    <group>
+                        <field name="cod_tipo_participante" string="Código"/>
+                        <field name="nom_tipo_participante" string="Nombre"/>
+                        <field name="orden"/>
+                        <field name="activo" widget="boolean_toggle"/>
+                    </group>
+                    <field name="descripcion" string="Descripción" placeholder="Descripción del tipo de participante..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_luker_participant_type" model="ir.actions.act_window">
+        <field name="name">Tipos de Participante</field>
+        <field name="res_model">luker.participant.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

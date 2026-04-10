@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- List view -->
+        <record id="res_partner_estrato_view_list" model="ir.ui.view">
+            <field name="name">res.partner.estrato.list</field>
+            <field name="model">res.partner.estrato</field>
+            <field name="arch" type="xml">
+                <list string="Estratos Socioeconómicos" editable="bottom">
+                    <field name="codigo" />
+                    <field name="name" string="Nombre" />
+                    <field name="descripcion" />
+                </list>
+            </field>
+        </record>
+
+        <!-- Form view -->
+        <record id="res_partner_estrato_view_form" model="ir.ui.view">
+            <field name="name">res.partner.estrato.form</field>
+            <field name="model">res.partner.estrato</field>
+            <field name="arch" type="xml">
+                <form string="Estrato Socioeconómico">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="codigo" />
+                                <field name="name" string="Nombre" />
+                            </group>
+                            <group>
+                                <field name="descripcion" />
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="res_partner_estrato_action" model="ir.actions.act_window">
+            <field name="name">Estratos Socioeconómicos</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">res.partner.estrato</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== MENÚ PRINCIPAL ==================== -->
+    <menuitem id="menu_fleet_base_ext_root"
+              name="Flota Extendida"
+              web_icon="fleet_base_ext,static/description/icon.png"
+              sequence="100"/>
+
+    <!-- ====== VEHÍCULOS ====== -->
+    <menuitem id="menu_fleet_vehiculos"
+              name="Vehículos"
+              parent="menu_fleet_base_ext_root"
+              sequence="10"/>
+
+    <menuitem id="menu_fleet_vehiculos_list"
+              name="Vehículos"
+              parent="menu_fleet_vehiculos"
+              action="flo_vehiculo_action"
+              sequence="10"/>
+
+    <!-- ====== CONDUCTORES ====== -->
+    <menuitem id="menu_fleet_conductores"
+              name="Conductores"
+              parent="menu_fleet_base_ext_root"
+              sequence="20"/>
+
+    <menuitem id="menu_fleet_conductores_list"
+              name="Conductores"
+              parent="menu_fleet_conductores"
+              action="rrhh_empleado_action"
+              sequence="10"/>
+
+    <!-- ====== ASIGNACIONES ====== -->
+    <menuitem id="menu_fleet_asignaciones"
+              name="Asignaciones"
+              parent="menu_fleet_base_ext_root"
+              sequence="30"/>
+
+    <menuitem id="menu_fleet_asignaciones_list"
+              name="Asignar vehículo"
+              parent="menu_fleet_asignaciones"
+              action="flo_vehiculo_conductor_action"
+              sequence="10"/>
+
+    <!-- ====== CONFIGURACIÓN ====== -->
+    <menuitem id="menu_fleet_configuracion"
+              name="Configuración"
+              parent="menu_fleet_base_ext_root"
+              sequence="90"/>
+
+    <menuitem id="menu_fleet_sedes"
+              name="Sedes Operativas"
+              parent="menu_fleet_configuracion"
+              action="flo_sede_operativa_action"
+              sequence="10"/>
+
+    <menuitem id="menu_fleet_centros_costo"
+              name="Centros de Costo"
+              parent="menu_fleet_configuracion"
+              action="flo_centro_costo_action"
+              sequence="20"/>
+
+    <menuitem id="menu_fleet_empresas"
+              name="Empresas"
+              parent="menu_fleet_configuracion"
+              action="seg_empresa_action"
+              sequence="30"/>
+
+    <menuitem id="menu_fleet_usuarios"
+              name="Usuarios"
+              parent="menu_fleet_configuracion"
+              action="seg_usuario_action"
+              sequence="40"/>
+
+</odoo>

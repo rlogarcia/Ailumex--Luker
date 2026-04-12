@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== MENÚ CHECKLIST ==================== -->
+
+    <menuitem id="menu_fleet_checklist_root"
+              name="Checklist"
+              web_icon="fleet_checklist,static/description/icon.png"
+              sequence="110"/>
+
+    <menuitem id="menu_fleet_checklist_list"
+              name="Checklists del Día"
+              parent="menu_fleet_checklist_root"
+              action="chk_checklist_dia_action"
+              sequence="10"/>
+
+    <menuitem id="menu_fleet_checklist_plantillas"
+              name="Plantillas"
+              parent="menu_fleet_checklist_root"
+              action="chk_plantilla_action"
+              sequence="20"/>
+
+    <menuitem id="menu_fleet_checklist_categoria"
+              name="Categorías"
+              parent="menu_fleet_checklist_root"
+              action="chk_categoria_action"
+              sequence="30"/>
+
+    <menuitem id="menu_fleet_checklist_categoria_item"
+              name="Ítems"
+              parent="menu_fleet_checklist_root"
+              action="chk_item_action"
+              sequence="40"/>
+
+</odoo>

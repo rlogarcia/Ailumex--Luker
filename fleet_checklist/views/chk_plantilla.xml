@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== PLANTILLAS DE CHECKLIST ==================== -->
+
+    <!-- List View -->
+    <record id="chk_plantilla_view_list" model="ir.ui.view">
+        <field name="name">chk.plantilla.view.list</field>
+        <field name="model">chk.plantilla</field>
+        <field name="arch" type="xml">
+            <list string="Plantillas de Checklist" decoration-muted="not es_activa">
+                <field name="cod_CHK_plantilla" string="Código"/>
+                <field name="nom_CHK_plantilla" string="Nombre"/>
+                <field name="tipo_vehiculo" string="Tipo Vehículo"/>
+                <field name="version" string="Versión"/>
+                <field name="fecha_vigencia" string="Vigencia"/>
+                <field name="es_activa" string="Activa" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="chk_plantilla_view_search" model="ir.ui.view">
+        <field name="name">chk.plantilla.view.search</field>
+        <field name="model">chk.plantilla</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Plantillas">
+                <field name="nom_CHK_plantilla" string="Nombre"/>
+                <field name="cod_CHK_plantilla" string="Código"/>
+                <field name="tipo_vehiculo" string="Tipo Vehículo"/>
+                <separator/>
+                <filter string="Activas" name="filter_activas" domain="[('es_activa', '=', True)]"/>
+                <filter string="Inactivas" name="filter_inactivas" domain="[('es_activa', '=', False)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Tipo Vehículo" name="group_tipo" context="{'group_by': 'tipo_vehiculo'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="chk_plantilla_view_form" model="ir.ui.view">
+        <field name="name">chk.plantilla.view.form</field>
+        <field name="model">chk.plantilla</field>
+        <field name="arch" type="xml">
+            <form string="Plantilla de Checklist">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="nom_CHK_plantilla" string="Nombre de la Plantilla"/>
+                        <h1>
+                            <field name="nom_CHK_plantilla" placeholder="Ej: Checklist Camión Rígido"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Identificación">
+                            <field name="cod_CHK_plantilla" readonly="1"/>
+                            <field name="tipo_vehiculo" string="Tipo de Vehículo"/>
+                            <field name="version" string="Versión"/>
+                        </group>
+                        <group string="Estado">
+                            <field name="es_activa" string="Plantilla Activa" widget="boolean_toggle"/>
+                            <field name="fecha_vigencia" string="Fecha de Vigencia"/>
+                        </group>
+                    </group>
+                    <separator string="Ítems de la Plantilla"/>
+                    <field name="linea_ids">
+                        <list editable="bottom" string="Ítems">
+                            <field name="secuencia" string="Sec." widget="handle"/>
+                            <field name="item_id" string="Ítem" domain="[('activo', '=', True)]" options="{'no_create': True}"/>
+                            <field name="requerido" string="Requerido" widget="boolean_toggle"/>
+                        </list>
+                    </field>
+                    <group string="Auditoría" col="2">
+                        <group>
+                            <field name="fecha_creacion" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="fecha_actualizacion" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="chk_plantilla_action" model="ir.actions.act_window">
+        <field name="name">Plantillas</field>
+        <field name="res_model">chk.plantilla</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="chk_plantilla_view_search"/>
+        <field name="context">{'search_default_filter_activas': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primera plantilla de checklist
+            </p>
+            <p>
+                Las plantillas definen los ítems que se inspeccionan en cada checklist diario de vehículo.
+            </p>
+        </field>
+    </record>
+
+</odoo>

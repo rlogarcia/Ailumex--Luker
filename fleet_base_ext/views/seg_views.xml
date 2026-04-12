@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== EMPRESA ==================== -->
+
+    <!-- Tree View -->
+    <record id="seg_empresa_view_list" model="ir.ui.view">
+        <field name="name">seg.empresa.list</field>
+        <field name="model">seg.empresa</field>
+        <field name="arch" type="xml">
+            <list string="Empresas" decoration-muted="activo == False">
+                <field name="name"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="seg_empresa_view_form" model="ir.ui.view">
+        <field name="name">seg.empresa.form</field>
+        <field name="model">seg.empresa</field>
+        <field name="arch" type="xml">
+            <form string="Empresa">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre de la Empresa"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="activo"/>
+                        </group>
+                        <group string="Auditoría">
+                            <field name="fecha_creacion" readonly="1"/>
+                            <field name="fecha_actualizacion" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Usuarios">
+                            <field name="usuario_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="login"/>
+                                    <field name="activo"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action Empresa -->
+    <record id="seg_empresa_action" model="ir.actions.act_window">
+        <field name="name">Empresas</field>
+        <field name="res_model">seg.empresa</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear una nueva empresa
+            </p>
+        </field>
+    </record>
+
+    <!-- ==================== USUARIO ==================== -->
+
+    <!-- Tree View -->
+    <record id="seg_usuario_view_list" model="ir.ui.view">
+        <field name="name">seg.usuario.list</field>
+        <field name="model">seg.usuario</field>
+        <field name="arch" type="xml">
+            <list string="Usuarios" decoration-muted="activo == False">
+                <field name="name"/>
+                <field name="login"/>
+                <field name="empresa_id"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="seg_usuario_view_form" model="ir.ui.view">
+        <field name="name">seg.usuario.form</field>
+        <field name="model">seg.usuario</field>
+        <field name="arch" type="xml">
+            <form string="Usuario">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre del Usuario"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="login"/>
+                            <field name="empresa_id"/>
+                            <field name="activo"/>
+                        </group>
+                        <group string="Auditoría">
+                            <field name="fecha_creacion" readonly="1"/>
+                            <field name="fecha_actualizacion" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action Usuario -->
+    <record id="seg_usuario_action" model="ir.actions.act_window">
+        <field name="name">Usuarios</field>
+        <field name="res_model">seg.usuario</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear un nuevo usuario
+            </p>
+        </field>
+    </record>
+
+</odoo>

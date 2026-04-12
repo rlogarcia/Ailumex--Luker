@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_chk_plantilla,access_chk_plantilla,model_chk_plantilla,base.group_user,1,1,1,1
+access_chk_plantilla_linea,access_chk_plantilla_linea,model_chk_plantilla_linea,base.group_user,1,1,1,1
+access_chk_item,access_chk_item,model_chk_item,base.group_user,1,1,1,1
+access_chk_categoria,access_chk_categoria,model_chk_categoria,base.group_user,1,1,1,1
+access_chk_lista_vehiculo,access_chk_lista_vehiculo,model_chk_lista_vehiculo,base.group_user,1,1,1,1
+access_chk_lista_vehiculo_linea,access_chk_lista_vehiculo_linea,model_chk_lista_vehiculo_linea,base.group_user,1,1,1,1

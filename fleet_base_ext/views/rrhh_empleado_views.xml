@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== EMPLEADO / CONDUCTOR ==================== -->
+
+    <!-- Kanban View - Conductores -->
+    <record id="rrhh_empleado_view_kanban" model="ir.ui.view">
+        <field name="name">rrhh.empleado.kanban</field>
+        <field name="model">rrhh.empleado</field>
+        <field name="arch" type="xml">
+            <kanban string="Conductores">
+                <field name="nom_RRHH_empleado"/>
+                <field name="num_identificacion"/>
+                <field name="num_licencia"/>
+                <field name="categoria_licencia"/>
+                <field name="fecha_vencimiento_licencia"/>
+                <field name="vehiculo_asignado"/>
+                <field name="estado"/>
+                <field name="checklists_mes"/>
+                <templates>
+                    <t t-name="card">
+                    <div class="conductor_card_wrapper oe_kanban_global_click">
+                        <div class="conductor_card">
+                            <div class="conductor_img">
+                                <field name="foto_empleado" widget="image"/>
+                            </div>
+                            <div class="conductor_info">
+                                <div class="c_row">
+                                    <span class="c_label">Nombre:</span>
+                                    <span class="c_val"><field name="nom_RRHH_empleado"/></span>
+                                </div>
+                                <div class="c_row">
+                                    <span class="c_label">Cédula:</span>
+                                    <span class="c_val"><field name="num_identificacion"/></span>
+                                </div>
+                                <div class="c_row">
+                                    <span class="c_label">Licencia:</span>
+                                    <span class="c_val"><field name="num_licencia"/></span>
+                                </div>
+                                <div class="c_row">
+                                    <span class="c_label">Categoría:</span>
+                                    <span class="c_val"><field name="categoria_licencia"/></span>
+                                </div>
+                                <div class="c_row">
+                                    <span class="c_label">Vencimiento:</span>
+                                    <span class="c_val"><field name="fecha_vencimiento_licencia"/></span>
+                                </div>
+                                <div class="c_row">
+                                    <span class="c_label">Vehículo:</span>
+                                    <span class="c_val"><field name="vehiculo_asignado"/></span>
+                                </div>
+                                <div class="c_row">
+                                    <span class="c_label">Estado:</span>
+                                    <span class="c_val"><field name="estado"/></span>
+                                </div>
+                                <div class="c_row">
+                                    <span class="c_label">Checklists:</span>
+                                <span class="c_val"><field name="checklists_mes"/></span>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="rrhh_empleado_view_form" model="ir.ui.view">
+        <field name="name">rrhh.empleado.form</field>
+        <field name="model">rrhh.empleado</field>
+        <field name="arch" type="xml">
+            <form string="Conductor">
+                <header>
+                    <field name="estado" widget="statusbar" statusbar_visible="activo,alerta,inactivo"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="nom_RRHH_empleado" placeholder="Nombre del Conductor"/>
+                        </h1>
+                    </div>
+                    <div class="oe_avatar_container">
+                        <field name="foto_empleado" widget="image" class="oe_avatar"/>
+                    </div>
+                    <group>
+                        <group string="Datos Personales">
+                            <field name="num_identificacion"/>
+                            <field name="telefono"/>
+                            <field name="correo"/>
+                            <field name="id_SEG_empresa"/>
+                            <field name="id_SEG_usuario"/>
+                            <field name="activo"/>
+                        </group>
+                        <group string="Licencia de Conducción">
+                            <field name="es_conductor"/>
+                            <field name="num_licencia"/>
+                            <field name="categoria_licencia"/>
+                            <field name="fecha_vencimiento_licencia" required="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Auditoría">
+                            <field name="fecha_creacion" readonly="1"/>
+                            <field name="fecha_actualizacion" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="rrhh_empleado_view_search" model="ir.ui.view">
+        <field name="name">rrhh.empleado.search</field>
+        <field name="model">rrhh.empleado</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Conductores">
+                <field name="nom_RRHH_empleado"/>
+                <field name="num_identificacion"/>
+                <field name="num_licencia"/>
+                <separator/>
+                <filter string="Conductores" name="filter_conductor" domain="[('es_conductor', '=', True)]"/>
+                <filter string="Activos" name="filter_activo" domain="[('activo', '=', True)]"/>
+                <filter string="Inactivos" name="filter_inactivo" domain="[('activo', '=', False)]"/>
+                <separator/>
+                <filter string="Estado: Activo" name="filter_estado_activo" domain="[('estado', '=', 'activo')]"/>
+                <filter string="Estado: Alerta" name="filter_estado_alerta" domain="[('estado', '=', 'alerta')]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Categoría Licencia" name="group_categoria" context="{'group_by': 'categoria_licencia'}"/>
+                    <filter string="Estado" name="group_estado" context="{'group_by': 'estado'}"/>
+                    <filter string="Es Conductor" name="group_conductor" context="{'group_by': 'es_conductor'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="rrhh_empleado_action" model="ir.actions.act_window">
+        <field name="name">Conductores</field>
+        <field name="res_model">rrhh.empleado</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="rrhh_empleado_view_search"/>
+        <field name="context">{'search_default_filter_conductor': 1, 'search_default_filter_activo': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registrar un nuevo conductor
+            </p>
+        </field>
+    </record>
+
+</odoo>

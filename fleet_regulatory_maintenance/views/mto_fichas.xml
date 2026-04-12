@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="mto_ficha_regulatoria_view_list" model="ir.ui.view">
+        <field name="name">mto.ficha.regulatoria.view.list</field>
+        <field name="model">mto.ficha.regulatoria</field>
+        <field name="arch" type="xml">
+            <list string="Fichas Regulatorias"
+                  decoration-success="estado == 'aprobada'"
+                  decoration-warning="estado == 'pendiente'"
+                  decoration-danger="estado == 'rechazada'">
+                <field name="nom_ficha" string="No. Ficha"/>
+                <field name="id_FLO_vehiculo" string="Vehículo"/>
+                <field name="tipo_mantenimiento" string="Tipo" widget="badge"
+                       decoration-success="tipo_mantenimiento == 'preventivo'"
+                       decoration-warning="tipo_mantenimiento == 'correctivo'"/>
+                <field name="fecha_ejecucion" string="Fecha"/>
+                <field name="nom_centro_especializado" string="Proveedor"/>
+                <field name="nom_ingeniero_mecanico" string="Ingeniero"/>
+                <field name="id_SEG_usuario_aprobador" string="Aprobado Por"/>
+                <field name="estado" string="Estado" widget="badge"
+                       decoration-success="estado == 'aprobada'"
+                       decoration-warning="estado == 'pendiente'"
+                       decoration-danger="estado == 'rechazada'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="mto_ficha_regulatoria_view_search" model="ir.ui.view">
+        <field name="name">mto.ficha.regulatoria.view.search</field>
+        <field name="model">mto.ficha.regulatoria</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Fichas">
+                <field name="nom_ficha" string="No. Ficha"/>
+                <field name="id_FLO_vehiculo" string="Vehículo"/>
+                <separator/>
+                <filter string="Aprobadas"  name="filter_aprobada"  domain="[('estado', '=', 'aprobada')]"/>
+                <filter string="Pendientes" name="filter_pendiente" domain="[('estado', '=', 'pendiente')]"/>
+                <filter string="Rechazadas" name="filter_rechazada" domain="[('estado', '=', 'rechazada')]"/>
+                <separator/>
+                <filter string="Preventivo" name="filter_preventivo" domain="[('tipo_mantenimiento', '=', 'preventivo')]"/>
+                <filter string="Correctivo" name="filter_correctivo" domain="[('tipo_mantenimiento', '=', 'correctivo')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Estado" name="group_estado" context="{'group_by': 'estado'}"/>
+                    <filter string="Tipo"   name="group_tipo"   context="{'group_by': 'tipo_mantenimiento'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="mto_ficha_regulatoria_view_form" model="ir.ui.view">
+        <field name="name">mto.ficha.regulatoria.view.form</field>
+        <field name="model">mto.ficha.regulatoria</field>
+        <field name="arch" type="xml">
+            <form string="Ficha Regulatoria">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="nom_ficha" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Datos del Mantenimiento">
+                            <field name="id_FLO_vehiculo" string="Vehículo"/>
+                            <field name="tipo_mantenimiento" string="Tipo"/>
+                            <field name="fecha_ejecucion" string="Fecha"/>
+                            <field name="id_MTO_vehiculo_evento" string="Evento Origen"/>
+                        </group>
+                        <group string="Centro de Servicio (Res. 378/2013)">
+                            <field name="nom_centro_especializado" string="Proveedor / Centro"/>
+                            <field name="nom_ingeniero_mecanico" string="Ingeniero Mecánico"/>
+                        </group>
+                    </group>
+                    <group string="Aprobación">
+                        <group>
+                            <field name="id_SEG_usuario_aprobador" string="Aprobado Por"/>
+                            <field name="estado" string="Estado"/>
+                        </group>
+                    </group>
+                    <group string="Detalle">
+                        <field name="detalle_actividades" string="Actividades Realizadas" nolabel="1"/>
+                        <field name="hallazgos" string="Hallazgos" nolabel="1"/>
+                        <field name="recomendaciones" string="Recomendaciones" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="mto_ficha_regulatoria_action" model="ir.actions.act_window">
+        <field name="name">Fichas Regulatorias</field>
+        <field name="res_model">mto.ficha.regulatoria</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="mto_ficha_regulatoria_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay fichas regulatorias registradas
+            </p>
+        </field>
+    </record>
+
+</odoo>

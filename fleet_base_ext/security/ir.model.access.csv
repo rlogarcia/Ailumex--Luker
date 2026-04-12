@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_flo_vehiculo,access_flo_vehiculo,model_flo_vehiculo,base.group_user,1,1,1,1
+access_flo_sede_operativa,access_flo_sede_operativa,model_flo_sede_operativa,base.group_user,1,1,1,1
+access_flo_centro_costo,access_flo_centro_costo,model_flo_centro_costo,base.group_user,1,1,1,1
+access_flo_vehiculo_conductor,access_flo_vehiculo_conductor,model_flo_vehiculo_conductor,base.group_user,1,1,1,1
+access_flo_vehiculo_foto,access_flo_vehiculo_foto,model_flo_vehiculo_foto,base.group_user,1,1,1,1
+access_flo_documento,access_flo_documento,model_flo_documento,base.group_user,1,1,1,1
+access_rrhh_empleado,access_rrhh_empleado,model_rrhh_empleado,base.group_user,1,1,1,1
+access_seg_empresa,access_seg_empresa,model_seg_empresa,base.group_user,1,1,1,1
+access_seg_usuario,access_seg_usuario,model_seg_usuario,base.group_user,1,1,1,1

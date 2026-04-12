@@ -1,0 +1,78 @@
+/* ================================================
+   CHECKLIST FORM — fleet_checklist
+   ================================================ */
+
+/* ── Contenedor cabecera: campos + stats ─────── */
+.chk_form_top {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 16px;
+}
+
+.chk_form_fields {
+    flex: 1;
+}
+
+/* ── Barra de estadísticas ───────────────────── */
+.chk_stats_bar {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.chk_stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    height: 80px;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+}
+
+.chk_stat .o_field_widget {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.chk_stat span {
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── Colores de cada stat ────────────────────── */
+.chk_stat_ok {
+    background-color: rgba(40, 167, 69, 0.15);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.chk_stat_ok .o_field_widget,
+.chk_stat_ok span {
+    color: #28a745;
+}
+
+.chk_stat_obs {
+    background-color: rgba(255, 193, 7, 0.15);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.chk_stat_obs .o_field_widget,
+.chk_stat_obs span {
+    color: #e6a800;
+}
+
+.chk_stat_malo {
+    background-color: rgba(220, 53, 69, 0.15);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.chk_stat_malo .o_field_widget,
+.chk_stat_malo span {
+    color: #dc3545;
+}

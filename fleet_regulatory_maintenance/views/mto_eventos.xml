@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mto_vehiculo_evento_view_form" model="ir.ui.view">
+        <field name="name">mto.vehiculo.evento.view.form</field>
+        <field name="model">mto.vehiculo.evento</field>
+        <field name="arch" type="xml">
+            <form string="Eventos de Vehículos">
+                <group string="Datos del mantenimiento">
+                    <field name="id_FLO_vehiculo" />
+                    <field name="tipo_mantenimiento" />
+                    <field name="odometro" />
+                    <field name="fecha_ejecucion" />
+                    <field name="costo_total" />
+                    <field name="estado" />
+                </group>
+
+                <group string="Centro de servicio (RES.378/2013)">
+                    <field name="id_PRO_proveedor_perfil" />
+                    <field name="nom_centro_especializado" />
+                    <field name="nom_ingeniero_mecanico" />
+
+                </group>
+                <group string="Aprobación de empresa">
+                    <field name="aprobado_por_empresa" string="Aprobado" />
+                    <field name="id_SEG_usuario_aprobador" string="Aprobador" />
+                    <field name="fecha_aprobacion" string="Fecha Aprobación" />
+                    <field name="hallazgos" string="Hallazgos / Observaciones" />
+                    <field name="recomendaciones" string="Recomendaciones" />
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="mto_vehiculo_evento_action" model="ir.actions.act_window">
+        <field name="name">Eventos de Vehículos</field>
+        <field name="res_model">mto.vehiculo.evento</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay eventos de mantenimiento registrados
+            </p>
+        </field>
+    </record>
+
+</odoo>

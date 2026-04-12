@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== MENÚ PRINCIPAL ==================== -->
+
+    <menuitem id="menu_fleet_issue_control_root"
+        name="Control de Novedades"
+        web_icon="fleet_issue_control,static/description/icon.png"
+        sequence="110" />
+
+    <!-- ==================== NOVEDADES ==================== -->
+
+    <menuitem id="menu_fleet_novedades"
+        name="Novedades"
+        parent="menu_fleet_issue_control_root"
+        action="nov_vehiculo_novedad_action"
+        sequence="10" />
+
+    <!-- ==================== BLOQUEOS ==================== -->
+
+    <menuitem id="menu_fleet_bloqueos"
+        name="Bloqueos Operativos"
+        parent="menu_fleet_issue_control_root"
+        action="blo_vehiculo_bloqueo_action"
+        sequence="20" />
+
+</odoo>

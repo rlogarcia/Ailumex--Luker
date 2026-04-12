@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="mto_vehiculo_plan_view_list" model="ir.ui.view">
+        <field name="name">mto.vehiculo.plan.view.list</field>
+        <field name="model">mto.vehiculo.plan</field>
+        <field name="arch" type="xml">
+            <list string="Planes de Mantenimiento"
+                decoration-success="estado_cumplimiento == 'vigente'"
+                decoration-warning="estado_cumplimiento == 'proximo'"
+                decoration-danger="estado_cumplimiento in ('vencido', 'critico')">
+                <field name="id_FLO_vehiculo" string="Vehículo" />
+                <field name="esquema_regulatorio" string="Tipo" />
+                <field name="valor_frecuencia_preventiva" string="Frecuencia" />
+                <field name="unidad_frecuencia_preventiva" string="Unidad" />
+                <field name="fecha_ultimo_preventivo" string="Último Preventivo" />
+                <field name="fecha_proximo_preventivo" string="Próximo" />
+                <field name="estado_cumplimiento" string="Estado" widget="badge"
+                    decoration-success="estado_cumplimiento == 'vigente'"
+                    decoration-warning="estado_cumplimiento == 'proximo'"
+                    decoration-danger="estado_cumplimiento in ('vencido', 'critico')" />
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="mto_vehiculo_plan_view_search" model="ir.ui.view">
+        <field name="name">mto.vehiculo.plan.view.search</field>
+        <field name="model">mto.vehiculo.plan</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Planes">
+                <field name="esquema_regulatorio" string="Tipo" />
+                <separator />
+                <filter string="Vigentes" name="filter_vigente"
+                    domain="[('estado_cumplimiento', '=', 'vigente')]" />
+                <filter string="Próximos" name="filter_proximo"
+                    domain="[('estado_cumplimiento', '=', 'proximo')]" />
+                <filter string="Vencidos" name="filter_vencido"
+                    domain="[('estado_cumplimiento', '=', 'vencido')]" />
+                <filter string="Críticos" name="filter_critico"
+                    domain="[('estado_cumplimiento', '=', 'critico')]" />
+                <group expand="0" string="Agrupar por">
+                    <filter string="Estado" name="group_estado"
+                        context="{'group_by': 'estado_cumplimiento'}" />
+                    <filter string="Esquema" name="group_esquema"
+                        context="{'group_by': 'esquema_regulatorio'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="mto_vehiculo_plan_view_form" model="ir.ui.view">
+        <field name="name">mto.vehiculo.plan.view.form</field>
+        <field name="model">mto.vehiculo.plan</field>
+        <field name="arch" type="xml">
+            <form string="Plan de Mantenimiento">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="esquema_regulatorio" placeholder="Esquema regulatorio..." />
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Vehículo y Regulación">
+                            <field name="id_FLO_vehiculo" string="Vehículo" />
+                            <field name="esquema_regulatorio" string="Esquema Regulatorio" />
+                            <field name="es_bimestral_regulado" string="Regulado Bimestral" />
+                            <field name="requiere_aprobacion_empresa" string="Requiere Aprobación" />
+                        </group>
+                        <group string="Estado de Cumplimiento">
+                            <field name="estado_cumplimiento" string="Estado" widget="badge"
+                                decoration-success="estado_cumplimiento == 'vigente'"
+                                decoration-warning="estado_cumplimiento == 'proximo'"
+                                decoration-danger="estado_cumplimiento in ('vencido', 'critico')" />
+                            <field name="fecha_ultimo_preventivo" string="Último Preventivo" />
+                            <field name="fecha_proximo_preventivo" string="Próximo Preventivo" />
+                        </group>
+                    </group>
+                    <group string="Frecuencia">
+                        <group>
+                            <field name="valor_frecuencia_preventiva" string="Valor Frecuencia" />
+                            <field name="unidad_frecuencia_preventiva" string="Unidad Frecuencia" />
+                        </group>
+                        <group>
+                            <field name="fecha_creacion" string="Creado En" readonly="1" />
+                            <field name="fecha_actualizacion" string="Actualizado En" readonly="1" />
+                        </group>
+                    </group>
+                </sheet>
+                z </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="mto_vehiculo_plan_action" model="ir.actions.act_window">
+        <field name="name">Planes de Mantenimiento</field>
+        <field name="res_model">mto.vehiculo.plan</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="mto_vehiculo_plan_view_search" />
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay planes de mantenimiento registrados
+            </p>
+        </field>
+    </record>
+
+</odoo>

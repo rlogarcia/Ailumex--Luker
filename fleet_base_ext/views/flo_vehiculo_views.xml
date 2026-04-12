@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== VEHÍCULO ==================== -->
+
+    <!-- Kanban View -->
+    <record id="flo_vehiculo_view_kanban" model="ir.ui.view">
+        <field name="name">flo.vehiculo.kanban</field>
+        <field name="model">flo.vehiculo</field>
+        <field name="arch" type="xml">
+            <kanban string="Vehículos">
+                <field name="foto_vehiculo"/>
+                <field name="placa"/>
+                <field name="num_interno"/>
+                <field name="tipo_vehiculo"/>
+                <field name="id_FLO_sede_operativa"/>
+                <field name="activo"/>
+                <field name="fecha_proximo_preventivo"/>
+                <field name="odometro_actual"/>
+                <templates>
+                <t t-name="card">
+                    <div class="vehiculo_card_wrapper oe_kanban_global_click">
+                        <div class="vehiculo_card">
+
+                            <div class="vehiculo_img">
+                                <field name="foto_vehiculo" widget="image"/>
+                            </div>
+
+                            <div class="vehiculo_placa">
+                                <field name="placa"/>
+                            </div>
+
+                            <div class="vehiculo_info">
+                                <div class="v_row">
+                                    <span class="v_label">Interno:</span>
+                                    <span class="v_val"><field name="num_interno"/></span>
+                                </div>
+                                <div class="v_row">
+                                    <span class="v_label">Tipo:</span>
+                                    <span class="v_val"><field name="tipo_vehiculo"/></span>
+                                </div>
+                                <div class="v_row">
+                                    <span class="v_label">Sede:</span>
+                                    <span class="v_val"><field name="id_FLO_sede_operativa"/></span>
+                                </div>
+                                <div class="v_row">
+                                    <span class="v_label">Odómetro:</span>
+                                    <span class="v_val"><field name="odometro_actual"/></span>
+                                </div>
+                                <div class="v_row">
+                                    <span class="v_label">Próx. fecha:</span>
+                                    <span class="v_val"><field name="fecha_proximo_preventivo"/></span>
+                                </div>
+                            </div>
+
+                            <div class="vehiculo_estado">
+                                <span>Estado:</span>
+                                <field name="activo" widget="boolean_toggle"/>
+                            </div>
+
+                        </div>
+                    </div>
+                </t>
+            </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="flo_vehiculo_view_form" model="ir.ui.view">
+        <field name="name">flo.vehiculo.form</field>
+        <field name="model">flo.vehiculo</field>
+        <field name="arch" type="xml">
+            <form string="Vehículo">
+                <sheet>
+                    <div class="oe_title">
+                    <header>
+                        <field name="foto_vehiculo" widget="image" width="200px"/>
+                        <h1>
+                            <field name="placa" placeholder="Placa"/>
+                        </h1>
+
+                        <h3>
+                            <field name="num_interno" placeholder="Número Interno"/>
+                        </h3>
+                    </header>
+                    </div>
+                    <group>
+                        <group string="Identificación">
+                            <field name="marca"/>
+                            <field name="linea"/>
+                            <field name="modelo_anio"/>
+                            <field name="vin"/>
+                            <field name="tipo_vehiculo"/>
+                            <field name="tipo_vinculacion"/>
+                        </group>
+                        <group string="Mecánica">
+                            <field name="num_motor"/>
+                            <field name="num_chasis"/>
+                            <field name="tipo_combustible"/>
+                            <field name="odometro_actual"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Operación">
+                            <field name="id_FLO_sede_operativa"/>
+                            <field name="id_FLO_centro_costo"/>
+                            <field name="id_SEG_empresa"/>
+                            <field name="estado_operativo"/>
+                            <field name="activo"/>
+                        </group>
+                        <group string="Configuración">
+                            <field name="requiere_checklist"/>
+                            <field name="aplica_regulacion"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Fechas">
+                            <group>
+                                <group>
+                                    <field name="fecha_ultimo_checklist"/>
+                                    <field name="fecha_ultimo_preventivo"/>
+                                    <field name="fecha_proximo_preventivo"/>
+                                </group>
+                                <group>
+                                    <field name="fecha_creacion" readonly="1"/>
+                                    <field name="fecha_actualizacion" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Galería de Fotos" name="galeria_fotos">
+                            <field name="fotos_vehiculo">
+                                <list string="Fotos" editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="foto" widget="image" options="{'size': [128, 128]}"/>
+                                    <field name="descripcion" placeholder="Descripción opcional..."/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <notebook>
+                        <page string="Documentos">
+                            <field name="documentos">
+                                <list string="Documentos" editable="bottom">
+                                    <field name="tipo_documento"/>
+                                    <field name="documento" widget="binary" filename="descripcion"/>
+                                    <field name="fecha_expiracion"/>
+                                    <field name="estado" readonly="1" decoration-success="estado == 'vigente'" decoration-warning="estado == 'proximo_vencer'" decoration-danger="estado == 'vencido'" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="flo_vehiculo_view_search" model="ir.ui.view">
+        <field name="name">flo.vehiculo.search</field>
+        <field name="model">flo.vehiculo</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Vehículos">
+                <field name="placa"/>
+                <field name="num_interno"/>
+                <field name="marca"/>
+                <field name="vin"/>
+                <separator/>
+                <filter string="Activos" name="filter_activo" domain="[('activo', '=', True)]"/>
+                <filter string="Inactivos" name="filter_inactivo" domain="[('activo', '=', False)]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Estado Operativo" name="group_estado" context="{'group_by': 'estado_operativo'}"/>
+                    <filter string="Tipo Vehículo" name="group_tipo" context="{'group_by': 'tipo_vehiculo'}"/>
+                    <filter string="Tipo Vinculación" name="group_vinculacion" context="{'group_by': 'tipo_vinculacion'}"/>
+                    <filter string="Marca" name="group_marca" context="{'group_by': 'marca'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="flo_vehiculo_action" model="ir.actions.act_window">
+        <field name="name">Vehículos</field>
+        <field name="res_model">flo.vehiculo</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="flo_vehiculo_view_search"/>
+        <field name="context">{'search_default_filter_activo': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear un nuevo vehículo
+            </p>
+        </field>
+    </record>
+
+</odoo>

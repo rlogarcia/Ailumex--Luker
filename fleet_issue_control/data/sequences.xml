@@ -1,0 +1,21 @@
+<!-- Secuencias BLO -->
+<odoo>
+    <data noupdate="1">
+        <record id="seq_blo_vehiculo_bloqueo" model="ir.sequence">
+            <field name="name">BLO Vehículo Bloqueo</field>
+            <field name="code">blo.vehiculo.bloqueo</field>
+            <field name="prefix">BLO-</field>
+            <field name="padding">4</field>
+            <field name="number_increment">1</field>
+            <field name="number_next">1</field>
+        </record>
+        <record id="seq_nov_vehiculo_novedad" model="ir.sequence">
+            <field name="name">NOV Vehículo Novedad</field>
+            <field name="code">nov.vehiculo.novedad</field>
+            <field name="prefix">NOV-</field>
+            <field name="padding">4</field>
+            <field name="number_increment">1</field>
+            <field name="number_next">1</field>
+        </record>
+    </data>
+</odoo>

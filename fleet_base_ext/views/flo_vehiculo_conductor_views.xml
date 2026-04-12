@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== ASIGNACIÓN VEHÍCULO-CONDUCTOR ==================== -->
+
+    <!-- List View - Asignaciones -->
+    <record id="flo_vehiculo_conductor_view_list" model="ir.ui.view">
+        <field name="name">flo.vehiculo.conductor.list</field>
+        <field name="model">flo.vehiculo.conductor</field>
+        <field name="arch" type="xml">
+            <list string="Asignaciones a conductores"
+                  decoration-muted="activo == False">
+                <field name="id_RRHH_empleado" string="Conductor"/>
+                <field name="id_FLO_vehiculo" string="Vehículo"/>
+                <field name="sede_nombre" string="Sede"/>
+                <field name="tipo_conductor" string="Tipo"/>
+                <field name="fecha_inicio" string="Desde"/>
+                <field name="fecha_fin" string="Hasta"/>
+                <field name="estado" widget="badge"
+                       decoration-success="estado == 'activo'"
+                       decoration-warning="estado == 'restringida'"
+                       decoration-danger="estado in ('suspendido', 'finalizado')"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="flo_vehiculo_conductor_view_form" model="ir.ui.view">
+        <field name="name">flo.vehiculo.conductor.form</field>
+        <field name="model">flo.vehiculo.conductor</field>
+        <field name="arch" type="xml">
+            <form string="Asignación de vehiculo">
+                <header>
+                    <field name="estado" widget="statusbar" statusbar_visible="activo,restringida,suspendido,finalizado"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Asignación">
+                            <field name="id_RRHH_empleado"/>
+                            <field name="id_FLO_vehiculo"/>
+                            <field name="sede_nombre"/>
+                            <field name="id_SEG_empresa"/>
+                            <field name="tipo_conductor"/>
+                            <field name="es_principal"/>
+                        </group>
+                        <group string="Vigencia">
+                            <field name="fecha_inicio"/>
+                            <field name="fecha_fin"/>
+                            <field name="activo"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Observaciones">
+                            <field name="observacion" placeholder="Observaciones sobre la asignación..."/>
+                        </page>
+                        <page string="Auditoría">
+                            <group>
+                                <group>
+                                    <field name="fecha_creacion" readonly="1"/>
+                                    <field name="fecha_actualizacion" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="flo_vehiculo_conductor_view_search" model="ir.ui.view">
+        <field name="name">flo.vehiculo.conductor.search</field>
+        <field name="model">flo.vehiculo.conductor</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Asignaciones">
+                <field name="id_FLO_vehiculo"/>
+                <field name="id_RRHH_empleado"/>
+                <separator/>
+                <filter string="Activas" name="filter_activo" domain="[('activo', '=', True)]"/>
+                <filter string="Principal" name="filter_principal" domain="[('es_principal', '=', True)]"/>
+                <filter string="Titular" name="filter_titular" domain="[('tipo_conductor', '=', 'titular')]"/>
+                <filter string="Suplente" name="filter_suplente" domain="[('tipo_conductor', '=', 'suplente')]"/>
+                <separator/>
+                <filter string="Estado: Activa" name="filter_estado_activo" domain="[('estado', '=', 'activo')]"/>
+                <filter string="Estado: Restringida" name="filter_estado_restringida" domain="[('estado', '=', 'restringida')]"/>
+                <separator/>
+                <filter string="Vigentes (sin fecha fin)" name="filter_vigente" domain="[('fecha_fin', '=', False)]"/>
+                <filter string="Finalizadas" name="filter_finalizado" domain="[('fecha_fin', '!=', False)]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Tipo Conductor" name="group_tipo" context="{'group_by': 'tipo_conductor'}"/>
+                    <filter string="Estado" name="group_estado" context="{'group_by': 'estado'}"/>
+                    <filter string="Vehículo" name="group_vehiculo" context="{'group_by': 'id_FLO_vehiculo'}"/>
+                    <filter string="Fecha Inicio" name="group_fecha" context="{'group_by': 'fecha_inicio'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="flo_vehiculo_conductor_action" model="ir.actions.act_window">
+        <field name="name">Asignaciones</field>
+        <field name="res_model">flo.vehiculo.conductor</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="flo_vehiculo_conductor_view_search"/>
+        <field name="context">{'search_default_filter_activo': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear una nueva asignación de conductor
+            </p>
+            <p>
+                Asigne conductores titulares y suplentes a los vehículos,
+                defina la vigencia y lleve el historial de cambios.
+            </p>
+        </field>
+    </record>
+
+</odoo>

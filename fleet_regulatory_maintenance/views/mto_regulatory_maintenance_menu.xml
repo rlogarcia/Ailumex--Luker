@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menú raíz -->
+    <menuitem id="menu_mto_root" name="Mantenimiento"
+        sequence="10"
+        web_icon="fleet_regulatory_maintenance,static/description/icon.png" />
+
+    <!-- Submenús -->
+    <menuitem id="menu_mto_vehiculo_plan" name="Planes de Mantenimiento"
+        parent="menu_mto_root"
+        action="mto_vehiculo_plan_action"
+        sequence="10" />
+
+    <menuitem id="menu_mto_vehiculo_evento" name="Eventos de Vehículos"
+        parent="menu_mto_root"
+        action="mto_vehiculo_evento_action"
+        sequence="20" />
+
+    <menuitem id="menu_mto_ficha_regulatoria" name="Fichas Regulatorias"
+        parent="menu_mto_root"
+        action="mto_ficha_regulatoria_action"
+        sequence="30" />
+
+</odoo>

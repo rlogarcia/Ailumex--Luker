@@ -1,0 +1,131 @@
+/* ================================================
+   KANBAN NOVEDADES — fleet_issue_control
+   ================================================ */
+
+/* ── Reset contenedor Odoo ─────────────────────── */
+.o_kanban_record:has(.nov_card_wrapper) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* ── Card principal ─────────────────────────────── */
+.nov_card_wrapper {
+    width: 280px;
+    background: #ffffff;
+    border: 1px solid #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    font-family: 'Inter', sans-serif;
+    margin: 6px;
+}
+
+.nov_card_wrapper:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Fila superior: badge severidad + tiempo ───── */
+.nov_card_top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px 6px;
+}
+
+.nov_badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: capitalize;
+    letter-spacing: 0.3px;
+}
+
+.nov_badge.critica {
+    background: #c0392b;
+    color: #fff;
+}
+
+.nov_badge.alta {
+    background: #d35400;
+    color: #fff;
+}
+
+.nov_badge.media {
+    background: #b8860b;
+    color: #fff;
+}
+
+.nov_badge.baja {
+    background: #2d6a4f;
+    color: #fff;
+}
+
+.nov_tiempo {
+    font-size: 11px;
+    color: #8896a8;
+}
+
+/* ── Título ─────────────────────────────────────── */
+.nov_titulo {
+    padding: 4px 12px 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #e8edf2;
+    line-height: 1.3;
+}
+
+/* ── Subtexto ───────────────────────────────────── */
+.nov_subtexto {
+    padding: 0 12px 12px;
+    font-size: 12px;
+    color: #8896a8;
+}
+
+/* ── Columnas del kanban por estado ─────────────── */
+.o_kanban_group[data-value="Nueva"] .o_column_title,
+.o_kanban_group[data-value="nueva"] .o_column_title {
+    color: #e74c3c !important;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.o_kanban_group[data-value="En Revisión"] .o_column_title,
+.o_kanban_group[data-value="en_revision"] .o_column_title {
+    color: #3498db !important;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.o_kanban_group[data-value="Programada"] .o_column_title,
+.o_kanban_group[data-value="programada"] .o_column_title {
+    color: #9b59b6 !important;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.o_kanban_group[data-value="Resuelta"] .o_column_title,
+.o_kanban_group[data-value="resuelta"] .o_column_title {
+    color: #2ecc71 !important;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+/* ── Punto de color en columnas ─────────────────── */
+.nov_estado_dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== CHECKLIST DEL DÍA ==================== -->
+
+    <!-- List View -->
+    <record id="chk_lista_vehiculo_view_list" model="ir.ui.view">
+        <field name="name">chk.lista.vehiculo.view.list</field>
+        <field name="model">chk.lista.vehiculo</field>
+        <field name="arch" type="xml">
+            <list string="Checklists del Día"
+                  decoration-danger="resultado == 'no_apto'"
+                  decoration-warning="resultado == 'con_observacion'"
+                  decoration-success="resultado == 'apto'">
+                <field name="nom_checklist" string="Folio"/>
+                <field name="id_FLO_vehiculo" string="Vehículo"/>
+                <field name="identificacion_conductor" string="Conductor"/>
+                <field name="fecha_hora_checklist" string="Fecha/Hora"/>
+                <field name="odometro" string="Odómetro"/>
+                <field name="cantidad_ok" string="Ítems OK" decoration-success="cantidad_ok > 0"/>
+                <field name="cantidad_alertas" string="Ítems Obs." decoration-warning="cantidad_alertas > 0"/>
+                <field name="cantidad_fallas_criticas" string="Ítems Malo" decoration-danger="cantidad_fallas_criticas > 0"/>
+                <field name="resultado" string="Resultado" widget="badge"
+                       decoration-success="resultado == 'apto'"
+                       decoration-warning="resultado == 'con_observacion'"
+                       decoration-danger="resultado == 'no_apto'"/>
+                <field name="origen" string="Origen" widget="badge"/>
+                <field name="enviado_offline" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="chk_lista_vehiculo_view_search" model="ir.ui.view">
+        <field name="name">chk.lista.vehiculo.view.search</field>
+        <field name="model">chk.lista.vehiculo</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Checklists">
+                <field name="nom_checklist" string="Folio"/>
+                <field name="identificacion_conductor" string="Conductor"/>
+                <field name="id_FLO_vehiculo" string="Vehículo"/>
+                <separator/>
+                <filter string="Apto" name="filter_apto" domain="[('resultado', '=', 'apto')]"/>
+                <filter string="Con Observación" name="filter_con_obs" domain="[('resultado', '=', 'con_observacion')]"/>
+                <filter string="No Apto" name="filter_no_apto" domain="[('resultado', '=', 'no_apto')]"/>
+                <filter string="Sin Registrar" name="filter_sin_registrar" domain="[('resultado', '=', 'sin_registrar')]"/>
+                <separator/>
+                <filter string="Hoy" name="filter_hoy"
+                        domain="[('fecha_hora_checklist', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
+                                 ('fecha_hora_checklist', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                <separator/>
+                <filter string="PWA Sync" name="filter_pwa" domain="[('enviado_offline', '=', True)]"/>
+                <filter string="Backend" name="filter_backend" domain="[('enviado_offline', '=', False)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Resultado" name="group_resultado" context="{'group_by': 'resultado'}"/>
+                    <filter string="Fecha" name="group_fecha" context="{'group_by': 'fecha_hora_checklist:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="chk_lista_vehiculo_view_form" model="ir.ui.view">
+        <field name="name">chk.lista.vehiculo.view.form</field>
+        <field name="model">chk.lista.vehiculo</field>
+        <field name="arch" type="xml">
+            <form string="Checklist">
+                <sheet>
+                    <div class="chk_form_top">
+                        <div class="chk_form_fields">
+                            <group>
+                                <group>
+                                    <field name="fecha_hora_checklist" string="Fecha y Hora"/>
+                                    <field name="odometro" string="Odómetro (km)"/>
+                                    <field name="id_FLO_vehiculo" string="Vehículo"/>
+                                    <field name="id_RRHH_empleado_conductor" string="Conductor"/>
+                                </group>
+                                <group>
+                                    <field name="plantilla_id" string="Plantilla Aplicada" options="{'no_create': True}"/>
+                                    <field name="nom_checklist" string="Nombre (sync)" readonly="1" invisible="not nom_checklist"/>
+                                    <field name="origen" string="Origen" readonly="1"/>
+                                </group>
+                            </group>
+                        </div>
+                        <div class="chk_stats_bar">
+                            <div class="chk_stat chk_stat_ok">
+                                <field name="cantidad_ok" readonly="1" nolabel="1"/>
+                                <span>OK</span>
+                            </div>
+                            <div class="chk_stat chk_stat_obs">
+                                <field name="cantidad_alertas" readonly="1" nolabel="1"/>
+                                <span>Obs.</span>
+                            </div>
+                            <div class="chk_stat chk_stat_malo">
+                                <field name="cantidad_fallas_criticas" readonly="1" nolabel="1"/>
+                                <span>Malo</span>
+                            </div>
+                        </div>
+                    </div>
+                    <separator string="Líneas del Checklist — Por Categoría"/>
+                    <field name="linea_ids">
+                        <list editable="bottom"
+                              decoration-danger="respuesta == 'malo'"
+                              decoration-warning="respuesta == 'observacion'">
+                            <field name="item_id" string="Ítem" options="{'no_create': True}" domain="[('activo', '=', True)]"/>
+                            <field name="categoria_id" string="Categoría" options="{'no_create': True}"/>
+                            <field name="criticidad" string="Criticidad"/>
+                            <field name="respuesta" string="Respuesta" widget="badge"
+                                   decoration-success="respuesta == 'bien'"
+                                   decoration-warning="respuesta == 'observacion'"
+                                   decoration-danger="respuesta == 'malo'"/>
+                            <field name="crear_novedad" string="Novedad" widget="boolean_toggle"/>
+                            <field name="observacion" string="Observación" optional="show"/>
+                            <field name="cod_item" string="Código" optional="hide"/>
+                        </list>
+                    </field>
+                    <separator string="Observación General"/>
+                    <field name="notas" placeholder="Sin observaciones generales." readonly="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="chk_checklist_dia_action" model="ir.actions.act_window">
+        <field name="name">Checklists del Día</field>
+        <field name="res_model">chk.lista.vehiculo</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="chk_lista_vehiculo_view_search"/>
+        <field name="context">{'search_default_filter_hoy': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay checklists registrados hoy
+            </p>
+        </field>
+    </record>
+
+</odoo>

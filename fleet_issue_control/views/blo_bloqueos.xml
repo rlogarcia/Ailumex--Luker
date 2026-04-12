@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== BLOQUEOS ==================== -->
+
+    <!-- List View -->
+    <record id="blo_vehiculo_bloqueo_view_list" model="ir.ui.view">
+        <field name="name">blo.vehiculo.bloqueo.list</field>
+        <field name="model">blo.vehiculo.bloqueo</field>
+        <field name="arch" type="xml">
+            <list string="Bloqueos Operativos">
+                <field name="id_BLO_vehiculo_bloqueo" string="ID" />
+                <field name="id_FLO_vehiculo" string="Vehículo" />
+                <field name="motivo" />
+                <field name="id_CHK_lista_vehiculo" />
+                <field name="fecha_hora_inicio" />
+                <field name="estado" />
+            </list>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="blo_vehiculo_bloqueo_action" model="ir.actions.act_window">
+        <field name="name">Bloqueos Operativos</field>
+        <field name="res_model">blo.vehiculo.bloqueo</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay bloqueos operativos activos
+            </p>
+        </field>
+    </record>
+
+</odoo>

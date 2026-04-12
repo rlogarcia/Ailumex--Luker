@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== NOVEDADES ==================== -->
+
+    <!-- Search View -->
+    <record id="nov_vehiculo_novedad_view_search" model="ir.ui.view">
+        <field name="name">nov.vehiculo.novedad.search</field>
+        <field name="model">nov.vehiculo.novedad</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Novedades">
+                <field name="nom_novedad" string="Búsqueda"/>
+                <field name="estado" string="Estado"/>
+                <field name="severidad" string="Severidad"/>
+                <field name="tipo_novedad" string="Tipo"/>
+                <filter name="filter_nueva" string="Nueva" domain="[('estado','=','Nueva')]"/>
+                <filter name="filter_en_revision" string="En Revisión" domain="[('estado','=','En Revisión')]"/>
+                <filter name="filter_programada" string="Programada" domain="[('estado','=','Programada')]"/>
+                <filter name="filter_resuelta" string="Resuelta" domain="[('estado','=','Resuelta')]"/>
+                <separator/>
+                <filter name="filter_critica" string="Crítica" domain="[('severidad','=','Critica')]"/>
+                <filter name="filter_alta" string="Alta" domain="[('severidad','=','Alta')]"/>
+                <filter name="filter_media" string="Media" domain="[('severidad','=','Media')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_estado" string="Estado" context="{'group_by':'estado'}"/>
+                    <filter name="group_severidad" string="Severidad" context="{'group_by':'severidad'}"/>
+                    <filter name="group_tipo" string="Tipo" context="{'group_by':'tipo_novedad'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="nov_vehiculo_novedad_view_kanban" model="ir.ui.view">
+        <field name="name">nov.vehiculo.novedad.kanban</field>
+        <field name="model">nov.vehiculo.novedad</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="estado" class="o_kanban_small_column" group_create="false" group_delete="false" group_edit="false" records_draggable="true">
+                <field name="nom_novedad"/>
+                <field name="estado"/>
+                <field name="severidad"/>
+                <field name="tipo_novedad"/>
+                <field name="fuente"/>
+                <field name="fecha_reporte"/>
+                <field name="id_FLO_vehiculo"/>
+                <progressbar field="severidad" colors='{"Critica": "danger", "Alta": "warning", "Media": "info", "Baja": "success"}'/>
+                <templates>
+                    <t t-name="card">
+                        <div class="nov_card_wrapper">
+                            <div class="nov_card_top">
+                                <span class="nov_badge">
+                                    <t t-esc="record.severidad.value"/>
+                                </span>
+                                <span class="nov_tiempo">
+                                    <t t-esc="record.fecha_reporte.value"/>
+                                </span>
+                            </div>
+                            <div class="nov_titulo">
+                                <t t-esc="record.nom_novedad.value"/>
+                            </div>
+                            <div class="nov_subtexto">
+                                <t t-esc="record.fuente.value"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="nov_vehiculo_novedad_action" model="ir.actions.act_window">
+        <field name="name">Novedades</field>
+        <field name="res_model">nov.vehiculo.novedad</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay novedades registradas
+            </p>
+        </field>
+    </record>
+
+</odoo>

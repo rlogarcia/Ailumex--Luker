@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_nov_vehiculo_novedad_user,nov.vehiculo.novedad user,model_nov_vehiculo_novedad,base.group_user,1,1,1,0
+access_nov_vehiculo_novedad_manager,nov.vehiculo.novedad manager,model_nov_vehiculo_novedad,base.group_system,1,1,1,1
+access_blo_vehiculo_bloqueo_user,blo.vehiculo.bloqueo user,model_blo_vehiculo_bloqueo,base.group_user,1,1,1,0
+access_blo_vehiculo_bloqueo_manager,blo.vehiculo.bloqueo manager,model_blo_vehiculo_bloqueo,base.group_system,1,1,1,1

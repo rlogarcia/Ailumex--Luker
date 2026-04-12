@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== CENTRO DE COSTO ==================== -->
+
+    <!-- Tree View -->
+    <record id="flo_centro_costo_view_list" model="ir.ui.view">
+        <field name="name">flo.centro.costo.list</field>
+        <field name="model">flo.centro.costo</field>
+        <field name="arch" type="xml">
+            <list string="Centros de Costo" decoration-muted="activo == False">
+                <field name="nom_centro_costo"/>
+                <field name="cod_centro_costo"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="flo_centro_costo_view_form" model="ir.ui.view">
+        <field name="name">flo.centro.costo.form</field>
+        <field name="model">flo.centro.costo</field>
+        <field name="arch" type="xml">
+            <form string="Centro de Costo">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="nom_centro_costo" placeholder="Nombre del Centro de Costo"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="cod_centro_costo"/>
+                            <field name="id_SEG_empresa"/>
+                            <field name="activo"/>
+                        </group>
+                        <group string="Auditoría">
+                            <field name="fecha_creacion" readonly="1"/>
+                            <field name="fecha_actualizacion" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="flo_centro_costo_view_search" model="ir.ui.view">
+        <field name="name">flo.centro.costo.search</field>
+        <field name="model">flo.centro.costo</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Centros de Costo">
+                <field name="nom_centro_costo"/>
+                <field name="cod_centro_costo"/>
+                <separator/>
+                <filter string="Activos" name="filter_activo" domain="[('activo', '=', True)]"/>
+                <filter string="Inactivos" name="filter_inactivo" domain="[('activo', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="flo_centro_costo_action" model="ir.actions.act_window">
+        <field name="name">Centros de Costo</field>
+        <field name="res_model">flo.centro.costo</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="flo_centro_costo_view_search"/>
+        <field name="context">{'search_default_filter_activo': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear un nuevo centro de costo
+            </p>
+        </field>
+    </record>
+
+</odoo>

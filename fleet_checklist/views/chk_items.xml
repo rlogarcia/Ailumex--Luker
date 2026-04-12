@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== ÍTEMS ==================== -->
+
+    <!-- List View -->
+    <record id="chk_item_view_list" model="ir.ui.view">
+        <field name="name">chk.item.view.list</field>
+        <field name="model">chk.item</field>
+        <field name="arch" type="xml">
+            <list string="Items">
+                <field name="cod_CHK_item"/>
+                <field name="nom_CHK_item"/>
+                <field name="criticidad"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="chk_item_view_form" model="ir.ui.view">
+        <field name="name">chk.item.view.form</field>
+        <field name="model">chk.item</field>
+        <field name="arch" type="xml">
+            <form string="Ítem">
+                <sheet>
+                    <group>
+                        <group string="Identificación">
+                            <field name="cod_CHK_item"/>
+                            <field name="nom_CHK_item" string="Nombre del ítem"/>
+                            <field name="id_CHK_categoria" string="Categoría"/>
+                            <field name="secuencia"/>
+                            <field name="activo"/>
+                        </group>
+                        <group string="Criticidad">
+                            <field name="criticidad"/>
+                            <field name="requiere_evidencia_si_falla"/>
+                            <field name="requiere_observacion_si_falla"/>
+                            <field name="crear_novedad_si_falla"/>
+                            <field name="bloquear_operacion_si_falla"/>
+                        </group>
+                    </group>
+                    <group string="Auditoría">
+                        <group>
+                            <field name="fecha_creacion" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="fecha_actualizacion" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="chk_item_action" model="ir.actions.act_window">
+        <field name="name">Items</field>
+        <field name="res_model">chk.item</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

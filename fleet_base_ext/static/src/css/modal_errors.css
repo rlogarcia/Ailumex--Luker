@@ -1,0 +1,235 @@
+/* ================================================
+   MODALES DE ERROR — fleet_base_ext
+   ================================================ */
+
+/* ── Mensaje amigable (JS patch futuro) ─────── */
+.flo_error_friendly {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #2c2c2c;
+}
+
+.flo_error_friendly b {
+    color: #c0392b;
+}
+
+.flo_error_friendly i {
+    color: #888;
+}
+
+/* ════════════════════════════════════════════════
+   ERROR DIALOG
+   ════════════════════════════════════════════════ */
+
+/* ── Ventana ─────────────────────────────────── */
+.o_error_dialog .modal-content {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    font-family: 'Inter', sans-serif;
+    max-width: 580px;
+    background: #ffffff;
+}
+
+/* ── Header: usa position:relative para el X ── */
+.o_error_dialog .modal-header {
+    background: transparent;
+    border-bottom: none;
+    padding: 20px 20px 8px;
+    /* Cambiamos a block para que el pill no se estire */
+    display: block;
+    position: relative;
+}
+
+/* Reubicamos el botón X arriba a la derecha */
+.o_error_dialog .modal-header .btn-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    opacity: 0.4;
+    z-index: 2;
+}
+
+.o_error_dialog .modal-header .btn-close:hover {
+    opacity: 0.8;
+}
+
+/* Ocultar icono por defecto de Odoo */
+.o_error_dialog .o_dialog_warning,
+.o_error_dialog .modal-header .fa,
+.o_error_dialog .modal-header i {
+    display: none;
+}
+
+/* ── Título: pill rosado, tamaño al contenido ── */
+.o_error_dialog .modal-title {
+    display: inline-block;
+    background: #f8d7d7;
+    color: #1a1a1a;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    border-radius: 10px;
+    max-width: calc(100% - 48px);
+    /* respeta espacio del botón X */
+}
+
+/* ── Body ────────────────────────────────────── */
+.o_error_dialog .modal-body {
+    padding: 16px 20px 8px;
+    background: #ffffff;
+    color: #3a3a3a;
+    font-size: 14px;
+    line-height: 1.6;
+    position: relative;
+    /* espacio a la derecha para el SVG */
+    padding-right: 200px;
+    /* mínima altura para que el SVG quepa */
+    min-height: 120px;
+}
+
+/* ── SVG decorativo ──────────────────────────── */
+.o_error_dialog .modal-body::after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 170px;
+    height: 170px;
+    background-image: url('/fleet_base_ext/static/src/img/red-alert-icon.svg');
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Texto encima del SVG */
+.o_error_dialog .modal-body p {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 0;
+}
+
+/* ── Ocultar líneas técnicas ─────────────────── */
+/* Odoo las renderiza en párrafos después del primero,
+   o dentro de un div.o_error_detail / pre */
+.o_error_dialog .modal-body p+p,
+.o_error_dialog .modal-body p~p,
+.o_error_dialog .modal-body ul,
+.o_error_dialog .modal-body pre,
+.o_error_dialog .modal-body .o_error_detail,
+.o_error_dialog .modal-body .o_field_widget {
+    display: none !important;
+}
+
+/* ── Footer ──────────────────────────────────── */
+.o_error_dialog .modal-footer {
+    background: #ffffff;
+    border-top: none;
+    padding: 8px 20px 20px;
+}
+
+/* ── Botón ───────────────────────────────────── */
+.o_error_dialog .modal-footer .btn-primary,
+.o_error_dialog .modal-footer .btn-secondary {
+    background: transparent;
+    border: 2px solid #bbbbbb;
+    border-radius: 24px;
+    color: #333333;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 9px 26px;
+    transition: border-color 0.2s, color 0.2s;
+    box-shadow: none !important;
+}
+
+.o_error_dialog .modal-footer .btn-primary:hover,
+.o_error_dialog .modal-footer .btn-secondary:hover {
+    border-color: #e74c3c;
+    color: #e74c3c;
+    background: transparent;
+}
+
+/* ════════════════════════════════════════════════
+   WARNING DIALOG (tono ámbar)
+   ════════════════════════════════════════════════ */
+
+.o_warning_dialog .modal-content {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+}
+
+.o_warning_dialog .modal-header {
+    background: transparent;
+    border-bottom: none;
+    padding: 20px 20px 8px;
+    display: block;
+    position: relative;
+}
+
+.o_warning_dialog .modal-header .btn-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    opacity: 0.4;
+}
+
+.o_warning_dialog .modal-title {
+    display: inline-block;
+    background: #fdebd0;
+    color: #1a1a1a;
+    font-size: 17px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    max-width: calc(100% - 48px);
+}
+
+.o_warning_dialog .modal-body {
+    padding: 16px 20px 8px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #3a3a3a;
+}
+
+.o_warning_dialog .modal-footer {
+    background: #ffffff;
+    border-top: none;
+    padding: 8px 20px 20px;
+}
+
+.o_warning_dialog .modal-footer .btn-primary,
+.o_warning_dialog .modal-footer .btn-secondary {
+    background: transparent;
+    border: 2px solid #bbbbbb;
+    border-radius: 24px;
+    color: #333333;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 9px 26px;
+    transition: border-color 0.2s, color 0.2s;
+    box-shadow: none !important;
+}
+
+.o_warning_dialog .modal-footer .btn-primary:hover,
+.o_warning_dialog .modal-footer .btn-secondary:hover {
+    border-color: #f39c12;
+    color: #f39c12;
+    background: transparent;
+}

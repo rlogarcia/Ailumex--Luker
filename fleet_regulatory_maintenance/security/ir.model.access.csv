@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_mto_vehiculo_plan,mto.vehiculo.plan,model_mto_vehiculo_plan,base.group_user,1,1,1,1
+access_mto_vehiculo_evento,mto.vehiculo.evento,model_mto_vehiculo_evento,base.group_user,1,1,1,1
+access_mto_vehiculo_evidencia,mto.vehiculo.evidencia,model_mto_vehiculo_evidencia,base.group_user,1,1,1,1
+access_mto_ficha_regulatoria,mto.ficha.regulatoria,model_mto_ficha_regulatoria,base.group_user,1,1,1,1

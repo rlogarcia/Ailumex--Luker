@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== SEDE OPERATIVA ==================== -->
+
+    <!-- Tree View -->
+    <record id="flo_sede_operativa_view_list" model="ir.ui.view">
+        <field name="name">flo.sede.operativa.list</field>
+        <field name="model">flo.sede.operativa</field>
+        <field name="arch" type="xml">
+            <list string="Sedes Operativas" decoration-muted="activo == False">
+                <field name="nom_sede_operativa"/>
+                <field name="cod_sede_operativa"/>
+                <field name="ciudad"/>
+                <field name="departamento"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="flo_sede_operativa_view_form" model="ir.ui.view">
+        <field name="name">flo.sede.operativa.form</field>
+        <field name="model">flo.sede.operativa</field>
+        <field name="arch" type="xml">
+            <form string="Sede Operativa">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="nom_sede_operativa" placeholder="Nombre de la Sede"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Información General">
+                            <field name="cod_sede_operativa"/>
+                            <field name="id_SEG_empresa"/>
+                            <field name="activo"/>
+                        </group>
+                        <group string="Ubicación">
+                            <field name="ciudad"/>
+                            <field name="departamento"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Auditoría">
+                            <field name="fecha_creacion" readonly="1"/>
+                            <field name="fecha_actualizacion" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="flo_sede_operativa_view_search" model="ir.ui.view">
+        <field name="name">flo.sede.operativa.search</field>
+        <field name="model">flo.sede.operativa</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Sedes">
+                <field name="nom_sede_operativa"/>
+                <field name="cod_sede_operativa"/>
+                <field name="ciudad"/>
+                <separator/>
+                <filter string="Activas" name="filter_activo" domain="[('activo', '=', True)]"/>
+                <filter string="Inactivas" name="filter_inactivo" domain="[('activo', '=', False)]"/>
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Departamento" name="group_departamento" context="{'group_by': 'departamento'}"/>
+                    <filter string="Ciudad" name="group_ciudad" context="{'group_by': 'ciudad'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="flo_sede_operativa_action" model="ir.actions.act_window">
+        <field name="name">Sedes Operativas</field>
+        <field name="res_model">flo.sede.operativa</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="flo_sede_operativa_view_search"/>
+        <field name="context">{'search_default_filter_activo': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear una nueva sede operativa
+            </p>
+        </field>
+    </record>
+
+</odoo>

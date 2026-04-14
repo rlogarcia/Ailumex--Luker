@@ -87,5 +87,6 @@
     'installable': True,
     'application': False,
     'auto_install': False, # No se instala automáticamente cuando se instala Survey
-    #'post_init_hook': 'post_init_hook', # Se ejecuta después de instalar o actualizar el módulo
+    'post_init_hook': 'post_init_hook', # Solo al instalar por primera vez
+    'post_migrate': 'post_migrate',  
 }

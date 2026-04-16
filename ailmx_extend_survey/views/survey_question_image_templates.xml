@@ -5,50 +5,33 @@
               name="AILUMEX Question Image Display"
               inherit_id="survey.question_container">
 
-        <!--
-            Insertamos las imágenes después del bloque:
-            <div class="mb-4">
-            que contiene:
-            - título
-            - descripción
-
-            Así el orden queda:
-            1. Título
-            2. Descripción
-            3. Imágenes
-            4. Campo de respuesta
-        -->
         <xpath expr="//div[hasclass('mb-4')]" position="after">
 
             <t t-if="question and question.Flg_Allow_Image_Attachment">
 
                 <!-- Varias imágenes -->
                 <t t-if="question.Question_Image_Attachment_Ids">
-                    <div class="mt-3"
-                         style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start;">
+                    <t t-set="img_count" t-value="len(question.Question_Image_Attachment_Ids)"/>
 
+                    <div t-attf-class="mt-3 ailmx_question_image_grid #{'ailmx_question_image_grid_1' if img_count == 1 else 'ailmx_question_image_grid_2' if img_count == 2 else 'ailmx_question_image_grid_3'}">
                         <t t-foreach="question.Question_Image_Attachment_Ids" t-as="img_attachment">
-                            <div style="text-align: center;">
+                            <div class="ailmx_question_image_item">
                                 <img t-att-src="'/web/image/ir.attachment/%s/datas' % img_attachment.id"
                                      alt="Imagen de la pregunta"
-                                     style="max-width: 100%; width: 100%; max-height: 220px; object-fit: contain; display: block; margin: 0 auto;"/>
+                                     class="ailmx_question_image"/>
                             </div>
                         </t>
-
                     </div>
                 </t>
 
                 <!-- Compatibilidad: una sola imagen -->
                 <t t-elif="question.Img_Question_Attachment">
-                    <div class="mt-3"
-                         style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start;">
-
-                        <div style="text-align: center;">
+                    <div class="mt-3 ailmx_question_image_grid ailmx_question_image_grid_1">
+                        <div class="ailmx_question_image_item">
                             <img t-att-src="image_data_uri(question.Img_Question_Attachment)"
                                  alt="Imagen de la pregunta"
-                                 style="max-width: 100%; width: 100%; max-height: 220px; object-fit: contain; display: block; margin: 0 auto;"/>
+                                 class="ailmx_question_image"/>
                         </div>
-
                     </div>
                 </t>
 

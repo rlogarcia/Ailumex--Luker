@@ -29,12 +29,12 @@
                 </t>
             </div>
 
-            <table class="table table-bordered text-center ailmx_math_grid_table">
+            <table class="ailmx_wizard_grid_table ailmx_math_grid_table">
                 <tbody>
-                    <t t-foreach="state.grid" t-as="row" t-key="row_index">
+                    <t t-foreach="state.grid" t-as="row" t-key="row[0].rowIndex">
                         <tr>
-                            <t t-foreach="row" t-as="cell" t-key="cell.colIndex">
-                                <td>
+                            <t t-foreach="row" t-as="cell" t-key="cell.rowIndex + '_' + cell.colIndex">
+                                <td class="ailmx_wizard_grid_td">
                                     <input
                                         type="text"
                                         class="ailmx_wizard_cell_input"
@@ -51,6 +51,87 @@
                     </t>
                 </tbody>
             </table>
+
+            <t t-if="state.showCommaModal">
+                <div class="ailmx_comma_modal_backdrop">
+                    <div class="ailmx_comma_modal">
+
+                        <div class="ailmx_comma_modal_header">
+                            <div class="ailmx_comma_modal_title">
+                                Importar grid separado por comas
+                            </div>
+                        </div>
+
+                        <div class="ailmx_comma_modal_body">
+
+                            <label class="ailmx_comma_label">
+                                Contenido visible:
+                            </label>
+
+                            <textarea
+                                class="ailmx_comma_textarea"
+                                t-att-value="state.commaVisibleInput"
+                                t-on-input="onCommaVisibleInput"
+                                placeholder="2+2, 5+3, 1+22, 12+7..."
+                            />
+
+                            <label class="ailmx_comma_label">
+                                Valor correcto:
+                            </label>
+
+                            <textarea
+                                class="ailmx_comma_textarea"
+                                t-att-value="state.commaCorrectInput"
+                                t-on-input="onCommaCorrectInput"
+                                placeholder="4, 8, 23, 19..."
+                            />
+
+                            <label class="ailmx_comma_label">
+                                Vista previa:
+                            </label>
+
+                            <div class="ailmx_comma_preview_wrapper ailmx_math_preview_wrapper">
+                                <table class="ailmx_comma_preview_table ailmx_math_preview_table">
+                                    <tbody>
+                                        <t t-foreach="state.previewGrid" t-as="row" t-key="row.rowKey">
+                                            <tr>
+                                                <t t-foreach="row.cells" t-as="cell" t-key="cell.cellKey">
+                                                    <td class="ailmx_comma_preview_cell ailmx_math_preview_cell">
+                                                        <div>
+                                                            <t t-esc="cell.visible"/>
+                                                        </div>
+                                                        <t t-if="cell.correct">
+                                                            <div class="ailmx_comma_preview_subvalue">
+                                                                = <t t-esc="cell.correct"/>
+                                                            </div>
+                                                        </t>
+                                                    </td>
+                                                </t>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
+
+                        <div class="ailmx_comma_modal_footer">
+                            <button type="button"
+                                    class="btn btn-secondary"
+                                    t-on-click="closeCommaImportModal">
+                                Cancelar
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-success"
+                                    t-on-click="applyCommaImport">
+                                Guardar
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </t>
 
         </div>
     </t>

@@ -3,12 +3,12 @@
 
     <t t-name="ailmx_extend_survey.ReadingGridWizardWidget">
         <div class="ailmx_wizard_grid_wrapper">
-            <table style="border-collapse: separate; border-spacing: 6px;">
+            <table class="ailmx_wizard_grid_table">
                 <tbody>
-                    <t t-foreach="state.grid" t-as="row" t-key="row_index">
+                    <t t-foreach="state.grid" t-as="row" t-key="row[0].rowIndex">
                         <tr>
-                            <t t-foreach="row" t-as="cell" t-key="cell_index">
-                                <td style="padding:0; border:none; vertical-align:middle;">
+                            <t t-foreach="row" t-as="cell" t-key="cell.rowIndex + '_' + cell.colIndex">
+                                <td class="ailmx_wizard_grid_td">
                                     <input
                                         t-att-id="'ailmx_cell_' + cell.rowIndex + '_' + cell.colIndex"
                                         type="text"
@@ -24,6 +24,68 @@
                     </t>
                 </tbody>
             </table>
+
+            <t t-if="state.showCommaModal">
+                <div class="ailmx_comma_modal_backdrop">
+                    <div class="ailmx_comma_modal">
+
+                        <div class="ailmx_comma_modal_header">
+                            <div class="ailmx_comma_modal_title">
+                                Importar contenido separado por comas
+                            </div>
+                        </div>
+
+                        <div class="ailmx_comma_modal_body">
+                            <label class="ailmx_comma_label">
+                                Texto separado por comas:
+                            </label>
+
+                            <textarea
+                                class="ailmx_comma_textarea"
+                                t-att-value="state.commaInput"
+                                t-on-input="onCommaInput"
+                                placeholder="perro, gato, avión, casa..."
+                            />
+
+                            <label class="ailmx_comma_label">
+                                Vista previa:
+                            </label>
+
+                            <div class="ailmx_comma_preview_wrapper">
+                                <table class="ailmx_comma_preview_table">
+                                    <tbody>
+                                        <t t-foreach="state.previewGrid" t-as="row" t-key="row.rowKey">
+                                            <tr>
+                                                <t t-foreach="row.cells" t-as="cell" t-key="cell.cellKey">
+                                                    <td class="ailmx_comma_preview_cell">
+                                                        <t t-esc="cell.value"/>
+                                                    </td>
+                                                </t>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="ailmx_comma_modal_footer">
+                            <button type="button"
+                                    class="btn btn-secondary"
+                                    t-on-click="closeCommaImportModal">
+                                Cancelar
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-success"
+                                    t-on-click="applyCommaImport">
+                                Guardar
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </t>
+
         </div>
     </t>
 

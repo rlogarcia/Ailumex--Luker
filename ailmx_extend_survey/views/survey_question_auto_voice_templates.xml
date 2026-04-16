@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="survey_question_auto_voice_inject"
+                name="AILUMEX Auto Voice - Inyección en pregunta"
+                inherit_id="survey.question_container">
+
+        <xpath expr="." position="inside">
+
+            <t t-if="question and question.Flg_Auto_Voice_Record">
+                <div class="mt-3 ailmx_auto_voice_wrapper"
+                        t-att-data-question-id="question.id">
+
+                    <div class="ailmx_auto_voice_header">
+                        <span class="ailmx_auto_voice_dot"></span>
+                        <span class="ailmx_auto_voice_title">Grabación automática activa</span>
+                    </div>
+
+                    <div class="ailmx_auto_voice_meta">
+                        <span class="ailmx_auto_voice_timer">0:00</span>
+                        <span class="ailmx_auto_voice_status">Preparando grabación...</span>
+                    </div>
+
+                    <div class="ailmx_auto_voice_wave">
+                        <span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+
+                    <audio class="ailmx_auto_voice_playback" style="display:none;"></audio>
+                </div>
+            </t>
+
+        </xpath>
+
+    </template>
+
+</odoo>

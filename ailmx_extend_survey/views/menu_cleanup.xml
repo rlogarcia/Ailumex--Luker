@@ -1,3 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!-- Ocultar menús nativos de Odoo (Encuestas, Participantes y Preguntas y respuestas) -->
+
 <odoo>
+
+    <!-- Ocultar menús nativos que ya no se usarán -->
+
+    <!-- ENCUESTAS -->
+    <record id="survey.menu_survey_form" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+
+    <!-- PARTICIPACIONES -->
+    <record id="survey.menu_survey_type_form1" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+
+    <!-- PREGUNTAS Y RESPUESTAS -->
+    <record id="survey.survey_menu_questions" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+
 </odoo>

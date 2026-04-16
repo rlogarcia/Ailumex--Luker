@@ -1,0 +1,98 @@
+.ailmx_auto_voice_wrapper {
+    margin-top: 14px;
+    border: 1.5px solid #dbe7f3;
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: #f8fbff;
+}
+
+.ailmx_auto_voice_header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.ailmx_auto_voice_dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #dc2626;
+    animation: ailmx_auto_voice_blink 1s infinite;
+    display: inline-block;
+}
+
+@keyframes ailmx_auto_voice_blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+}
+
+.ailmx_auto_voice_title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.ailmx_auto_voice_meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.ailmx_auto_voice_timer {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f5c99;
+    font-variant-numeric: tabular-nums;
+}
+
+.ailmx_auto_voice_status {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.ailmx_auto_voice_status_recording {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.ailmx_auto_voice_status_ok {
+    color: #059669;
+    font-weight: 600;
+}
+
+.ailmx_auto_voice_status_error {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.ailmx_auto_voice_wave {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 28px;
+}
+
+.ailmx_auto_voice_wave span {
+    display: inline-block;
+    width: 5px;
+    background: #1f5c99;
+    border-radius: 3px;
+    animation: ailmx_auto_voice_wave 0.8s ease-in-out infinite;
+}
+
+.ailmx_auto_voice_wave span:nth-child(1) { animation-delay: 0.0s; }
+.ailmx_auto_voice_wave span:nth-child(2) { animation-delay: 0.1s; }
+.ailmx_auto_voice_wave span:nth-child(3) { animation-delay: 0.2s; }
+.ailmx_auto_voice_wave span:nth-child(4) { animation-delay: 0.3s; }
+.ailmx_auto_voice_wave span:nth-child(5) { animation-delay: 0.4s; }
+.ailmx_auto_voice_wave span:nth-child(6) { animation-delay: 0.3s; }
+.ailmx_auto_voice_wave span:nth-child(7) { animation-delay: 0.2s; }
+.ailmx_auto_voice_wave span:nth-child(8) { animation-delay: 0.1s; }
+
+@keyframes ailmx_auto_voice_wave {
+    0%, 100% { height: 6px; }
+    50% { height: 24px; }
+}

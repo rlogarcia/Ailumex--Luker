@@ -142,22 +142,32 @@ class SurveyResponseLine(models.Model):
         for record in self:
             display_value = ''
 
-            if record.Typ_Response in ('reading_grid', 'math_grid') and isinstance(record.Val_JSON, list):
-                ok = err = skip = stop = total = 0
-                for item in record.Val_JSON:
-                    if not isinstance(item, dict):
-                        continue
-                    state = item.get('state')
-                    if state and state != 'empty':
-                        total += 1
-                    if state == 'ok':       ok   += 1
-                    elif state == 'err':    err  += 1
-                    elif state == 'skip':   skip += 1
-                    elif state == 'stop':   stop += 1
+            if record.Typ_Response == 'reading_grid' and isinstance(record.Val_JSON, list):
+                total_cells = len(record.Val_JSON)
+                selected = sum(
+                    1 for item in record.Val_JSON
+                    if isinstance(item, dict) and item.get('state') and item.get('state') != 'empty'
+                )
+                unselected = total_cells - selected
 
                 display_value = (
-                    f'Correctas: {ok} | Errores: {err} | '
-                    f'Omitidas: {skip} | Paradas: {stop} | Total marcado: {total}'
+                    f'Marcadas: {selected} | '
+                    f'No marcadas: {unselected} | '
+                    f'Total marcado: {selected}'
+                )
+
+            elif record.Typ_Response == 'math_grid' and isinstance(record.Val_JSON, list):
+                total_cells = len(record.Val_JSON)
+                selected = sum(
+                    1 for item in record.Val_JSON
+                    if isinstance(item, dict) and item.get('state') and item.get('state') != 'empty'
+                )
+                unselected = total_cells - selected
+
+                display_value = (
+                    f'Marcadas: {selected} | '
+                    f'No marcadas: {unselected} | '
+                    f'Total marcado: {selected}'
                 )
 
             elif record.Id_Question_Option:
@@ -195,12 +205,12 @@ class SurveyResponseLine(models.Model):
         'Id_Question.Question_Image_Attachment_Ids',
         'Id_Question.Img_Question_Attachment',
         'Id_Question.reading_grid_rows', 'Id_Question.reading_grid_cols',
-        'Id_Question.math_grid_rows',    'Id_Question.math_grid_cols',
+        'Id_Question.math_grid_rows', 'Id_Question.math_grid_cols',
     )
     def _compute_review_fields(self):
         for record in self:
             is_correct = False
-            status     = 'Respondida'
+            status = 'Respondida'
 
             if record.Flg_Omitted:
                 status = 'Omitida'
@@ -209,7 +219,7 @@ class SurveyResponseLine(models.Model):
                 if record.Id_Question_Option:
                     is_correct = bool(record.Id_Question_Option.Flg_Is_Correct)
                 elif record.Val_Text:
-                    selected_text  = (record.Val_Text or '').strip()
+                    selected_text = (record.Val_Text or '').strip()
                     correct_option = record.Id_Question.suggested_answer_ids.filtered(
                         lambda opt: opt.Flg_Is_Correct
                         and (opt.value or opt.display_name or '').strip() == selected_text
@@ -220,31 +230,31 @@ class SurveyResponseLine(models.Model):
             elif record.Id_Question and record.Id_Question.question_type == 'multiple_choice':
                 selected_ids, selected_values = record._get_selected_multiple_choice_data()
                 correct_options = record.Id_Question.suggested_answer_ids.filtered('Flg_Is_Correct')
-                correct_ids     = set(correct_options.ids)
-                correct_values  = set(
+                correct_ids = set(correct_options.ids)
+                correct_values = set(
                     (opt.value or opt.display_name or '').strip()
                     for opt in correct_options
                     if (opt.value or opt.display_name or '').strip()
                 )
                 selected_values = set(v.strip() for v in selected_values if v and v.strip())
-                matched_by_id    = bool(selected_ids)    and (selected_ids    == correct_ids)
+                matched_by_id = bool(selected_ids) and (selected_ids == correct_ids)
                 matched_by_value = bool(selected_values) and (selected_values == correct_values)
                 is_correct = bool(matched_by_id or matched_by_value)
-                status     = 'Correcta' if is_correct else 'Incorrecta'
+                status = 'Correcta' if is_correct else 'Incorrecta'
 
             else:
                 status = 'Respondida'
 
             record.Flg_Is_Correct_Response = is_correct
-            record.Nam_Review_Status       = status
-            record.Des_Review_HTML         = record._build_review_html(status, is_correct)
+            record.Nam_Review_Status = status
+            record.Des_Review_HTML = record._build_review_html(status, is_correct)
 
     def _get_selected_multiple_choice_data(self):
         self.ensure_one()
 
-        selected_ids    = set()
+        selected_ids = set()
         selected_values = set()
-        value           = self.Val_JSON
+        value = self.Val_JSON
 
         def _normalize(v):
             if isinstance(v, dict):
@@ -322,7 +332,7 @@ class SurveyResponseLine(models.Model):
         if not question:
             return Markup('<div>Sin pregunta asociada.</div>')
 
-        status_bg    = '#dcfce7' if status == 'Correcta' else '#fee2e2' if status == 'Incorrecta' else '#f3f4f6'
+        status_bg = '#dcfce7' if status == 'Correcta' else '#fee2e2' if status == 'Incorrecta' else '#f3f4f6'
         status_color = '#166534' if status == 'Correcta' else '#991b1b' if status == 'Incorrecta' else '#374151'
 
         html_parts = []
@@ -360,9 +370,6 @@ class SurveyResponseLine(models.Model):
             html_parts.extend(image_blocks)
             html_parts.append('</div>')
 
-        # =====================================================
-        # TIPO EXAMEN
-        # =====================================================
         if question.question_type in ('simple_choice', 'multiple_choice'):
             selected_ids, selected_values = self._get_selected_multiple_choice_data()
 
@@ -379,7 +386,7 @@ class SurveyResponseLine(models.Model):
 
             html_parts.append('<div style="display:flex;flex-direction:column;gap:10px;">')
             for opt in question.suggested_answer_ids:
-                label       = _norm_label(opt.value or opt.display_name)
+                label = _norm_label(opt.value or opt.display_name)
                 is_selected = False
                 if question.question_type == 'simple_choice':
                     is_selected = bool(self.Id_Question_Option and self.Id_Question_Option.id == opt.id)
@@ -388,17 +395,23 @@ class SurveyResponseLine(models.Model):
                 else:
                     is_selected = opt.id in selected_ids or label.strip() in selected_values
 
-                opt_correct  = bool(opt.Flg_Is_Correct)
+                opt_correct = bool(opt.Flg_Is_Correct)
                 border_color = '#d1d5db'
-                background   = '#ffffff'
-                text_right   = 'No seleccionada'
+                background = '#ffffff'
+                text_right = 'No seleccionada'
 
                 if opt_correct and is_selected:
-                    border_color = '#16a34a'; background = '#dcfce7'; text_right = 'Seleccionada · Correcta'
+                    border_color = '#16a34a'
+                    background = '#dcfce7'
+                    text_right = 'Seleccionada · Correcta'
                 elif is_selected and not opt_correct:
-                    border_color = '#dc2626'; background = '#fee2e2'; text_right = 'Seleccionada · Incorrecta'
+                    border_color = '#dc2626'
+                    background = '#fee2e2'
+                    text_right = 'Seleccionada · Incorrecta'
                 elif opt_correct and not is_selected:
-                    border_color = '#16a34a'; background = '#f0fdf4'; text_right = 'Respuesta correcta'
+                    border_color = '#16a34a'
+                    background = '#f0fdf4'
+                    text_right = 'Respuesta correcta'
 
                 html_parts.append(
                     f'<div style="border:2px solid {border_color};background:{background};border-radius:10px;'
@@ -409,52 +422,44 @@ class SurveyResponseLine(models.Model):
                 )
             html_parts.append('</div>')
 
-        # =====================================================
-        # GRID LECTURA
-        # =====================================================
         elif self.Typ_Response == 'reading_grid' and isinstance(self.Val_JSON, list):
-            html_parts.append(self._build_grid_html(
+            html_parts.append(self._build_reading_grid_html(
                 rows=question.reading_grid_rows or 1,
                 cols=question.reading_grid_cols or 1,
                 cells=self.Val_JSON,
-                show_correct=False,
             ))
 
-        # =====================================================
-        # GRID MATEMÁTICO — valor correcto + audio
-        # =====================================================
         elif self.Typ_Response == 'math_grid' and isinstance(self.Val_JSON, list):
-            html_parts.append(self._build_grid_html(
+            html_parts.append(self._build_math_grid_html(
                 rows=question.math_grid_rows or 1,
                 cols=question.math_grid_cols or 1,
                 cells=self.Val_JSON,
                 show_correct=True,
             ))
 
-            # Buscar audio asociado
-            audio_record = self.env['survey.response.audio'].search([
-                ('response_line_id', '=', self.id),
-            ], limit=1)
-
-            if audio_record and audio_record.attachment_id:
-                att = audio_record.attachment_id
-                html_parts.append(
-                    f'<div style="margin-top:12px;padding:12px 14px;background:#f0f9ff;'
-                    f'border:1px solid #bae6fd;border-radius:10px;">'
-                    f'<div style="font-size:13px;color:#0369a1;font-weight:600;margin-bottom:8px;">'
-                    f'🎙 Respuesta oral</div>'
-                    f'<audio controls style="width:100%;max-width:400px;">'
-                    f'<source src="/web/content/{att.id}?download=false" type="{escape(audio_record.mimetype or "audio/webm")}">'
-                    f'Tu navegador no soporta reproducción de audio.'
-                    f'</audio>'
-                    f'</div>'
-                )
-
         else:
             html_parts.append(
                 f'<div style="border:1px solid #d1d5db;border-radius:10px;padding:12px 14px;background:#f9fafb;">'
                 f'<div style="font-size:13px;color:#6b7280;margin-bottom:6px;">Respuesta capturada</div>'
                 f'<div style="font-size:15px;color:#111827;">{escape(self.Nam_Response_Display or "")}</div>'
+                f'</div>'
+            )
+
+        audio_record = self.env['survey.response.audio'].search([
+            ('response_line_id', '=', self.id),
+        ], limit=1)
+
+        if audio_record and audio_record.attachment_id:
+            att = audio_record.attachment_id
+            html_parts.append(
+                f'<div style="margin-top:12px;padding:12px 14px;background:#f0f9ff;'
+                f'border:1px solid #bae6fd;border-radius:10px;">'
+                f'<div style="font-size:13px;color:#0369a1;font-weight:600;margin-bottom:8px;">'
+                f'🎙 Grabación de voz</div>'
+                f'<audio controls preload="none" style="width:100%;max-width:400px;" '
+                f'src="/web/content/{att.id}?download=false">'
+                f'Tu navegador no soporta reproducción de audio.'
+                f'</audio>'
                 f'</div>'
             )
 
@@ -467,38 +472,84 @@ class SurveyResponseLine(models.Model):
 
         return Markup(''.join(html_parts))
 
-    def _build_grid_html(self, rows, cols, cells, show_correct=False):
-        """
-        Construye la tabla HTML del GRID.
-        show_correct=True muestra el valor correcto debajo del texto de cada celda.
-        """
-        ok   = sum(1 for c in cells if isinstance(c, dict) and c.get('state') == 'ok')
-        err  = sum(1 for c in cells if isinstance(c, dict) and c.get('state') == 'err')
-        skip = sum(1 for c in cells if isinstance(c, dict) and c.get('state') == 'skip')
-        stop_cells = [c for c in cells if isinstance(c, dict) and c.get('state') == 'stop']
-        stop  = len(stop_cells)
-        total = ok + err + skip + stop
+    def _build_reading_grid_html(self, rows, cols, cells):
+        total_cells = rows * cols
+        selected = sum(
+            1 for c in cells
+            if isinstance(c, dict) and c.get('state') and c.get('state') != 'empty'
+        )
+        unselected = max(total_cells - selected, 0)
 
         cell_map = {str(c.get('index', '')): c for c in cells if isinstance(c, dict)}
 
-        state_styles = {
-            'ok':    ('#d1fae5', '#065f46', '#6ee7b7', '✓'),
-            'err':   ('#fee2e2', '#7f1d1d', '#fca5a5', '✗'),
-            'skip':  ('#fef3c7', '#78350f', '#fcd34d', '!'),
-            'stop':  ('#e0e7ff', '#1e3a8a', '#a5b4fc', '⏹'),
-            'empty': ('#f9fafb', '#9ca3af', '#e5e7eb', ''),
-        }
-
-        table_html  = '<table style="border-collapse:separate;border-spacing:4px;margin-bottom:12px;">'
-        cell_index  = 0
+        table_html = '<table style="border-collapse:separate;border-spacing:4px;margin-bottom:12px;">'
+        cell_index = 0
         for r in range(rows):
             table_html += '<tr>'
             for c in range(cols):
-                cell    = cell_map.get(str(cell_index), {})
-                state   = cell.get('state', 'empty')
-                text    = str(cell.get('text', ''))
+                cell = cell_map.get(str(cell_index), {})
+                state = cell.get('state', 'empty')
+                text = str(cell.get('text', ''))
+
+                is_selected = bool(state and state != 'empty')
+                bg = '#e8f1fb' if is_selected else '#ffffff'
+                color = '#1f3b57' if is_selected else '#374151'
+                border = '#93c5fd' if is_selected else '#e5e7eb'
+
+                table_html += (
+                    f'<td style="background:{bg};color:{color};border:1px solid {border};'
+                    f'border-radius:6px;padding:8px 10px;text-align:center;'
+                    f'vertical-align:middle;font-weight:600;font-size:13px;min-width:70px;">'
+                    f'{escape(text)}'
+                    f'</td>'
+                )
+                cell_index += 1
+            table_html += '</tr>'
+        table_html += '</table>'
+
+        legend_html = (
+            '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;">'
+            '<span style="display:flex;align-items:center;gap:4px;">'
+            '<span style="width:12px;height:12px;border-radius:3px;background:#e8f1fb;border:1px solid #93c5fd;display:inline-block;"></span>Marcada</span>'
+            '<span style="display:flex;align-items:center;gap:4px;">'
+            '<span style="width:12px;height:12px;border-radius:3px;background:#ffffff;border:1px solid #e5e7eb;display:inline-block;"></span>No marcada</span>'
+            '</div>'
+        )
+
+        summary_html = (
+            f'<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#374151;margin-bottom:8px;">'
+            f'<span><b style="color:#1f3b57;">Marcadas: {selected}</b></span>'
+            f'<span><b style="color:#6b7280;">No marcadas: {unselected}</b></span>'
+            f'<span><b>Total marcado: {selected}</b></span>'
+            f'</div>'
+        )
+
+        return Markup(summary_html + table_html + legend_html)
+
+    def _build_math_grid_html(self, rows, cols, cells, show_correct=False):
+        total_cells = rows * cols
+        selected = sum(
+            1 for c in cells
+            if isinstance(c, dict) and c.get('state') and c.get('state') != 'empty'
+        )
+        unselected = max(total_cells - selected, 0)
+
+        cell_map = {str(c.get('index', '')): c for c in cells if isinstance(c, dict)}
+
+        table_html = '<table style="border-collapse:separate;border-spacing:4px;margin-bottom:12px;">'
+        cell_index = 0
+        for r in range(rows):
+            table_html += '<tr>'
+            for c in range(cols):
+                cell = cell_map.get(str(cell_index), {})
+                state = cell.get('state', 'empty')
+                text = str(cell.get('text', ''))
                 correct = str(cell.get('correct', ''))
-                bg, color, border, symbol = state_styles.get(state, state_styles['empty'])
+
+                is_selected = bool(state and state != 'empty')
+                bg = '#e8f1fb' if is_selected else '#ffffff'
+                color = '#1f3b57' if is_selected else '#374151'
+                border = '#93c5fd' if is_selected else '#e5e7eb'
 
                 correct_block = ''
                 if show_correct and correct:
@@ -512,7 +563,6 @@ class SurveyResponseLine(models.Model):
                     f'border-radius:6px;padding:8px 10px;text-align:center;'
                     f'vertical-align:middle;font-weight:600;font-size:13px;min-width:70px;">'
                     f'{escape(text)}'
-                    f'<span style="font-size:10px;display:block;margin-top:2px;">{symbol}</span>'
                     f'{correct_block}'
                     f'</td>'
                 )
@@ -522,40 +572,22 @@ class SurveyResponseLine(models.Model):
 
         legend_html = (
             '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;">'
-            '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:3px;background:#d1fae5;border:1px solid #6ee7b7;display:inline-block;"></span>Correcta</span>'
-            '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:3px;background:#fee2e2;border:1px solid #fca5a5;display:inline-block;"></span>Error</span>'
-            '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:3px;background:#fef3c7;border:1px solid #fcd34d;display:inline-block;"></span>Omitida</span>'
-            '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:3px;background:#e0e7ff;border:1px solid #a5b4fc;display:inline-block;"></span>Parada</span>'
-            '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:3px;background:#f9fafb;border:1px solid #e5e7eb;display:inline-block;"></span>No alcanzada</span>'
+            '<span style="display:flex;align-items:center;gap:4px;">'
+            '<span style="width:12px;height:12px;border-radius:3px;background:#e8f1fb;border:1px solid #93c5fd;display:inline-block;"></span>Marcada</span>'
+            '<span style="display:flex;align-items:center;gap:4px;">'
+            '<span style="width:12px;height:12px;border-radius:3px;background:#ffffff;border:1px solid #e5e7eb;display:inline-block;"></span>No marcada</span>'
             '</div>'
         )
 
-        stop_info = ''
-        if stop_cells:
-            sc       = stop_cells[0]
-            stop_idx = int(sc.get('index', 0)) + 1
-            stop_info = (
-                f'<div style="margin-top:10px;padding:8px 12px;background:#fefce8;'
-                f'border:1px solid #fcd34d;border-radius:8px;font-size:13px;color:#78350f;">'
-                f'<b>⏹ Punto de parada:</b> celda #{stop_idx} — "{escape(str(sc.get("text", "")))}"'
-                f'</div>'
-            )
-
         summary_html = (
             f'<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#374151;margin-bottom:8px;">'
-            f'<span><b style="color:#065f46;">✓ Correctas: {ok}</b></span>'
-            f'<span><b style="color:#7f1d1d;">✗ Errores: {err}</b></span>'
-            f'<span><b style="color:#78350f;">! Omitidas: {skip}</b></span>'
-            f'<span><b style="color:#1e3a8a;">⏹ Paradas: {stop}</b></span>'
-            f'<span><b>Total marcado: {total}</b></span>'
+            f'<span><b style="color:#1f3b57;">Marcadas: {selected}</b></span>'
+            f'<span><b style="color:#6b7280;">No marcadas: {unselected}</b></span>'
+            f'<span><b>Total marcado: {selected}</b></span>'
             f'</div>'
         )
 
-        return Markup(summary_html + table_html + legend_html + stop_info)
-
-    # =========================================================
-    # MÉTODO: save_response
-    # =========================================================
+        return Markup(summary_html + table_html + legend_html)
 
     def save_response(self, response_header_id, question_id, value):
         response_header = self.env['survey.user_input'].browse(response_header_id)
@@ -575,10 +607,10 @@ class SurveyResponseLine(models.Model):
 
         vals = {
             'Id_Response_Header': response_header_id,
-            'Id_Instrument':      response_header.survey_id.id,
-            'Id_Question':        question_id,
-            'Nam_User':           response_header.partner_id.name or 'Anónimo',
-            'Nam_Device':         response_header.access_token or 'Desconocido',
+            'Id_Instrument': response_header.survey_id.id,
+            'Id_Question': question_id,
+            'Nam_User': response_header.partner_id.name or 'Anónimo',
+            'Nam_Device': response_header.access_token or 'Desconocido',
         }
 
         if question.question_type == 'reading_grid':
@@ -597,12 +629,12 @@ class SurveyResponseLine(models.Model):
 
         if question.question_type == 'simple_choice':
             vals['Typ_Response'] = 'radio'
-            vals['Val_Text']     = str(value) if value else False
+            vals['Val_Text'] = str(value) if value else False
             if isinstance(value, int):
                 vals['Id_Question_Option'] = value
             elif value:
                 st = self._normalize_option_value(value)
-                m  = question.suggested_answer_ids.filtered(
+                m = question.suggested_answer_ids.filtered(
                     lambda o: self._normalize_option_value(o.value or o.display_name) == st
                 )[:1]
                 if m:
@@ -629,10 +661,10 @@ class SurveyResponseLine(models.Model):
         question_type = question.Id_Question_Type
         if not question_type:
             vals['Typ_Response'] = 'text'
-            vals['Val_Text']     = str(value) if value else False
+            vals['Val_Text'] = str(value) if value else False
             return self.create(vals)
 
-        type_code         = question_type.Cod_Question_Type
+        type_code = question_type.Cod_Question_Type
         vals['Typ_Response'] = type_code
 
         if type_code in ('text_short', 'text_long'):
@@ -656,7 +688,7 @@ class SurveyResponseLine(models.Model):
                 vals['Id_Question_Option'] = value
             elif value:
                 st = self._normalize_option_value(value)
-                m  = question.suggested_answer_ids.filtered(
+                m = question.suggested_answer_ids.filtered(
                     lambda o: self._normalize_option_value(o.value or o.display_name) == st
                 )[:1]
                 if m:

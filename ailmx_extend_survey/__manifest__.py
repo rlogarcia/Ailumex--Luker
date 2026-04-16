@@ -27,6 +27,7 @@
         'views/menu_extensions.xml',
         'views/survey_question_timer_templates.xml',
         'views/survey_question_image_templates.xml',
+        'views/survey_question_auto_voice_templates.xml',
         'views/survey_question_reading_grid_templates.xml',
         'views/survey_question_math_grid_templates.xml',
         'views/menu_cleanup.xml',
@@ -55,32 +56,41 @@
 
         # Bundle para la parte pública (Frontend)
         'web.assets_frontend': [
+            'ailmx_extend_survey/static/src/css/survey_style.css',
             'ailmx_extend_survey/static/src/css/survey_timer.css',
             'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
             'ailmx_extend_survey/static/src/css/survey_math_grid.css',
+            'ailmx_extend_survey/static/src/css/survey_auto_voice.css',
             'ailmx_extend_survey/static/src/js/survey_timer.js',
             'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
             'ailmx_extend_survey/static/src/js/survey_math_grid.js',
+            'ailmx_extend_survey/static/src/js/survey_auto_voice.js',
         ],
         
         # Las encuestas públicas usan este bundle minimal
         'web.assets_frontend_minimal': [
+            'ailmx_extend_survey/static/src/css/survey_style.css',
             'ailmx_extend_survey/static/src/css/survey_timer.css',
             'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
             'ailmx_extend_survey/static/src/css/survey_math_grid.css',
+            'ailmx_extend_survey/static/src/css/survey_auto_voice.css',
             'ailmx_extend_survey/static/src/js/survey_timer.js',
             'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
             'ailmx_extend_survey/static/src/js/survey_math_grid.js',
+            'ailmx_extend_survey/static/src/js/survey_auto_voice.js',
         ],
 
         # Bundle de encuestas — Odoo 18 usa este para el frontend de surveys
         'survey.survey_assets': [
+            'ailmx_extend_survey/static/src/css/survey_style.css',
             'ailmx_extend_survey/static/src/css/survey_timer.css',
             'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
             'ailmx_extend_survey/static/src/css/survey_math_grid.css',
+            'ailmx_extend_survey/static/src/css/survey_auto_voice.css',
             'ailmx_extend_survey/static/src/js/survey_timer.js',
             'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
             'ailmx_extend_survey/static/src/js/survey_math_grid.js',
+            'ailmx_extend_survey/static/src/js/survey_auto_voice.js',
         ],
 
     },

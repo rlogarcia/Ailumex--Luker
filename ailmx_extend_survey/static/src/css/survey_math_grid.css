@@ -28,33 +28,16 @@
     transform: translateY(-1px);
 }
 
-.ailmx_math_grid_cell.ailmx_cell_ok {
-    background-color: #d1fae5 !important;
-    color: #065f46 !important;
-    border: none !important;
-    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+.ailmx_math_grid_cell.ailmx_cell_empty {
+    background-color: #ffffff !important;
+    color: inherit !important;
 }
 
-.ailmx_math_grid_cell.ailmx_cell_err {
-    background-color: #fee2e2 !important;
-    color: #7f1d1d !important;
+.ailmx_math_grid_cell.ailmx_cell_selected {
+    background-color: #e8f1fb !important;
+    color: #1f3b57 !important;
     border: none !important;
-    box-shadow: inset 0 0 0 2px rgba(220, 38, 38, 0.25) !important;
-}
-
-.ailmx_math_grid_cell.ailmx_cell_skip {
-    background-color: #fef3c7 !important;
-    color: #78350f !important;
-    border: none !important;
-    box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.25) !important;
-}
-
-.ailmx_math_grid_cell.ailmx_cell_stop {
-    background-color: #e0e7ff !important;
-    color: #1e3a8a !important;
-    font-weight: 700 !important;
-    border: none !important;
-    box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.35) !important;
+    box-shadow: inset 0 0 0 2px rgba(31, 92, 153, 0.22) !important;
 }
 
 .ailmx_math_grid_cell:active {
@@ -171,7 +154,6 @@
     margin-bottom: 12px;
 }
 
-/* Controles */
 .ailmx_rec_controls {
     display: flex;
     align-items: center;
@@ -180,7 +162,6 @@
     margin-bottom: 10px;
 }
 
-/* Botón base */
 .ailmx_rec_controls button {
     display: inline-flex;
     align-items: center;
@@ -194,7 +175,6 @@
     transition: all 0.18s ease;
 }
 
-/* Grabar */
 .ailmx_btn_record {
     background: #dc2626;
     color: #ffffff;
@@ -205,7 +185,6 @@
     transform: translateY(-1px);
 }
 
-/* Punto rojo animado */
 .ailmx_rec_dot {
     width: 10px;
     height: 10px;
@@ -217,10 +196,9 @@
 
 @keyframes ailmx_blink {
     0%, 100% { opacity: 1; }
-    50%       { opacity: 0.2; }
+    50% { opacity: 0.2; }
 }
 
-/* Detener */
 .ailmx_btn_stop {
     background: #374151;
     color: #ffffff;
@@ -230,7 +208,6 @@
     background: #1f2937;
 }
 
-/* Reproducir */
 .ailmx_btn_play {
     background: #1F5C99;
     color: #ffffff;
@@ -240,7 +217,6 @@
     background: #1a4f85;
 }
 
-/* Eliminar */
 .ailmx_btn_delete {
     background: #ffffff;
     color: #dc2626;
@@ -251,7 +227,6 @@
     background: #fee2e2;
 }
 
-/* Timer */
 .ailmx_rec_timer {
     font-size: 18px;
     font-weight: 700;
@@ -260,7 +235,6 @@
     min-width: 48px;
 }
 
-/* Onda animada */
 .ailmx_rec_wave {
     display: flex;
     align-items: flex-end;
@@ -288,10 +262,9 @@
 
 @keyframes ailmx_wave {
     0%, 100% { height: 6px; }
-    50%       { height: 28px; }
+    50% { height: 28px; }
 }
 
-/* Estado / mensaje */
 .ailmx_rec_status {
     font-size: 13px;
     color: #6b7280;

@@ -60,7 +60,6 @@ class SurveyQuestionExtension(models.Model):
         help='Si está activado, esta pregunta podrá mostrar imágenes cargadas desde backend.'
     )
 
-    # Campo anterior, lo dejamos por compatibilidad temporal
     Img_Question_Attachment = fields.Image(
         string='Imagen de la pregunta',
         max_width=1920,
@@ -68,7 +67,6 @@ class SurveyQuestionExtension(models.Model):
         help='Imagen única de compatibilidad. Puede retirarse más adelante.'
     )
 
-    # Nuevo campo: una o más imágenes
     Question_Image_Attachment_Ids = fields.Many2many(
         comodel_name='ir.attachment',
         relation='survey_question_image_attachment_rel',
@@ -77,6 +75,15 @@ class SurveyQuestionExtension(models.Model):
         string='Imágenes de la pregunta',
         domain="[('mimetype', 'ilike', 'image/')]",
         help='Permite cargar una o varias imágenes para mostrar en la pregunta.'
+    )
+
+    # =========================================================
+    # GRABACIÓN AUTOMÁTICA DE VOZ
+    # =========================================================
+    Flg_Auto_Voice_Record = fields.Boolean(
+        string='¿Grabar voz automáticamente?',
+        default=False,
+        help='Si está activado, al abrir esta pregunta se iniciará automáticamente la grabación de voz.'
     )
 
     @api.model
@@ -133,17 +140,11 @@ class SurveyQuestionExtension(models.Model):
             correct_answers = record.suggested_answer_ids.filtered('Flg_Is_Correct')
             correct_count = len(correct_answers)
 
-            # Selección única:
-            # No se exige una correcta obligatoria,
-            # solo se evita que haya más de una.
             if record.question_type == 'simple_choice' and correct_count > 1:
                 raise ValidationError(
                     'La pregunta "%s" es de selección única y no puede tener más de una opción correcta.'
                     % record.title
                 )
-
-            # Selección múltiple:
-            # No se exige al menos una correcta.
 
     def validate_response(self, value):
         question_type = self.Id_Question_Type

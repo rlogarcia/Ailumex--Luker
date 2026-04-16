@@ -21,17 +21,12 @@
                                 <t t-esc="len(question.math_grid_cell_ids)"/>
                             </b>
                         </div>
-                        <button type="button"
-                                class="btn btn-outline-secondary btn-sm ailmx_grid_stop_btn">
-                            Marcar parada
-                        </button>
                     </div>
 
                     <div class="ailmx_grid_stats mb-2">
-                        <span>[+] Correctas: <b class="stat_ok">0</b></span>
-                        <span>[x] Errores: <b class="stat_err">0</b></span>
-                        <span>[!] Omitidas: <b class="stat_skip">0</b></span>
-                        <span>[#] Total: <b class="stat_total">0</b></span>
+                        <span>Marcadas: <b class="stat_selected">0</b></span>
+                        <span>No marcadas: <b class="stat_unselected">0</b></span>
+                        <span>Total marcado: <b class="stat_total">0</b></span>
                     </div>
 
                     <div class="ailmx_grid_log mb-2"></div>

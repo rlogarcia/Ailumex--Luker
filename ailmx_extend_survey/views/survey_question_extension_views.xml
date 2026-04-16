@@ -40,6 +40,14 @@
                 </group>
             </xpath>
 
+            <!-- GRABACIÓN AUTOMÁTICA -->
+            <xpath expr="//group[field[@name='question_type']]" position="after">
+                <group string="Grabación de voz" name="auto_voice_settings">
+                    <field name="Flg_Auto_Voice_Record"
+                            string="¿Grabar voz automáticamente?"/>
+                </group>
+            </xpath>
+
             <!-- CONFIGURACIÓN AILUMEX -->
             <xpath expr="//form" position="inside">
                 <group string="Configuración AiLumex">

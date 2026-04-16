@@ -7,18 +7,13 @@
 
         <xpath expr="." position="inside">
 
-            <!-- Solo para preguntas tipo GRID lectura -->
             <t t-if="question and question.question_type == 'reading_grid'">
 
                 <div class="mt-3 ailmx_reading_grid_wrapper"
                      t-att-data-question-id="question.id">
 
-                    <!-- ============================= -->
                     <!-- BARRA SUPERIOR -->
-                    <!-- ============================= -->
                     <div class="ailmx_grid_topbar mb-2">
-
-                        <!-- Progreso actual -->
                         <div class="ailmx_grid_progress">
                             Progreso:
                             <b class="ailmx_progress_current">0</b>
@@ -27,45 +22,24 @@
                                 <t t-esc="len(question.reading_grid_cell_ids)"/>
                             </b>
                         </div>
-
-                        <!-- Botón de parada -->
-                        <button type="button"
-                                class="btn btn-outline-secondary btn-sm ailmx_grid_stop_btn">
-                            Marcar parada
-                        </button>
-
                     </div>
 
-                    <!-- ============================= -->
                     <!-- CONTADOR -->
-                    <!-- ============================= -->
                     <div class="ailmx_grid_stats mb-2">
-                        <span>[+] Correctas: <b class="stat_ok">0</b></span>
-                        <span>[x] Errores: <b class="stat_err">0</b></span>
-                        <span>[!] Omitidas: <b class="stat_skip">0</b></span>
-                        <span>[#] Total: <b class="stat_total">0</b></span>
+                        <span>Marcadas: <b class="stat_selected">0</b></span>
+                        <span>No marcadas: <b class="stat_unselected">0</b></span>
+                        <span>Total marcado: <b class="stat_total">0</b></span>
                     </div>
 
-                    <!-- ============================= -->
                     <!-- HISTORIAL -->
-                    <!-- ============================= -->
                     <div class="ailmx_grid_log mb-2"></div>
 
-                    <!-- ============================= -->
                     <!-- TABLA -->
-                    <!-- ============================= -->
                     <table class="table table-bordered text-center ailmx_reading_grid_table">
                         <tbody>
-
-                            <!-- Loop filas -->
                             <t t-foreach="range(question.reading_grid_rows)" t-as="row_index">
-
                                 <tr>
-
-                                    <!-- Loop columnas -->
                                     <t t-foreach="range(question.reading_grid_cols)" t-as="col_index">
-
-                                        <!-- Buscar la celda correspondiente -->
                                         <t t-set="cell_record"
                                            t-value="question.reading_grid_cell_ids.filtered(lambda c: c.row_index == row_index and c.col_index == col_index)[:1]"/>
 
@@ -73,23 +47,13 @@
                                             data-state="empty"
                                             t-att-data-row="row_index"
                                             t-att-data-col="col_index">
-
                                             <span t-esc="cell_record.cell_value if cell_record else ''"/>
-
                                         </td>
-
                                     </t>
-
                                 </tr>
-
                             </t>
-
                         </tbody>
                     </table>
-
-                    <!-- ================================================= -->
-                    <!-- CAMPO OCULTO DE RESPUESTA REAL -->
-                    <!-- ================================================= -->
 
                     <input type="hidden"
                            t-attf-name="question_#{question.id}"

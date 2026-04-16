@@ -37,6 +37,14 @@
                             string="Guardar contenido"
                             type="object"
                             class="btn-primary"/>
+
+                    <a href="#"
+                    role="button"
+                    class="btn btn-primary"
+                    onclick="window.dispatchEvent(new CustomEvent('ailmx_open_reading_grid_comma_modal')); return false;">
+                        Crear grid separado por comas
+                    </a>
+
                     <button string="Cancelar"
                             class="btn-secondary"
                             special="cancel"/>

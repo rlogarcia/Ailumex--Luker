@@ -4,9 +4,8 @@
 .ailmx_reading_grid_table {
     margin-top: 8px;
     border-collapse: separate;
-    border-spacing: 4px; /* separa celdas tipo tarjetas */
+    border-spacing: 4px;
 }
-
 
 /* ============================= */
 /* CELDA BASE (TARJETA) */
@@ -27,12 +26,11 @@
 
     background-color: #ffffff !important;
 
-    border-radius: 8px; /* hace efecto tarjeta */
+    border-radius: 8px;
     border: 1px solid #e5e7eb !important;
 
     transition: all 0.2s ease;
 }
-
 
 /* ============================= */
 /* HOVER */
@@ -41,7 +39,6 @@
     background-color: #f1f5f9 !important;
     transform: translateY(-1px);
 }
-
 
 /* ============================= */
 /* CELDA ACTIVA */
@@ -52,7 +49,6 @@
     box-shadow: 0 0 0 3px rgba(31, 92, 153, 0.15) !important;
 }
 
-
 /* ============================= */
 /* ESTADO INICIAL */
 /* ============================= */
@@ -61,56 +57,15 @@
     color: inherit !important;
 }
 
-
 /* ============================= */
-/* CORRECTO */
+/* MARCADA */
 /* ============================= */
-.ailmx_reading_grid_cell.ailmx_cell_ok {
-    background-color: #d1fae5 !important; /* verde suave */
-    color: #065f46 !important;
-
+.ailmx_reading_grid_cell.ailmx_cell_selected {
+    background-color: #e8f1fb !important;
+    color: #1f3b57 !important;
     border: none !important;
-    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+    box-shadow: inset 0 0 0 2px rgba(31, 92, 153, 0.22) !important;
 }
-
-
-/* ============================= */
-/* ERROR */
-/* ============================= */
-.ailmx_reading_grid_cell.ailmx_cell_err {
-    background-color: #fee2e2 !important; /* rojo suave */
-    color: #7f1d1d !important;
-
-    border: none !important;
-    box-shadow: inset 0 0 0 2px rgba(220, 38, 38, 0.25) !important;
-}
-
-
-/* ============================= */
-/* OMITIDO */
-/* ============================= */
-.ailmx_reading_grid_cell.ailmx_cell_skip {
-    background-color: #fef3c7 !important; /* amarillo suave */
-    color: #78350f !important;
-
-    border: none !important;
-    box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.25) !important;
-}
-
-
-/* ============================= */
-/* PARADA */
-/* ============================= */
-.ailmx_reading_grid_cell.ailmx_cell_stop {
-    background-color: #e0e7ff !important; /* azul suave */
-    color: #1e3a8a !important;
-
-    font-weight: 700 !important;
-
-    border: none !important;
-    box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.35) !important;
-}
-
 
 /* ============================= */
 /* EFECTO CLICK */
@@ -118,7 +73,6 @@
 .ailmx_reading_grid_cell:active {
     transform: scale(0.96);
 }
-
 
 /* ============================= */
 /* BARRA SUPERIOR */
@@ -129,10 +83,8 @@
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
-
     margin-bottom: 6px;
 }
-
 
 /* ============================= */
 /* PROGRESO */
@@ -143,7 +95,6 @@
     color: #374151;
 }
 
-
 /* ============================= */
 /* CONTADOR */
 /* ============================= */
@@ -151,7 +102,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 14px;
-
     font-size: 13px;
     color: #374151;
 }
@@ -160,25 +110,19 @@
     font-weight: 700;
 }
 
-
 /* ============================= */
 /* HISTORIAL */
 /* ============================= */
 .ailmx_grid_log {
     font-size: 13px;
-
     max-height: 140px;
     overflow-y: auto;
-
     border: 1px solid #e5e7eb;
     border-radius: 6px;
-
     padding: 8px;
     background: #fafafa;
 }
 
-
-/* Scroll bonito */
 .ailmx_grid_log::-webkit-scrollbar {
     width: 6px;
 }
@@ -186,21 +130,4 @@
 .ailmx_grid_log::-webkit-scrollbar-thumb {
     background-color: #cbd5e1;
     border-radius: 3px;
-}
-
-
-/* ============================= */
-/* BOTÓN PARADA */
-/* ============================= */
-.ailmx_grid_stop_btn {
-    font-size: 13px;
-    font-weight: 500;
-
-    border-radius: 6px;
-    padding: 4px 10px;
-}
-
-.ailmx_grid_stop_btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
 }

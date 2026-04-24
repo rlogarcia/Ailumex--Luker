@@ -78,13 +78,104 @@ class SurveyQuestionExtension(models.Model):
     )
 
     # =========================================================
-    # GRABACIÓN AUTOMÁTICA DE VOZ
+    # GRABACIÓN DE VOZ
     # =========================================================
     Flg_Auto_Voice_Record = fields.Boolean(
-        string='¿Grabar voz automáticamente?',
+        string='¿Grabar voz?',
         default=False,
-        help='Si está activado, al abrir esta pregunta se iniciará automáticamente la grabación de voz.'
+        help='Si está activado, la pregunta permitirá grabar voz.'
     )
+
+    voice_record_mode = fields.Selection([
+        ('auto', 'Automática'),
+        ('manual', 'Manual'),
+    ], string='Modo de grabación', default='auto',
+        help='Automática: inicia sola al entrar a la pregunta. Manual: el usuario decide cuándo iniciar.')
+
+    # ---------------------------------------------------------
+    # CONDICIONES DE FINALIZACIÓN
+    # ---------------------------------------------------------
+    finish_conditions_json = fields.Json(
+        string='Condiciones de finalización JSON',
+        default=list,
+        help='Configuración de condiciones de finalización en formato JSON.'
+    )
+
+    # =========================================================
+    # OPCIONES DISPONIBLES PARA CONDICIONES DE FINALIZACIÓN
+    # =========================================================
+    finish_condition_question_options = fields.Json(
+        string='Opciones de preguntas para condiciones',
+        compute='_compute_finish_condition_question_options',
+        store=False
+    )
+
+    # =========================================================
+    # TEXTO JSON PARA FRONTEND
+    # =========================================================
+    finish_conditions_json_text = fields.Text(
+        string='Condiciones de finalización (texto JSON)',
+        compute='_compute_finish_conditions_json_text',
+        store=False
+    )
+
+    @api.depends('finish_conditions_json')
+    def _compute_finish_conditions_json_text(self):
+        for rec in self:
+            rec.finish_conditions_json_text = json.dumps(
+                rec.finish_conditions_json or [],
+                ensure_ascii=False
+            )
+
+    @api.depends(
+        'survey_id',
+        'survey_id.question_and_page_ids',
+        'survey_id.question_and_page_ids.title',
+        'survey_id.question_and_page_ids.question_type'
+    )
+
+    def _compute_finish_condition_question_options(self):
+        """
+        Devuelve las otras preguntas de la misma encuesta para
+        poblar el selector del widget custom.
+
+        IMPORTANTE:
+        - Ignora registros temporales NewId que todavía no existen
+          realmente en base de datos.
+        - Excluye la pregunta actual.
+        - Excluye páginas / secciones.
+        """
+        for rec in self:
+            options = []
+
+            if rec.survey_id and rec.survey_id.question_and_page_ids:
+                for question in rec.survey_id.question_and_page_ids:
+                    # -------------------------------------------------
+                    # Obtener un ID persistido y seguro para JSON
+                    # -------------------------------------------------
+                    question_real_id = question._origin.id or question.id
+
+                    # Si no hay ID real todavía, no lo incluimos
+                    if not isinstance(question_real_id, int):
+                        continue
+
+                    # Excluir la pregunta actual
+                    rec_real_id = rec._origin.id or rec.id
+                    if isinstance(rec_real_id, int) and question_real_id == rec_real_id:
+                        continue
+
+                    # Excluir páginas / secciones
+                    if getattr(question, 'is_page', False):
+                        continue
+
+                    title = question.title or f'Pregunta #{question_real_id}'
+
+                    options.append({
+                        'id': question_real_id,
+                        'title': title,
+                    })
+
+            rec.finish_condition_question_options = options
 
     @api.model
     def create_question_with_type(self, survey_id, question_type_code, vals):
@@ -181,3 +272,15 @@ class SurveyQuestionExtension(models.Model):
                 )
 
         return True
+    
+    def action_edit_section_popup(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Editar sección',
+            'res_model': 'survey.question',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'context': dict(self.env.context),
+        }

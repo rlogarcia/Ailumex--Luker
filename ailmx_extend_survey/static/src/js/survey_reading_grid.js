@@ -1,13 +1,3 @@
-// Funcionalidades actuales:
-// - Render interactivo por celda (reading_grid)
-// - Click -> marcar / desmarcar
-// - Contadores en tiempo real
-// - Historial / trazabilidad visual
-// - Serialización local en input hidden
-// - Progreso actual
-// - Interceptor XHR para inyectar respuesta al submit de Odoo Survey
-//   (cubre reading_grid y math_grid, incluyendo audio base64)
-
 document.addEventListener('DOMContentLoaded', function () {
 
     function initReadingGrids() {

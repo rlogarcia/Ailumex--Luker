@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ailmx_extend_survey.FinishConditionEditor">
+        <div class="ailmx_finish_condition_editor">
+
+            <t t-if="state.rules.length === 0">
+                <div class="ailmx_finish_condition_empty">
+                    <div class="ailmx_finish_condition_empty_text">
+                        Aún no hay reglas configuradas.
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-primary"
+                            t-on-click="this.addRule">
+                        Agregar regla
+                    </button>
+                </div>
+            </t>
+
+            <t t-foreach="state.rules"
+                t-as="rule"
+                t-key="rule._uid"
+                t-foreach-index="rule_index">
+
+                <div class="ailmx_rule_card">
+
+                    <div class="ailmx_rule_header">
+                        <div class="ailmx_rule_title">
+                            <t t-esc="this.getRuleLabel(rule_index)"/>
+                        </div>
+
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                t-att-data-rule-index="rule_index"
+                                t-on-click="this.removeRule">
+                            Eliminar regla
+                        </button>
+                    </div>
+
+                    <!-- Tipo de disparador -->
+                    <div class="ailmx_section_block">
+                        <label class="ailmx_section_label">Tipo de regla</label>
+                        <select class="form-select"
+                                t-att-value="rule.trigger_type"
+                                t-att-data-rule-index="rule_index"
+                                data-field="trigger_type"
+                                t-on-change="this.onRuleFieldChange">
+                            <option value="answer">Según respuesta</option>
+                            <option value="time">Según tiempo</option>
+                        </select>
+                    </div>
+
+                    <!-- Reglas por respuesta -->
+                    <t t-if="this.isAnswerRule(rule.trigger_type)">
+                        <div class="ailmx_section_block">
+                            <label class="ailmx_section_label">La regla se cumple cuando</label>
+                            <select class="form-select"
+                                    t-att-value="rule.logic"
+                                    t-att-data-rule-index="rule_index"
+                                    data-field="logic"
+                                    t-on-change="this.onRuleFieldChange">
+                                <option value="and">Todas las condiciones (AND)</option>
+                                <option value="or">Cualquiera de las condiciones (OR)</option>
+                            </select>
+                        </div>
+
+                        <div class="ailmx_section_block">
+                            <div class="ailmx_section_label">Condiciones</div>
+
+                            <t t-foreach="rule.conditions"
+                                t-as="condition"
+                                t-key="condition._uid"
+                                t-foreach-index="condition_index">
+
+                                <div class="ailmx_condition_row">
+
+                                    <div class="ailmx_condition_row_header">
+                                        <div class="ailmx_condition_title">
+                                            <t t-esc="this.getConditionLabel(condition_index)"/>
+                                        </div>
+
+                                        <button type="button"
+                                                class="btn btn-sm btn-link ailmx_link_danger"
+                                                t-att-data-rule-index="rule_index"
+                                                t-att-data-condition-index="condition_index"
+                                                t-on-click="this.removeSubCondition">
+                                            Eliminar
+                                        </button>
+                                    </div>
+
+                                    <div class="ailmx_finish_condition_grid">
+                                        <div class="ailmx_finish_condition_field">
+                                            <label>Comparar respuesta de</label>
+                                            <select class="form-select"
+                                                    t-att-value="condition.source_type || 'current'"
+                                                    t-att-data-rule-index="rule_index"
+                                                    t-att-data-condition-index="condition_index"
+                                                    data-field="source_type"
+                                                    t-on-change="this.onConditionFieldChange">
+                                                <option value="current">Esta pregunta</option>
+                                                <option value="other">Otra pregunta</option>
+                                            </select>
+                                        </div>
+
+                                        <t t-if="this.usesOtherQuestion(condition.source_type)">
+                                            <div class="ailmx_finish_condition_field">
+                                                <label>Pregunta</label>
+                                                <select class="form-select"
+                                                        t-att-value="condition.compare_question_id || ''"
+                                                        t-att-data-rule-index="rule_index"
+                                                        t-att-data-condition-index="condition_index"
+                                                        data-field="compare_question_id"
+                                                        t-on-change="this.onConditionFieldChange">
+                                                    <option value="">Seleccione una pregunta</option>
+                                                    <t t-foreach="state.availableQuestions" t-as="question" t-key="question.id">
+                                                        <option t-att-value="question.id"
+                                                                t-att-selected="condition.compare_question_id === question.id ? true : undefined">
+                                                            <t t-esc="question.title"/>
+                                                        </option>
+                                                    </t>
+                                                </select>
+                                            </div>
+                                        </t>
+
+                                        <div class="ailmx_finish_condition_field">
+                                            <label>Operador</label>
+                                            <select class="form-select"
+                                                    t-att-value="condition.operator"
+                                                    t-att-data-rule-index="rule_index"
+                                                    t-att-data-condition-index="condition_index"
+                                                    data-field="operator"
+                                                    t-on-change="this.onConditionFieldChange">
+                                                <option value="eq">Es igual a</option>
+                                                <option value="neq">Es diferente a</option>
+                                                <option value="gt">Es mayor que</option>
+                                                <option value="lt">Es menor que</option>
+                                                <option value="contains">Contiene</option>
+                                                <option value="not_contains">No contiene</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="ailmx_finish_condition_field">
+                                            <label>Valor</label>
+                                            <input type="text"
+                                                    class="form-control"
+                                                    placeholder="Ej: Bien, 20, 2026-04-22..."
+                                                    t-att-value="condition.value || ''"
+                                                    t-att-data-rule-index="rule_index"
+                                                    t-att-data-condition-index="condition_index"
+                                                    data-field="value"
+                                                    t-on-input="this.onConditionFieldChange"/>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </t>
+
+                            <div class="ailmx_inline_actions">
+                                <button type="button"
+                                        class="btn btn-outline-secondary btn-sm"
+                                        t-att-data-rule-index="rule_index"
+                                        t-on-click="this.addSubCondition">
+                                    + Agregar otra condición
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- Reglas por tiempo -->
+                    <t t-if="this.isTimeRule(rule.trigger_type)">
+                        <div class="ailmx_section_block">
+                            <label class="ailmx_section_label">La regla se cumple cuando pasen</label>
+
+                            <div class="ailmx_finish_condition_grid">
+                                <div class="ailmx_finish_condition_field">
+                                    <label>Cantidad</label>
+                                    <input type="number"
+                                            min="1"
+                                            class="form-control"
+                                            t-att-value="rule.time_value || 1"
+                                            t-att-data-rule-index="rule_index"
+                                            data-field="time_value"
+                                            t-on-input="this.onRuleFieldChange"/>
+                                </div>
+
+                                <div class="ailmx_finish_condition_field">
+                                    <label>Unidad</label>
+                                    <select class="form-select"
+                                            t-att-value="rule.time_unit || 'minutes'"
+                                            t-att-data-rule-index="rule_index"
+                                            data-field="time_unit"
+                                            t-on-change="this.onRuleFieldChange">
+                                        <option value="seconds">Segundos</option>
+                                        <option value="minutes">Minutos</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- Acción -->
+                    <div class="ailmx_section_block">
+                        <label class="ailmx_section_label">Entonces hacer</label>
+                        <select class="form-select"
+                                t-att-value="rule.action"
+                                t-att-data-rule-index="rule_index"
+                                data-field="action"
+                                t-on-change="this.onRuleFieldChange">
+                            <option value="finish">Finalizar encuesta</option>
+                            <option value="end_page">Ir a página final</option>
+                            <option value="block">Bloquear avance</option>
+                            <option value="go_to_question">Ir a una pregunta específica</option>
+                        </select>
+                    </div>
+
+                    <t t-if="this.requiresTargetQuestion(rule.action)">
+                        <div class="ailmx_section_block">
+                            <label class="ailmx_section_label">Pregunta destino</label>
+                            <select class="form-select"
+                                    t-att-value="rule.target_question_id || ''"
+                                    t-att-data-rule-index="rule_index"
+                                    data-field="target_question_id"
+                                    t-on-change="this.onRuleFieldChange">
+                                <option value="">Seleccione una pregunta destino</option>
+                                <t t-foreach="state.availableQuestions" t-as="question" t-key="question.id">
+                                    <option t-att-value="question.id"
+                                            t-att-selected="rule.target_question_id === question.id ? true : undefined">
+                                        <t t-esc="question.title"/>
+                                    </option>
+                                </t>
+                            </select>
+                        </div>
+                    </t>
+
+                </div>
+            </t>
+
+            <div class="ailmx_finish_condition_footer">
+                <button type="button"
+                        class="btn btn-primary"
+                        t-on-click="this.addRule">
+                    Agregar regla
+                </button>
+            </div>
+
+        </div>
+    </t>
+
+</templates>

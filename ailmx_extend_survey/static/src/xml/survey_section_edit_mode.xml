@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ailmx_extend_survey.SectionEditMode"
+       t-inherit="survey.DescriptionPageField"
+       t-inherit-mode="extension">
+
+        <xpath expr="//t[@t-else='']" position="replace">
+            <t t-else="">
+                <t t-if="props.record.data.is_page">
+                    <div class="form-control o_input d-flex align-items-center">
+                        <t t-esc="formattedValue"/>
+                    </div>
+                </t>
+                <t t-else="">
+                    <t t-call="web.CharField"/>
+                </t>
+            </t>
+        </xpath>
+
+        <xpath expr="//i[contains(@class, 'fa-pencil')]" position="replace"/>
+
+    </t>
+
+</templates>

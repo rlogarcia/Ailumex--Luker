@@ -22,12 +22,22 @@ document.addEventListener('DOMContentLoaded', function () {
             wrapper._seconds = 0;
             wrapper._isFinalizing = false;
 
-            autoStartRecording(wrapper);
+            bindManualControls(wrapper);
+
+            if (getRecordMode(wrapper) === 'auto') {
+                autoStartRecording(wrapper);
+            } else {
+                setIdleState(wrapper, 'Presiona grabar para iniciar.');
+            }
         });
     }
 
     function getQuestionId(wrapper) {
         return wrapper ? String(wrapper.dataset.questionId || '') : '';
+    }
+
+    function getRecordMode(wrapper) {
+        return wrapper ? String(wrapper.dataset.recordMode || 'auto') : 'auto';
     }
 
     function getStatusEl(wrapper) {
@@ -44,6 +54,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function getAudioEl(wrapper) {
         return wrapper.querySelector('.ailmx_auto_voice_playback');
+    }
+
+    function getBtnRecord(wrapper) {
+        return wrapper.querySelector('.ailmx_auto_voice_btn_record');
+    }
+
+    function getBtnStop(wrapper) {
+        return wrapper.querySelector('.ailmx_auto_voice_btn_stop');
+    }
+
+    function getBtnPlay(wrapper) {
+        return wrapper.querySelector('.ailmx_auto_voice_btn_play');
+    }
+
+    function getBtnDelete(wrapper) {
+        return wrapper.querySelector('.ailmx_auto_voice_btn_delete');
     }
 
     function setStatus(wrapper, message, type) {
@@ -85,7 +111,77 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function autoStartRecording(wrapper) {
+    function setIdleState(wrapper, message) {
+        wrapper.dataset.autoVoiceState = 'idle';
+        stopTimer(wrapper);
+        updateTimer(wrapper, 0);
+
+        var wave = getWaveEl(wrapper);
+        if (wave) wave.style.display = 'none';
+
+        if (getRecordMode(wrapper) === 'manual') {
+            var btnRecord = getBtnRecord(wrapper);
+            var btnStop = getBtnStop(wrapper);
+            var btnPlay = getBtnPlay(wrapper);
+            var btnDelete = getBtnDelete(wrapper);
+
+            if (btnRecord) btnRecord.style.display = 'inline-flex';
+            if (btnStop) btnStop.style.display = 'none';
+            if (btnPlay) btnPlay.style.display = wrapper._audioBase64 ? 'inline-flex' : 'none';
+            if (btnDelete) btnDelete.style.display = wrapper._audioBase64 ? 'inline-flex' : 'none';
+        }
+
+        setStatus(wrapper, message || 'Presiona grabar para iniciar.', '');
+    }
+
+    function setRecordingState(wrapper) {
+        wrapper.dataset.autoVoiceState = 'recording';
+        var wave = getWaveEl(wrapper);
+        if (wave) wave.style.display = 'flex';
+
+        if (getRecordMode(wrapper) === 'manual') {
+            var btnRecord = getBtnRecord(wrapper);
+            var btnStop = getBtnStop(wrapper);
+            var btnPlay = getBtnPlay(wrapper);
+            var btnDelete = getBtnDelete(wrapper);
+
+            if (btnRecord) btnRecord.style.display = 'none';
+            if (btnStop) btnStop.style.display = 'inline-flex';
+            if (btnPlay) btnPlay.style.display = 'none';
+            if (btnDelete) btnDelete.style.display = 'none';
+        }
+
+        setStatus(
+            wrapper,
+            getRecordMode(wrapper) === 'auto' ? 'Grabando automáticamente...' : 'Grabando...',
+            'recording'
+        );
+        startTimer(wrapper);
+    }
+
+    function setRecordedState(wrapper) {
+        wrapper.dataset.autoVoiceState = 'recorded';
+        stopTimer(wrapper);
+
+        var wave = getWaveEl(wrapper);
+        if (wave) wave.style.display = 'none';
+
+        if (getRecordMode(wrapper) === 'manual') {
+            var btnRecord = getBtnRecord(wrapper);
+            var btnStop = getBtnStop(wrapper);
+            var btnPlay = getBtnPlay(wrapper);
+            var btnDelete = getBtnDelete(wrapper);
+
+            if (btnRecord) btnRecord.style.display = 'inline-flex';
+            if (btnStop) btnStop.style.display = 'none';
+            if (btnPlay) btnPlay.style.display = 'inline-flex';
+            if (btnDelete) btnDelete.style.display = 'inline-flex';
+        }
+
+        setStatus(wrapper, 'Grabación lista para enviar.', 'ok');
+    }
+
+    function startRecording(wrapper) {
         if (!window.isSecureContext) {
             setStatus(wrapper, 'La grabación automática requiere HTTPS o localhost.', 'error');
             return;
@@ -131,28 +227,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 recorder.onstop = function () {
                     buildBlobFromChunks(wrapper, function () {
-                        wrapper.dataset.autoVoiceState = 'recorded';
-                        setStatus(wrapper, 'Grabación automática lista para enviar.', 'ok');
-                        stopTimer(wrapper);
-                        if (getWaveEl(wrapper)) {
-                            getWaveEl(wrapper).style.display = 'none';
-                        }
+                        setRecordedState(wrapper);
                     });
                 };
 
                 recorder.start(100);
-                wrapper.dataset.autoVoiceState = 'recording';
-
-                if (getWaveEl(wrapper)) {
-                    getWaveEl(wrapper).style.display = 'flex';
-                }
-
-                setStatus(wrapper, 'Grabando...', 'recording');
-                startTimer(wrapper);
+                setRecordingState(wrapper);
             })
             .catch(function (err) {
                 setStatus(wrapper, 'No se pudo acceder al micrófono: ' + err.message, 'error');
             });
+    }
+
+    function autoStartRecording(wrapper) {
+        startRecording(wrapper);
     }
 
     function buildBlobFromChunks(wrapper, callback) {
@@ -183,12 +271,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     mimetype: wrapper._audioMimetype || 'audio/webm',
                     filename: wrapper._audioFilename || 'respuesta_auto.webm'
                 };
-                console.log('[AILMX] autoVoiceStore guardado para pregunta', qid, autoVoiceStore[qid]);
-            } else {
-                console.warn('[AILMX] No se pudo guardar audio en store', {
-                    qid: qid,
-                    hasBase64: !!wrapper._audioBase64
-                });
             }
 
             if (wrapper._mediaStream) {
@@ -226,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         wrapper._isFinalizing = true;
-        setStatus(wrapper, 'Cerrando grabación automática...', 'recording');
+        setStatus(wrapper, 'Cerrando grabación...', 'recording');
 
         var recorder = wrapper._mediaRecorder;
         if (!recorder) {
@@ -243,13 +325,77 @@ document.addEventListener('DOMContentLoaded', function () {
             recorder.stop();
         } else {
             buildBlobFromChunks(wrapper, function () {
-                wrapper.dataset.autoVoiceState = 'recorded';
-                setStatus(wrapper, 'Grabación automática lista para enviar.', 'ok');
-                stopTimer(wrapper);
-                if (getWaveEl(wrapper)) {
-                    getWaveEl(wrapper).style.display = 'none';
-                }
+                setRecordedState(wrapper);
                 if (callback) callback();
+            });
+        }
+    }
+
+    function stopRecordingManual(wrapper) {
+        finalizeWrapperRecording(wrapper);
+    }
+
+    function playRecording(wrapper) {
+        var audioEl = getAudioEl(wrapper);
+        if (audioEl && audioEl.src) {
+            audioEl.play();
+            setStatus(wrapper, 'Reproduciendo...', 'ok');
+            audioEl.onended = function () {
+                setStatus(wrapper, 'Grabación lista para enviar.', 'ok');
+            };
+        }
+    }
+
+    function deleteRecording(wrapper) {
+        var qid = getQuestionId(wrapper);
+        if (qid) {
+            delete autoVoiceStore[qid];
+        }
+
+        wrapper._audioBase64 = null;
+        wrapper._audioChunks = [];
+        wrapper._audioFilename = 'respuesta_auto.webm';
+
+        var audioEl = getAudioEl(wrapper);
+        if (audioEl) {
+            audioEl.pause();
+            audioEl.src = '';
+        }
+
+        setIdleState(wrapper, 'Grabación eliminada.');
+    }
+
+    function bindManualControls(wrapper) {
+        if (getRecordMode(wrapper) !== 'manual') {
+            return;
+        }
+
+        var btnRecord = getBtnRecord(wrapper);
+        var btnStop = getBtnStop(wrapper);
+        var btnPlay = getBtnPlay(wrapper);
+        var btnDelete = getBtnDelete(wrapper);
+
+        if (btnRecord) {
+            btnRecord.addEventListener('click', function () {
+                startRecording(wrapper);
+            });
+        }
+
+        if (btnStop) {
+            btnStop.addEventListener('click', function () {
+                stopRecordingManual(wrapper);
+            });
+        }
+
+        if (btnPlay) {
+            btnPlay.addEventListener('click', function () {
+                playRecording(wrapper);
+            });
+        }
+
+        if (btnDelete) {
+            btnDelete.addEventListener('click', function () {
+                deleteRecording(wrapper);
             });
         }
     }
@@ -268,9 +414,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (payload && payload.base64) {
             body.params[qid + '_auto_audio'] = JSON.stringify(payload);
-            console.log('[AILMX] Audio inyectado en payload para pregunta', qid);
-        } else {
-            console.warn('[AILMX] No hay audio en store para pregunta', qid, autoVoiceStore);
         }
 
         return body;

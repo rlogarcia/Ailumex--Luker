@@ -36,6 +36,22 @@ class SurveyUserInputCustomSave(models.Model):
         )
 
         self._save_auto_audio_if_needed(question, auto_audio_payload, answer)
+
+        try:
+            for user_input in self:
+                # Ejecuta sincronización completa
+                user_input.action_sync_luker_master_bridge()
+
+        except Exception as e:
+            # ⚠️ IMPORTANTE:
+            # Nunca rompemos el flujo de guardado por esto
+            # Solo registramos el error en log
+            import logging
+            _logger = logging.getLogger(__name__)
+            _logger.warning(
+                'Error sincronizando con luker_master: %s',
+                str(e)
+            )
         return result
 
     # =========================================================

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="survey_finish_conditions_templates"
+              inherit_id="survey.question_container"
+              name="Survey Finish Conditions - Question Data">
+
+        <xpath expr="." position="inside">
+            <input type="hidden"
+                   class="o_finish_conditions_question_id"
+                   t-att-value="question.id"/>
+
+            <input type="hidden"
+                   class="o_finish_conditions_json"
+                   t-att-value="question.finish_conditions_json_text or '[]'"/>
+        </xpath>
+
+    </template>
+
+</odoo>

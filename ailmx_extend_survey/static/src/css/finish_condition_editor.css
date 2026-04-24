@@ -1,0 +1,145 @@
+.ailmx_finish_condition_editor {
+    padding: 8px 0;
+}
+
+.ailmx_finish_condition_empty {
+    border: 1px dashed #c9c9c9;
+    border-radius: 10px;
+    padding: 20px;
+    background: #fafafa;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.ailmx_finish_condition_empty_text {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* =========================================================
+REGLA
+========================================================= */
+.ailmx_rule_card {
+    border: 1px solid #d9d9d9;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    background: #ffffff;
+}
+
+.ailmx_rule_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.ailmx_rule_title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+/* =========================================================
+BLOQUES INTERNOS
+========================================================= */
+.ailmx_section_block {
+    margin-bottom: 18px;
+}
+
+.ailmx_section_label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 8px;
+}
+
+/* =========================================================
+CONDICIONES
+========================================================= */
+.ailmx_condition_row {
+    padding: 14px 0;
+    border-top: 1px solid #ececec;
+}
+
+.ailmx_condition_row:first-of-type {
+    border-top: none;
+    padding-top: 4px;
+}
+
+.ailmx_condition_row_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.ailmx_condition_title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+.ailmx_finish_condition_grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+}
+
+.ailmx_finish_condition_field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ailmx_finish_condition_field label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 0;
+}
+
+.ailmx_inline_actions {
+    margin-top: 10px;
+}
+
+/* =========================================================
+LINKS / BOTONES SUAVES
+========================================================= */
+.ailmx_link_danger {
+    color: #b42318 !important;
+    text-decoration: none !important;
+    padding: 0 !important;
+}
+
+.ailmx_link_danger:hover {
+    text-decoration: underline !important;
+}
+
+/* =========================================================
+FOOTER
+   ========================================================= */
+.ailmx_finish_condition_footer {
+    margin-top: 12px;
+}
+
+/* =========================================================
+RESPONSIVE
+========================================================= */
+@media (max-width: 1200px) {
+    .ailmx_finish_condition_grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ailmx_rule_header,
+    .ailmx_condition_row_header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

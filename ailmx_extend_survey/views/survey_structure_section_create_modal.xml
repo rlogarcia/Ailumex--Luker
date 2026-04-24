@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Acción para abrir el formulario modal de nueva sección -->
+    <record id="action_open_new_section_modal" model="ir.actions.act_window">
+        <field name="name">Nueva sección</field>
+        <field name="res_model">survey.question</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_survey_structure_section_create_modal" model="ir.ui.view">
+        <field name="name">survey.survey.form.section.create.modal</field>
+        <field name="model">survey.survey</field>
+        <field name="inherit_id" ref="survey.survey_survey_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Reemplazar el control completo para dejar Add a question + Add a section juntos -->
+            <xpath expr="//page[@name='questions']/field[@name='question_and_page_ids']/list/control" position="replace">
+                <control>
+                    <create name="add_question_control" string="Agregar pregunta"/>
+
+                    <button name="%(action_open_new_section_modal)d"
+                            type="action"
+                            string="Agregar sección"
+                            class="o_field_x2many_list_row_add"
+                            context="{
+                                'default_survey_id': parent.id,
+                                'default_is_page': True,
+                                'default_questions_selection': 'all'
+                            }"/>
+                </control>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

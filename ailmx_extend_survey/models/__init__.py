@@ -53,3 +53,12 @@ from . import survey_question_math_grid_cell
 
 # Wizard para editar la GRID matemática
 from . import survey_question_math_grid_wizard
+
+# Conexión con el gestor operativo
+from . import survey_master_sync
+
+# Condicionales de salto de preguntas
+from . import survey_condition_logic
+
+# Mensaje de bloqueo condicional
+from . import survey_block_message

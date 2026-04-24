@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_survey_structure_section_edit_button" model="ir.ui.view">
+        <field name="name">survey.survey.form.section.edit.button</field>
+        <field name="model">survey.survey</field>
+        <field name="inherit_id" ref="survey.survey_survey_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Agregar botón de editar junto al de duplicar -->
+            <xpath expr="//page[@name='questions']/field[@name='question_and_page_ids']/list/button[@name='copy']" position="before">
+                <button name="action_edit_section_popup"
+                        type="object"
+                        icon="fa-pencil"
+                        title="Editar sección"
+                        invisible="not is_page"/>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

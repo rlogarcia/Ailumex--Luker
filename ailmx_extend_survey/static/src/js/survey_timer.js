@@ -1,16 +1,3 @@
-// ==========================================================
-// AILUMEX - Timer por pregunta en encuestas
-// Archivo: static/src/js/survey_timer.js
-//
-// Este script:
-// 1. Busca el contenedor del timer en la pregunta actual
-// 2. Lee data-time-limit y data-time-unit
-// 3. Construye el cronómetro visual
-// 4. Hace cuenta regresiva
-// 5. Avanza automáticamente cuando llega a 0
-// 6. Solo se reinicializa cuando realmente cambia la pregunta
-// ==========================================================
-
 document.addEventListener('DOMContentLoaded', function () {
 
     // Intervalo actualmente activo
@@ -53,6 +40,52 @@ document.addEventListener('DOMContentLoaded', function () {
      * Simula clic en siguiente / enviar de la pregunta
      */
     function advanceToNextQuestion() {
+        var conditionInput = document.querySelector('.o_finish_conditions_json');
+
+        if (conditionInput && conditionInput.value) {
+            try {
+                var rules = JSON.parse(conditionInput.value || '[]');
+
+                for (var i = 0; i < rules.length; i++) {
+                    var rule = rules[i];
+
+                    if (rule.trigger_type !== 'time') {
+                        continue;
+                    }
+
+                    var action = rule.action || '';
+
+                    /*
+                        Acción: finalizar encuesta.
+                        Dejamos que el backend procese el submit normal.
+                        El backend ya sabe finalizar si la regla aplica.
+                    */
+                    if (action === 'finish') {
+                        break;
+                    }
+
+                    /*
+                        Acción: ir a pregunta específica.
+                        Enviamos el submit normal; el backend resolverá
+                        la navegación según la regla configurada.
+                    */
+                    if (action === 'go_to_question') {
+                        break;
+                    }
+
+                    /*
+                        Acción: ir a página final.
+                        También la resuelve backend.
+                    */
+                    if (action === 'end_page') {
+                        break;
+                    }
+                }
+            } catch (e) {
+                console.warn('[FINISH_RULES] Error leyendo reglas por tiempo:', e);
+            }
+        }
+
         var nextBtn = document.querySelector('.o_survey_navigation_submit');
 
         if (nextBtn) {

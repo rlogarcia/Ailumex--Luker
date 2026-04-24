@@ -68,8 +68,76 @@
     font-weight: 600;
 }
 
-.ailmx_auto_voice_wave {
+.ailmx_auto_voice_controls {
     display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.ailmx_auto_voice_controls button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.ailmx_auto_voice_btn_record {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.ailmx_auto_voice_btn_record:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+}
+
+.ailmx_auto_voice_btn_dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffffff;
+    animation: ailmx_auto_voice_blink 1s infinite;
+    display: inline-block;
+}
+
+.ailmx_auto_voice_btn_stop {
+    background: #374151;
+    color: #ffffff;
+}
+
+.ailmx_auto_voice_btn_stop:hover {
+    background: #1f2937;
+}
+
+.ailmx_auto_voice_btn_play {
+    background: #1F5C99;
+    color: #ffffff;
+}
+
+.ailmx_auto_voice_btn_play:hover {
+    background: #1a4f85;
+}
+
+.ailmx_auto_voice_btn_delete {
+    background: #ffffff;
+    color: #dc2626;
+    border: 1.5px solid #dc2626 !important;
+}
+
+.ailmx_auto_voice_btn_delete:hover {
+    background: #fee2e2;
+}
+
+.ailmx_auto_voice_wave {
+    display: none;
     align-items: flex-end;
     gap: 3px;
     height: 28px;

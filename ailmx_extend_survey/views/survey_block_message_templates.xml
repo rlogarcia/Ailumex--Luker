@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="survey_question_block_message_inject"
+              inherit_id="survey.question_container"
+              name="Survey Conditional Block Message">
+
+        <xpath expr="." position="inside">
+            <t t-if="answer and answer.conditional_block_message">
+                <div class="alert alert-danger mt-3" role="alert">
+                    <strong>Avance bloqueado:</strong>
+                    <t t-esc="answer.conditional_block_message"/>
+                </div>
+            </t>
+        </xpath>
+
+    </template>
+
+</odoo>

@@ -11,14 +11,14 @@
                 <group string="Temporizador de preguntas" name="timer_settings">
                     <field name="has_time_limit" string="¿Activar temporizador?"/>
                     <field name="time_limit_unit"
-                            string="Unidad"
-                            widget="radio"
-                            options="{'horizontal': true}"
-                            invisible="not has_time_limit"/>
+                           string="Unidad"
+                           widget="radio"
+                           options="{'horizontal': true}"
+                           invisible="not has_time_limit"/>
                     <field name="time_limit_value"
-                            string="Cantidad"
-                            invisible="not has_time_limit"
-                            placeholder="Ej. 30"/>
+                           string="Cantidad"
+                           invisible="not has_time_limit"
+                           placeholder="Ej. 30"/>
                 </group>
             </xpath>
 
@@ -26,25 +26,29 @@
             <xpath expr="//group[field[@name='question_type']]" position="after">
                 <group string="Adjuntar imagen" name="image_attachment_settings">
                     <field name="Flg_Allow_Image_Attachment"
-                            string="¿Permitir adjuntar imagen?"/>
+                           string="¿Permitir adjuntar imagen?"/>
 
                     <field name="Question_Image_Attachment_Ids"
-                            string="Imágenes"
-                            widget="many2many_binary"
-                            invisible="not Flg_Allow_Image_Attachment"/>
+                           string="Imágenes"
+                           widget="many2many_binary"
+                           invisible="not Flg_Allow_Image_Attachment"/>
 
                     <field name="Img_Question_Attachment"
-                            string="Imagen única (compatibilidad)"
-                            widget="image"
-                            invisible="1"/>
+                           string="Imagen única (compatibilidad)"
+                           widget="image"
+                           invisible="1"/>
                 </group>
             </xpath>
 
-            <!-- GRABACIÓN AUTOMÁTICA -->
+            <!-- GRABACIÓN DE VOZ -->
             <xpath expr="//group[field[@name='question_type']]" position="after">
-                <group string="Grabación de voz" name="auto_voice_settings">
-                    <field name="Flg_Auto_Voice_Record"
-                            string="¿Grabar voz automáticamente?"/>
+                <group string="Grabación de voz" name="voice_record_settings">
+                    <field name="Flg_Auto_Voice_Record" string="¿Grabar voz?"/>
+                    <field name="voice_record_mode"
+                           string="Modo de grabación"
+                           widget="radio"
+                           options="{'horizontal': true}"
+                           invisible="not Flg_Auto_Voice_Record"/>
                 </group>
             </xpath>
 
@@ -61,6 +65,26 @@
             <!-- RESPUESTA CORRECTA -->
             <xpath expr="//field[@name='suggested_answer_ids']/list/field[last()]" position="after">
                 <field name="Flg_Is_Correct" string="Es correcta"/>
+            </xpath>
+
+            <!-- ========================================================= -->
+            <!-- CONDICIONES DE FINALIZACIÓN -->
+            <!-- ========================================================= -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Condiciones de finalización" name="finish_conditions_page">
+
+                    <div class="alert alert-warning" role="alert">
+                        Define cuándo esta pregunta debe <strong>finalizar la encuesta</strong>
+                        según la comparación con otra pregunta de la misma encuesta.
+                    </div>
+
+                    <!-- Campo auxiliar invisible para que el widget reciba las preguntas -->
+                    <field name="finish_condition_question_options" invisible="1"/>
+
+                    <!-- Editor custom -->
+                    <field name="finish_conditions_json" widget="finish_condition_editor"/>
+
+                </page>
             </xpath>
 
         </field>

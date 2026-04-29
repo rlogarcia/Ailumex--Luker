@@ -62,3 +62,6 @@ from . import survey_condition_logic
 
 # Mensaje de bloqueo condicional
 from . import survey_block_message
+
+# Helper para crear preguntas en secciones
+from . import survey_create_question_in_section

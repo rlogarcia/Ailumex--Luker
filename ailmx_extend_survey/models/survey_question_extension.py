@@ -119,6 +119,21 @@ class SurveyQuestionExtension(models.Model):
         store=False
     )
 
+    # =========================================================
+    # INDICADOR DE SECCIÓN
+    # =========================================================
+    section_index = fields.Integer(
+        string='Número de sección',
+        compute='_compute_section_position',
+        store=False
+    )
+
+    section_total = fields.Integer(
+        string='Total de secciones',
+        compute='_compute_section_position',
+        store=False
+    )
+
     @api.depends('finish_conditions_json')
     def _compute_finish_conditions_json_text(self):
         for rec in self:
@@ -129,10 +144,42 @@ class SurveyQuestionExtension(models.Model):
 
     @api.depends(
         'survey_id',
+        'page_id',
         'survey_id.question_and_page_ids',
-        'survey_id.question_and_page_ids.title',
-        'survey_id.question_and_page_ids.question_type'
+        'survey_id.question_and_page_ids.is_page',
+        'survey_id.question_and_page_ids.sequence',
     )
+    def _compute_section_position(self):
+        """
+        Calcula la posición de la sección actual.
+
+        Ejemplo:
+        - Si la pregunta pertenece a la segunda sección de cinco,
+          devuelve:
+          section_index = 2
+          section_total = 5
+
+        Si la pregunta no pertenece a sección:
+          section_index = 0
+          section_total = 0
+        """
+        for rec in self:
+            rec.section_index = 0
+            rec.section_total = 0
+
+            if not rec.survey_id or not rec.page_id:
+                continue
+
+            sections = rec.survey_id.question_and_page_ids.filtered(
+                lambda item: item.is_page
+            ).sorted(key=lambda item: (item.sequence, item.id))
+
+            rec.section_total = len(sections)
+
+            for index, section in enumerate(sections, start=1):
+                if section.id == rec.page_id.id:
+                    rec.section_index = index
+                    break
 
     def _compute_finish_condition_question_options(self):
         """

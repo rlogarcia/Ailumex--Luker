@@ -1,0 +1,42 @@
+.ailmx_section_context_box {
+    display: block;
+    width: fit-content;
+    max-width: 80%;
+    margin: 0 auto 24px auto;
+
+    background: rgba(200, 200, 200, 0.15);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+
+    text-align: center;
+}
+
+.ailmx_section_title {
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.ailmx_section_description {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    text-transform: none;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+/* INDICADOR DE SECCIÓN */
+.ailmx_section_counter {
+    font-size: 0.7rem;
+    color: rgba(0, 0, 0, 0.45);
+    letter-spacing: 0.5px;
+}
+
+.ailmx_section_context_box {
+    margin-bottom: 8px;
+    /* antes estaba más grande */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 8px;
+}

@@ -25,6 +25,7 @@
         'views/survey_form_inherit.xml',
         'views/survey_structure_section_edit_button.xml',
         'views/survey_structure_section_create_modal.xml',
+        'views/survey_section_context_templates.xml',
         'views/survey_application_views.xml',
         'views/menu_extensions.xml',
         'views/survey_question_timer_templates.xml',
@@ -34,6 +35,7 @@
         'views/survey_question_math_grid_templates.xml',
         'views/survey_finish_conditions_templates.xml',
         'views/survey_block_message_templates.xml',
+        'views/survey_structure_visual_builder.xml',
         'views/menu_cleanup.xml',
 
         # DATOS INICIALES
@@ -65,6 +67,10 @@
             'ailmx_extend_survey/static/src/css/finish_condition_editor.css',
             'ailmx_extend_survey/static/src/xml/finish_condition_editor.xml',
             'ailmx_extend_survey/static/src/js/finish_condition_editor.js',
+
+            # Menú Estructura (Instrumentos)
+            'ailmx_extend_survey/static/src/css/survey_structure_visual_builder.css',
+            'ailmx_extend_survey/static/src/js/survey_structure_visual_builder.js',
         ],
 
         # Bundle para la parte pública (Frontend)
@@ -74,11 +80,13 @@
             'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
             'ailmx_extend_survey/static/src/css/survey_math_grid.css',
             'ailmx_extend_survey/static/src/css/survey_auto_voice.css',
+            'ailmx_extend_survey/static/src/css/survey_section_context.css',
             'ailmx_extend_survey/static/src/js/survey_timer.js',
             'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
             'ailmx_extend_survey/static/src/js/survey_math_grid.js',
             'ailmx_extend_survey/static/src/js/survey_auto_voice.js',
             'ailmx_extend_survey/static/src/js/survey_finish_conditions.js',
+            'ailmx_extend_survey/static/src/js/survey_section_context.js',
         ],
         
         # Las encuestas públicas usan este bundle minimal
@@ -88,11 +96,13 @@
             'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
             'ailmx_extend_survey/static/src/css/survey_math_grid.css',
             'ailmx_extend_survey/static/src/css/survey_auto_voice.css',
+            'ailmx_extend_survey/static/src/css/survey_section_context.css',
             'ailmx_extend_survey/static/src/js/survey_timer.js',
             'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
             'ailmx_extend_survey/static/src/js/survey_math_grid.js',
             'ailmx_extend_survey/static/src/js/survey_auto_voice.js',
             'ailmx_extend_survey/static/src/js/survey_finish_conditions.js',
+            'ailmx_extend_survey/static/src/js/survey_section_context.js',
         ],
 
         # Bundle de encuestas — Odoo 18 usa este para el frontend de surveys
@@ -102,11 +112,13 @@
             'ailmx_extend_survey/static/src/css/survey_reading_grid.css',
             'ailmx_extend_survey/static/src/css/survey_math_grid.css',
             'ailmx_extend_survey/static/src/css/survey_auto_voice.css',
+            'ailmx_extend_survey/static/src/css/survey_section_context.css',
             'ailmx_extend_survey/static/src/js/survey_timer.js',
             'ailmx_extend_survey/static/src/js/survey_reading_grid.js',
             'ailmx_extend_survey/static/src/js/survey_math_grid.js',
             'ailmx_extend_survey/static/src/js/survey_auto_voice.js',
             'ailmx_extend_survey/static/src/js/survey_finish_conditions.js',
+            'ailmx_extend_survey/static/src/js/survey_section_context.js',
         ],
 
     },

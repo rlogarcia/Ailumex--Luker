@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_survey_structure_visual_builder" model="ir.ui.view">
+        <field name="name">survey.structure.visual.builder</field>
+        <field name="model">survey.survey</field>
+        <field name="inherit_id" ref="survey.survey_survey_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[@name='questions']" position="attributes">
+                <attribute name="class">ailmx_structure_visual_builder_page</attribute>
+            </xpath>
+
+            <xpath expr="//page[@name='questions']//field[@name='question_and_page_ids']" position="attributes">
+                <attribute name="class">ailmx_structure_visual_builder_field</attribute>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

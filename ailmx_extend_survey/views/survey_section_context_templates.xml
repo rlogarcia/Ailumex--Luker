@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="survey_section_context_in_question"
+              inherit_id="survey.question_container"
+              name="AILUMEX - Contexto de sección en preguntas">
+
+        <xpath expr="." position="inside">
+
+            <t t-if="question and question.page_id and question.page_id.title">
+                <div class="ailmx_section_context_box">
+
+                    <!-- INDICADOR DE SECCIÓN -->
+                    <t t-if="question.section_total &gt; 0">
+                        <div class="ailmx_section_counter">
+                            Sección <t t-esc="question.section_index"/> / <t t-esc="question.section_total"/>
+                        </div>
+                    </t>
+
+                    <!-- TÍTULO -->
+                    <div class="ailmx_section_title">
+                        <t t-esc="question.page_id.title"/>
+                    </div>
+
+                    <!-- DESCRIPCIÓN -->
+                    <t t-if="question.page_id.description">
+                        <div class="ailmx_section_description">
+                            <t t-out="question.page_id.description"/>
+                        </div>
+                    </t>
+
+                </div>
+            </t>
+
+        </xpath>
+
+    </template>
+
+</odoo>

@@ -7,11 +7,15 @@
 
         <xpath expr="." position="inside">
 
-            <t t-if="question and question.page_id and question.page_id.title">
+            <t t-if="question 
+                     and question.page_id 
+                     and question.page_id.title 
+                     and question.page_id.show_section_info_in_questions">
+
                 <div class="ailmx_section_context_box">
 
                     <!-- INDICADOR DE SECCIÓN -->
-                    <t t-if="question.section_total &gt; 0">
+                    <t t-if="(question.section_total or 0) &gt; 0">
                         <div class="ailmx_section_counter">
                             Sección <t t-esc="question.section_index"/> / <t t-esc="question.section_total"/>
                         </div>
@@ -30,6 +34,7 @@
                     </t>
 
                 </div>
+
             </t>
 
         </xpath>

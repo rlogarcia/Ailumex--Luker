@@ -134,6 +134,12 @@ class SurveyQuestionExtension(models.Model):
         store=False
     )
 
+    show_section_info_in_questions = fields.Boolean(
+        string='Mostrar información de la sección en sus preguntas',
+        default=True,
+        help='Si está activo, el título y la descripción de esta sección se mostrarán encima de cada pregunta del bloque.'
+    )
+
     @api.depends('finish_conditions_json')
     def _compute_finish_conditions_json_text(self):
         for rec in self:

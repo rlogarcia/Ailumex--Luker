@@ -10,6 +10,7 @@ window.__ailmx_new_sections = window.__ailmx_new_sections || [];
 window.__ailmx_deleted_sections = window.__ailmx_deleted_sections || [];
 window.__ailmx_skip_deleted_section = false;
 window.__ailmx_current_survey_id = window.__ailmx_current_survey_id || null;
+window.__ailmx_structure_snapshot = window.__ailmx_structure_snapshot || null;
 
 patch(QuestionPageListRenderer.prototype, {
     setup() {
@@ -35,14 +36,30 @@ function renderVisualStructure(renderer) {
     const table = fieldContainer.querySelector(".o_list_table");
     if (!table) return;
 
-    const oldBuilder = fieldContainer.querySelector(".ailmx_builder_container");
-    if (oldBuilder) oldBuilder.remove();
-
     const rows = Array.from(table.querySelectorAll("tbody tr.o_data_row"));
     if (!rows.length) return;
 
     const surveyId = getSurveyId(renderer);
     window.__ailmx_current_survey_id = surveyId;
+
+    const oldBuilder = fieldContainer.querySelector(".ailmx_builder_container");
+
+    if (window.__ailmx_structure_snapshot) {
+        if (oldBuilder) {
+            oldBuilder.remove();
+        }
+
+        const container = document.createElement("div");
+        container.className = "ailmx_builder_container";
+
+        table.style.display = "none";
+        table.parentNode.appendChild(container);
+
+        renderVisualStructureFromSnapshot(window.__ailmx_structure_snapshot, surveyId);
+        return;
+    }
+
+    if (oldBuilder) oldBuilder.remove();
 
     const records = renderer?.props?.list?.records || [];
     const container = document.createElement("div");
@@ -63,7 +80,15 @@ function renderVisualStructure(renderer) {
             }
 
             window.__ailmx_skip_deleted_section = false;
-            currentSection = createSectionBlock(rowData.title, surveyId, renderer);
+
+            const record = records[index];
+
+            currentSection = createSectionBlock(
+                rowData.title,
+                surveyId,
+                renderer,
+                record?.resId
+            );
             container.appendChild(currentSection.block);
             return;
         }
@@ -115,7 +140,7 @@ function getRowData(row) {
     };
 }
 
-function createSectionBlock(title, surveyId, renderer) {
+function createSectionBlock(title, surveyId, renderer, sectionId = null) {
     const block = document.createElement("div");
     block.className = "ailmx_section_block";
 
@@ -124,7 +149,25 @@ function createSectionBlock(title, surveyId, renderer) {
 
     const titleEl = document.createElement("div");
     titleEl.className = "ailmx_section_block_title";
-    titleEl.textContent = title;
+
+    const titleText = document.createElement("span");
+    titleText.textContent = title;
+
+    titleEl.appendChild(titleText);
+
+    if (sectionId && cleanText(title) !== "Sin sección") {
+        const editSectionButton = document.createElement("button");
+        editSectionButton.type = "button";
+        editSectionButton.className = "ailmx_section_edit_button";
+        editSectionButton.innerHTML = "✎";
+        editSectionButton.title = "Editar sección";
+
+        editSectionButton.addEventListener("click", () => {
+            openSectionModal(sectionId, surveyId);
+        });
+
+        titleEl.appendChild(editSectionButton);
+    }
 
     const actions = document.createElement("div");
     actions.className = "ailmx_section_actions";
@@ -151,7 +194,10 @@ function createSectionBlock(title, surveyId, renderer) {
 
     actions.appendChild(badge);
     actions.appendChild(addQuestionButton);
-    actions.appendChild(deleteSectionButton);
+
+    if (cleanText(title) !== "Sin sección") {
+        actions.appendChild(deleteSectionButton);
+    }
 
     header.appendChild(titleEl);
     header.appendChild(actions);
@@ -170,9 +216,35 @@ function createSectionBlock(title, surveyId, renderer) {
     };
 }
 
+function openSectionModal(sectionId, surveyId) {
+    const actionService = window.__ailmx_structure_action_service;
+
+    if (!actionService || !sectionId) {
+        console.warn("[STRUCTURE_BUILDER] No se pudo abrir sección", sectionId);
+        return;
+    }
+
+    actionService.doAction({
+        type: "ir.actions.act_window",
+        name: "Editar sección",
+        res_model: "survey.question",
+        res_id: sectionId,
+        views: [[false, "form"]],
+        view_mode: "form",
+        target: "new",
+    }, {
+        onClose: function () {
+            setTimeout(() => {
+                syncSurveySections(surveyId);
+            }, 800);
+        },
+    });
+}
+
 function createQuestionItem(question) {
     const item = document.createElement("div");
     item.className = "ailmx_question_item";
+    item.draggable = true;
 
     if (question.questionId || question.id) {
         item.dataset.questionId = question.questionId || question.id;
@@ -200,10 +272,17 @@ function createQuestionItem(question) {
 
     const actions = createQuestionActions(question.originalRow, question.questionId || question.id);
 
+    const dragHandle = document.createElement("div");
+    dragHandle.className = "ailmx_drag_handle";
+    dragHandle.innerHTML = "☰";
+    dragHandle.title = "Arrastrar pregunta";
+    
+    item.appendChild(dragHandle);
     item.appendChild(numberEl);
     item.appendChild(content);
     item.appendChild(actions);
 
+    enableDragForQuestion(item);
     return item;
 }
 
@@ -211,15 +290,15 @@ function createQuestionActions(originalRow, questionId) {
     const actions = document.createElement("div");
     actions.className = "ailmx_q_actions";
 
-    const moveUpButton = createActionButton("↑", "", "Mover arriba");
-    moveUpButton.addEventListener("click", () => {
-        moveQuestionInsideSection(questionId, "up", moveUpButton);
-    });
+    // const moveUpButton = createActionButton("↑", "", "Mover arriba");
+    // moveUpButton.addEventListener("click", () => {
+    //     moveQuestionInsideSection(questionId, "up", moveUpButton);
+    // });
 
-    const moveDownButton = createActionButton("↓", "", "Mover abajo");
-    moveDownButton.addEventListener("click", () => {
-        moveQuestionInsideSection(questionId, "down", moveDownButton);
-    });
+    // const moveDownButton = createActionButton("↓", "", "Mover abajo");
+    // moveDownButton.addEventListener("click", () => {
+    //     moveQuestionInsideSection(questionId, "down", moveDownButton);
+    // });
 
     const editButton = createActionButton("✎", "Editar");
     editButton.addEventListener("click", () => {
@@ -236,8 +315,8 @@ function createQuestionActions(originalRow, questionId) {
         triggerRowDelete(originalRow, questionId, deleteButton);
     });
 
-    actions.appendChild(moveUpButton);
-    actions.appendChild(moveDownButton);
+    //actions.appendChild(moveUpButton);
+    //actions.appendChild(moveDownButton);
     actions.appendChild(editButton);
     actions.appendChild(duplicateButton);
     actions.appendChild(deleteButton);
@@ -317,9 +396,46 @@ function createQuestionInSection(sectionTitle, surveyId, renderer) {
 
             actionService.doAction(data.result, {
                 onClose: function () {
-                    window.location.reload();
+                    setTimeout(() => {
+                        syncSectionQuestions(sectionTitle, surveyId);
+                    }, 800);
                 },
             });
+        })
+        .catch((error) => console.error("[STRUCTURE_BUILDER]", error));
+}
+
+function syncSectionQuestions(sectionTitle, surveyId) {
+    rpcCall("survey.question", "get_section_questions_for_builder", [surveyId, sectionTitle])
+        .then((data) => {
+            if (data.error) {
+                console.error("[STRUCTURE_BUILDER] Error sincronizando sección:", data.error);
+                return;
+            }
+
+            const section = findSectionBlock(sectionTitle);
+            if (!section) return;
+
+            const list = section.querySelector(".ailmx_questions_list");
+            if (!list) return;
+
+            list.innerHTML = "";
+
+            const questions = data.result || [];
+
+            questions.forEach((question, index) => {
+                const card = createQuestionItem({
+                    number: index + 1,
+                    title: question.title,
+                    type: question.type,
+                    originalRow: null,
+                    questionId: question.id,
+                });
+
+                list.appendChild(card);
+            });
+
+            updateSectionBadge(section);
         })
         .catch((error) => console.error("[STRUCTURE_BUILDER]", error));
 }
@@ -467,7 +583,9 @@ function createSectionInSurvey(surveyId, renderer) {
 
             actionService.doAction(data.result, {
                 onClose: function () {
-                    window.location.reload();
+                    setTimeout(() => {
+                        syncSurveySections(surveyId);
+                    }, 800);
                 },
             });
         })
@@ -808,6 +926,232 @@ function getQuestionTypeLabel(questionType) {
     };
 
     return labels[questionType] || questionType || "Sin tipo definido";
+}
+
+function enableDragForQuestion(item) {
+    item.addEventListener("dragstart", function (event) {
+        item.classList.add("ailmx_dragging");
+        event.dataTransfer.effectAllowed = "move";
+    });
+
+    item.addEventListener("dragend", function () {
+        item.classList.remove("ailmx_dragging");
+
+        renumberAllSections();
+        saveQuestionOrderBetweenSections();
+    });
+}
+
+document.addEventListener("dragover", function (event) {
+    const dragging = document.querySelector(".ailmx_dragging");
+    if (!dragging) return;
+
+    const targetList = event.target.closest(".ailmx_questions_list");
+    if (!targetList) return;
+
+    event.preventDefault();
+
+    const targetCard = event.target.closest(".ailmx_question_item");
+
+    if (!targetCard) {
+        targetList.appendChild(dragging);
+        return;
+    }
+
+    if (targetCard === dragging) return;
+
+    const rect = targetCard.getBoundingClientRect();
+    const shouldMoveAfter = event.clientY > rect.top + rect.height / 2;
+
+    if (shouldMoveAfter) {
+        targetCard.after(dragging);
+    } else {
+        targetCard.before(dragging);
+    }
+});
+
+function saveQuestionOrderInsideSection(list) {
+    const orderedIds = Array.from(list.querySelectorAll(".ailmx_question_item"))
+        .map((card) => card.dataset.questionId)
+        .filter(Boolean);
+
+    if (!orderedIds.length) {
+        return;
+    }
+
+    rpcCall("survey.question", "reorder_questions_inside_section", [orderedIds])
+        .then((data) => {
+            if (data.error) {
+                console.error("[STRUCTURE_BUILDER] Error guardando orden:", data.error);
+            }
+        })
+        .catch((error) => {
+            console.error("[STRUCTURE_BUILDER]", error);
+        });
+}
+
+function renumberAllSections() {
+    const lists = document.querySelectorAll(".ailmx_questions_list");
+
+    lists.forEach((list) => {
+        renumberQuestionCards(list);
+        updateSectionBadge(list.closest(".ailmx_section_block"));
+    });
+}
+
+function collectSectionOrders() {
+    const sections = Array.from(document.querySelectorAll(".ailmx_section_block"));
+
+    return sections.map((section) => {
+        const title = section.querySelector(".ailmx_section_block_title");
+        const list = section.querySelector(".ailmx_questions_list");
+
+        return {
+            section_title: cleanText(title ? title.textContent : ""),
+            question_ids: Array.from(list.querySelectorAll(".ailmx_question_item"))
+                .map((card) => card.dataset.questionId)
+                .filter(Boolean),
+        };
+    });
+}
+
+function saveQuestionOrderBetweenSections() {
+    const sectionOrders = collectSectionOrders();
+
+    window.__ailmx_structure_snapshot = buildSnapshotFromCurrentBuilder();
+
+    rpcCall("survey.question", "reorder_questions_between_sections", [sectionOrders])
+        .then((data) => {
+            if (data.error) {
+                console.error("[STRUCTURE_BUILDER] Error guardando orden entre secciones:", data.error);
+                return;
+            }
+        })
+        .catch((error) => {
+            console.error("[STRUCTURE_BUILDER]", error);
+        });
+}
+
+function buildSnapshotFromCurrentBuilder() {
+    const sections = Array.from(document.querySelectorAll(".ailmx_section_block"));
+
+    return sections.map((section) => {
+        const title = section.querySelector(".ailmx_section_block_title")?.textContent || "";
+
+        const questions = Array.from(section.querySelectorAll(".ailmx_question_item")).map((card) => {
+            return {
+                id: card.dataset.questionId,
+                title: card.querySelector(".ailmx_q_title")?.textContent || "Pregunta sin título",
+                type: cleanText(
+                    (card.querySelector(".ailmx_q_type")?.textContent || "")
+                        .replace("Tipo:", "")
+                ),
+            };
+        });
+
+        return {
+            title: cleanText(title),
+            questions,
+        };
+    });
+}
+
+function renderVisualStructureFromSnapshot(snapshot, surveyId) {
+    const container = document.querySelector(".ailmx_builder_container");
+
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = "";
+
+    snapshot.forEach((sectionData) => {
+        if (isDeletedSection(sectionData.title)) return;
+
+        const section = createSectionBlock(
+            sectionData.title,
+            surveyId,
+            null,
+            sectionData.id
+        );
+
+        container.appendChild(section.block);
+
+        sectionData.questions.forEach((question, index) => {
+            const card = createQuestionItem({
+                number: index + 1,
+                title: question.title,
+                type: question.type,
+                originalRow: null,
+                questionId: question.id,
+            });
+
+            section.questions.appendChild(card);
+            section.count += 1;
+        });
+
+        section.badge.textContent = `${section.count} preguntas`;
+    });
+
+    container.appendChild(createAddSectionButton(surveyId, null));
+}
+
+function syncSurveySections(surveyId) {
+    renderVisualStructureFromServer(surveyId);
+}
+
+function renderVisualStructureFromServer(surveyId) {
+    if (!surveyId) return;
+
+    rpcCall("survey.question", "get_survey_structure_for_builder", [surveyId])
+        .then((data) => {
+            if (data.error) {
+                console.error("[STRUCTURE_BUILDER] Error sincronizando estructura:", data.error);
+                return;
+            }
+
+            const container = document.querySelector(".ailmx_builder_container");
+            if (!container) return;
+
+            container.innerHTML = "";
+
+            const sections = data.result || [];
+
+            window.__ailmx_structure_snapshot = sections;
+
+            sections.forEach((sectionData) => {
+                if (isDeletedSection(sectionData.title)) return;
+
+                const section = createSectionBlock(
+                    sectionData.title,
+                    surveyId,
+                    null,
+                    sectionData.id
+                );
+
+                container.appendChild(section.block);
+
+                sectionData.questions.forEach((question, index) => {
+                    const card = createQuestionItem({
+                        number: index + 1,
+                        title: question.title,
+                        type: question.type,
+                        originalRow: null,
+                        questionId: question.id,
+                    });
+
+                    section.questions.appendChild(card);
+                    section.count += 1;
+                });
+
+                section.badge.textContent = `${section.count} preguntas`;
+            });
+
+            container.appendChild(createAddSectionButton(surveyId, null));
+        })
+        .catch((error) => {
+            console.error("[STRUCTURE_BUILDER]", error);
+        });
 }
 
 function escapeHtml(value) {

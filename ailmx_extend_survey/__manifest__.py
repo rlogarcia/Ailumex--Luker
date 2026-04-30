@@ -25,6 +25,7 @@
         'views/survey_form_inherit.xml',
         'views/survey_structure_section_edit_button.xml',
         'views/survey_structure_section_create_modal.xml',
+        'views/survey_section_display_option.xml',
         'views/survey_section_context_templates.xml',
         'views/survey_application_views.xml',
         'views/menu_extensions.xml',

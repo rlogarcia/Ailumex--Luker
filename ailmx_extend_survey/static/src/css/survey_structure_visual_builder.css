@@ -174,3 +174,49 @@
 .ailmx_structure_visual_builder_field .o_list_table {
     display: none !important;
 }
+
+.ailmx_drag_handle {
+    width: 24px;
+    min-width: 24px;
+    color: #1F5C99;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: grab;
+    opacity: 0.65;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ailmx_drag_handle:hover {
+    opacity: 1;
+}
+
+.ailmx_question_item.ailmx_dragging {
+    opacity: 0.55;
+    border: 1px dashed #1F5C99;
+}
+
+.ailmx_questions_list {
+    min-height: 18px;
+}
+
+.ailmx_questions_list:empty {
+    min-height: 42px;
+    border: 1px dashed rgba(31, 92, 153, 0.25);
+    border-radius: 8px;
+}
+
+.ailmx_section_edit_button {
+    margin-left: 8px;
+    border: none;
+    background: transparent;
+    color: #1F5C99;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 2px 4px;
+}
+
+.ailmx_section_edit_button:hover {
+    opacity: 0.75;
+}

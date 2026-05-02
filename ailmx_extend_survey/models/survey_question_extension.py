@@ -73,7 +73,7 @@ class SurveyQuestionExtension(models.Model):
         column1='id_question_audio',
         column2='id_adjunto',
         string='Imágenes de la pregunta',
-        domain="[('tipo_mime', 'ilike', 'image/')]",
+        domain="[('mimetype', 'ilike', 'image/')]",
         help='Permite cargar una o varias imágenes para mostrar en la pregunta.'
     )
 

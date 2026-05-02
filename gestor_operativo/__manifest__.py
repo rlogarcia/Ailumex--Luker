@@ -25,6 +25,7 @@
         'contacts',
         'survey',
         'l10n_latam_base',
+        'dms',
     ],
     'data': [
         # Security
@@ -34,6 +35,7 @@
         # Data inicial
         'data/participant_type_data.xml',
         'data/attribute_definition_data.xml',
+        'data/dms_luker_data.xml',
 
         # Views
         'views/participant_type_views.xml',
@@ -45,6 +47,7 @@
 
         # Integraciones con otros módulos (solo addiciones, sin modificar base)
         'views/res_partner_views.xml',
+        'views/participant_dms_views.xml',
 
         # Acción de carga masiva (antes que el wizard y el menú)
         'views/participant_import_action.xml',

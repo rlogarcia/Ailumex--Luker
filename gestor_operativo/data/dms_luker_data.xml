@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!--
+        noupdate="1": solo se crea la primera vez.
+        Si el administrador renombra o mueve estos registros, no se sobreescribirán al actualizar.
+    -->
+
+    <!-- Storage principal del Gestor Operativo -->
+    <record id="dms_storage_gestor_operativo" model="dms.storage">
+        <field name="name">Gestor Operativo — Luker</field>
+        <field name="save_type">attachment</field>
+    </record>
+
+    <!-- Directorio raíz: Participantes -->
+    <record id="dms_directory_participantes" model="dms.directory">
+        <field name="name">Participantes</field>
+        <field name="storage_id" ref="dms_storage_gestor_operativo"/>
+        <field name="is_root_directory" eval="True"/>
+    </record>
+
+</odoo>

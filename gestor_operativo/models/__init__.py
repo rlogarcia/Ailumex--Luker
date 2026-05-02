@@ -11,3 +11,4 @@ from . import attribute_definition       # ATR_Definicion + ATR_Opcion
 from . import participant_attribute_value  # PAR_Valor_Dinamico
 from . import application_result         # APP_Sesion
 from . import res_partner_extend         # Integración res.partner ↔ Gestor Operativo
+from . import participant_dms_extend     # Integración luker.participant ↔ DMS

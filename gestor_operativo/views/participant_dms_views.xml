@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Herencia sobre la vista formulario del participante.
+        Solo AGREGA: smart button documentos + pestaña Documentos.
+        No modifica ni elimina ningún elemento existente.
+    -->
+
+    <record id="view_luker_participant_dms_inherit" model="ir.ui.view">
+        <field name="name">luker.participant.form.dms.inherit</field>
+        <field name="model">luker.participant</field>
+        <field name="inherit_id" ref="gestor_operativo.view_luker_participant_form"/>
+        <field name="arch" type="xml">
+
+            <!-- ── Smart button: Documentos ── -->
+            <div name="button_box" position="inside">
+                <button name="action_abrir_documentos_dms"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-folder-open">
+                    <field name="dms_file_count"
+                           widget="statinfo"
+                           string="Documentos"/>
+                </button>
+            </div>
+
+            <!-- ── Pestaña Documentos: antes de Notas ── -->
+            <page name="notas" position="before">
+                <page string="Documentos" name="dms_documentos">
+
+                    <div class="alert alert-info mb-3"
+                         invisible="dms_directory_id != False">
+                        <i class="fa fa-folder-o me-2"/>
+                        La carpeta de documentos se creará automáticamente
+                        al guardar este participante.
+                    </div>
+
+                    <!-- Archivos del directorio personal -->
+                    <field name="dms_directory_id"
+                           invisible="1"
+                           readonly="1"/>
+
+                    <group invisible="dms_directory_id == False">
+                        <group string="Carpeta asignada" col="1">
+                            <field name="dms_directory_id"
+                                   readonly="1"
+                                   nolabel="1"
+                                   widget="many2one"/>
+                        </group>
+                    </group>
+
+                    <!-- Widget de archivos del directorio -->
+                    <div invisible="dms_directory_id == False">
+                        <field name="dms_directory_id"
+                               invisible="1"/>
+                        <!-- Abre la vista DMS completa con el botón -->
+                        <div class="mt-2">
+                            <button name="action_abrir_documentos_dms"
+                                    type="object"
+                                    string="Abrir gestor de documentos"
+                                    class="btn btn-secondary btn-sm"
+                                    invisible="dms_directory_id == False">
+                                <i class="fa fa-folder-open me-1"/>
+                                Ver y subir documentos
+                            </button>
+                        </div>
+                    </div>
+
+                </page>
+            </page>
+
+        </field>
+    </record>
+
+</odoo>

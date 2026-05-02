@@ -18,7 +18,7 @@
                 <field name="nam_ui_component" string="Componente UI"/>
                 <field name="flg_supports_multiple" string="Múltiple"/>
                 <field name="flg_supports_offline" string="Offline"/>
-                <field name="active" string="Activo"/>
+                <field name="activo" string="Activo"/>
             </list>
         </field>
     </record>

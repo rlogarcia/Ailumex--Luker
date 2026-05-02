@@ -13,7 +13,7 @@
                 <field name="nam_user" string="Participante"/>
                 <field name="id_instrument" string="Instrumento"/>
                 <field name="id_response_header" string="Aplicación"/>
-                <field name="Id_Question" string="Pregunta"/>
+                <field name="id_question" string="Pregunta"/>
                 <field name="typ_response" string="Tipo"/>
                 <field name="val_text" string="Texto"/>
                 <field name="val_number" string="Número"/>
@@ -42,7 +42,7 @@
                         <field name="nam_user" string="Participante"/>
                         <field name="id_instrument" string="Instrumento"/>
                         <field name="id_response_header" string="Aplicación"/>
-                        <field name="Id_Question" string="Pregunta"/>
+                        <field name="id_question" string="Pregunta"/>
                         <field name="id_section" string="Sección"/>
                         <field name="typ_response" string="Tipo de respuesta"/>
                         <field name="id_question_option" string="Opción seleccionada"/>
@@ -84,7 +84,7 @@
                 <field name="nam_user" string="Participante"/>
                 <field name="id_instrument" string="Instrumento"/>
                 <field name="id_response_header" string="Aplicación"/>
-                <field name="Id_Question" string="Pregunta"/>
+                <field name="id_question" string="Pregunta"/>
                 <field name="typ_response" string="Tipo"/>
 
                 <!-- Filtros -->

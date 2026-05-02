@@ -16,7 +16,7 @@
                 <field name="nam_sensitivity" string="Sensibilidad"/>
                 <field name="des_retention_policy" string="Retención"/>
                 <field name="nam_owner" string="Propietario"/>
-                <field name="active" string="Activo"/>
+                <field name="activo" string="Activo"/>
             </list>
         </field>
     </record>

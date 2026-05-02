@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Herencia sobre la pestaña "Datos del Contacto" del participante.
+        Agrega la sección de caracterización socioeconómica Colombia
+        (SISBEN, estrato, discapacidad, víctima) leída desde el contacto vinculado.
+        Todos los campos son de solo lectura — la fuente es res.partner.
+        Requiere: ox_res_partner_ext_co instalado.
+    -->
+
+    <record id="view_luker_participant_co_inherit" model="ir.ui.view">
+        <field name="name">luker.participant.form.co.inherit</field>
+        <field name="model">luker.participant</field>
+        <field name="inherit_id" ref="gestor_operativo.view_luker_participant_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Insertar después del grupo "Datos del participante" en la pestaña Contacto -->
+            <page name="contacto" position="inside">
+
+                <!-- Separador visual -->
+                <div class="mt-3 mb-2"
+                     invisible="partner_id == False">
+                    <span class="fw-bold text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;">
+                        Caracterización Socioeconómica Colombia
+                    </span>
+                    <small class="text-muted ms-2">(desde el contacto vinculado — solo lectura)</small>
+                </div>
+
+                <!-- Fila 1: Identificación de género y estado civil -->
+                <group invisible="partner_id == False">
+                    <group string="Género e Identidad">
+                        <field name="co_sexo_biologico" readonly="1"/>
+                        <field name="co_sexo_identificacion" readonly="1"/>
+                        <field name="co_estado_civil" readonly="1"/>
+                    </group>
+                    <group string="Ubicación">
+                        <field name="co_zona" readonly="1"/>
+                        <field name="co_barrio_ciudad" readonly="1"/>
+                        <field name="co_direccion_residencia" readonly="1"/>
+                    </group>
+                </group>
+
+                <!-- Fila 2: SISBEN y Estrato -->
+                <group invisible="partner_id == False">
+                    <group string="SISBEN">
+                        <field name="co_tiene_sisben" readonly="1"/>
+                        <field name="co_sisben_id" readonly="1"
+                               invisible="co_tiene_sisben == False"/>
+                    </group>
+                    <group string="Estrato y Salud">
+                        <field name="co_estrato_id" readonly="1"/>
+                        <field name="co_ips_cotizante" readonly="1"/>
+                    </group>
+                </group>
+
+                <!-- Fila 3: Discapacidad y Víctima del conflicto -->
+                <group invisible="partner_id == False">
+                    <group string="Discapacidad">
+                        <field name="co_tiene_discapacidad" readonly="1"/>
+                        <field name="co_discapacidad_id" readonly="1"
+                               invisible="co_tiene_discapacidad == False"/>
+                    </group>
+                    <group string="Víctima del Conflicto Armado">
+                        <field name="co_es_victima_conflicto" readonly="1"/>
+                        <field name="co_tipo_victima_id" readonly="1"
+                               invisible="co_es_victima_conflicto == False"/>
+                    </group>
+                </group>
+
+                <!-- Aviso si no hay contacto vinculado -->
+                <div class="alert alert-warning mt-2"
+                     invisible="partner_id != False">
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    Vincula un contacto para ver su caracterización socioeconómica.
+                </div>
+
+            </page>
+
+        </field>
+    </record>
+
+</odoo>

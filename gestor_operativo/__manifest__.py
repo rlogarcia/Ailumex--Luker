@@ -26,6 +26,7 @@
         'survey',
         'l10n_latam_base',
         'dms',
+        'ox_res_partner_ext_co',
     ],
     'data': [
         # Security
@@ -48,6 +49,7 @@
         # Integraciones con otros módulos (solo addiciones, sin modificar base)
         'views/res_partner_views.xml',
         'views/participant_dms_views.xml',
+        'views/participant_co_views.xml',
 
         # Acción de carga masiva (antes que el wizard y el menú)
         'views/participant_import_action.xml',

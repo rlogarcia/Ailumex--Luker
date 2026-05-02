@@ -5,10 +5,13 @@
         Si el administrador renombra o mueve estos registros, no se sobreescribirán al actualizar.
     -->
 
-    <!-- Storage principal del Gestor Operativo -->
+    <!-- Storage principal del Gestor Operativo.
+         save_type=database: los archivos se almacenan en PostgreSQL.
+         Evita el constraint del OCA que exige res_model en directorios
+         cuando el tipo es 'attachment'. -->
     <record id="dms_storage_gestor_operativo" model="dms.storage">
         <field name="name">Gestor Operativo — Luker</field>
-        <field name="save_type">attachment</field>
+        <field name="save_type">database</field>
     </record>
 
     <!-- Directorio raíz: Participantes -->

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Herencia sobre la vista formulario de res.partner.
+        Solo AGREGA elementos — no modifica ni elimina nada de la vista original.
+        Requiere: gestor_operativo (para los modelos luker.*)
+    -->
+
+    <record id="view_res_partner_luker_form_inherit" model="ir.ui.view">
+        <field name="name">res.partner.form.luker.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <!-- ── Smart buttons: se insertan al inicio del button_box ── -->
+            <div name="button_box" position="inside">
+
+                <button name="action_ver_participantes_luker"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-users"
+                        invisible="luker_participant_count == 0">
+                    <field name="luker_participant_count"
+                           widget="statinfo"
+                           string="Participante(s)"/>
+                </button>
+
+                <button name="action_ver_sesiones_luker"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-file-text-o"
+                        invisible="luker_sesion_count == 0">
+                    <field name="luker_sesion_count"
+                           widget="statinfo"
+                           string="Sesiones"/>
+                </button>
+
+            </div>
+
+            <!-- ── Pestaña Luker: se inserta al final del notebook ── -->
+            <xpath expr="//notebook" position="inside">
+
+                <page string="Gestor Operativo" name="luker_gestor"
+                      invisible="luker_participant_count == 0">
+
+                    <group string="Participantes Luker vinculados">
+                        <field name="luker_participant_ids"
+                               nolabel="1"
+                               mode="list"
+                               readonly="1">
+                            <list>
+                                <field name="cod_participante" string="Código"/>
+                                <field name="nom_completo" string="Nombre"/>
+                                <field name="tipo_participante_id" string="Tipo"
+                                       widget="badge" decoration-info="True"/>
+                                <field name="institucion_actual_id" string="Institución"
+                                       optional="show"/>
+                                <field name="estado" string="Estado"
+                                       widget="badge"
+                                       decoration-success="estado == 'activo'"
+                                       decoration-warning="estado == 'inactivo'"/>
+                                <field name="sesion_count" string="Sesiones"
+                                       optional="show"/>
+                            </list>
+                        </field>
+                    </group>
+
+                </page>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

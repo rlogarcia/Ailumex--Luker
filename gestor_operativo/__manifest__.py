@@ -43,6 +43,9 @@
         'views/application_result_views.xml',
         'views/dashboard_views.xml',
 
+        # Integraciones con otros módulos (solo addiciones, sin modificar base)
+        'views/res_partner_views.xml',
+
         # Acción de carga masiva (antes que el wizard y el menú)
         'views/participant_import_action.xml',
 

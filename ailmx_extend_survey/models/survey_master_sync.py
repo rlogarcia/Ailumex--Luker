@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
 # =========================================================
-# PUENTE ENTRE survey.user_input Y luker_master
+# PUENTE ENTRE survey.user_input Y gestor_operativo
 # =========================================================
 #
 # Este archivo NO reemplaza nada del flujo actual.
 # Solo agrega:
-# 1. Un vínculo con el participante maestro de luker_master
+# 1. Un vínculo con el participante maestro de gestor_operativo
 # 2. Un vínculo con la sesión maestra (luker.application.result)
 # 3. Un helper para crear/sincronizar esa sesión maestra
 #
 # Objetivo de esta fase:
 # - No romper ailmx_extend_survey
 # - No eliminar modelos viejos
-# - Hacer que luker_master empiece a ser la fuente operativa
+# - Hacer que gestor_operativo empiece a ser la fuente operativa
 #
 # =========================================================
 
@@ -24,7 +24,7 @@ class SurveyMasterSync(models.Model):
     _inherit = 'survey.user_input'
 
     # =========================================================
-    # CAMPOS PUENTE HACIA luker_master
+    # CAMPOS PUENTE HACIA gestor_operativo
     # =========================================================
 
     luker_participant_id = fields.Many2one(
@@ -32,7 +32,7 @@ class SurveyMasterSync(models.Model):
         string='Participante maestro',
         ondelete='set null',
         index=True,
-        help='Participante maestro en luker_master asociado a esta aplicación.'
+        help='Participante maestro en gestor_operativo asociado a esta aplicación.'
     )
 
     luker_application_result_id = fields.Many2one(
@@ -58,7 +58,7 @@ class SurveyMasterSync(models.Model):
     # =========================================================
     def _get_luker_participant_from_partner(self):
         """
-        Busca el participante maestro de luker_master usando partner_id.
+        Busca el participante maestro de gestor_operativo usando partner_id.
 
         Retorna:
         - un registro de luker.participant si existe
@@ -203,7 +203,7 @@ class SurveyMasterSync(models.Model):
             # Datos del instrumento
             # -------------------------------------------------
             'cod_instrumento': (
-                getattr(self.survey_id, 'Cod_Instrument', False) or
+                getattr(self.survey_id, 'cod_instrument', False) or
                 self.survey_id.title or
                 False
             ),
@@ -270,7 +270,7 @@ class SurveyMasterSync(models.Model):
     # =========================================================
     def action_sync_luker_application_result(self):
         """
-        Crea o actualiza la sesión maestra de luker_master
+        Crea o actualiza la sesión maestra de gestor_operativo
         asociada a este survey.user_input.
         """
         LukerApplicationResult = self.env['luker.application.result']
@@ -317,7 +317,7 @@ class SurveyMasterSync(models.Model):
     # =========================================================
     # MÉTODO 6: MÉTODO GENERAL DE SINCRONIZACIÓN
     # =========================================================
-    def action_sync_luker_master_bridge(self):
+    def action_sync_gestor_operativo_bridge(self):
         """
         Método general para sincronizar:
         1. participante maestro

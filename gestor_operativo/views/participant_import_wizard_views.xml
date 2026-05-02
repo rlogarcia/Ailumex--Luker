@@ -6,7 +6,7 @@
         <field name="name">luker.participant.import.wizard.form</field>
         <field name="model">luker.participant.import.wizard</field>
         <field name="arch" type="xml">
-            <form string="Carga Masiva — OPE_Carga_Poblacion">
+            <form string="Carga masiva">
                 <sheet>
                     <!-- Indicador de pasos -->
                     <div style="display:flex;border:1px solid #dee2e6;border-radius:8px;overflow:hidden;font-size:12px;margin-bottom:20px;">
@@ -24,7 +24,7 @@
                     <div invisible="step != 'upload'">
                         <h4 style="color:#714B67;"><i class="fa fa-upload me-2"/>Paso 1 — Subir archivo</h4>
                         <group>
-                            <group string="Identificación de la carga — OPE_Carga_Poblacion">
+                            <group string="Identificación de la carga">
                                 <field name="import_name" string="Nombre de la carga (nom_carga)"
                                        placeholder="Ej: SIMAT 2025 — I.E. Central del Norte"/>
                                 <field name="source_format" string="Formato de origen (fuente_formato)"/>
@@ -44,8 +44,8 @@
                         </div>
                         <div class="alert alert-secondary">
                             <i class="fa fa-history me-2"/>
-                            Trazabilidad completa: se registra en <b>OPE_Carga_Poblacion</b> con usuario,
-                            fecha, archivo original y resultado fila a fila en <b>OPE_Carga_Poblacion_Detalle</b>.
+                            Trazabilidad completa: se registra en <b>el registro de carga</b> con usuario,
+                            fecha, archivo original y resultado fila a fila en <b>el detalle por fila</b>.
                         </div>
                     </div>
 
@@ -53,7 +53,7 @@
                     <div invisible="step != 'mapping'">
                         <h4 style="color:#714B67;"><i class="fa fa-columns me-2"/>Paso 2 — Mapear columnas</h4>
                         <group>
-                            <group string="Conciliación — OPE_Carga_Poblacion">
+                            <group string="Conciliación">
                                 <field name="reconcile_field" string="Campo de conciliación (campo_conciliacion)"/>
                                 <field name="action_on_existing" string="Si ya existe (accion_existente)"/>
                             </group>
@@ -88,8 +88,8 @@
                         </div>
                         <div class="alert alert-secondary" style="font-size:12px;margin-bottom:8px;">
                             <b>Campo destino</b> muestra el nombre exacto del modelo de datos
-                            (ej: <code>num_identidad</code> → PAR_Identidad.Num_Identidad,
-                            <code>nom_grado</code> → CTX_Unidad_Organizacional.Nom_Grado).
+                            (ej: <code>num_identidad</code> → columna Número de identidad,
+                            <code>grado</code> → Unidad organizacional → Grado).
                         </div>
                         <field name="mapping_line_ids">
                             <list editable="bottom" no_open="1">
@@ -140,8 +140,8 @@
                         <field name="result_summary" widget="html" readonly="1"/>
                         <div class="alert alert-info mt-3">
                             <i class="fa fa-history me-2"/>
-                            Log guardado en <b>OPE_Carga_Poblacion</b> con trazabilidad completa
-                            fila a fila en <b>OPE_Carga_Poblacion_Detalle</b>.
+                            Log guardado en <b>el registro de carga</b> con trazabilidad completa
+                            fila a fila en <b>el detalle por fila</b>.
                         </div>
                     </div>
                 </sheet>
@@ -154,10 +154,10 @@
                             type="object" class="btn-secondary" invisible="step != 'mapping'"/>
                     <button name="action_import" string="✓ Importar participantes"
                             type="object" class="btn-primary" invisible="step != 'validate'"
-                            confirm="¿Confirmas la importación? Se crearán o actualizarán registros PAR_Participante."/>
+                            confirm="¿Confirmar la importación? Se crearán o actualizarán los participantes."/>
                     <button name="action_back_to_mapping" string="← Ajustar mapeo"
                             type="object" class="btn-secondary" invisible="step != 'validate'"/>
-                    <button name="action_view_log" string="📋 Ver OPE_Carga_Poblacion"
+                    <button name="action_view_log" string="📋 Ver historial de carga"
                             type="object" class="btn-primary" invisible="step != 'done'"/>
                     <button string="Cerrar" special="cancel" class="btn-secondary"/>
                 </footer>
@@ -170,17 +170,17 @@
         <field name="name">luker.participant.import.log.list</field>
         <field name="model">luker.participant.import.log</field>
         <field name="arch" type="xml">
-            <list string="Historial de Cargas — OPE_Carga_Poblacion" create="false"
+            <list string="Historial de cargas" create="false"
                   decoration-success="estado_carga == 'completo'"
                   decoration-warning="estado_carga == 'parcial'"
                   decoration-danger="estado_carga == 'fallido'">
                 <header>
                     <button name="action_open_import_wizard" type="object"
-                            string="📥 Nueva Carga Masiva" class="btn-primary"/>
+                            string="📥 Nueva carga masiva" class="btn-primary"/>
                 </header>
                 <field name="fecha_cargue" string="Fecha (Fecha_Cargue)"/>
                 <field name="nom_carga" string="Nombre carga"/>
-                <field name="usuario_cargue_id" string="Cargado por (Id_SEG_Usuario_Cargue)"/>
+                <field name="usuario_cargue_id" string="Cargado por"/>
                 <field name="nom_archivo_origen" string="Archivo (Nom_Archivo_Origen)" optional="show"/>
                 <field name="fuente_formato" string="Formato"/>
                 <field name="total_filas" string="Total filas"/>
@@ -200,9 +200,9 @@
         <field name="name">luker.participant.import.log.form</field>
         <field name="model">luker.participant.import.log</field>
         <field name="arch" type="xml">
-            <form string="Log de Carga — OPE_Carga_Poblacion" create="false">
+            <form string="Registro de carga" create="false">
                 <header>
-                    <button name="action_open_import_wizard" string="📥 Nueva Carga Masiva"
+                    <button name="action_open_import_wizard" string="📥 Nueva carga masiva"
                             type="object" class="btn-primary"/>
                     <field name="estado_carga" widget="statusbar"
                            statusbar_visible="borrador,parcial,completo"/>
@@ -227,7 +227,7 @@
                         </div>
                     </div>
                     <group>
-                        <group string="Configuración usada — OPE_Carga_Poblacion">
+                        <group string="Configuración usada">
                             <field name="fuente_formato" readonly="1"/>
                             <field name="campo_conciliacion" readonly="1"/>
                             <field name="accion_existente" readonly="1"/>
@@ -241,7 +241,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Detalle fila a fila — OPE_Carga_Poblacion_Detalle">
+                        <page string="Detalle por fila">
                             <field name="detalle_ids" readonly="1">
                                 <list decoration-success="estado_registro == 'creado'"
                                       decoration-info="estado_registro == 'actualizado'"
@@ -289,7 +289,7 @@
     </record>
 
     <record id="action_luker_import_log" model="ir.actions.act_window">
-        <field name="name">Historial de Cargas — OPE_Carga_Poblacion</field>
+        <field name="name">Historial de cargas</field>
         <field name="res_model">luker.participant.import.log</field>
         <field name="view_mode">list,form</field>
     </record>

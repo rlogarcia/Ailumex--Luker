@@ -10,7 +10,7 @@
 
                     <div style="margin-bottom: 12px;">
                         <div style="font-size: 16px; font-weight: 700; color: #1F5C99;">
-                            <field name="question_id" readonly="1" nolabel="1"/>
+                            <field name="id_question" readonly="1" nolabel="1"/>
                         </div>
                         <div style="font-size: 13px; color: #6b7280; margin-top: 2px;">
                             <field name="rows" readonly="1" nolabel="1"/> filas ×

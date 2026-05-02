@@ -14,7 +14,7 @@
         - Resultados vinculados a Encuestas (survey.user_input)
         - Ficha 360° del participante
     """,
-    'category': 'Luker',
+    'category': 'Gestor Operativo',
     'author': 'Fundación Luker',
     'website': 'https://www.fundacionluker.org.co',
     'license': 'LGPL-3',
@@ -54,7 +54,7 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'luker_master/static/src/scss/luker_master.scss',
+            'gestor_operativo/static/src/scss/gestor_operativo.scss',
         ],
     },
     'external_dependencies': {

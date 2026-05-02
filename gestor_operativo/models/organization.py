@@ -110,7 +110,7 @@ class LukerOrganizationUnit(models.Model):
 
     # Corporativo
     area     = fields.Char(string='Área / Departamento')
-    position = fields.Char(string='Cargo / Rol')
+    cargo    = fields.Char(string='Cargo / Rol')
 
     activo            = fields.Boolean(string='Activo', default=True)
     participante_count = fields.Integer(compute='_compute_participante_count')

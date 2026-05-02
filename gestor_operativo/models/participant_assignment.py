@@ -32,7 +32,7 @@ class LukerParticipantAssignment(models.Model):
     vigencia_hasta = fields.Date(
         string='Vigencia Hasta', help='Vigencia_Hasta — vacío = contexto actual')
     es_actual = fields.Boolean(
-        string='Es Actual', compute='_compute_es_actual', store=True,
+        string='Es actual', compute='_compute_es_actual', store=True,
         help='Es_Actual')
     carga_origen_id = fields.Many2one(
         'luker.participant.import.log', string='Carga origen',

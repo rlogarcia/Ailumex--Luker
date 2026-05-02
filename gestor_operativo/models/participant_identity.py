@@ -19,7 +19,7 @@ class LukerParticipantIdentity(models.Model):
     num_identidad = fields.Char(
         string='Número / Código', required=True, help='Num_Identidad')
     es_principal = fields.Boolean(
-        string='Es Principal', default=False, help='Es_Principal')
+        string='Es principal', default=False, help='Es_Principal')
     vigencia_desde = fields.Date(
         string='Vigencia Desde', required=True, default=fields.Date.today,
         help='Vigencia_Desde')

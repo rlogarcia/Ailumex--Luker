@@ -4,7 +4,7 @@
         <field name="name">luker.application.result.search</field>
         <field name="model">luker.application.result</field>
         <field name="arch" type="xml">
-            <search string="Buscar Sesiones — APP_Sesion">
+            <search string="Buscar sesiones">
                 <field name="participante_id" string="Participante"/>
                 <field name="survey_id" string="Encuesta"/>
                 <field name="snapshot_institucion" string="Institución"/>
@@ -27,7 +27,7 @@
         <field name="name">luker.application.result.list</field>
         <field name="model">luker.application.result</field>
         <field name="arch" type="xml">
-            <list string="Aplicaciones — APP_Sesion"
+            <list string="Aplicaciones"
                   decoration-success="cod_nivel == 'avanzado'"
                   decoration-warning="cod_nivel == 'basico'"
                   decoration-danger="cod_nivel == 'inicial' and puntaje_normalizado > 0">
@@ -54,7 +54,7 @@
         <field name="name">luker.application.result.form</field>
         <field name="model">luker.application.result</field>
         <field name="arch" type="xml">
-            <form string="Sesión — APP_Sesion">
+            <form string="Sesión">
                 <header>
                     <button name="action_ver_encuesta" string="Ver Respuesta Encuesta"
                             type="object" class="btn-secondary"
@@ -71,7 +71,7 @@
                         Participante, instrumento y contexto se fijaron al iniciar la sesión.
                     </div>
                     <group>
-                        <group string="Participante — PAR_Participante">
+                        <group string="Participante">
                             <field name="participante_id" readonly="1"/>
                         </group>
                         <group string="Instrumento / Encuesta">
@@ -85,13 +85,13 @@
                             <field name="snapshot_grado_grupo" readonly="1"/>
                             <field name="snapshot_jornada" readonly="1"/>
                         </group>
-                        <group string="Resultados — RES_Global">
+                        <group string="Resultados">
                             <field name="puntaje_normalizado" readonly="1"/>
                             <field name="cod_nivel" readonly="1"/>
                             <field name="respuestas_correctas" readonly="1"/>
                             <field name="respuestas_totales" readonly="1"/>
                         </group>
-                        <group string="Tiempos — APP_Sesion">
+                        <group string="Tiempos de aplicación">
                             <field name="fecha_hora_inicio_dispositivo" readonly="1"/>
                             <field name="fecha_hora_fin_dispositivo" readonly="1"/>
                             <field name="fecha_hora_recepcion_servidor" readonly="1"/>
@@ -110,7 +110,7 @@
     </record>
 
     <record id="action_luker_application_result" model="ir.actions.act_window">
-        <field name="name">Aplicaciones — APP_Sesion</field>
+        <field name="name">Aplicaciones</field>
         <field name="res_model">luker.application.result</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_luker_application_result_search"/>

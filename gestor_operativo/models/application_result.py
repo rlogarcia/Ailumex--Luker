@@ -11,7 +11,7 @@ class LukerApplicationResult(models.Model):
 
     # ── APP_Sesion ─────────────────────────────────────────────
     uuid_local = fields.Char(
-        string='UUID Local', required=True, readonly=True, index=True, copy=False,
+        string='UUID', required=True, readonly=True, index=True, copy=False,
         default=lambda self: __import__('uuid').uuid4().hex[:12],
         help='UUID_Local')
     nom_sesion = fields.Char(
@@ -80,9 +80,9 @@ class LukerApplicationResult(models.Model):
     enviado_offline = fields.Boolean(
         string='Enviado offline', default=False, readonly=True, help='Enviado_Offline')
     dispositivo_id = fields.Char(string='Dispositivo', readonly=True, help='Dispositivo_ID')
-    cantidad_intentos_sync = fields.Integer(string='Intentos sync', readonly=True,
+    cantidad_intentos_sync = fields.Integer(string='Intentos de sincronización', readonly=True,
                                              help='Cantidad_Intentos_Sync')
-    ultimo_error_sync = fields.Text(string='Último error sync', readonly=True,
+    ultimo_error_sync = fields.Text(string='Último error', readonly=True,
                                     help='Ultimo_Error_Sync')
 
     # ── Resultados (RES_Global simplificado) ──────────────────

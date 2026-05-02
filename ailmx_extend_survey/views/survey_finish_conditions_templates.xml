@@ -12,7 +12,7 @@
 
             <input type="hidden"
                    class="o_finish_conditions_json"
-                   t-att-value="question.finish_conditions_json_text or '[]'"/>
+                   t-att-value="question.condiciones_fin_texto or '[]'"/>
         </xpath>
 
     </template>

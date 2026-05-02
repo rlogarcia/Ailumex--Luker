@@ -6,7 +6,7 @@
         <field name="name">luker.participant.search</field>
         <field name="model">luker.participant</field>
         <field name="arch" type="xml">
-            <search string="Buscar Participantes — PAR_Participante">
+            <search string="Buscar participantes">
                 <field name="nom_completo" string="Nombre"/>
                 <field name="cod_participante" string="Código"/>
                 <field name="partner_id" string="Contacto"/>
@@ -32,11 +32,11 @@
         <field name="name">luker.participant.list</field>
         <field name="model">luker.participant</field>
         <field name="arch" type="xml">
-            <list string="Participantes — PAR_Participante"
+            <list string="Participantes"
                   decoration-muted="estado == 'inactivo'"
                   decoration-danger="estado_sync in ('error_sync','conflicto')">
                 <header>
-                    <button string="📥 Carga Masiva"
+                    <button string="📥 Carga masiva"
                             name="action_open_import_wizard"
                             type="object" class="btn-primary"/>
                 </header>
@@ -115,7 +115,7 @@
         <field name="name">luker.participant.form</field>
         <field name="model">luker.participant</field>
         <field name="arch" type="xml">
-            <form string="Participante — PAR_Participante">
+            <form string="Participante">
                 <header>
                     <button name="action_set_activo" string="Activar" type="object"
                             class="btn-primary" invisible="estado == 'activo'"/>
@@ -171,9 +171,9 @@
                     </div>
 
                     <group>
-                        <group string="Clasificación — PAR_Participante">
+                        <group string="Clasificación">
                             <field name="tipo_participante_id" options="{'no_create': True}"
-                                   string="Tipo de Participante (Id_PAR_Tipo_Participante)"/>
+                                   string="Tipo de participante"/>
                             <field name="fuente_creacion" string="Fuente de Creación"/>
                         </group>
                         <group string="Sincronización">
@@ -194,14 +194,14 @@
                                 <group string="Contacto vinculado">
                                     <field name="partner_id" options="{'no_create': False}"
                                            domain="[('is_company','=',False)]"
-                                           string="Contacto (res.partner)"/>
+                                           string="Contacto"/>
                                 </group>
                                 <group string="Datos del contacto (solo lectura)">
                                     <field name="email" readonly="1"/>
                                     <field name="telefono" readonly="1"/>
                                 </group>
                             </group>
-                            <group string="Datos propios del participante — PAR_Participante">
+                            <group string="Datos del participante">
                                 <group>
                                     <field name="fecha_nacimiento" string="Fecha Nacimiento (Fecha_Nacimiento)"/>
                                     <field name="edad" readonly="1"/>
@@ -212,13 +212,13 @@
                             </group>
                         </page>
 
-                        <!-- ── Tab 2: Identidades — PAR_Identidad ── -->
-                        <page string="Identidades — PAR_Identidad" name="identidades">
+                        <!-- ── Tab 2: Identidades ── -->
+                        <page string="Identidades" name="identidades">
                             <field name="identidad_ids" context="{'default_participante_id': id}">
                                 <list editable="bottom"
                                       decoration-primary="es_principal and estado == 'activa'">
                                     <field name="tipo_identidad_id"
-                                           string="Tipo de Identidad (Id_PAR_Tipo_Identidad)"
+                                           string="Tipo de identidad"
                                            options="{'no_create': True}"/>
                                     <field name="num_identidad" string="Número (Num_Identidad)"/>
                                     <field name="es_principal" widget="boolean_toggle"
@@ -233,8 +233,8 @@
                             </field>
                         </page>
 
-                        <!-- ── Tab 3: Contexto — PAR_Asignacion_Contexto ── -->
-                        <page string="Contexto — PAR_Asignacion_Contexto" name="contexto">
+                        <!-- ── Tab 3: Contexto organizacional ── -->
+                        <page string="Contexto organizacional" name="contexto">
                             <group>
                                 <group string="Contexto actual (calculado)">
                                     <field name="institucion_actual_id" readonly="1"
@@ -246,10 +246,10 @@
                             <separator string="Histórico de Asignaciones"/>
                             <field name="asignacion_contexto_ids" context="{'default_participante_id': id}">
                                 <list editable="bottom" decoration-success="es_actual">
-                                    <field name="institucion_id" string="Institución (Id_CTX_Institucion)"/>
-                                    <field name="sede_id" string="Sede (Id_CTX_Sede)"
+                                    <field name="institucion_id" string="Institución"/>
+                                    <field name="sede_id" string="Sede"
                                            options="{'no_create': True}"/>
-                                    <field name="unidad_id" string="Grado/Grupo (Id_CTX_Grado/Grupo)"
+                                    <field name="unidad_id" string="Grado / Grupo"
                                            options="{'no_create': True}"/>
                                     <field name="vigencia_desde" string="Vigencia Desde"/>
                                     <field name="vigencia_hasta" string="Vigencia Hasta"/>
@@ -259,11 +259,11 @@
                             </field>
                         </page>
 
-                        <!-- ── Tab 4: Caracterización — PAR_Valor_Dinamico ── -->
-                        <page string="Caracterización — PAR_Valor_Dinamico" name="caracterizacion">
+                        <!-- ── Tab 4: Caracterización dinámica ── -->
+                        <page string="Caracterización dinámica" name="caracterizacion">
                             <field name="valor_dinamico_ids" context="{'default_participante_id': id}">
                                 <list editable="bottom" decoration-muted="not es_vigente">
-                                    <field name="definicion_id" string="Atributo (Id_ATR_Definicion)"
+                                    <field name="definicion_id" string="Atributo"
                                            options="{'no_create': True}"/>
                                     <field name="tipo_dato" readonly="1" optional="hide"
                                            string="Tipo Dato"/>
@@ -282,8 +282,8 @@
                             </field>
                         </page>
 
-                        <!-- ── Tab 5: Aplicaciones — APP_Sesion ── -->
-                        <page string="Aplicaciones — APP_Sesion" name="aplicaciones">
+                        <!-- ── Tab 5: Aplicaciones ── -->
+                        <page string="Aplicaciones" name="aplicaciones">
                             <field name="sesion_ids" readonly="1">
                                 <list decoration-success="puntaje_normalizado >= 80"
                                       decoration-warning="puntaje_normalizado >= 60 and puntaje_normalizado &lt; 80"
@@ -318,7 +318,7 @@
 
     <!-- ══ ACTION ══ -->
     <record id="action_luker_participant" model="ir.actions.act_window">
-        <field name="name">Participantes — PAR_Participante</field>
+        <field name="name">Participantes</field>
         <field name="res_model">luker.participant</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_luker_participant_search"/>

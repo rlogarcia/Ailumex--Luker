@@ -12,12 +12,12 @@
         <field name="model">survey.question.type</field>
         <field name="arch" type="xml">
             <list string="Tipos de Pregunta">
-                <field name="Cod_Question_Type" string="Código"/>
-                <field name="Nam_Question_Type" string="Nombre"/>
-                <field name="Typ_Data" string="Tipo de dato"/>
-                <field name="Nam_UI_Component" string="Componente UI"/>
-                <field name="Flg_Supports_Multiple" string="Múltiple"/>
-                <field name="Flg_Supports_Offline" string="Offline"/>
+                <field name="cod_question_type" string="Código"/>
+                <field name="nam_question_type" string="Nombre"/>
+                <field name="typ_data" string="Tipo de dato"/>
+                <field name="nam_ui_component" string="Componente UI"/>
+                <field name="flg_supports_multiple" string="Múltiple"/>
+                <field name="flg_supports_offline" string="Offline"/>
                 <field name="active" string="Activo"/>
             </list>
         </field>
@@ -34,24 +34,24 @@
                 <sheet>
                     <!-- Fila superior con código y nombre -->
                     <group>
-                        <field name="Cod_Question_Type" string="Código técnico"/>
-                        <field name="Nam_Question_Type" string="Nombre"/>
-                        <field name="Typ_Data" string="Tipo de dato"/>
-                        <field name="Nam_UI_Component" string="Componente UI"/>
+                        <field name="cod_question_type" string="Código técnico"/>
+                        <field name="nam_question_type" string="Nombre"/>
+                        <field name="typ_data" string="Tipo de dato"/>
+                        <field name="nam_ui_component" string="Componente UI"/>
                     </group>
 
                     <!-- Fila de capacidades -->
                     <group string="Capacidades">
-                        <field name="Flg_Supports_Multiple" string="Permite múltiples respuestas"/>
-                        <field name="Flg_Supports_Media" string="Admite evidencia o foto"/>
-                        <field name="Flg_Supports_GPS" string="Captura GPS"/>
-                        <field name="Flg_Supports_Score" string="Admite puntaje"/>
-                        <field name="Flg_Supports_Offline" string="Soporta offline"/>
+                        <field name="flg_supports_multiple" string="Permite múltiples respuestas"/>
+                        <field name="flg_supports_media" string="Admite evidencia o foto"/>
+                        <field name="flg_supports_gps" string="Captura GPS"/>
+                        <field name="flg_supports_score" string="Admite puntaje"/>
+                        <field name="flg_supports_offline" string="Soporta offline"/>
                     </group>
 
                     <!-- Esquema de validación -->
                     <group string="Validación">
-                        <field name="Des_Validation_Schema" placeholder='{"required": true, "min": 0, "max": 100}'/>
+                        <field name="des_validation_schema" placeholder='{"required": true, "min": 0, "max": 100}'/>
                     </group>
                 </sheet>
             </form>

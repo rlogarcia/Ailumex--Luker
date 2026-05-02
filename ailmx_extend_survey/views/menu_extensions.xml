@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<!-- Archivo para crear menús nuevos de instrumentos, participantes y aplicaciones -->
-
 <odoo>
 
     <!-- ========================================================= -->
@@ -10,24 +7,24 @@
 
     <record id="action_maestro_participantes" model="ir.actions.act_window">
         <field name="name">Maestro participantes</field>
-        <field name="res_model">ailmx.participant</field>
-        <field name="view_mode">list,form</field>
+        <field name="res_model">luker.participant</field>
+        <field name="view_mode">list,form,kanban</field>
     </record>
 
     <record id="action_contexto_organizacional" model="ir.actions.act_window">
         <field name="name">Contexto organizacional</field>
-        <field name="res_model">survey.user_input</field>
+        <field name="res_model">luker.participant.assignment</field>
         <field name="view_mode">list,form</field>
     </record>
 
     <record id="action_atributos_dinamicos" model="ir.actions.act_window">
         <field name="name">Atributos dinámicos</field>
-        <field name="res_model">survey.user_input</field>
+        <field name="res_model">luker.participant.attribute.value</field>
         <field name="view_mode">list,form</field>
     </record>
 
     <!-- ========================================================= -->
-    <!-- MENÚS PRINCIPALES NUEVOS DENTRO DE LA APP ENCUESTAS -->
+    <!-- MENÚS PRINCIPALES DENTRO DE LA APP ENCUESTAS -->
     <!-- ========================================================= -->
 
     <menuitem

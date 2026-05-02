@@ -2,13 +2,13 @@
 <odoo>
 
     <!-- ══════════════════════════════════════════════════
-         MENÚ RAÍZ — Luker Master
+         MENÚ RAÍZ — Gestor Operativo
     ══════════════════════════════════════════════════ -->
     <menuitem
-        id="menu_luker_master_root"
-        name="Luker Master"
+        id="menu_gestor_operativo_root"
+        name="Gestor Operativo"
         sequence="10"
-        web_icon="luker_master,static/src/img/icon.png"/>
+        web_icon="gestor_operativo,static/src/img/icon.png"/>
 
     <!-- ══════════════════════════════════════════════════
          NIVEL 1 — Dashboard
@@ -16,7 +16,7 @@
     <menuitem
         id="menu_luker_dashboard"
         name="Dashboard"
-        parent="menu_luker_master_root"
+        parent="menu_gestor_operativo_root"
         sequence="10"
         action="action_luker_dashboard"/>
 
@@ -26,7 +26,7 @@
     <menuitem
         id="menu_luker_participants"
         name="Participantes"
-        parent="menu_luker_master_root"
+        parent="menu_gestor_operativo_root"
         sequence="20"/>
 
     <menuitem
@@ -49,7 +49,7 @@
     <menuitem
         id="menu_luker_results"
         name="Resultados"
-        parent="menu_luker_master_root"
+        parent="menu_gestor_operativo_root"
         sequence="30"/>
 
     <menuitem
@@ -72,7 +72,7 @@
     <menuitem
         id="menu_luker_organization"
         name="Contexto Organizacional"
-        parent="menu_luker_master_root"
+        parent="menu_gestor_operativo_root"
         sequence="40"/>
 
     <menuitem
@@ -95,9 +95,9 @@
     <menuitem
         id="menu_luker_config"
         name="Configuración"
-        parent="menu_luker_master_root"
+        parent="menu_gestor_operativo_root"
         sequence="90"
-        groups="luker_master.group_luker_admin"/>
+        groups="gestor_operativo.group_luker_admin"/>
 
     <menuitem
         id="menu_luker_participant_type"
@@ -114,7 +114,7 @@
         parent="menu_luker_config"
         sequence="30"
         action="action_luker_attribute_definition"
-        groups="luker_master.group_luker_data_lead"/>
+        groups="gestor_operativo.group_luker_data_lead"/>
 
 
 

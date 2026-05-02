@@ -197,8 +197,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                                 audio: payload.audio || {
                                                     has_audio: false,
                                                     base64: '',
-                                                    mimetype: '',
-                                                    filename: ''
+                                                    tipo_mime: '',
+                                                    nom_archivo: ''
                                                 }
                                             });
 

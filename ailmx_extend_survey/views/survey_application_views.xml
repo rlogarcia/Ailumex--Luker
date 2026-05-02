@@ -10,11 +10,11 @@
         <field name="arch" type="xml">
             <list string="Aplicaciones" create="0">
                 <field name="id" string="ID"/>
-                <field name="Nam_Participant" string="Participante"/>
-                <field name="Nam_Instrument" string="Instrumento"/>
-                <field name="Dat_Application_Created" string="Fecha"/>
-                <field name="Num_Response_Count" string="Respuestas"/>
-                <field name="Num_Total_Score" string="Puntaje total"/>
+                <field name="nam_participant" string="Participante"/>
+                <field name="nam_instrument" string="Instrumento"/>
+                <field name="dat_application_created" string="Fecha"/>
+                <field name="num_response_count" string="Respuestas"/>
+                <field name="num_total_score" string="Puntaje total"/>
             </list>
         </field>
     </record>
@@ -33,25 +33,25 @@
                     <group string="Aplicación">
                         <group>
                             <field name="id" string="ID" readonly="1"/>
-                            <field name="Dat_Application_Created" string="Fecha de aplicación" readonly="1"/>
+                            <field name="dat_application_created" string="Fecha de aplicación" readonly="1"/>
                         </group>
                         <group>
-                            <field name="Num_Response_Count" string="Cantidad de respuestas" readonly="1"/>
-                            <field name="Num_Total_Score" string="Puntaje total" readonly="1"/>
+                            <field name="num_response_count" string="Cantidad de respuestas" readonly="1"/>
+                            <field name="num_total_score" string="Puntaje total" readonly="1"/>
                         </group>
                     </group>
 
                     <!-- PARTICIPANTE -->
                     <group string="Participante">
                         <group>
-                            <field name="Nam_Participant" string="Nombre del participante" readonly="1"/>
+                            <field name="nam_participant" string="Nombre del participante" readonly="1"/>
                         </group>
                     </group>
 
                     <!-- INSTRUMENTO -->
                     <group string="Instrumento">
                         <group>
-                            <field name="Nam_Instrument" string="Nombre del instrumento" readonly="1"/>
+                            <field name="nam_instrument" string="Nombre del instrumento" readonly="1"/>
                         </group>
                     </group>
 
@@ -61,7 +61,7 @@
                         <!-- DETALLES DE APLICACIÓN -->
                         <!-- ============================================= -->
                         <page string="Detalles de aplicación">
-                            <field name="Des_Exam_Review_HTML" widget="html" readonly="1" nolabel="1"/>
+                            <field name="des_exam_review_html" widget="html" readonly="1" nolabel="1"/>
                         </page>
 
                         <!-- ============================================= -->
@@ -97,8 +97,8 @@
             <search string="Buscar Aplicaciones">
 
                 <field name="id" string="ID"/>
-                <field name="Nam_Participant" string="Participante"/>
-                <field name="Nam_Instrument" string="Instrumento"/>
+                <field name="nam_participant" string="Participante"/>
+                <field name="nam_instrument" string="Instrumento"/>
                 <field name="survey_id" string="Instrumento"/>
 
                 <group expand="0" string="Agrupar por">

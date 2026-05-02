@@ -8,12 +8,7 @@ class SurveyResponseLine(models.Model):
     _name = "survey.response.line"
     _description = "Línea de respuesta extensible"
 
-    Id_Response_Line = fields.Integer(
-        string='ID Línea Respuesta',
-        readonly=True
-    )
-
-    Id_Response_Header = fields.Many2one(
+    id_response_header = fields.Many2one(
         comodel_name='survey.user_input',
         string='Encabezado de respuesta',
         required=True,
@@ -21,108 +16,108 @@ class SurveyResponseLine(models.Model):
         help='Respuesta general a la que pertenece esta línea'
     )
 
-    Id_Instrument = fields.Many2one(
+    id_instrument = fields.Many2one(
         comodel_name='survey.survey',
         string='Instrumento',
         help='Encuesta a la que pertenece esta respuesta'
     )
 
-    Id_Question = fields.Many2one(
+    id_question = fields.Many2one(
         comodel_name='survey.question',
         string='Pregunta',
         required=True,
         help='Pregunta específica que se está respondiendo'
     )
 
-    Id_Section = fields.Many2one(
+    id_section = fields.Many2one(
         comodel_name='survey.question',
         string='Sección',
         help='Sección a la que pertenece esta pregunta'
     )
 
-    Typ_Response = fields.Char(
+    typ_response = fields.Char(
         string='Tipo de respuesta',
         help='Indica el tipo de dato guardado: text, number, date, boolean, json'
     )
 
-    Id_Question_Option = fields.Many2one(
+    id_question_option = fields.Many2one(
         comodel_name='survey.question.answer',
         string='Opción seleccionada',
         help='Opción seleccionada por el usuario en preguntas de tipo radio o checkbox'
     )
 
-    Val_Text = fields.Text(
+    val_text = fields.Text(
         string='Valor texto',
         help='Para respuestas de tipo texto corto o largo'
     )
 
-    Val_Number = fields.Float(
+    val_number = fields.Float(
         string='Valor numérico',
         help='Para respuestas de tipo número o escala'
     )
 
-    Val_Date = fields.Date(
+    val_date = fields.Date(
         string='Valor fecha',
         help='Para respuestas de tipo fecha'
     )
 
-    Val_Datetime = fields.Datetime(
+    val_datetime = fields.Datetime(
         string='Valor fecha y hora',
         help='Para respuestas de tipo fecha y hora'
     )
 
-    Val_JSON = fields.Json(
+    val_json = fields.Json(
         string='Valor JSON',
         help='Para respuestas de tipo checkbox, matriz, GRID lectura o datos complejos'
     )
 
-    Flg_Omitted = fields.Boolean(
+    flg_omitted = fields.Boolean(
         string='Fue omitida',
         default=False,
         help='True si el usuario dejó esta pregunta sin responder'
     )
 
-    Num_Score = fields.Float(
+    num_score = fields.Float(
         string='Puntaje',
         default=0.0,
         help='Puntaje obtenido en esta respuesta'
     )
 
-    Dat_Created_At = fields.Datetime(
+    dat_created_at = fields.Datetime(
         string='Fecha de creación',
         default=fields.Datetime.now,
         readonly=True
     )
 
-    Nam_User = fields.Char(
+    nam_user = fields.Char(
         string='Usuario',
         readonly=True
     )
 
-    Nam_Device = fields.Char(
+    nam_device = fields.Char(
         string='Dispositivo',
         readonly=True
     )
 
-    Nam_Response_Display = fields.Char(
+    nam_response_display = fields.Char(
         string='Respuesta capturada',
         compute='_compute_response_display',
         store=False
     )
 
-    Flg_Is_Correct_Response = fields.Boolean(
+    flg_is_correct_response = fields.Boolean(
         string='Respuesta correcta',
         compute='_compute_review_fields',
         store=False
     )
 
-    Nam_Review_Status = fields.Char(
+    nam_review_status = fields.Char(
         string='Estado de revisión',
         compute='_compute_review_fields',
         store=False
     )
 
-    Des_Review_HTML = fields.Html(
+    des_review_html = fields.Html(
         string='Vista de revisión',
         compute='_compute_review_fields',
         sanitize=False,
@@ -130,22 +125,22 @@ class SurveyResponseLine(models.Model):
     )
 
     @api.depends(
-        'Typ_Response',
-        'Val_Text',
-        'Val_Number',
-        'Val_Date',
-        'Val_Datetime',
-        'Val_JSON',
-        'Id_Question_Option'
+        'typ_response',
+        'val_text',
+        'val_number',
+        'val_date',
+        'val_datetime',
+        'val_json',
+        'id_question_option'
     )
     def _compute_response_display(self):
         for record in self:
             display_value = ''
 
-            if record.Typ_Response == 'reading_grid' and isinstance(record.Val_JSON, list):
-                total_cells = len(record.Val_JSON)
+            if record.typ_response == 'reading_grid' and isinstance(record.val_json, list):
+                total_cells = len(record.val_json)
                 selected = sum(
-                    1 for item in record.Val_JSON
+                    1 for item in record.val_json
                     if isinstance(item, dict) and item.get('state') and item.get('state') != 'empty'
                 )
                 unselected = total_cells - selected
@@ -156,10 +151,10 @@ class SurveyResponseLine(models.Model):
                     f'Total marcado: {selected}'
                 )
 
-            elif record.Typ_Response == 'math_grid' and isinstance(record.Val_JSON, list):
-                total_cells = len(record.Val_JSON)
+            elif record.typ_response == 'math_grid' and isinstance(record.val_json, list):
+                total_cells = len(record.val_json)
                 selected = sum(
-                    1 for item in record.Val_JSON
+                    1 for item in record.val_json
                     if isinstance(item, dict) and item.get('state') and item.get('state') != 'empty'
                 )
                 unselected = total_cells - selected
@@ -170,66 +165,66 @@ class SurveyResponseLine(models.Model):
                     f'Total marcado: {selected}'
                 )
 
-            elif record.Id_Question_Option:
+            elif record.id_question_option:
                 display_value = (
-                    record.Id_Question_Option.value
-                    or record.Id_Question_Option.display_name
+                    record.id_question_option.value
+                    or record.id_question_option.display_name
                     or ''
                 )
-            elif record.Val_Text:
-                display_value = record.Val_Text
-            elif record.Val_Number not in (False, None):
-                display_value = str(record.Val_Number)
-            elif record.Val_Date:
-                display_value = str(record.Val_Date)
-            elif record.Val_Datetime:
-                display_value = str(record.Val_Datetime)
-            elif record.Val_JSON:
-                display_value = str(record.Val_JSON)
-            elif record.Flg_Omitted:
+            elif record.val_text:
+                display_value = record.val_text
+            elif record.val_number not in (False, None):
+                display_value = str(record.val_number)
+            elif record.val_date:
+                display_value = str(record.val_date)
+            elif record.val_datetime:
+                display_value = str(record.val_datetime)
+            elif record.val_json:
+                display_value = str(record.val_json)
+            elif record.flg_omitted:
                 display_value = 'Omitida'
 
-            record.Nam_Response_Display = display_value
+            record.nam_response_display = display_value
 
     @api.depends(
-        'Flg_Omitted',
-        'Typ_Response',
-        'Val_Text', 'Val_Number', 'Val_Date', 'Val_Datetime', 'Val_JSON',
-        'Id_Question_Option',
-        'Id_Question', 'Id_Question.title', 'Id_Question.description',
-        'Id_Question.question_type',
-        'Id_Question.suggested_answer_ids',
-        'Id_Question.suggested_answer_ids.value',
-        'Id_Question.suggested_answer_ids.Flg_Is_Correct',
-        'Id_Question.Flg_Allow_Image_Attachment',
-        'Id_Question.Question_Image_Attachment_Ids',
-        'Id_Question.Img_Question_Attachment',
-        'Id_Question.reading_grid_rows', 'Id_Question.reading_grid_cols',
-        'Id_Question.math_grid_rows', 'Id_Question.math_grid_cols',
+        'flg_omitted',
+        'typ_response',
+        'val_text', 'val_number', 'val_date', 'val_datetime', 'val_json',
+        'id_question_option',
+        'id_question', 'id_question.title', 'id_question.description',
+        'id_question.question_type',
+        'id_question.suggested_answer_ids',
+        'id_question.suggested_answer_ids.value',
+        'id_question.suggested_answer_ids.flg_is_correct',
+        'id_question.flg_allow_image_attachment',
+        'id_question.question_image_attachment_ids',
+        'id_question.img_question_attachment',
+        'id_question.reading_grid_rows', 'id_question.reading_grid_cols',
+        'id_question.math_grid_rows', 'id_question.math_grid_cols',
     )
     def _compute_review_fields(self):
         for record in self:
             is_correct = False
             status = 'Respondida'
 
-            if record.Flg_Omitted:
+            if record.flg_omitted:
                 status = 'Omitida'
 
-            elif record.Id_Question and record.Id_Question.question_type == 'simple_choice':
-                if record.Id_Question_Option:
-                    is_correct = bool(record.Id_Question_Option.Flg_Is_Correct)
-                elif record.Val_Text:
-                    selected_text = (record.Val_Text or '').strip()
-                    correct_option = record.Id_Question.suggested_answer_ids.filtered(
-                        lambda opt: opt.Flg_Is_Correct
+            elif record.id_question and record.id_question.question_type == 'simple_choice':
+                if record.id_question_option:
+                    is_correct = bool(record.id_question_option.flg_is_correct)
+                elif record.val_text:
+                    selected_text = (record.val_text or '').strip()
+                    correct_option = record.id_question.suggested_answer_ids.filtered(
+                        lambda opt: opt.flg_is_correct
                         and (opt.value or opt.display_name or '').strip() == selected_text
                     )[:1]
                     is_correct = bool(correct_option)
                 status = 'Correcta' if is_correct else 'Incorrecta'
 
-            elif record.Id_Question and record.Id_Question.question_type == 'multiple_choice':
+            elif record.id_question and record.id_question.question_type == 'multiple_choice':
                 selected_ids, selected_values = record._get_selected_multiple_choice_data()
-                correct_options = record.Id_Question.suggested_answer_ids.filtered('Flg_Is_Correct')
+                correct_options = record.id_question.suggested_answer_ids.filtered('flg_is_correct')
                 correct_ids = set(correct_options.ids)
                 correct_values = set(
                     (opt.value or opt.display_name or '').strip()
@@ -245,16 +240,16 @@ class SurveyResponseLine(models.Model):
             else:
                 status = 'Respondida'
 
-            record.Flg_Is_Correct_Response = is_correct
-            record.Nam_Review_Status = status
-            record.Des_Review_HTML = record._build_review_html(status, is_correct)
+            record.flg_is_correct_response = is_correct
+            record.nam_review_status = status
+            record.des_review_html = record._build_review_html(status, is_correct)
 
     def _get_selected_multiple_choice_data(self):
         self.ensure_one()
 
         selected_ids = set()
         selected_values = set()
-        value = self.Val_JSON
+        value = self.val_json
 
         def _normalize(v):
             if isinstance(v, dict):
@@ -311,15 +306,15 @@ class SurveyResponseLine(models.Model):
                             if item.get(k) and _truthy(sel):
                                 _add(item[k])
 
-        if self.Val_Text:
-            raw = self.Val_Text.strip()
+        if self.val_text:
+            raw = self.val_text.strip()
             if raw:
                 for part in (raw.split(',') if ',' in raw else [raw]):
                     _add(part)
 
-        if self.Id_Question_Option:
-            selected_ids.add(self.Id_Question_Option.id)
-            t = _normalize(self.Id_Question_Option.value or self.Id_Question_Option.display_name)
+        if self.id_question_option:
+            selected_ids.add(self.id_question_option.id)
+            t = _normalize(self.id_question_option.value or self.id_question_option.display_name)
             if t:
                 selected_values.add(t)
 
@@ -328,7 +323,7 @@ class SurveyResponseLine(models.Model):
     def _build_review_html(self, status, is_correct):
         self.ensure_one()
 
-        question = self.Id_Question
+        question = self.id_question
         if not question:
             return Markup('<div>Sin pregunta asociada.</div>')
 
@@ -350,18 +345,18 @@ class SurveyResponseLine(models.Model):
             )
 
         image_blocks = []
-        if getattr(question, 'Flg_Allow_Image_Attachment', False):
-            for att in getattr(question, 'Question_Image_Attachment_Ids', []):
+        if getattr(question, 'flg_allow_image_attachment', False):
+            for att in getattr(question, 'question_image_attachment_ids', []):
                 image_blocks.append(
                     f'<div style="text-align:center;">'
                     f'<img src="/web/image/ir.attachment/{att.id}/datas" alt="Imagen"'
                     f' style="max-width:100%;max-height:180px;object-fit:contain;display:block;margin:0 auto;"/>'
                     f'</div>'
                 )
-            if not image_blocks and getattr(question, 'Img_Question_Attachment', False):
+            if not image_blocks and getattr(question, 'img_question_attachment', False):
                 image_blocks.append(
                     f'<div style="text-align:center;">'
-                    f'<img src="/web/image/survey.question/{question.id}/Img_Question_Attachment" alt="Imagen"'
+                    f'<img src="/web/image/survey.question/{question.id}/img_question_attachment" alt="Imagen"'
                     f' style="max-width:100%;max-height:180px;object-fit:contain;display:block;margin:0 auto;"/>'
                     f'</div>'
                 )
@@ -389,13 +384,13 @@ class SurveyResponseLine(models.Model):
                 label = _norm_label(opt.value or opt.display_name)
                 is_selected = False
                 if question.question_type == 'simple_choice':
-                    is_selected = bool(self.Id_Question_Option and self.Id_Question_Option.id == opt.id)
-                    if not is_selected and self.Val_Text:
-                        is_selected = self.Val_Text.strip() == label.strip()
+                    is_selected = bool(self.id_question_option and self.id_question_option.id == opt.id)
+                    if not is_selected and self.val_text:
+                        is_selected = self.val_text.strip() == label.strip()
                 else:
                     is_selected = opt.id in selected_ids or label.strip() in selected_values
 
-                opt_correct = bool(opt.Flg_Is_Correct)
+                opt_correct = bool(opt.flg_is_correct)
                 border_color = '#d1d5db'
                 background = '#ffffff'
                 text_right = 'No seleccionada'
@@ -422,18 +417,18 @@ class SurveyResponseLine(models.Model):
                 )
             html_parts.append('</div>')
 
-        elif self.Typ_Response == 'reading_grid' and isinstance(self.Val_JSON, list):
+        elif self.typ_response == 'reading_grid' and isinstance(self.val_json, list):
             html_parts.append(self._build_reading_grid_html(
                 rows=question.reading_grid_rows or 1,
                 cols=question.reading_grid_cols or 1,
-                cells=self.Val_JSON,
+                cells=self.val_json,
             ))
 
-        elif self.Typ_Response == 'math_grid' and isinstance(self.Val_JSON, list):
+        elif self.typ_response == 'math_grid' and isinstance(self.val_json, list):
             html_parts.append(self._build_math_grid_html(
                 rows=question.math_grid_rows or 1,
                 cols=question.math_grid_cols or 1,
-                cells=self.Val_JSON,
+                cells=self.val_json,
                 show_correct=True,
             ))
 
@@ -441,16 +436,16 @@ class SurveyResponseLine(models.Model):
             html_parts.append(
                 f'<div style="border:1px solid #d1d5db;border-radius:10px;padding:12px 14px;background:#f9fafb;">'
                 f'<div style="font-size:13px;color:#6b7280;margin-bottom:6px;">Respuesta capturada</div>'
-                f'<div style="font-size:15px;color:#111827;">{escape(self.Nam_Response_Display or "")}</div>'
+                f'<div style="font-size:15px;color:#111827;">{escape(self.nam_response_display or "")}</div>'
                 f'</div>'
             )
 
         audio_record = self.env['survey.response.audio'].search([
-            ('response_line_id', '=', self.id),
+            ('id_response_line', '=', self.id),
         ], limit=1)
 
-        if audio_record and audio_record.attachment_id:
-            att = audio_record.attachment_id
+        if audio_record and audio_record.id_adjunto:
+            att = audio_record.id_adjunto
             html_parts.append(
                 f'<div style="margin-top:12px;padding:12px 14px;background:#f0f9ff;'
                 f'border:1px solid #bae6fd;border-radius:10px;">'
@@ -465,7 +460,7 @@ class SurveyResponseLine(models.Model):
 
         html_parts.append(
             f'<div style="margin-top:14px;display:flex;justify-content:flex-end;">'
-            f'<div style="font-size:13px;color:#6b7280;">Puntaje: {escape(str(self.Num_Score))}</div>'
+            f'<div style="font-size:13px;color:#6b7280;">Puntaje: {escape(str(self.num_score))}</div>'
             f'</div>'
             f'</div>'
         )
@@ -589,110 +584,110 @@ class SurveyResponseLine(models.Model):
 
         return Markup(summary_html + table_html + legend_html)
 
-    def save_response(self, response_header_id, question_id, value):
-        response_header = self.env['survey.user_input'].browse(response_header_id)
+    def save_response(self, id_response_header, id_question, value):
+        response_header = self.env['survey.user_input'].browse(id_response_header)
         if not response_header.exists():
-            raise ValueError('No existe un encabezado de respuesta con ID: %s' % response_header_id)
+            raise ValueError('No existe un encabezado de respuesta con ID: %s' % id_response_header)
 
-        question = self.env['survey.question'].browse(question_id)
+        question = self.env['survey.question'].browse(id_question)
         if not question.exists():
-            raise ValueError('No existe una pregunta con ID: %s' % question_id)
+            raise ValueError('No existe una pregunta con ID: %s' % id_question)
 
         existing_lines = self.search([
-            ('Id_Response_Header', '=', response_header_id),
-            ('Id_Question', '=', question_id),
+            ('id_response_header', '=', id_response_header),
+            ('id_question', '=', id_question),
         ])
         if existing_lines:
             existing_lines.unlink()
 
         vals = {
-            'Id_Response_Header': response_header_id,
-            'Id_Instrument': response_header.survey_id.id,
-            'Id_Question': question_id,
-            'Nam_User': response_header.partner_id.name or 'Anónimo',
-            'Nam_Device': response_header.access_token or 'Desconocido',
+            'id_response_header': id_response_header,
+            'id_instrument': response_header.survey_id.id,
+            'id_question': id_question,
+            'nam_user': response_header.partner_id.name or 'Anónimo',
+            'nam_device': response_header.access_token or 'Desconocido',
         }
 
         if question.question_type == 'reading_grid':
-            vals['Typ_Response'] = 'reading_grid'
-            vals['Val_JSON' if isinstance(value, (list, dict)) else 'Val_Text'] = (
+            vals['typ_response'] = 'reading_grid'
+            vals['val_json' if isinstance(value, (list, dict)) else 'val_text'] = (
                 value if isinstance(value, (list, dict)) else (str(value) if value else False)
             )
             return self.create(vals)
 
         if question.question_type == 'math_grid':
-            vals['Typ_Response'] = 'math_grid'
-            vals['Val_JSON' if isinstance(value, (list, dict)) else 'Val_Text'] = (
+            vals['typ_response'] = 'math_grid'
+            vals['val_json' if isinstance(value, (list, dict)) else 'val_text'] = (
                 value if isinstance(value, (list, dict)) else (str(value) if value else False)
             )
             return self.create(vals)
 
         if question.question_type == 'simple_choice':
-            vals['Typ_Response'] = 'radio'
-            vals['Val_Text'] = str(value) if value else False
+            vals['typ_response'] = 'radio'
+            vals['val_text'] = str(value) if value else False
             if isinstance(value, int):
-                vals['Id_Question_Option'] = value
+                vals['id_question_option'] = value
             elif value:
                 st = self._normalize_option_value(value)
                 m = question.suggested_answer_ids.filtered(
                     lambda o: self._normalize_option_value(o.value or o.display_name) == st
                 )[:1]
                 if m:
-                    vals['Id_Question_Option'] = m.id
+                    vals['id_question_option'] = m.id
             return self.create(vals)
 
         if question.question_type == 'multiple_choice':
-            vals['Typ_Response'] = 'checkbox'
+            vals['typ_response'] = 'checkbox'
             if isinstance(value, list):
                 nv = []
                 for item in value:
                     c = self._normalize_option_value(item)
                     if c and c not in nv:
                         nv.append(c)
-                vals['Val_JSON'] = nv
+                vals['val_json'] = nv
             elif isinstance(value, dict):
-                vals['Val_JSON'] = value
+                vals['val_json'] = value
             elif value:
-                vals['Val_JSON'] = [self._normalize_option_value(value)]
+                vals['val_json'] = [self._normalize_option_value(value)]
             else:
-                vals['Val_JSON'] = []
+                vals['val_json'] = []
             return self.create(vals)
 
-        question_type = question.Id_Question_Type
+        question_type = question.id_question_type
         if not question_type:
-            vals['Typ_Response'] = 'text'
-            vals['Val_Text'] = str(value) if value else False
+            vals['typ_response'] = 'text'
+            vals['val_text'] = str(value) if value else False
             return self.create(vals)
 
-        type_code = question_type.Cod_Question_Type
-        vals['Typ_Response'] = type_code
+        type_code = question_type.cod_question_type
+        vals['typ_response'] = type_code
 
         if type_code in ('text_short', 'text_long'):
-            vals['Val_Text'] = str(value) if value else False
+            vals['val_text'] = str(value) if value else False
 
         elif type_code in ('number', 'scale'):
             try:
-                vals['Val_Number'] = float(value)
+                vals['val_number'] = float(value)
             except (ValueError, TypeError):
-                vals['Val_Text'] = str(value) if value else False
+                vals['val_text'] = str(value) if value else False
 
         elif type_code == 'date':
-            vals['Val_Date'] = value
+            vals['val_date'] = value
 
         elif type_code == 'datetime':
-            vals['Val_Datetime'] = value
+            vals['val_datetime'] = value
 
         elif type_code == 'radio':
-            vals['Val_Text'] = str(value) if value else False
+            vals['val_text'] = str(value) if value else False
             if isinstance(value, int):
-                vals['Id_Question_Option'] = value
+                vals['id_question_option'] = value
             elif value:
                 st = self._normalize_option_value(value)
                 m = question.suggested_answer_ids.filtered(
                     lambda o: self._normalize_option_value(o.value or o.display_name) == st
                 )[:1]
                 if m:
-                    vals['Id_Question_Option'] = m.id
+                    vals['id_question_option'] = m.id
 
         elif type_code == 'checkbox':
             if isinstance(value, list):
@@ -701,21 +696,21 @@ class SurveyResponseLine(models.Model):
                     c = self._normalize_option_value(item)
                     if c and c not in nv:
                         nv.append(c)
-                vals['Val_JSON'] = nv
+                vals['val_json'] = nv
             elif isinstance(value, dict):
-                vals['Val_JSON'] = value
+                vals['val_json'] = value
             elif value:
-                vals['Val_JSON'] = [self._normalize_option_value(value)]
+                vals['val_json'] = [self._normalize_option_value(value)]
             else:
-                vals['Val_JSON'] = []
+                vals['val_json'] = []
 
         elif type_code == 'matrix':
-            vals['Val_JSON' if isinstance(value, (list, dict)) else 'Val_Text'] = (
+            vals['val_json' if isinstance(value, (list, dict)) else 'val_text'] = (
                 value if isinstance(value, (list, dict)) else (str(value) if value else False)
             )
 
         else:
-            vals['Val_Text'] = str(value) if value else False
+            vals['val_text'] = str(value) if value else False
 
         return self.create(vals)
 
@@ -731,17 +726,17 @@ class SurveyResponseLine(models.Model):
         return str(option_value).strip() if option_value else ''
 
     def get_typed_value(self):
-        if self.Typ_Response in ('text_short', 'text_long'):
-            return self.Val_Text
-        elif self.Typ_Response in ('number', 'scale'):
-            return self.Val_Number
-        elif self.Typ_Response == 'date':
-            return self.Val_Date
-        elif self.Typ_Response == 'datetime':
-            return self.Val_Datetime
-        elif self.Typ_Response in ('checkbox', 'matrix', 'reading_grid', 'math_grid'):
-            return self.Val_JSON
-        elif self.Typ_Response == 'radio':
-            return self.Val_Text
+        if self.typ_response in ('text_short', 'text_long'):
+            return self.val_text
+        elif self.typ_response in ('number', 'scale'):
+            return self.val_number
+        elif self.typ_response == 'date':
+            return self.val_date
+        elif self.typ_response == 'datetime':
+            return self.val_datetime
+        elif self.typ_response in ('checkbox', 'matrix', 'reading_grid', 'math_grid'):
+            return self.val_json
+        elif self.typ_response == 'radio':
+            return self.val_text
         else:
-            return self.Val_Text
+            return self.val_text

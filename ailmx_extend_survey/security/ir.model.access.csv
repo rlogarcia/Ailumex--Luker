@@ -1,12 +1,10 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_survey_question_type_admin,survey.question.type admin,model_survey_question_type,base.group_system,1,1,1,1
 access_survey_question_type_user,survey.question.type user,model_survey_question_type,base.group_user,1,0,0,0
-access_data_element_admin,data.element admin,model_data_element,base.group_system,1,1,1,1
-access_data_element_user,data.element user,model_data_element,base.group_user,1,0,0,0
+access_luker_data_element_admin,luker.data.element admin,model_luker_data_element,base.group_system,1,1,1,1
+access_luker_data_element_user,luker.data.element user,model_luker_data_element,base.group_user,1,0,0,0
 access_survey_response_line_admin,survey.response.line admin,model_survey_response_line,base.group_system,1,1,1,1
 access_survey_response_line_user,survey.response.line user,model_survey_response_line,base.group_user,1,1,1,0
-access_ailmx_participant_admin,ailmx.participant admin,model_ailmx_participant,base.group_system,1,1,1,1
-access_ailmx_participant_user,ailmx.participant user,model_ailmx_participant,base.group_user,1,1,1,0
 access_survey_question_reading_grid_cell_user,survey.question.reading.grid.cell user,model_survey_question_reading_grid_cell,base.group_user,1,1,1,1
 access_reading_grid_wizard,survey.question.reading.grid.wizard,model_survey_question_reading_grid_wizard,survey.group_survey_user,1,1,1,1
 access_reading_grid_wizard_cell,survey.question.reading.grid.wizard.cell,model_survey_question_reading_grid_wizard_cell,survey.group_survey_user,1,1,1,1

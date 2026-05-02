@@ -17,7 +17,7 @@ class LukerParticipant(models.Model):
         string='Código Participante', readonly=True, copy=False, default='/',
         tracking=True, help='Cod_Participante')
     uuid_local = fields.Char(
-        string='UUID Local', readonly=True, copy=False,
+        string='UUID', readonly=True, copy=False,
         help='Identificador único para sincronización offline-first')
 
     # ── Vínculo con Contactos (res.partner) ───────────────────
@@ -77,7 +77,7 @@ class LukerParticipant(models.Model):
         ('en_cola', 'En cola'),
         ('error_sync', 'Error de sync'),
         ('conflicto', 'Conflicto'),
-    ], string='Estado Sync', default='sincronizado', tracking=True)
+    ], string='Estado de sincronización', default='sincronizado', tracking=True)
     dispositivo_id = fields.Char(string='Dispositivo origen')
     fecha_ultima_sync = fields.Datetime(string='Última sincronización')
 

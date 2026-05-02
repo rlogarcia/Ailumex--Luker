@@ -6,7 +6,7 @@
     'summary': 'Extend Survey Module',
     'author': 'AiLumex',
     'category': 'Customizations',
-    'depends': ['survey', 'web', 'luker_master'], # Lista de modulos que deben estar instalados antes de este
+    'depends': ['survey', 'web', 'gestor_operativo'], # Lista de modulos que deben estar instalados antes de este
     'data': [ # Aquí se van a cargar los tipos de pregunta al instalar el 
     
         # PERMISOS
@@ -21,7 +21,6 @@
         'views/survey_question_math_grid_wizard_views.xml',
         'views/survey_question_math_grid_views.xml',
         'views/survey_response_line_views.xml',
-        'views/participant_views.xml',
         'views/survey_form_inherit.xml',
         'views/survey_structure_section_edit_button.xml',
         'views/survey_structure_section_create_modal.xml',
@@ -42,7 +41,6 @@
         # DATOS INICIALES
         'data/survey_question_type_data.xml',
         'data/survey_sequence_data.xml',
-        'data/participant_sequence_data.xml',
     ],
     'assets': {
         # Bundle para la parte administrativa (Backend)

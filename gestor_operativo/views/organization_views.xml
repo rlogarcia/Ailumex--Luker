@@ -5,7 +5,7 @@
         <field name="name">luker.organization.list</field>
         <field name="model">luker.organization</field>
         <field name="arch" type="xml">
-            <list string="Instituciones — CTX_Unidad_Organizacional">
+            <list string="Instituciones">
                 <field name="image_128" widget="image" optional="show" class="o_image_32_max"/>
                 <field name="nom_unidad" string="Nombre (Nom_Unidad)"/>
                 <field name="cod_unidad" string="Código (Cod_Unidad)" optional="show"/>
@@ -23,7 +23,7 @@
         <field name="name">luker.organization.form</field>
         <field name="model">luker.organization</field>
         <field name="arch" type="xml">
-            <form string="Institución — CTX_Unidad_Organizacional">
+            <form string="Institución">
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button class="oe_stat_button" icon="fa-sitemap">
@@ -56,7 +56,7 @@
                         Selecciona la empresa y los datos se cargan automáticamente.
                     </div>
                     <group>
-                        <group string="Empresa vinculada (res.partner)">
+                        <group string="Empresa">
                             <field name="partner_id" domain="[('is_company','=',True)]"/>
                             <field name="cod_territorio" readonly="1" string="Municipio"/>
                         </group>
@@ -68,7 +68,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Sedes (CTX_Unidad_Organizacional — nivel 2)" name="sedes">
+                        <page string="Sedes" name="sedes">
                             <field name="sede_ids">
                                 <list editable="bottom">
                                     <field name="nom_sede" string="Nombre sede (Nom_Unidad)"/>
@@ -92,11 +92,11 @@
         <field name="name">luker.organization.unit.list</field>
         <field name="model">luker.organization.unit</field>
         <field name="arch" type="xml">
-            <list string="Unidades — CTX_Unidad_Organizacional (Grado/Grupo/Área)" editable="top">
+            <list string="Unidades" editable="top">
                 <field name="institucion_id" string="Institución" optional="show"/>
-                <field name="sede_id" string="Sede (Id_CTX_Sede)"/>
-                <field name="nom_grado" string="Grado (nom_grado)"/>
-                <field name="nom_grupo" string="Grupo (nom_grupo)"/>
+                <field name="sede_id" string="Sede"/>
+                <field name="nom_grado" string="Grado"/>
+                <field name="nom_grupo" string="Grupo"/>
                 <field name="jornada" string="Jornada"/>
                 <field name="area" string="Área" optional="show"/>
                 <field name="participante_count" string="Participantes" readonly="1"/>
@@ -107,7 +107,7 @@
 
     <!-- ══ Actions ══ -->
     <record id="action_luker_organization" model="ir.actions.act_window">
-        <field name="name">Instituciones — CTX_Unidad_Organizacional</field>
+        <field name="name">Instituciones</field>
         <field name="res_model">luker.organization</field>
         <field name="view_mode">list,form</field>
     </record>

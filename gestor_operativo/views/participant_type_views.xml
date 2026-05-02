@@ -4,7 +4,7 @@
         <field name="name">luker.participant.type.list</field>
         <field name="model">luker.participant.type</field>
         <field name="arch" type="xml">
-            <list string="Tipos de Participante — PAR_Tipo_Participante" editable="bottom">
+            <list string="Tipos de participante" editable="bottom">
                 <field name="orden" widget="handle"/>
                 <field name="cod_tipo_participante" string="Código"/>
                 <field name="nom_tipo_participante" string="Nombre"/>
@@ -17,7 +17,7 @@
         <field name="name">luker.participant.type.form</field>
         <field name="model">luker.participant.type</field>
         <field name="arch" type="xml">
-            <form string="Tipo de Participante — PAR_Tipo_Participante">
+            <form string="Tipo de participante">
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_ver_participantes" type="object"

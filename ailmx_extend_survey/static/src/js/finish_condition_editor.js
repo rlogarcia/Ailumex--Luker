@@ -41,7 +41,7 @@ export class FinishConditionEditor extends Component {
     }
 
     _buildAvailableQuestions() {
-        return this.props.record.data.finish_condition_question_options || [];
+        return this.props.record.data.condiciones_fin_opciones || [];
     }
 
     _normalizeRules(rawValue) {
@@ -125,7 +125,7 @@ export class FinishConditionEditor extends Component {
                 "No se pudieron guardar las reglas.",
                 { type: "danger" }
             );
-            console.error("Error guardando finish_conditions_json:", error);
+            console.error("Error guardando condiciones_fin_json:", error);
         }
     }
 

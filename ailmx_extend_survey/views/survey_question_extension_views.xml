@@ -9,15 +9,15 @@
             <!-- TEMPORIZADOR -->
             <xpath expr="//group[field[@name='question_type']]" position="after">
                 <group string="Temporizador de preguntas" name="timer_settings">
-                    <field name="has_time_limit" string="¿Activar temporizador?"/>
-                    <field name="time_limit_unit"
+                    <field name="flg_time_limit" string="¿Activar temporizador?"/>
+                    <field name="unidad_limite_tiempo"
                            string="Unidad"
                            widget="radio"
                            options="{'horizontal': true}"
-                           invisible="not has_time_limit"/>
-                    <field name="time_limit_value"
+                           invisible="not flg_time_limit"/>
+                    <field name="valor_limite_tiempo"
                            string="Cantidad"
-                           invisible="not has_time_limit"
+                           invisible="not flg_time_limit"
                            placeholder="Ej. 30"/>
                 </group>
             </xpath>
@@ -25,15 +25,15 @@
             <!-- ADJUNTAR IMÁGENES -->
             <xpath expr="//group[field[@name='question_type']]" position="after">
                 <group string="Adjuntar imagen" name="image_attachment_settings">
-                    <field name="Flg_Allow_Image_Attachment"
+                    <field name="flg_allow_image_attachment"
                            string="¿Permitir adjuntar imagen?"/>
 
-                    <field name="Question_Image_Attachment_Ids"
+                    <field name="question_image_attachment_ids"
                            string="Imágenes"
                            widget="many2many_binary"
-                           invisible="not Flg_Allow_Image_Attachment"/>
+                           invisible="not flg_allow_image_attachment"/>
 
-                    <field name="Img_Question_Attachment"
+                    <field name="img_question_attachment"
                            string="Imagen única (compatibilidad)"
                            widget="image"
                            invisible="1"/>
@@ -43,28 +43,28 @@
             <!-- GRABACIÓN DE VOZ -->
             <xpath expr="//group[field[@name='question_type']]" position="after">
                 <group string="Grabación de voz" name="voice_record_settings">
-                    <field name="Flg_Auto_Voice_Record" string="¿Grabar voz?"/>
-                    <field name="voice_record_mode"
+                    <field name="flg_auto_voice_record" string="¿Grabar voz?"/>
+                    <field name="modo_grabacion_voz"
                            string="Modo de grabación"
                            widget="radio"
                            options="{'horizontal': true}"
-                           invisible="not Flg_Auto_Voice_Record"/>
+                           invisible="not flg_auto_voice_record"/>
                 </group>
             </xpath>
 
             <!-- CONFIGURACIÓN AILUMEX -->
             <xpath expr="//form" position="inside">
                 <group string="Configuración AiLumex">
-                    <field name="Id_Question_Type" string="Tipo de Pregunta"/>
-                    <field name="Des_Config_JSON" string="Configuración JSON"/>
-                    <field name="Flg_Required" string="Es obligatoria"/>
-                    <field name="Id_Data_Element" string="Elemento de dato DAMA"/>
+                    <field name="id_question_type" string="Tipo de Pregunta"/>
+                    <field name="des_config_json" string="Configuración JSON"/>
+                    <field name="flg_required" string="Es obligatoria"/>
+                    <field name="id_data_element" string="Elemento de dato DAMA"/>
                 </group>
             </xpath>
 
             <!-- RESPUESTA CORRECTA -->
             <xpath expr="//field[@name='suggested_answer_ids']/list/field[last()]" position="after">
-                <field name="Flg_Is_Correct" string="Es correcta"/>
+                <field name="flg_is_correct" string="Es correcta"/>
             </xpath>
 
             <!-- ========================================================= -->
@@ -79,10 +79,10 @@
                     </div>
 
                     <!-- Campo auxiliar invisible para que el widget reciba las preguntas -->
-                    <field name="finish_condition_question_options" invisible="1"/>
+                    <field name="condiciones_fin_opciones" invisible="1"/>
 
                     <!-- Editor custom -->
-                    <field name="finish_conditions_json" widget="finish_condition_editor"/>
+                    <field name="condiciones_fin_json" widget="finish_condition_editor"/>
 
                 </page>
             </xpath>

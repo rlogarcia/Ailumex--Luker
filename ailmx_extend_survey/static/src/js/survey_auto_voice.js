@@ -268,8 +268,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 autoVoiceStore[qid] = {
                     has_audio: true,
                     base64: wrapper._audioBase64,
-                    mimetype: wrapper._audioMimetype || 'audio/webm',
-                    filename: wrapper._audioFilename || 'respuesta_auto.webm'
+                    tipo_mime: wrapper._audioMimetype || 'audio/webm',
+                    nom_archivo: wrapper._audioFilename || 'respuesta_auto.webm'
                 };
             }
 

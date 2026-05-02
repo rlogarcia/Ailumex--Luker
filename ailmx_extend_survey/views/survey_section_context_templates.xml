@@ -10,14 +10,14 @@
             <t t-if="question 
                      and question.page_id 
                      and question.page_id.title 
-                     and question.page_id.show_section_info_in_questions">
+                     and question.page_id.mostrar_info_seccion">
 
                 <div class="ailmx_section_context_box">
 
                     <!-- INDICADOR DE SECCIÓN -->
-                    <t t-if="(question.section_total or 0) &gt; 0">
+                    <t t-if="(question.total_secciones or 0) &gt; 0">
                         <div class="ailmx_section_counter">
-                            Sección <t t-esc="question.section_index"/> / <t t-esc="question.section_total"/>
+                            Sección <t t-esc="question.indice_seccion"/> / <t t-esc="question.total_secciones"/>
                         </div>
                     </t>
 

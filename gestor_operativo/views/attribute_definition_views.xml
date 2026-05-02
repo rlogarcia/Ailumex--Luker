@@ -4,7 +4,7 @@
         <field name="name">luker.attribute.definition.list</field>
         <field name="model">luker.attribute.definition</field>
         <field name="arch" type="xml">
-            <list string="Catálogo de Atributos — ATR_Definicion">
+            <list string="Catálogo de atributos">
                 <field name="orden" widget="handle"/>
                 <field name="cod_atributo" string="Código (Cod_Atributo)"/>
                 <field name="nom_atributo" string="Nombre (Nom_Atributo)"/>
@@ -21,7 +21,7 @@
         <field name="name">luker.attribute.definition.form</field>
         <field name="model">luker.attribute.definition</field>
         <field name="arch" type="xml">
-            <form string="Atributo Dinámico — ATR_Definicion">
+            <form string="Atributo dinámico">
                 <sheet>
                     <div class="alert alert-warning">
                         <i class="fa fa-shield me-2"/>
@@ -50,7 +50,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Opciones del catálogo — ATR_Opcion"
+                        <page string="Opciones del catálogo"
                               invisible="tipo_dato != 'selection'">
                             <field name="opcion_ids">
                                 <list editable="bottom">
@@ -72,7 +72,7 @@
     </record>
 
     <record id="action_luker_attribute_definition" model="ir.actions.act_window">
-        <field name="name">Catálogo de Atributos — ATR_Definicion</field>
+        <field name="name">Catálogo de atributos</field>
         <field name="res_model">luker.attribute.definition</field>
         <field name="view_mode">list,form</field>
     </record>

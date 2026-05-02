@@ -17,7 +17,7 @@
                         string="Pasar a revisión"
                         type="object"
                         class="btn-primary"
-                        invisible="Instrument_State != 'draft'"/>
+                        invisible="instrument_state != 'draft'"/>
 
                 <!-- BOTÓN: Publicar -->
                 <!-- Solo visible en En revisión -->
@@ -25,7 +25,7 @@
                         string="Publicar"
                         type="object"
                         class="btn-success"
-                        invisible="Instrument_State != 'in_review'"/>
+                        invisible="instrument_state != 'in_review'"/>
 
                 <!-- BOTÓN: Despublicar -->
                 <!-- Solo visible en Publicado -->
@@ -33,10 +33,10 @@
                         string="Despublicar"
                         type="object"
                         class="btn-warning"
-                        invisible="Instrument_State != 'published'"/>
+                        invisible="instrument_state != 'published'"/>
 
                 <!-- BARRA DE ESTADO -->
-                <field name="Instrument_State"
+                <field name="instrument_state"
                        widget="statusbar"
                        statusbar_visible="draft,in_review,published,archived"/>
 
@@ -53,7 +53,7 @@
                 - Solo debe mostrarse cuando el instrumento está en En revisión
             -->
             <xpath expr="//form/header/button[@name='action_archive']" position="attributes">
-                <attribute name="invisible">Instrument_State != 'in_review'</attribute>
+                <attribute name="invisible">instrument_state != 'in_review'</attribute>
             </xpath>
 
             <!-- ========================================================= -->
@@ -67,7 +67,7 @@
                 <widget name="web_ribbon"
                         title="PUBLICADO"
                         bg_color="text-bg-success"
-                        invisible="Instrument_State != 'published'"/>
+                        invisible="instrument_state != 'published'"/>
             </xpath>
 
             <!-- RENOMBRAR PESTAÑAS -->
@@ -130,7 +130,7 @@
                     <!-- CÓDIGO -->
                     <div class="ailmx_header_card">
                         <div class="ailmx_header_label">Código</div>
-                        <field name="Cod_Instrument"
+                        <field name="cod_instrument"
                                readonly="1"
                                string=""
                                nolabel="1"
@@ -172,7 +172,7 @@
                     <div class="ailmx_footer_card">
                         <div class="ailmx_footer_label">Requiere evaluador</div>
                         <div class="ailmx_footer_value ailmx_footer_select_box">
-                            <field name="requires_evaluator"
+                            <field name="requiere_evaluador"
                                    string=""
                                    nolabel="1"/>
                         </div>

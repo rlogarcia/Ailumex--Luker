@@ -8,46 +8,46 @@ class SurveyResponseAudio(models.Model):
     _description = 'Audio de respuesta de encuesta'
     _order = 'id desc'
 
-    response_line_id = fields.Many2one(
+    id_response_line = fields.Many2one(
         comodel_name='survey.response.line',
         string='Línea de respuesta',
         required=True,
         ondelete='cascade'
     )
 
-    response_header_id = fields.Many2one(
+    id_response_header = fields.Many2one(
         comodel_name='survey.user_input',
         string='Aplicación',
         ondelete='cascade'
     )
 
-    question_id = fields.Many2one(
+    id_question = fields.Many2one(
         comodel_name='survey.question',
         string='Pregunta',
         ondelete='cascade'
     )
 
-    attachment_id = fields.Many2one(
+    id_adjunto = fields.Many2one(
         comodel_name='ir.attachment',
         string='Archivo de audio',
         required=True,
         ondelete='cascade'
     )
 
-    filename = fields.Char(
+    nom_archivo = fields.Char(
         string='Nombre de archivo'
     )
 
-    mimetype = fields.Char(
+    tipo_mime = fields.Char(
         string='Tipo MIME'
     )
 
-    file_size = fields.Integer(
+    tam_archivo = fields.Integer(
         string='Tamaño'
     )
 
     def unlink(self):
-        attachments = self.mapped('attachment_id')
+        attachments = self.mapped('id_adjunto')
         res = super().unlink()
         if attachments:
             attachments.sudo().unlink()

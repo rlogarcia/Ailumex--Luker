@@ -22,7 +22,7 @@ class SurveyUserInputLineExtension(models.Model):
                 record.question_id.validate_response(value)
 
                 self.env['survey.response.line'].save_response(
-                    response_header_id=record.user_input_id.id,
+                    user_input_id=record.user_input_id.id,
                     question_id=record.question_id.id,
                     value=value
                 )

@@ -18,7 +18,7 @@
                         Si activas esta opción, el título y la descripción de esta sección se mostrarán encima de cada pregunta.
                     </div>
 
-                    <field name="show_section_info_in_questions"
+                    <field name="mostrar_info_seccion"
                             nolabel="1"/>
                 </div>
 

@@ -8,25 +8,25 @@ import json
 class SurveyQuestionExtension(models.Model):
     _inherit = 'survey.question'
 
-    Id_Question_Type = fields.Many2one(
+    id_question_type = fields.Many2one(
         comodel_name='survey.question.type',
         string='Tipo de pregunta',
         help='Selecciona el tipo de este pregunta del catálogo'
     )
 
-    Des_Config_JSON = fields.Json(
+    des_config_json = fields.Json(
         string='Configuración JSON',
         help='Configuración específica de la pregunta en formato JSON'
     )
 
-    Flg_Required = fields.Boolean(
+    flg_required = fields.Boolean(
         string='Es obligatoria',
         default=False,
         help='Si es True el usuario no puede dejar esta pregunta sin responder'
     )
 
-    Id_Data_Element = fields.Many2one(
-        comodel_name='data.element',
+    id_luker_data_element = fields.Many2one(
+        comodel_name='luker.data.element',
         string='Elemento de dato DAMA',
         help='Elemento del catálogo DAMA que define la gobernanza de este dato'
     )
@@ -34,18 +34,18 @@ class SurveyQuestionExtension(models.Model):
     # =========================================================
     # TEMPORIZADOR
     # =========================================================
-    has_time_limit = fields.Boolean(
+    flg_time_limit = fields.Boolean(
         string='¿Tiene límite de tiempo?',
         default=False,
         help='Si está marcada, el usuario tendrá un tiempo limitado para responder a esta pregunta.'
     )
 
-    time_limit_unit = fields.Selection([
+    unidad_limite_tiempo = fields.Selection([
         ('seconds', 'Segundos'),
         ('minutes', 'Minutos')
     ], string='Unidad de tiempo', default='seconds')
 
-    time_limit_value = fields.Integer(
+    valor_limite_tiempo = fields.Integer(
         string='Valor del tiempo',
         default=0,
         help='Tiempo permitido para esta pregunta'
@@ -54,39 +54,39 @@ class SurveyQuestionExtension(models.Model):
     # =========================================================
     # IMÁGENES DE LA PREGUNTA
     # =========================================================
-    Flg_Allow_Image_Attachment = fields.Boolean(
+    flg_allow_image_attachment = fields.Boolean(
         string='¿Permitir adjuntar imagen?',
         default=False,
         help='Si está activado, esta pregunta podrá mostrar imágenes cargadas desde backend.'
     )
 
-    Img_Question_Attachment = fields.Image(
+    img_question_attachment = fields.Image(
         string='Imagen de la pregunta',
         max_width=1920,
         max_height=1920,
         help='Imagen única de compatibilidad. Puede retirarse más adelante.'
     )
 
-    Question_Image_Attachment_Ids = fields.Many2many(
+    question_image_attachment_ids = fields.Many2many(
         comodel_name='ir.attachment',
         relation='survey_question_image_attachment_rel',
-        column1='question_id',
-        column2='attachment_id',
+        column1='id_question_audio',
+        column2='id_adjunto',
         string='Imágenes de la pregunta',
-        domain="[('mimetype', 'ilike', 'image/')]",
+        domain="[('tipo_mime', 'ilike', 'image/')]",
         help='Permite cargar una o varias imágenes para mostrar en la pregunta.'
     )
 
     # =========================================================
     # GRABACIÓN DE VOZ
     # =========================================================
-    Flg_Auto_Voice_Record = fields.Boolean(
+    flg_auto_voice_record = fields.Boolean(
         string='¿Grabar voz?',
         default=False,
         help='Si está activado, la pregunta permitirá grabar voz.'
     )
 
-    voice_record_mode = fields.Selection([
+    modo_grabacion_voz = fields.Selection([
         ('auto', 'Automática'),
         ('manual', 'Manual'),
     ], string='Modo de grabación', default='auto',
@@ -95,7 +95,7 @@ class SurveyQuestionExtension(models.Model):
     # ---------------------------------------------------------
     # CONDICIONES DE FINALIZACIÓN
     # ---------------------------------------------------------
-    finish_conditions_json = fields.Json(
+    condiciones_fin_json = fields.Json(
         string='Condiciones de finalización JSON',
         default=list,
         help='Configuración de condiciones de finalización en formato JSON.'
@@ -104,7 +104,7 @@ class SurveyQuestionExtension(models.Model):
     # =========================================================
     # OPCIONES DISPONIBLES PARA CONDICIONES DE FINALIZACIÓN
     # =========================================================
-    finish_condition_question_options = fields.Json(
+    condiciones_fin_opciones = fields.Json(
         string='Opciones de preguntas para condiciones',
         compute='_compute_finish_condition_question_options',
         store=False
@@ -113,7 +113,7 @@ class SurveyQuestionExtension(models.Model):
     # =========================================================
     # TEXTO JSON PARA FRONTEND
     # =========================================================
-    finish_conditions_json_text = fields.Text(
+    condiciones_fin_texto = fields.Text(
         string='Condiciones de finalización (texto JSON)',
         compute='_compute_finish_conditions_json_text',
         store=False
@@ -122,29 +122,29 @@ class SurveyQuestionExtension(models.Model):
     # =========================================================
     # INDICADOR DE SECCIÓN
     # =========================================================
-    section_index = fields.Integer(
+    indice_seccion = fields.Integer(
         string='Número de sección',
         compute='_compute_section_position',
         store=False
     )
 
-    section_total = fields.Integer(
+    total_secciones = fields.Integer(
         string='Total de secciones',
         compute='_compute_section_position',
         store=False
     )
 
-    show_section_info_in_questions = fields.Boolean(
+    mostrar_info_seccion = fields.Boolean(
         string='Mostrar información de la sección en sus preguntas',
         default=True,
         help='Si está activo, el título y la descripción de esta sección se mostrarán encima de cada pregunta del bloque.'
     )
 
-    @api.depends('finish_conditions_json')
+    @api.depends('condiciones_fin_json')
     def _compute_finish_conditions_json_text(self):
         for rec in self:
-            rec.finish_conditions_json_text = json.dumps(
-                rec.finish_conditions_json or [],
+            rec.condiciones_fin_texto = json.dumps(
+                rec.condiciones_fin_json or [],
                 ensure_ascii=False
             )
 
@@ -162,16 +162,16 @@ class SurveyQuestionExtension(models.Model):
         Ejemplo:
         - Si la pregunta pertenece a la segunda sección de cinco,
           devuelve:
-          section_index = 2
-          section_total = 5
+          indice_seccion = 2
+          total_secciones = 5
 
         Si la pregunta no pertenece a sección:
-          section_index = 0
-          section_total = 0
+          indice_seccion = 0
+          total_secciones = 0
         """
         for rec in self:
-            rec.section_index = 0
-            rec.section_total = 0
+            rec.indice_seccion = 0
+            rec.total_secciones = 0
 
             if not rec.survey_id or not rec.page_id:
                 continue
@@ -180,11 +180,11 @@ class SurveyQuestionExtension(models.Model):
                 lambda item: item.is_page
             ).sorted(key=lambda item: (item.sequence, item.id))
 
-            rec.section_total = len(sections)
+            rec.total_secciones = len(sections)
 
             for index, section in enumerate(sections, start=1):
                 if section.id == rec.page_id.id:
-                    rec.section_index = index
+                    rec.indice_seccion = index
                     break
 
     def _compute_finish_condition_question_options(self):
@@ -228,7 +228,7 @@ class SurveyQuestionExtension(models.Model):
                         'title': title,
                     })
 
-            rec.finish_condition_question_options = options
+            rec.condiciones_fin_opciones = options
 
     @api.model
     def create_question_with_type(self, survey_id, question_type_code, vals):
@@ -239,7 +239,7 @@ class SurveyQuestionExtension(models.Model):
             raise ValueError('El campo title es obligatorio.')
 
         question_type = self.env['survey.question.type'].search([
-            ('Cod_Question_Type', '=', question_type_code)
+            ('cod_question_type', '=', question_type_code)
         ], limit=1)
 
         if not question_type:
@@ -248,7 +248,7 @@ class SurveyQuestionExtension(models.Model):
             )
 
         vals['survey_id'] = survey_id
-        vals['Id_Question_Type'] = question_type.id
+        vals['id_question_type'] = question_type.id
 
         new_question = self.create(vals)
         return new_question
@@ -257,19 +257,19 @@ class SurveyQuestionExtension(models.Model):
         if not isinstance(config, dict):
             raise ValueError('La configuración debe ser un diccionario JSON.')
 
-        self.write({'Des_Config_JSON': config})
+        self.write({'des_config_json': config})
         return True
 
-    @api.constrains('Id_Data_Element')
-    def _check_data_element(self):
+    @api.constrains('id_luker_data_element')
+    def _check_luker_data_element(self):
         for record in self:
-            if record.Id_Question_Type and not record.Id_Data_Element:
+            if record.id_question_type and not record.id_luker_data_element:
                 raise ValidationError(
                     'La pregunta "%s" debe tener un Elemento de dato DAMA asignado.'
                     % record.title
                 )
 
-    @api.constrains('question_type', 'suggested_answer_ids', 'suggested_answer_ids.Flg_Is_Correct')
+    @api.constrains('question_type', 'suggested_answer_ids', 'suggested_answer_ids.flg_is_correct')
     def _check_correct_answers_for_choice_questions(self):
         """
         Regla final deseada:
@@ -281,7 +281,7 @@ class SurveyQuestionExtension(models.Model):
             if record.question_type not in ('simple_choice', 'multiple_choice'):
                 continue
 
-            correct_answers = record.suggested_answer_ids.filtered('Flg_Is_Correct')
+            correct_answers = record.suggested_answer_ids.filtered('flg_is_correct')
             correct_count = len(correct_answers)
 
             if record.question_type == 'simple_choice' and correct_count > 1:
@@ -291,12 +291,12 @@ class SurveyQuestionExtension(models.Model):
                 )
 
     def validate_response(self, value):
-        question_type = self.Id_Question_Type
+        question_type = self.id_question_type
 
         if not question_type:
             return True
 
-        schema_raw = question_type.Des_Validation_Schema
+        schema_raw = question_type.des_validation_schema
         if not schema_raw:
             return True
 

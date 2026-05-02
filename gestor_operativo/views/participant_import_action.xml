@@ -20,7 +20,7 @@
         NO son campos del modelo de datos — no se renombran.
     -->
     <record id="action_server_import_participants" model="ir.actions.server">
-        <field name="name">📥 Carga Masiva (SIMAT / Excel)</field>
+        <field name="name">📥 Carga masiva (SIMAT / Excel)</field>
         <field name="model_id" ref="model_luker_participant"/>
         <field name="binding_model_id" ref="model_luker_participant"/>
         <field name="binding_type">action</field>

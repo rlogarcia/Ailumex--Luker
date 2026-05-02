@@ -23,7 +23,7 @@ function parseJSONSafe(rawValue, fallback = []) {
     try {
         return JSON.parse(rawValue || "[]");
     } catch (error) {
-        console.warn("[FINISH_RULES] No se pudo parsear finish_conditions_json:", error);
+        console.warn("[FINISH_RULES] No se pudo parsear condiciones_fin_json:", error);
         return fallback;
     }
 }

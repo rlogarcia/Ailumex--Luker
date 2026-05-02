@@ -12,7 +12,7 @@ class SurveyQuestionAnswer(models.Model):
     _inherit = 'survey.question.answer'
 
     # =========================================================
-    # CAMPO: Flg_Is_Correct
+    # CAMPO: flg_is_correct
     # =========================================================
     # Este campo indica si una opción es correcta o no.
     #
@@ -20,7 +20,7 @@ class SurveyQuestionAnswer(models.Model):
     # - Selección única (radio): solo una opción puede ser correcta
     # - Selección múltiple (checkbox): varias opciones pueden ser correctas
     # =========================================================
-    Flg_Is_Correct = fields.Boolean(
+    flg_is_correct = fields.Boolean(
         string='Es correcta',
         default=False,
         help='Marca esta opción si debe considerarse una respuesta correcta.'
@@ -36,7 +36,7 @@ class SurveyQuestionAnswer(models.Model):
     # El nombre técnico del campo nativo de Odoo es question_id.
     # Desde ahí se accede al tipo de pregunta.
     # =========================================================
-    @api.constrains('Flg_Is_Correct', 'question_id')
+    @api.constrains('flg_is_correct', 'question_id')
     def _check_single_choice_only_one_correct(self):
         for record in self:
             # Si no hay pregunta asociada, no se valida
@@ -53,7 +53,7 @@ class SurveyQuestionAnswer(models.Model):
             #
             # Aquí validamos solo cuando sea selección única.
             if question.question_type == 'simple_choice':
-                correct_answers = question.suggested_answer_ids.filtered('Flg_Is_Correct')
+                correct_answers = question.suggested_answer_ids.filtered('flg_is_correct')
 
                 if len(correct_answers) > 1:
                     raise ValidationError(

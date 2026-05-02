@@ -8,67 +8,62 @@ from odoo import models, fields, api
 class SurveyQuestionsType(models.Model):
     _name = 'survey.question.type' # Nombre técnico del modelo en Odoo
     _description = 'Catálogo de tipos de pregunta' # Descrición legible del modelo que aparece en la interfaz técnica de Odoo
-    _order = 'Nam_Question_Type asc' # Define como se ordenan los registros por defecto
-    _rec_name = 'Nam_Question_Type' # Campo que se muestra en la interfaz de Odoo
+    _order = 'nam_question_type asc' # Define como se ordenan los registros por defecto
+    _rec_name = 'nam_question_type' # Campo que se muestra en la interfaz de Odoo
 
-    Id_Survey_Question_Type = fields.Integer( # Identificador único del tipo de pregunta
-        string = 'ID Tipo Pregunta',
-        readonly = True
-    )
-
-    Cod_Question_Type = fields.Char(
+    cod_question_type = fields.Char(
         string = 'Código técnico', 
         required = True, # True significa que no puede quedar vacío
         help = 'Identificador único del tipo (Radio, number, date ...)'
     )
 
-    Nam_Question_Type = fields.Char(
+    nam_question_type = fields.Char(
         string = 'Nombre',
         required = True,
         help = 'Nombre legible del tipo. (Opción única, opción múltiple)'
     )
 
-    Typ_Data = fields.Char ( # Degine que clase de dato produce la respuesta
+    typ_data = fields.Char ( # Degine que clase de dato produce la respuesta
         string = 'Tipo de dato',
         help = 'Clase de dato que produce la respuesta (string, number, json ...)'
     )
 
-    Nam_UI_Component = fields.Char ( # Nombre del componente visual que debe mostrarse en pantalla para el tipo de pregunta
+    nam_ui_component = fields.Char ( # Nombre del componente visual que debe mostrarse en pantalla para el tipo de pregunta
         string = 'Componente UI',
         help = 'Nombre del componente visual que renderiza la pregunta'
     )
 
-    Flg_Supports_Multiple = fields.Boolean ( # Indica si el tipo de pregunta soporta múltiples respuestas
+    flg_supports_multiple = fields.Boolean ( # Indica si el tipo de pregunta soporta múltiples respuestas
         string = 'Permite múltiples respuestas',
         default = False # Por defecto es no
     )
 
-    Flg_Supports_Media = fields.Boolean ( # Indica si este tipo permite adjuntar archivos
+    flg_supports_media = fields.Boolean ( # Indica si este tipo permite adjuntar archivos
         string = 'Admite evidencia o foto',
         default = False
     )
 
-    Flg_Supports_GPS = fields.Boolean ( # Indica si este tipo captura automáticamente la ubicación GPS del dispositivo al responder
+    flg_supports_gps = fields.Boolean ( # Indica si este tipo captura automáticamente la ubicación GPS del dispositivo al responder
         string = 'Admite GPS',
         default = False
     )
 
-    Flg_Supports_Score = fields.Boolean ( # Indica si las opciones tienen un puntaje numérico asociado
+    flg_supports_score = fields.Boolean ( # Indica si las opciones tienen un puntaje numérico asociado
         string = 'Admite puntuación',
         default = False
     )
 
-    Flg_Supports_Offline = fields.Boolean ( # Indica si el tipo de pregunta se puede usar sin conexión
+    flg_supports_offline = fields.Boolean ( # Indica si el tipo de pregunta se puede usar sin conexión
         string = 'Admite offline',
         default = True # True porque la mayoría si lo soporta
     )
 
-    Des_Validation_Schema = fields.Char ( # Guarda las reglas de validación en formato JSON
+    des_validation_schema = fields.Char ( # Guarda las reglas de validación en formato JSON
         string = 'Esquema de validación',
         help = 'Reglas de validación en formato JSON'
     )
 
-    active = fields.Boolean ( # Nativo de Odoo, 
+    activo = fields.Boolean ( # Nativo de Odoo, 
         string = 'Activo',
         default = True # Todo registro nuevo queda activo por defecto
     )
@@ -77,7 +72,7 @@ class SurveyQuestionsType(models.Model):
     _sql_constraints = [
         (
             'cod_question_type_unique', # Nombre interno de la restricción
-            'unique(Cod_Question_Type)', # Garantiza que no pueden existir dos registros con el mismo código en la BD
+            'unique(cod_question_type)', # Garantiza que no pueden existir dos registros con el mismo código en la BD
             'Ya existe un tipo de pregunta con ese código técnico.' # Mensaje de error que va a ver el usuario
         )
     ]
@@ -90,10 +85,10 @@ class SurveyQuestionsType(models.Model):
     def create_question_type(self, vals):
         # Verifica que los campos obligatorios estén presentes
         # antes de intentar crear el registro
-        if not vals.get('Cod_Question_Type'):
-            raise ValueError('El campo Cod_Question_Type es obligatorio.')
-        if not vals.get('Nam_Question_Type'):
-            raise ValueError('El campo Nam_Question_Type es obligatorio.')
+        if not vals.get('cod_question_type'):
+            raise ValueError('El campo cod_question_type es obligatorio.')
+        if not vals.get('nam_question_type'):
+            raise ValueError('El campo nam_question_type es obligatorio.')
 
         # Crea el registro en la base de datos
         new_type = self.create(vals) # self.create() es el método nativo de Odoo para crear registros
@@ -109,8 +104,8 @@ class SurveyQuestionsType(models.Model):
         if not isinstance(schema, dict):
             raise ValueError('El esquema de validación debe ser un diccionario JSON.')
 
-        # Actualiza el campo Des_Validation_Schema
+        # Actualiza el campo des_validation_schema
         # con el esquema recibido
-        self.write({'Des_Validation_Schema': schema})
+        self.write({'des_validation_schema': schema})
 
         return True

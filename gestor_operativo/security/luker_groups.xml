@@ -5,7 +5,7 @@
              CATEGORÍA DE MÓDULO
         ══════════════════════════════════════════════════ -->
         <record id="module_category_luker" model="ir.module.category">
-            <field name="name">Luker Platform</field>
+            <field name="name">Gestor Operativo</field>
             <field name="description">Módulos de la Plataforma Luker — Fundación Luker</field>
             <field name="sequence">100</field>
         </record>

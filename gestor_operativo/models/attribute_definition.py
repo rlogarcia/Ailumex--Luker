@@ -16,7 +16,7 @@ class LukerAttributeDefinition(models.Model):
         ('participante', 'Participante'),
         ('sesion',       'Sesión'),
         ('institucion',  'Institución'),
-    ], string='Alcance Entidad', default='participante', help='Alcance_Entidad')
+    ], string='Alcance', default='participante', help='Alcance_Entidad')
     tipo_dato = fields.Selection([
         ('char',      'Texto corto'),
         ('text',      'Texto largo'),
@@ -26,12 +26,12 @@ class LukerAttributeDefinition(models.Model):
         ('date',      'Fecha'),
         ('selection', 'Lista de opciones (catálogo)'),
     ], string='Tipo de Dato', required=True, default='char', help='Tipo_Dato')
-    es_requerido     = fields.Boolean(string='Es Requerido', default=False, help='Es_Requerido')
+    es_requerido     = fields.Boolean(string='Es requerido', default=False, help='Es_Requerido')
     es_catalogo      = fields.Boolean(
-        string='Es Catálogo', compute='_compute_es_catalogo', store=True,
+        string='Es catálogo', compute='_compute_es_catalogo', store=True,
         help='Es_Catalogo — True cuando tipo_dato = selection')
     tiene_vigencia   = fields.Boolean(
-        string='Con Vigencia', default=True,
+        string='Con vigencia', default=True,
         help='Si cada valor registrado lleva vigencia_desde / vigencia_hasta')
     responsable_gobierno = fields.Char(
         string='Responsable Gobernanza', help='Responsable_Gobierno')

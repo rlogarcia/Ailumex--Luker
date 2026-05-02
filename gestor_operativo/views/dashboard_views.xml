@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        Dashboard del módulo Luker Master.
+        Dashboard del módulo Gestor Operativo.
         Usa cohort / graph / pivot nativos de Odoo v18.
         Para un dashboard más avanzado con OWL se recomienda
         extender en una fase posterior.
@@ -60,7 +60,7 @@
 
     <!-- ══ Dashboard action (kanban-style using activity view) ══ -->
     <record id="action_luker_dashboard" model="ir.actions.act_window">
-        <field name="name">Dashboard — Luker Master</field>
+        <field name="name">Dashboard — Gestor Operativo</field>
         <field name="res_model">luker.participant</field>
         <field name="view_mode">graph,pivot,list</field>
         <field name="context">{

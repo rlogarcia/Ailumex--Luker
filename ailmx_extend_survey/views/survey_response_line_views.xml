@@ -10,18 +10,18 @@
         <field name="model">survey.response.line</field>
         <field name="arch" type="xml">
             <list string="Aplicaciones">
-                <field name="Nam_User" string="Participante"/>
-                <field name="Id_Instrument" string="Instrumento"/>
-                <field name="Id_Response_Header" string="Aplicación"/>
+                <field name="nam_user" string="Participante"/>
+                <field name="id_instrument" string="Instrumento"/>
+                <field name="id_response_header" string="Aplicación"/>
                 <field name="Id_Question" string="Pregunta"/>
-                <field name="Typ_Response" string="Tipo"/>
-                <field name="Val_Text" string="Texto"/>
-                <field name="Val_Number" string="Número"/>
-                <field name="Val_Date" string="Fecha"/>
-                <field name="Flg_Omitted" string="Omitida"/>
-                <field name="Num_Score" string="Puntaje"/>
-                <field name="Dat_Created_At" string="Fecha creación"/>
-                <!--<field name="Nam_Device" string="Dispositivo"/>-->
+                <field name="typ_response" string="Tipo"/>
+                <field name="val_text" string="Texto"/>
+                <field name="val_number" string="Número"/>
+                <field name="val_date" string="Fecha"/>
+                <field name="flg_omitted" string="Omitida"/>
+                <field name="num_score" string="Puntaje"/>
+                <field name="dat_created_at" string="Fecha creación"/>
+                <!--<field name="nam_device" string="Dispositivo"/>-->
             </list>
         </field>
     </record>
@@ -39,30 +39,30 @@
 
                     <!-- Información general -->
                     <group string="Información general">
-                        <field name="Nam_User" string="Participante"/>
-                        <field name="Id_Instrument" string="Instrumento"/>
-                        <field name="Id_Response_Header" string="Aplicación"/>
+                        <field name="nam_user" string="Participante"/>
+                        <field name="id_instrument" string="Instrumento"/>
+                        <field name="id_response_header" string="Aplicación"/>
                         <field name="Id_Question" string="Pregunta"/>
-                        <field name="Id_Section" string="Sección"/>
-                        <field name="Typ_Response" string="Tipo de respuesta"/>
-                        <field name="Id_Question_Option" string="Opción seleccionada"/>
+                        <field name="id_section" string="Sección"/>
+                        <field name="typ_response" string="Tipo de respuesta"/>
+                        <field name="id_question_option" string="Opción seleccionada"/>
                     </group>
 
                     <!-- Valores -->
                     <group string="Valores">
-                        <field name="Val_Text" string="Valor texto"/>
-                        <field name="Val_Number" string="Valor numérico"/>
-                        <field name="Val_Date" string="Valor fecha"/>
-                        <field name="Val_Datetime" string="Valor fecha y hora"/>
-                        <field name="Val_JSON" string="Valor JSON"/>
+                        <field name="val_text" string="Valor texto"/>
+                        <field name="val_number" string="Valor numérico"/>
+                        <field name="val_date" string="Valor fecha"/>
+                        <field name="val_datetime" string="Valor fecha y hora"/>
+                        <field name="val_json" string="Valor JSON"/>
                     </group>
 
                     <!-- Resultado -->
                     <group string="Resultado">
-                        <field name="Flg_Omitted" string="Fue omitida"/>
-                        <field name="Num_Score" string="Puntaje"/>
-                        <field name="Dat_Created_At" string="Fecha de creación"/>
-                        <field name="Nam_Device" string="Dispositivo"/>
+                        <field name="flg_omitted" string="Fue omitida"/>
+                        <field name="num_score" string="Puntaje"/>
+                        <field name="dat_created_at" string="Fecha de creación"/>
+                        <field name="nam_device" string="Dispositivo"/>
                     </group>
 
                 </sheet>
@@ -81,34 +81,34 @@
             <search string="Buscar Aplicaciones">
 
                 <!-- Campos de búsqueda -->
-                <field name="Nam_User" string="Participante"/>
-                <field name="Id_Instrument" string="Instrumento"/>
-                <field name="Id_Response_Header" string="Aplicación"/>
+                <field name="nam_user" string="Participante"/>
+                <field name="id_instrument" string="Instrumento"/>
+                <field name="id_response_header" string="Aplicación"/>
                 <field name="Id_Question" string="Pregunta"/>
-                <field name="Typ_Response" string="Tipo"/>
+                <field name="typ_response" string="Tipo"/>
 
                 <!-- Filtros -->
                 <filter string="Omitidas"
                         name="filter_omitted"
-                        domain="[('Flg_Omitted', '=', True)]"/>
+                        domain="[('flg_omitted', '=', True)]"/>
 
                 <!-- Agrupaciones -->
                 <group expand="0" string="Agrupar por">
                     <filter string="Participante"
                             name="group_by_participant"
-                            context="{'group_by': 'Nam_User'}"/>
+                            context="{'group_by': 'nam_user'}"/>
 
                     <filter string="Instrumento"
                             name="group_by_instrument"
-                            context="{'group_by': 'Id_Instrument'}"/>
+                            context="{'group_by': 'id_instrument'}"/>
 
                     <filter string="Aplicación"
                             name="group_by_application"
-                            context="{'group_by': 'Id_Response_Header'}"/>
+                            context="{'group_by': 'id_response_header'}"/>
 
                     <filter string="Fecha"
                             name="group_by_date"
-                            context="{'group_by': 'Dat_Created_At'}"/>
+                            context="{'group_by': 'dat_created_at'}"/>
                 </group>
 
             </search>

@@ -40,7 +40,7 @@ class SurveyUserInputCustomSave(models.Model):
         try:
             for user_input in self:
                 # Ejecuta sincronización completa
-                user_input.action_sync_luker_master_bridge()
+                user_input.action_sync_gestor_operativo_bridge()
 
         except Exception as e:
             # ⚠️ IMPORTANTE:
@@ -49,7 +49,7 @@ class SurveyUserInputCustomSave(models.Model):
             import logging
             _logger = logging.getLogger(__name__)
             _logger.warning(
-                'Error sincronizando con luker_master: %s',
+                'Error sincronizando con gestor_operativo: %s',
                 str(e)
             )
         return result
@@ -86,14 +86,14 @@ class SurveyUserInputCustomSave(models.Model):
 
         return params
 
-    def _get_auto_audio_payload(self, question_id):
+    def _get_auto_audio_payload(self, id_question):
         """
         Busca el payload enviado como:
-            "<question_id>_auto_audio"
+            "<id_question>_auto_audio"
         """
         try:
             params = self._extract_rpc_params()
-            raw = params.get(f'{question_id}_auto_audio')
+            raw = params.get(f'{id_question}_auto_audio')
 
             if not raw:
                 return None
@@ -110,8 +110,8 @@ class SurveyUserInputCustomSave(models.Model):
 
         except Exception:
             _logger.exception(
-                'Error leyendo audio automático para question_id=%s',
-                question_id
+                'Error leyendo audio automático para id_question=%s',
+                id_question
             )
 
         return None
@@ -123,84 +123,84 @@ class SurveyUserInputCustomSave(models.Model):
         """
         if not audio_payload:
             _logger.info(
-                'No llegó audio automático para question_id=%s response_header_id=%s',
+                'No llegó audio automático para id_question=%s id_response_header=%s',
                 question.id, self.id
             )
             return False
 
         response_line = self.env['survey.response.line'].search([
-            ('Id_Response_Header', '=', self.id),
-            ('Id_Question', '=', question.id),
+            ('id_response_header', '=', self.id),
+            ('id_question', '=', question.id),
         ], limit=1)
 
         if not response_line:
             _logger.info(
-                'No existía survey.response.line; se creará para question_id=%s response_header_id=%s',
+                'No existía survey.response.line; se creará para id_question=%s id_response_header=%s',
                 question.id, self.id
             )
             response_line = self.env['survey.response.line'].save_response(
-                response_header_id=self.id,
-                question_id=question.id,
+                id_response_header=self.id,
+                id_question=question.id,
                 value=answer
             )
 
         if not response_line:
             _logger.warning(
-                'No se pudo obtener response_line para guardar audio automático. question_id=%s response_header_id=%s',
+                'No se pudo obtener response_line para guardar audio automático. id_question=%s id_response_header=%s',
                 question.id, self.id
             )
             return False
 
         existing_audio = self.env['survey.response.audio'].sudo().search([
-            ('response_line_id', '=', response_line.id),
+            ('id_response_line', '=', response_line.id),
         ])
         if existing_audio:
             existing_audio.unlink()
 
         try:
             raw_base64 = audio_payload.get('base64', '')
-            mimetype = audio_payload.get('mimetype', 'audio/webm')
-            filename = audio_payload.get('filename', 'respuesta_auto.webm')
+            tipo_mime = audio_payload.get('tipo_mime', 'audio/webm')
+            nom_archivo = audio_payload.get('nom_archivo', 'respuesta_auto.webm')
 
             if not raw_base64:
                 _logger.warning(
-                    'Audio automático sin base64. question_id=%s response_header_id=%s',
+                    'Audio automático sin base64. id_question=%s id_response_header=%s',
                     question.id, self.id
                 )
                 return False
 
             file_bytes = base64.b64decode(raw_base64)
-            file_size = len(file_bytes)
+            tam_archivo = len(file_bytes)
 
             attachment = self.env['ir.attachment'].sudo().create({
-                'name': filename,
+                'name': nom_archivo,
                 'type': 'binary',
                 'datas': raw_base64,
-                'mimetype': mimetype,
+                'tipo_mime': tipo_mime,
                 'res_model': 'survey.response.audio',
                 'res_id': 0,
                 'description': f'Audio automático respuesta pregunta {question.id}',
             })
 
             self.env['survey.response.audio'].sudo().create({
-                'response_line_id': response_line.id,
-                'response_header_id': self.id,
-                'question_id': question.id,
-                'attachment_id': attachment.id,
-                'filename': filename,
-                'mimetype': mimetype,
-                'file_size': file_size,
+                'id_response_line': response_line.id,
+                'id_response_header': self.id,
+                'id_question': question.id,
+                'id_adjunto': attachment.id,
+                'nom_archivo': nom_archivo,
+                'tipo_mime': tipo_mime,
+                'tam_archivo': tam_archivo,
             })
 
             _logger.info(
-                'Audio automático guardado correctamente. question_id=%s response_header_id=%s response_line_id=%s',
+                'Audio automático guardado correctamente. id_question=%s id_response_header=%s id_response_line=%s',
                 question.id, self.id, response_line.id
             )
             return True
 
         except Exception:
             _logger.exception(
-                'Error guardando audio automático. question_id=%s response_header_id=%s response_line_id=%s',
+                'Error guardando audio automático. id_question=%s id_response_header=%s id_response_line=%s',
                 question.id, self.id, response_line.id if response_line else False
             )
             return False
@@ -232,14 +232,14 @@ class SurveyUserInputCustomSave(models.Model):
             parsed_answer = normalized_answer
 
         existing_native = self.user_input_line_ids.filtered(
-            lambda line: line.question_id == question
+            lambda line: line.id_question == question
         )
         if existing_native:
             existing_native.unlink()
 
         existing_custom = self.env['survey.response.line'].search([
-            ('Id_Response_Header', '=', self.id),
-            ('Id_Question', '=', question.id),
+            ('id_response_header', '=', self.id),
+            ('id_question', '=', question.id),
         ])
         if existing_custom:
             existing_custom.unlink()
@@ -249,15 +249,15 @@ class SurveyUserInputCustomSave(models.Model):
 
         native_line = self.env['survey.user_input.line'].create({
             'user_input_id': self.id,
-            'question_id': question.id,
+            'id_question': question.id,
             'answer_type': 'text_box',
             'value_text_box': normalized_answer,
             'skipped': False,
         })
 
         self.env['survey.response.line'].save_response(
-            response_header_id=self.id,
-            question_id=question.id,
+            id_response_header=self.id,
+            id_question=question.id,
             value=parsed_answer
         )
 
@@ -319,21 +319,21 @@ class SurveyUserInputCustomSave(models.Model):
             parsed_cells = normalized_answer
 
         existing_native = self.user_input_line_ids.filtered(
-            lambda line: line.question_id == question
+            lambda line: line.id_question == question
         )
         if existing_native:
             existing_native.unlink()
 
         existing_custom = self.env['survey.response.line'].search([
-            ('Id_Response_Header', '=', self.id),
-            ('Id_Question', '=', question.id),
+            ('id_response_header', '=', self.id),
+            ('id_question', '=', question.id),
         ])
         if existing_custom:
             existing_custom.unlink()
 
         existing_audio = self.env['survey.response.audio'].sudo().search([
-            ('response_header_id', '=', self.id),
-            ('question_id', '=', question.id),
+            ('id_response_header', '=', self.id),
+            ('id_question', '=', question.id),
         ])
         if existing_audio:
             existing_audio.unlink()
@@ -343,49 +343,49 @@ class SurveyUserInputCustomSave(models.Model):
 
         native_line = self.env['survey.user_input.line'].create({
             'user_input_id': self.id,
-            'question_id': question.id,
+            'id_question': question.id,
             'answer_type': 'text_box',
             'value_text_box': normalized_answer,
             'skipped': False,
         })
 
         response_line = self.env['survey.response.line'].save_response(
-            response_header_id=self.id,
-            question_id=question.id,
+            id_response_header=self.id,
+            id_question=question.id,
             value=parsed_cells
         )
 
         if audio_data and response_line:
             try:
                 raw_base64 = audio_data.get('base64', '')
-                mimetype = audio_data.get('mimetype', 'audio/webm')
-                filename = audio_data.get('filename', 'respuesta.webm')
+                tipo_mime = audio_data.get('tipo_mime', 'audio/webm')
+                nom_archivo = audio_data.get('nom_archivo', 'respuesta.webm')
                 file_bytes = base64.b64decode(raw_base64)
-                file_size = len(file_bytes)
+                tam_archivo = len(file_bytes)
 
                 attachment = self.env['ir.attachment'].sudo().create({
-                    'name': filename,
+                    'name': nom_archivo,
                     'type': 'binary',
                     'datas': raw_base64,
-                    'mimetype': mimetype,
+                    'tipo_mime': tipo_mime,
                     'res_model': 'survey.response.audio',
                     'res_id': 0,
                     'description': f'Audio respuesta pregunta {question.id}',
                 })
 
                 self.env['survey.response.audio'].sudo().create({
-                    'response_line_id': response_line.id,
-                    'response_header_id': self.id,
-                    'question_id': question.id,
-                    'attachment_id': attachment.id,
-                    'filename': filename,
-                    'mimetype': mimetype,
-                    'file_size': file_size,
+                    'id_response_line': response_line.id,
+                    'id_response_header': self.id,
+                    'id_question': question.id,
+                    'id_adjunto': attachment.id,
+                    'nom_archivo': nom_archivo,
+                    'tipo_mime': tipo_mime,
+                    'tam_archivo': tam_archivo,
                 })
 
             except Exception:
                 _logger.exception(
-                    'Error guardando audio de math_grid. question_id=%s response_header_id=%s',
+                    'Error guardando audio de math_grid. id_question=%s id_response_header=%s',
                     question.id, self.id
                 )
 

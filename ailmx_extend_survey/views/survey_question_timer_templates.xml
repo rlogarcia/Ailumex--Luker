@@ -17,7 +17,7 @@
                 2. tiene el temporizador activado
                 3. tiene una cantidad mayor a 0
             -->
-            <t t-if="question and question.has_time_limit and question.time_limit_value > 0">
+            <t t-if="question and question.flg_time_limit and question.valor_limite_tiempo > 0">
 
                 <!--
                     Contenedor del cronómetro.
@@ -25,8 +25,8 @@
                     el temporizador visual y arrancar la cuenta regresiva.
                 -->
                 <div id="sispar_timer_container"
-                     t-att-data-time-limit="question.time_limit_value"
-                     t-att-data-time-unit="question.time_limit_unit"
+                     t-att-data-time-limit="question.valor_limite_tiempo"
+                     t-att-data-time-unit="question.unidad_limite_tiempo"
                      class="mb-3">
                 </div>
 

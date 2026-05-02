@@ -18,7 +18,7 @@ class SurveySurvey(models.Model):
             return ""
 
         answer_lines = user_input.user_input_line_ids.filtered(
-            lambda l: l.question_id.id == question.id
+            lambda l: l.id_question_audio.id == question.id
         )
 
         if not answer_lines:
@@ -258,11 +258,11 @@ class SurveySurvey(models.Model):
 
         current_question = self.env['survey.question'].browse(current_page_or_question_id)
 
-        if not current_question or not current_question.finish_conditions_json:
+        if not current_question or not current_question.condiciones_fin_json:
             user_input.conditional_block_message = False
             return next_page
 
-        rules = current_question.finish_conditions_json or []
+        rules = current_question.condiciones_fin_json or []
 
         _logger.warning(
             "[COND_RULES] Revisando reglas en pregunta %s (%s). Total reglas: %s",

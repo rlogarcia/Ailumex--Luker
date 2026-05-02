@@ -58,7 +58,7 @@
                     <field name="id_question_type" string="Tipo de Pregunta"/>
                     <field name="des_config_json" string="Configuración JSON"/>
                     <field name="flg_required" string="Es obligatoria"/>
-                    <field name="id_data_element" string="Elemento de dato DAMA"/>
+                    <field name="id_luker_data_element" string="Elemento de dato DAMA"/>
                 </group>
             </xpath>
 

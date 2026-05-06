@@ -63,3 +63,4 @@ from . import survey_block_message
 
 # Helper para crear preguntas en secciones
 from . import survey_create_question_in_section
+from . import instrument_version     # Versionamiento formal de instrumentos

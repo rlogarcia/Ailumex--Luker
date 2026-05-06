@@ -11,6 +11,7 @@
     
         # PERMISOS
         'security/ir.model.access.csv',
+        'security/instrument_version_access.csv',
 
         # VISTAS
         'views/survey_question_type_views.xml',
@@ -22,6 +23,7 @@
         'views/survey_question_math_grid_views.xml',
         'views/survey_response_line_views.xml',
         'views/survey_form_inherit.xml',
+        'views/instrument_version_views.xml',
         'views/survey_structure_section_edit_button.xml',
         'views/survey_structure_section_create_modal.xml',
         'views/survey_section_display_option.xml',

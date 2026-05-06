@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_luker_api_token_admin,luker.api.token admin,model_luker_api_token,gestor_operativo.group_luker_admin,1,1,1,1
+access_luker_api_token_manager,luker.api.token manager,model_luker_api_token,gestor_operativo.group_luker_manager,1,1,0,0
+access_luker_sync_queue_admin,luker.sync.queue admin,model_luker_sync_queue,gestor_operativo.group_luker_admin,1,1,1,1
+access_luker_sync_queue_manager,luker.sync.queue manager,model_luker_sync_queue,gestor_operativo.group_luker_manager,1,0,0,0

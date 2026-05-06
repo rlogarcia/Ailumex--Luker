@@ -197,10 +197,15 @@ class LukerInstrumentVersion(models.Model):
             num = (ultimo.num_version + 1) if ultimo else 1
             vals['num_version'] = num
 
-            # Obtener código del instrumento
+            # Obtener código del instrumento (evitar 'Nuevo' como prefijo)
             survey = self.env['survey.survey'].browse(survey_id)
-            cod_ins = getattr(survey, 'cod_instrument', 'INS') or 'INS'
-            vals['cod_version'] = f'{cod_ins}-V{anio}-{num:03d}'
+            cod_ins = getattr(survey, 'cod_instrument', None) or ''
+            if not cod_ins or cod_ins == 'Nuevo':
+                cod_ins = 'INS'
+
+            # Generar código único combinando instrumento + año + secuencia global
+            seq = self.env['ir.sequence'].next_by_code('luker.instrument.version') or '00001'
+            vals['cod_version'] = f'{cod_ins}-V{anio}-{seq}'
 
         records = super().create(vals_list)
 

@@ -62,12 +62,48 @@
 
                     <notebook>
                         <page string="Preguntas de esta versión" name="preguntas">
-                            <div class="alert alert-info mb-3">
-                                <i class="fa fa-info-circle me-2"/>
-                                Selecciona las preguntas que hacen parte de esta versión.
-                                Las preguntas desmarcadas NO se aplicarán en campaña.
-                                Total: <strong><field name="num_preguntas" readonly="1"/> pregunta(s) seleccionadas</strong>
+
+                            <!-- Contexto si hay versión anterior -->
+                            <div class="alert alert-info d-flex gap-2 mb-2"
+                                 invisible="not version_anterior_id">
+                                <i class="fa fa-code-fork mt-1"/>
+                                <span>
+                                    Comparando con
+                                    <strong><field name="version_anterior_id" readonly="1" nolabel="1"/></strong>.
+                                    Agrega o quita preguntas — el sistema registrará las diferencias automáticamente.
+                                </span>
                             </div>
+
+                            <!-- Primera versión -->
+                            <div class="alert alert-secondary d-flex gap-2 mb-2"
+                                 invisible="version_anterior_id != False">
+                                <i class="fa fa-star mt-1"/>
+                                <span>Primera versión del instrumento. Selecciona las preguntas que aplican.</span>
+                            </div>
+
+                            <!-- Indicadores de cambio -->
+                            <div class="d-flex gap-3 mb-3 align-items-center flex-wrap"
+                                 invisible="not version_anterior_id">
+                                <div style="background:#d1e7dd;border:1px solid #a3cfbb;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;color:#0a3622">
+                                    <i class="fa fa-plus me-1"/>
+                                    Nuevas en esta versión: <field name="ids_preguntas_nuevas" readonly="1" nolabel="1" style="display:inline"/>
+                                </div>
+                                <div style="background:#e2e3e5;border:1px solid #c4c8cb;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;color:#1c1c1e">
+                                    <i class="fa fa-list me-1"/>
+                                    Total seleccionadas: <field name="num_preguntas" readonly="1" nolabel="1" style="display:inline"/>
+                                </div>
+                            </div>
+                            <div class="mb-3" invisible="version_anterior_id != False">
+                                <span style="background:#e2e3e5;border:1px solid #c4c8cb;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;color:#1c1c1e">
+                                    <i class="fa fa-list me-1"/>
+                                    Total seleccionadas: <field name="num_preguntas" readonly="1" nolabel="1" style="display:inline"/>
+                                </span>
+                            </div>
+
+                            <!-- Campos ocultos para lógica -->
+                            <field name="ids_preguntas_nuevas" invisible="1"/>
+                            <field name="ids_preguntas_quitadas" invisible="1"/>
+
                             <field name="question_ids" widget="many2many"
                                    options="{'no_create': True}">
                                 <list>
@@ -75,8 +111,7 @@
                                     <field name="title" string="Pregunta"/>
                                     <field name="question_type" string="Tipo Odoo"/>
                                     <field name="id_question_type" string="Tipo custom"/>
-                                    <field name="flg_required" string="Obligatoria"
-                                           widget="boolean_toggle"/>
+                                    <field name="flg_required" string="Obligatoria"/>
                                 </list>
                             </field>
                         </page>

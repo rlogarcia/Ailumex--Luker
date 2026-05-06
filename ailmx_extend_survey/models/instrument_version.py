@@ -71,6 +71,19 @@ class LukerInstrumentVersion(models.Model):
         compute='_compute_estadisticas',
         store=True,
     )
+    # IDs de preguntas que NO estaban en la versión anterior (nuevas en esta)
+    ids_preguntas_nuevas = fields.Char(
+        string='IDs preguntas nuevas',
+        compute='_compute_diff_preguntas',
+        store=False,
+        help='Lista de IDs separados por coma de preguntas nuevas vs versión anterior.',
+    )
+    # IDs de preguntas que estaban en la versión anterior y se quitaron
+    ids_preguntas_quitadas = fields.Char(
+        string='IDs preguntas quitadas',
+        compute='_compute_diff_preguntas',
+        store=False,
+    )
 
     # ── Trazabilidad ─────────────────────────────────────────────────────────
     fecha_creacion  = fields.Datetime(
@@ -132,6 +145,20 @@ class LukerInstrumentVersion(models.Model):
     def _compute_estadisticas(self):
         for v in self:
             v.num_preguntas = len(v.question_ids)
+
+    @api.depends('question_ids', 'version_anterior_id', 'version_anterior_id.question_ids')
+    def _compute_diff_preguntas(self):
+        for v in self:
+            if not v.version_anterior_id:
+                v.ids_preguntas_nuevas = ''
+                v.ids_preguntas_quitadas = ''
+                continue
+            ids_actuales = set(v.question_ids.ids)
+            ids_anteriores = set(v.version_anterior_id.question_ids.ids)
+            nuevas = ids_actuales - ids_anteriores
+            quitadas = ids_anteriores - ids_actuales
+            v.ids_preguntas_nuevas = ','.join(str(i) for i in nuevas)
+            v.ids_preguntas_quitadas = ','.join(str(i) for i in quitadas)
 
     def _compute_version_siguiente(self):
         for v in self:

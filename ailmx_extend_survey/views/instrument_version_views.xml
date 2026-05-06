@@ -116,14 +116,14 @@
         </field>
     </record>
 
-    <!-- ── Lista de versiones (dentro del instrumento) ───────────────────── -->
+    <!-- ── Lista de versiones (standalone) ──────────────────────────────── -->
     <record id="view_luker_instrument_version_list" model="ir.ui.view">
         <field name="name">luker.instrument.version.list</field>
         <field name="model">luker.instrument.version</field>
         <field name="arch" type="xml">
             <list string="Versiones del instrumento"
                   decoration-success="estado == 'publicada'"
-                  decoration-danger="estado == 'deprecada'">
+                  decoration-warning="estado == 'borrador'">
                 <field name="cod_version" string="Código"/>
                 <field name="nom_version" string="Nombre"/>
                 <field name="anio" string="Año"/>
@@ -133,16 +133,11 @@
                        decoration-success="estado == 'publicada'"
                        decoration-warning="estado == 'borrador'"
                        decoration-secondary="estado == 'deprecada'"/>
-                <field name="version_anterior_id" string="Versión anterior"
-                       optional="show"/>
-                <field name="usuario_creacion_id" string="Creada por"
-                       optional="show"/>
-                <field name="fecha_creacion" string="Fecha creación"
-                       optional="show"/>
-                <field name="fecha_publicacion" string="Publicada"
-                       optional="show"/>
-                <field name="hash_contenido" string="Hash"
-                       optional="show"/>
+                <field name="version_anterior_id" string="Versión anterior"/>
+                <field name="usuario_creacion_id" string="Creada por"/>
+                <field name="fecha_creacion" string="Fecha creación"/>
+                <field name="fecha_publicacion" string="Publicada"/>
+                <field name="hash_contenido" string="Hash"/>
             </list>
         </field>
     </record>
@@ -211,26 +206,26 @@
                            context="{'default_survey_id': id}">
                         <list string="Historial de versiones"
                               decoration-success="estado == 'publicada'"
-                              decoration-danger="estado == 'deprecada'">
+                              decoration-warning="estado == 'borrador'">
                             <field name="cod_version" string="Código"/>
                             <field name="nom_version" string="Nombre de versión"/>
                             <field name="anio" string="Año"/>
-                            <field name="num_version" string="Nº" width="50"/>
-                            <field name="num_preguntas" string="Preguntas" width="80"/>
+                            <field name="num_version" string="Nº"/>
+                            <field name="num_preguntas" string="Preguntas"/>
                             <field name="estado" widget="badge"
                                    decoration-success="estado == 'publicada'"
                                    decoration-warning="estado == 'borrador'"
                                    decoration-secondary="estado == 'deprecada'"/>
                             <field name="version_anterior_id"
-                                   string="Versión anterior" optional="show"/>
+                                   string="Versión anterior"/>
                             <field name="usuario_creacion_id"
-                                   string="Creada por" optional="show"/>
+                                   string="Creada por"/>
                             <field name="fecha_creacion"
-                                   string="Creada" optional="show"/>
+                                   string="Creada"/>
                             <field name="usuario_publicacion_id"
-                                   string="Publicada por" optional="show"/>
+                                   string="Publicada por"/>
                             <field name="fecha_publicacion"
-                                   string="Publicada" optional="show"/>
+                                   string="Publicada"/>
                             <button name="action_nueva_version"
                                     string="Nueva versión desde esta"
                                     type="object"

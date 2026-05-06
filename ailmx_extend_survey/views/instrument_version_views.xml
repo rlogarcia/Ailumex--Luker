@@ -116,32 +116,6 @@
         </field>
     </record>
 
-    <!-- ── Lista de versiones (standalone) ──────────────────────────────── -->
-    <record id="view_luker_instrument_version_list" model="ir.ui.view">
-        <field name="name">luker.instrument.version.list</field>
-        <field name="model">luker.instrument.version</field>
-        <field name="arch" type="xml">
-            <list string="Versiones del instrumento"
-                  decoration-success="estado == 'publicada'"
-                  decoration-warning="estado == 'borrador'">
-                <field name="cod_version" string="Código"/>
-                <field name="nom_version" string="Nombre"/>
-                <field name="anio" string="Año"/>
-                <field name="num_version" string="Nº"/>
-                <field name="num_preguntas" string="Preguntas"/>
-                <field name="estado" widget="badge"
-                       decoration-success="estado == 'publicada'"
-                       decoration-warning="estado == 'borrador'"
-                       decoration-secondary="estado == 'deprecada'"/>
-                <field name="version_anterior_id" string="Versión anterior"/>
-                <field name="usuario_creacion_id" string="Creada por"/>
-                <field name="fecha_creacion" string="Fecha creación"/>
-                <field name="fecha_publicacion" string="Publicada"/>
-                <field name="hash_contenido" string="Hash"/>
-            </list>
-        </field>
-    </record>
-
     <!-- ── Acción de ventana para versiones ──────────────────────────────── -->
     <record id="action_luker_instrument_version" model="ir.actions.act_window">
         <field name="name">Versiones de instrumentos</field>

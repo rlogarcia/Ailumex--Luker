@@ -123,8 +123,7 @@
         <field name="arch" type="xml">
             <list string="Versiones del instrumento"
                   decoration-success="estado == 'publicada'"
-                  decoration-muted="estado == 'deprecada'"
-                  create="0">
+                  decoration-danger="estado == 'deprecada'">
                 <field name="cod_version" string="Código"/>
                 <field name="nom_version" string="Nombre"/>
                 <field name="anio" string="Año"/>
@@ -143,7 +142,7 @@
                 <field name="fecha_publicacion" string="Publicada"
                        optional="show"/>
                 <field name="hash_contenido" string="Hash"
-                       optional="hide"/>
+                       optional="show"/>
             </list>
         </field>
     </record>
@@ -212,8 +211,7 @@
                            context="{'default_survey_id': id}">
                         <list string="Historial de versiones"
                               decoration-success="estado == 'publicada'"
-                              decoration-muted="estado == 'deprecada'"
-                              create="0">
+                              decoration-danger="estado == 'deprecada'">
                             <field name="cod_version" string="Código"/>
                             <field name="nom_version" string="Nombre de versión"/>
                             <field name="anio" string="Año"/>

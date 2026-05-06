@@ -215,19 +215,64 @@
             <page name="versions" position="replace">
                 <page string="Versiones" name="versions">
 
-                    <!-- Última versión publicada -->
-                    <group invisible="ultima_version_id == False">
-                        <group string="Última versión publicada">
-                            <field name="ultima_version_id" readonly="1"
-                                   nolabel="1"/>
-                        </group>
-                    </group>
+                    <!-- BLOQUE A: Este instrumento ES una versión de otro -->
+                    <div invisible="not survey_version_origen_id">
+                        <div class="alert alert-info d-flex gap-2 mb-3">
+                            <i class="fa fa-history mt-1"/>
+                            <div>
+                                Este instrumento fue generado como versión de
+                                <strong>
+                                    <field name="survey_version_origen_id"
+                                           nolabel="1" readonly="1"/>
+                                </strong>.
+                                Puedes ir al instrumento origen con el botón
+                                <strong>← Versión anterior</strong> del encabezado.
+                            </div>
+                        </div>
+                        <div class="mb-1" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6c757d">
+                            Versión que generó este instrumento
+                        </div>
+                        <field name="version_origen_ids"
+                               nolabel="1"
+                               mode="list"
+                               readonly="1">
+                            <list string="Versión de origen"
+                                  decoration-success="estado == 'publicada'">
+                                <field name="cod_version" string="Código"/>
+                                <field name="nom_version" string="Nombre de versión"/>
+                                <field name="anio" string="Año"/>
+                                <field name="num_preguntas" string="Preguntas"/>
+                                <field name="estado" widget="badge"
+                                       decoration-success="estado == 'publicada'"
+                                       decoration-warning="estado == 'borrador'"
+                                       decoration-secondary="estado == 'deprecada'"/>
+                                <field name="survey_id" string="Instrumento origen"/>
+                                <field name="usuario_publicacion_id" string="Publicada por"/>
+                                <field name="fecha_publicacion" string="Publicada"/>
+                                <field name="descripcion_cambios" string="Cambios"/>
+                            </list>
+                        </field>
+                    </div>
 
-                    <!-- Historial completo -->
+                    <!-- BLOQUE B: Versiones generadas DESDE este instrumento -->
+                    <div invisible="survey_version_origen_id != False">
+                        <group invisible="ultima_version_id == False">
+                            <group string="Última versión publicada">
+                                <field name="ultima_version_id" readonly="1" nolabel="1"/>
+                            </group>
+                        </group>
+                    </div>
+
+                    <div class="mb-1 mt-2" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6c757d"
+                         invisible="survey_version_origen_id != False">
+                        Historial de versiones generadas desde este instrumento
+                    </div>
+
                     <field name="version_ids"
                            nolabel="1"
                            mode="list"
-                           context="{'default_survey_id': id}">
+                           context="{'default_survey_id': id}"
+                           invisible="survey_version_origen_id != False">
                         <list string="Historial de versiones"
                               decoration-success="estado == 'publicada'"
                               decoration-warning="estado == 'borrador'">
@@ -240,16 +285,11 @@
                                    decoration-success="estado == 'publicada'"
                                    decoration-warning="estado == 'borrador'"
                                    decoration-secondary="estado == 'deprecada'"/>
-                            <field name="version_anterior_id"
-                                   string="Versión anterior"/>
-                            <field name="usuario_creacion_id"
-                                   string="Creada por"/>
-                            <field name="fecha_creacion"
-                                   string="Creada"/>
-                            <field name="usuario_publicacion_id"
-                                   string="Publicada por"/>
-                            <field name="fecha_publicacion"
-                                   string="Publicada"/>
+                            <field name="survey_nueva_id" string="Instrumento generado"/>
+                            <field name="usuario_creacion_id" string="Creada por"/>
+                            <field name="fecha_creacion" string="Creada"/>
+                            <field name="usuario_publicacion_id" string="Publicada por"/>
+                            <field name="fecha_publicacion" string="Publicada"/>
                             <button name="action_nueva_version"
                                     string="Nueva versión desde esta"
                                     type="object"

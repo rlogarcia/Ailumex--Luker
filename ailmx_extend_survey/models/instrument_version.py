@@ -243,14 +243,16 @@ class LukerInstrumentVersion(models.Model):
             )
 
             # Copiar el instrumento original
+            # NOTA: Odoo ignora 'title' en copy() y agrega "(copia)" — se asigna después
             nuevo_survey = survey_original.copy({
-                'title': nuevo_titulo,
                 'instrument_state': 'draft',
                 'cod_instrument': self.env['ir.sequence'].next_by_code(
                     'survey.survey.instrument'
                 ) or 'INS-NEW',
                 'survey_version_origen_id': survey_original.id,
             })
+            # Asignar título correcto después del copy
+            nuevo_survey.write({'title': nuevo_titulo})
 
             # Quitar preguntas no incluidas en la versión (por título)
             titulos_incluir = set(rec.question_ids.mapped('title'))
@@ -329,6 +331,13 @@ class SurveySurveyVersionExtend(models.Model):
         'luker.instrument.version',
         'survey_id',
         string='Versiones',
+    )
+    # Versión que GENERÓ este instrumento (si es una copia versionada)
+    version_origen_ids = fields.One2many(
+        'luker.instrument.version',
+        'survey_nueva_id',
+        string='Versión de origen',
+        readonly=True,
     )
     num_versiones = fields.Integer(
         string='Versiones',

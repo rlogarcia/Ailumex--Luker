@@ -11,7 +11,6 @@
     
         # PERMISOS
         'security/ir.model.access.csv',
-        'security/instrument_version_access.csv',
 
         # VISTAS
         'views/survey_question_type_views.xml',

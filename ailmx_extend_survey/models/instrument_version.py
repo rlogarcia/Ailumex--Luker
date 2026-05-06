@@ -215,6 +215,14 @@ class LukerInstrumentVersion(models.Model):
 
         return records
 
+    # ── Campo instrumento generado ───────────────────────────────────────────
+    survey_nueva_id = fields.Many2one(
+        'survey.survey',
+        string='Instrumento generado',
+        readonly=True, copy=False,
+        help='Nuevo instrumento creado al publicar esta versión.',
+    )
+
     # ── Acciones de flujo ─────────────────────────────────────────────────────
     def action_publicar(self):
         for rec in self:
@@ -226,12 +234,50 @@ class LukerInstrumentVersion(models.Model):
                 raise ValidationError(
                     'La versión debe tener al menos una pregunta antes de publicarse.'
                 )
+
+            survey_original = rec.survey_id
+            nuevo_titulo = (
+                f"{survey_original.title} — {rec.nom_version}"
+                if rec.nom_version
+                else f"{survey_original.title} v{rec.anio}.{rec.num_version}"
+            )
+
+            # Copiar el instrumento original
+            nuevo_survey = survey_original.copy({
+                'title': nuevo_titulo,
+                'instrument_state': 'draft',
+                'cod_instrument': self.env['ir.sequence'].next_by_code(
+                    'survey.survey.instrument'
+                ) or 'INS-NEW',
+                'survey_version_origen_id': survey_original.id,
+            })
+
+            # Quitar preguntas no incluidas en la versión (por título)
+            titulos_incluir = set(rec.question_ids.mapped('title'))
+            sobrantes = nuevo_survey.question_and_page_ids.filtered(
+                lambda q: not q.is_page and q.title not in titulos_incluir
+            )
+            sobrantes.unlink()
+
             rec._calcular_hash()
             rec.write({
                 'estado': 'publicada',
                 'fecha_publicacion': fields.Datetime.now(),
                 'usuario_publicacion_id': self.env.user.id,
+                'survey_nueva_id': nuevo_survey.id,
             })
+            _logger.info('Versión %s → nuevo instrumento %s (id=%s)',
+                         rec.cod_version, nuevo_titulo, nuevo_survey.id)
+
+        if len(self) == 1 and self.survey_nueva_id:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Instrumento nueva versión',
+                'res_model': 'survey.survey',
+                'view_mode': 'form',
+                'res_id': self.survey_nueva_id.id,
+                'target': 'current',
+            }
 
     def action_deprecar(self):
         for rec in self:

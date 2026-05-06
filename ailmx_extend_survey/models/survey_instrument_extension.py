@@ -48,6 +48,59 @@ class SurveySurveyExtension(models.Model):
         copy=False
     )
 
+
+    # ── Vínculo entre versiones de instrumentos ──────────────────────────────
+    survey_version_origen_id = fields.Many2one(
+        'survey.survey',
+        string='Instrumento origen (versión anterior)',
+        ondelete='set null',
+        copy=False,
+        help='Instrumento del que deriva este — si es una versión.',
+    )
+    survey_version_nueva_id = fields.Many2one(
+        'survey.survey',
+        string='Instrumento nueva versión',
+        compute='_compute_survey_version_nueva',
+        store=False,
+        help='Instrumento que es la versión siguiente de este.',
+    )
+    es_version = fields.Boolean(
+        string='Es versión de otro instrumento',
+        compute='_compute_es_version',
+        store=True,
+    )
+
+    @api.depends('survey_version_origen_id')
+    def _compute_es_version(self):
+        for s in self:
+            s.es_version = bool(s.survey_version_origen_id)
+
+    def _compute_survey_version_nueva(self):
+        for s in self:
+            nueva = self.search([
+                ('survey_version_origen_id', '=', s.id)
+            ], order='id desc', limit=1)
+            s.survey_version_nueva_id = nueva
+
+    def action_ir_a_version_anterior(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'survey.survey',
+            'view_mode': 'form',
+            'res_id': self.survey_version_origen_id.id,
+            'target': 'current',
+        }
+
+    def action_ir_a_version_nueva(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'survey.survey',
+            'view_mode': 'form',
+            'res_id': self.survey_version_nueva_id.id,
+            'target': 'current',
+        }
     # ─────────────────────────────────────────
     # OVERRIDE: create
     # ─────────────────────────────────────────

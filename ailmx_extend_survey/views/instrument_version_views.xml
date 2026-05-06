@@ -47,6 +47,8 @@
                             <field name="num_version" readonly="1"/>
                             <field name="num_preguntas" readonly="1"/>
                             <field name="version_anterior_id" readonly="1"/>
+                            <field name="survey_nueva_id" readonly="1"
+                                   invisible="not survey_nueva_id"/>
                         </group>
                         <group string="Trazabilidad">
                             <field name="usuario_creacion_id" readonly="1"/>
@@ -158,7 +160,7 @@
         <field name="priority">20</field>
         <field name="arch" type="xml">
 
-            <!-- ── Smart button: Versiones ── -->
+            <!-- ── Smart buttons: Versiones + navegación entre versiones ── -->
             <div name="button_box" position="inside">
                 <button name="action_ver_versiones"
                         type="object"
@@ -168,6 +170,34 @@
                     <field name="num_versiones"
                            widget="statinfo"
                            string="Versiones"/>
+                </button>
+
+                <!-- Navegar al instrumento origen (versión anterior) -->
+                <button name="action_ir_a_version_anterior"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-arrow-left"
+                        invisible="not survey_version_origen_id">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Versión anterior</span>
+                        <span class="o_stat_value">
+                            <field name="survey_version_origen_id" nolabel="1" readonly="1"/>
+                        </span>
+                    </div>
+                </button>
+
+                <!-- Navegar al instrumento nueva versión -->
+                <button name="action_ir_a_version_nueva"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-arrow-right"
+                        invisible="not survey_version_nueva_id">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Nueva versión</span>
+                        <span class="o_stat_value">
+                            <field name="survey_version_nueva_id" nolabel="1" readonly="1"/>
+                        </span>
+                    </div>
                 </button>
             </div>
 

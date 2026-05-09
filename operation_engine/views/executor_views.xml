@@ -6,7 +6,7 @@
         <field name="model">luker.operation.executor</field>
         <field name="arch" type="xml">
             <list string="Ejecutores SISPAR"
-                  decoration-muted="not activo">
+                  decoration-danger="not activo">
                 <field name="cod_ejecutor"   string="Código"/>
                 <field name="image_128"      widget="image" string=" " width="28"/>
                 <field name="nom_ejecutor"   string="Nombre"/>

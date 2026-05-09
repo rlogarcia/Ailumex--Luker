@@ -8,7 +8,7 @@
             <list string="Campañas"
                   decoration-success="estado == 'activa'"
                   decoration-warning="estado == 'borrador'"
-                  decoration-muted="estado in ('cerrada','cancelada')">
+                  decoration-secondary="estado in ('cerrada','cancelada')">
                 <field name="cod_campana" string="Código"/>
                 <field name="nom_campana" string="Campaña"/>
                 <field name="anio" string="Año"/>

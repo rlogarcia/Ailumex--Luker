@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Menús del motor operativo — aparecen dentro del Gestor Operativo.
+        Se agregan como submenús del menú raíz existente.
+    -->
+
+    <!-- Campañas -->
+    <menuitem id="menu_operation_campanas"
+              name="Campañas"
+              parent="gestor_operativo.menu_luker_root"
+              sequence="5"
+              action="action_luker_campaign"/>
+
+    <!-- Tareas -->
+    <menuitem id="menu_operation_tareas"
+              name="Tareas"
+              parent="gestor_operativo.menu_luker_root"
+              sequence="6"
+              action="action_luker_task"/>
+
+    <!-- Ejecutores — dentro de Configuración del Gestor -->
+    <menuitem id="menu_operation_ejecutores"
+              name="Ejecutores (Aplicadores)"
+              parent="gestor_operativo.menu_luker_config"
+              sequence="10"
+              action="action_luker_executor"/>
+
+</odoo>

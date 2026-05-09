@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_luker_executor_admin,luker.operation.executor admin,model_luker_operation_executor,gestor_operativo.group_luker_admin,1,1,1,1
+access_luker_executor_manager,luker.operation.executor manager,model_luker_operation_executor,gestor_operativo.group_luker_manager,1,1,1,0
+access_luker_executor_user,luker.operation.executor user,model_luker_operation_executor,gestor_operativo.group_luker_user,1,0,0,0
+access_luker_campaign_admin,luker.operation.campaign admin,model_luker_operation_campaign,gestor_operativo.group_luker_admin,1,1,1,1
+access_luker_campaign_manager,luker.operation.campaign manager,model_luker_operation_campaign,gestor_operativo.group_luker_manager,1,1,1,0
+access_luker_campaign_user,luker.operation.campaign user,model_luker_operation_campaign,gestor_operativo.group_luker_user,1,0,0,0
+access_luker_assignment_admin,luker.operation.assignment admin,model_luker_operation_assignment,gestor_operativo.group_luker_admin,1,1,1,1
+access_luker_assignment_manager,luker.operation.assignment manager,model_luker_operation_assignment,gestor_operativo.group_luker_manager,1,1,1,0
+access_luker_assignment_user,luker.operation.assignment user,model_luker_operation_assignment,gestor_operativo.group_luker_user,1,0,0,0
+access_luker_task_admin,luker.operation.task admin,model_luker_operation_task,gestor_operativo.group_luker_admin,1,1,1,1
+access_luker_task_manager,luker.operation.task manager,model_luker_operation_task,gestor_operativo.group_luker_manager,1,1,1,0
+access_luker_task_user,luker.operation.task user,model_luker_operation_task,gestor_operativo.group_luker_user,1,1,0,0

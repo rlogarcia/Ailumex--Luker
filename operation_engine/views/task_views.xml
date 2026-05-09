@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_luker_task_list" model="ir.ui.view">
+        <field name="name">luker.operation.task.list</field>
+        <field name="model">luker.operation.task</field>
+        <field name="arch" type="xml">
+            <list string="Tareas"
+                  decoration-success="estado == 'completado'"
+                  decoration-warning="estado in ('pendiente','programado')"
+                  decoration-danger="estado == 'fallido'">
+                <field name="cod_tarea"        string="Código"/>
+                <field name="campana_id"       string="Campaña"/>
+                <field name="participante_id"  string="Participante"/>
+                <field name="executor_id"      string="Aplicador"/>
+                <field name="survey_id"        string="Instrumento" readonly="1"/>
+                <field name="estado" widget="badge"
+                       decoration-success="estado == 'completado'"
+                       decoration-warning="estado in ('pendiente','programado')"
+                       decoration-info="estado == 'en_progreso'"
+                       decoration-danger="estado == 'fallido'"
+                       decoration-secondary="estado in ('cancelado','reprogramado')"/>
+                <field name="fecha_programada" string="Programada" optional="show"/>
+                <field name="duracion_minutos" string="Duración (min)" optional="show"/>
+                <field name="enviado_offline"  string="Offline" widget="boolean_toggle" optional="show"/>
+                <field name="estado_sync" widget="badge"
+                       decoration-success="estado_sync == 'synced'"
+                       decoration-warning="estado_sync == 'pendiente'"
+                       decoration-danger="estado_sync in ('error','conflict')"
+                       optional="show"/>
+                <button name="action_iniciar"
+                        string="Iniciar"
+                        type="object"
+                        icon="fa-play"
+                        invisible="estado not in ('pendiente','programado','reprogramado')"/>
+                <button name="action_completar"
+                        string="Completar"
+                        type="object"
+                        icon="fa-check"
+                        invisible="estado != 'en_progreso'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_luker_task_form" model="ir.ui.view">
+        <field name="name">luker.operation.task.form</field>
+        <field name="model">luker.operation.task</field>
+        <field name="arch" type="xml">
+            <form string="Tarea Operativa">
+                <header>
+                    <button name="action_iniciar"    string="Iniciar"
+                            type="object" class="btn-primary"
+                            invisible="estado not in ('pendiente','programado','reprogramado')"/>
+                    <button name="action_completar"  string="Completar"
+                            type="object" class="btn-success"
+                            invisible="estado != 'en_progreso'"/>
+                    <button name="action_reprogramar" string="Reprogramar"
+                            type="object"
+                            invisible="estado in ('completado','cancelado')"/>
+                    <button name="action_marcar_fallido" string="Marcar fallida"
+                            type="object"
+                            invisible="estado in ('completado','cancelado','fallido')"/>
+                    <button name="action_cancelar"   string="Cancelar"
+                            type="object"
+                            invisible="estado in ('completado','cancelado')"/>
+                    <field name="estado" widget="statusbar"
+                           statusbar_visible="pendiente,en_progreso,completado"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="cod_tarea"/>
+                        <h1><field name="cod_tarea" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Operativo">
+                            <field name="campana_id"/>
+                            <field name="asignacion_id"/>
+                            <field name="participante_id" readonly="1"/>
+                            <field name="executor_id"/>
+                        </group>
+                        <group string="Instrumento">
+                            <field name="survey_id"      readonly="1"/>
+                            <field name="resultado_id"   readonly="1"
+                                   invisible="not resultado_id"/>
+                            <field name="survey_input_id" readonly="1"
+                                   invisible="not survey_input_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Programación">
+                            <field name="fecha_programada"/>
+                            <field name="fecha_inicio_real" readonly="1"/>
+                            <field name="fecha_fin_real"    readonly="1"/>
+                            <field name="duracion_minutos"  readonly="1"/>
+                        </group>
+                        <group string="Sincronización offline">
+                            <field name="uuid_local"       readonly="1"/>
+                            <field name="enviado_offline"/>
+                            <field name="estado_sync"/>
+                        </group>
+                    </group>
+                    <group string="Observaciones">
+                        <field name="notas" nolabel="1"
+                               placeholder="Observaciones de campo..."/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_luker_task" model="ir.actions.act_window">
+        <field name="name">Tareas</field>
+        <field name="res_model">luker.operation.task</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_luker_assignment_list" model="ir.ui.view">
+        <field name="name">luker.operation.assignment.list</field>
+        <field name="model">luker.operation.assignment</field>
+        <field name="arch" type="xml">
+            <list string="Asignaciones"
+                  decoration-success="estado == 'completado'"
+                  decoration-warning="estado == 'pendiente'">
+                <field name="campana_id"      string="Campaña"/>
+                <field name="participante_id" string="Participante"/>
+                <field name="executor_id"     string="Aplicador"/>
+                <field name="institucion_id"  string="Institución" readonly="1"/>
+                <field name="estado" widget="badge"
+                       decoration-success="estado == 'completado'"
+                       decoration-warning="estado == 'pendiente'"
+                       decoration-info="estado == 'asignado'"
+                       decoration-secondary="estado in ('no_aplico','cancelado')"/>
+                <field name="fecha_asignacion" string="Asignado" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_luker_assignment" model="ir.actions.act_window">
+        <field name="name">Asignaciones</field>
+        <field name="res_model">luker.operation.assignment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

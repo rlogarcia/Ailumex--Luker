@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Herencia sobre survey.user_input — agrega la sección operativa (readonly).
+        El ejecutor/aplicador y la campaña se asignan desde el Gestor Operativo.
+        En el instrumento solo se visualizan, nunca se editan aquí.
+    -->
+    <record id="view_survey_user_input_operation_inherit" model="ir.ui.view">
+        <field name="name">survey.user_input.form.operation.inherit</field>
+        <field name="model">survey.user_input</field>
+        <field name="inherit_id" ref="survey.survey_user_input_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <!-- Banda informativa cuando viene de una tarea operativa -->
+                <div class="alert alert-success d-flex gap-2 mb-0"
+                     invisible="not tarea_id">
+                    <i class="fa fa-check-circle mt-1"/>
+                    <div>
+                        Sesión generada desde la tarea
+                        <strong><field name="tarea_id" readonly="1" nolabel="1"/></strong>
+                        · Campaña:
+                        <strong><field name="campana_id" readonly="1" nolabel="1"/></strong>
+                        · Aplicador:
+                        <strong><field name="nom_aplicador" readonly="1" nolabel="1"/></strong>
+                    </div>
+                </div>
+            </xpath>
+
+            <!-- Agregar pestaña Operativo al final del formulario -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Contexto operativo" name="operativo"
+                      invisible="not tarea_id">
+                    <group string="Datos operativos (solo lectura — desde Gestor Operativo)">
+                        <group>
+                            <field name="tarea_id"    readonly="1"/>
+                            <field name="campana_id"  readonly="1"/>
+                            <field name="cod_campana" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="executor_id"   readonly="1"/>
+                            <field name="nom_aplicador" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -66,14 +66,7 @@ class LukerOperationExecutor(models.Model):
         readonly=True,
     )
 
-    # ── Datos del contacto personal (ox_res_partner_ext_co) ───────────────────
-    # Estos vienen de address_home_id (dirección privada del empleado)
-    partner_id = fields.Many2one(
-        'res.partner',
-        string='Contacto personal',
-        related='employee_id.address_home_id',
-        store=True, readonly=True,
-    )
+    # ── Datos del contacto personal ───────────────────────────────────────────
     num_identificacion = fields.Char(
         string='Número de identificación',
         related='employee_id.identification_id',

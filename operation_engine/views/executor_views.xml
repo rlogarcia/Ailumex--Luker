@@ -93,13 +93,6 @@
                         </group>
                     </group>
 
-                    <!-- Datos CO del contacto personal -->
-                    <group string="Contacto personal (Colombia)"
-                           invisible="not partner_id">
-                        <field name="partner_id" readonly="1"
-                               string="Contacto vinculado"/>
-                    </group>
-
                     <group string="Cobertura operativa">
                         <field name="institucion_ids"
                                widget="many2many_tags"

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        Herencia sobre hr.employee.
-        Agrega: smart button "Ejecutor SISPAR" y pestaña con datos del contacto CO.
-        Todo readonly — los datos se administran en RRHH, se ven en SISPAR.
+        Herencia sobre hr.employee usando xpath genérico.
+        Agrega pestaña SISPAR y smart button al formulario del empleado.
     -->
 
     <record id="view_hr_employee_sispar_inherit" model="ir.ui.view">
@@ -12,8 +11,8 @@
         <field name="inherit_id" ref="hr.view_employee_form"/>
         <field name="arch" type="xml">
 
-            <!-- Smart button: Ejecutor SISPAR -->
-            <div name="button_box" position="inside">
+            <!-- Smart button SISPAR en el button_box -->
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
                 <button name="action_registrar_como_ejecutor"
                         type="object"
                         class="oe_stat_button"
@@ -29,13 +28,12 @@
                         </span>
                     </div>
                 </button>
-            </div>
+            </xpath>
 
-            <!-- Pestaña SISPAR al final del form del empleado -->
+            <!-- Pestaña SISPAR al final del notebook -->
             <xpath expr="//notebook" position="inside">
                 <page string="SISPAR" name="sispar_page">
 
-                    <!-- Si ya es ejecutor -->
                     <div invisible="not es_ejecutor_sispar">
                         <div class="alert alert-success d-flex gap-2 mb-3">
                             <i class="fa fa-check-circle mt-1"/>
@@ -55,26 +53,15 @@
                         </field>
                     </div>
 
-                    <!-- Si aún no es ejecutor -->
                     <div invisible="es_ejecutor_sispar">
                         <div class="alert alert-info d-flex gap-2">
                             <i class="fa fa-info-circle mt-1"/>
                             <div>
                                 Este empleado no está registrado como ejecutor SISPAR.
-                                Usa el botón del encabezado para registrarlo como
-                                Aplicador, Supervisor o Coordinador.
+                                Usa el botón del encabezado para registrarlo.
                             </div>
                         </div>
                     </div>
-
-                    <!-- Datos CO del contacto personal (readonly) -->
-                    <group string="Caracterización Colombia (desde Contacto personal)"
-                           invisible="not address_home_id">
-                        <group>
-                            <field name="address_home_id"
-                                   string="Contacto personal" readonly="1"/>
-                        </group>
-                    </group>
 
                 </page>
             </xpath>

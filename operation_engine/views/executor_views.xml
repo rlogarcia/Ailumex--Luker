@@ -69,7 +69,6 @@
                         <field name="institucion_ids" widget="many2many_tags" nolabel="1"/>
                     </group>
                 </sheet>
-                <chatter/>
             </form>
         </field>
     </record>

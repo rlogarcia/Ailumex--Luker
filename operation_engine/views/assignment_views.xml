@@ -7,16 +7,15 @@
             <list string="Asignaciones"
                   decoration-success="estado == 'completado'"
                   decoration-warning="estado == 'pendiente'">
-                <field name="campana_id"      string="Campaña"/>
+                <field name="campana_id" string="Campaña"/>
                 <field name="participante_id" string="Participante"/>
-                <field name="executor_id"     string="Aplicador"/>
-                <field name="institucion_id"  string="Institución" readonly="1"/>
+                <field name="executor_id" string="Aplicador"/>
+                <field name="institucion_id" string="Institución" readonly="1"/>
                 <field name="estado" widget="badge"
                        decoration-success="estado == 'completado'"
                        decoration-warning="estado == 'pendiente'"
-                       decoration-info="estado == 'asignado'"
-                       decoration-secondary="estado in ('no_aplico','cancelado')"/>
-                <field name="fecha_asignacion" string="Asignado" optional="show"/>
+                       decoration-info="estado == 'asignado'"/>
+                <field name="fecha_asignacion" string="Asignado"/>
             </list>
         </field>
     </record>

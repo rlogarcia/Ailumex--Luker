@@ -7,77 +7,21 @@
         <field name="arch" type="xml">
             <list string="Campañas"
                   decoration-success="estado == 'activa'"
-                  decoration-warning="estado == 'borrador'"
-                  decoration-secondary="estado in ('cerrada','cancelada')">
+                  decoration-warning="estado == 'borrador'">
                 <field name="cod_campana" string="Código"/>
                 <field name="nom_campana" string="Campaña"/>
                 <field name="anio" string="Año"/>
                 <field name="survey_id" string="Instrumento"/>
                 <field name="fecha_inicio" string="Inicio"/>
-                <field name="fecha_fin"    string="Fin"/>
+                <field name="fecha_fin" string="Fin"/>
                 <field name="estado" widget="badge"
                        decoration-success="estado == 'activa'"
-                       decoration-warning="estado == 'borrador'"
-                       decoration-secondary="estado in ('cerrada','cancelada')"/>
+                       decoration-warning="estado == 'borrador'"/>
                 <field name="asignacion_count" string="Asignaciones"/>
-                <field name="tarea_count"      string="Tareas"/>
-                <field name="pct_avance"       string="Avance %"
-                       widget="progressbar"/>
-                <field name="responsable_id"   string="Coordinador" optional="show"/>
+                <field name="tarea_count" string="Tareas"/>
+                <field name="pct_avance" string="Avance %"/>
+                <field name="responsable_id" string="Coordinador"/>
             </list>
-        </field>
-    </record>
-
-    <record id="view_luker_campaign_kanban" model="ir.ui.view">
-        <field name="name">luker.operation.campaign.kanban</field>
-        <field name="model">luker.operation.campaign</field>
-        <field name="arch" type="xml">
-            <kanban default_group_by="estado"
-                    class="o_kanban_small_column">
-                <field name="cod_campana"/>
-                <field name="nom_campana"/>
-                <field name="estado"/>
-                <field name="pct_avance"/>
-                <field name="tarea_count"/>
-                <field name="tarea_completada_count"/>
-                <field name="fecha_fin"/>
-                <templates>
-                    <t t-name="card">
-                        <div class="oe_kanban_content">
-                            <div class="o_kanban_record_top">
-                                <div class="o_kanban_record_headings">
-                                    <strong class="o_kanban_record_title">
-                                        <field name="nom_campana"/>
-                                    </strong>
-                                    <span class="text-muted" style="font-size:11px">
-                                        <field name="cod_campana"/>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="o_kanban_record_body">
-                                <div>
-                                    <i class="fa fa-file-text-o me-1 text-muted"/>
-                                    <field name="survey_id"/>
-                                </div>
-                                <div class="mt-1">
-                                    <i class="fa fa-calendar me-1 text-muted"/>
-                                    Fin: <field name="fecha_fin"/>
-                                </div>
-                                <div class="mt-2">
-                                    <div class="progress" style="height:6px">
-                                        <div class="progress-bar bg-success"
-                                             t-att-style="'width:' + record.pct_avance.value + '%'"/>
-                                    </div>
-                                    <small class="text-muted">
-                                        <field name="tarea_completada_count"/>/<field name="tarea_count"/> tareas
-                                        · <field name="pct_avance"/>%
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </t>
-                </templates>
-            </kanban>
         </field>
     </record>
 
@@ -87,16 +31,16 @@
         <field name="arch" type="xml">
             <form string="Campaña Operativa">
                 <header>
-                    <button name="action_activar"   string="Activar campaña"
+                    <button name="action_activar" string="Activar campaña"
                             type="object" class="btn-success"
                             invisible="estado != 'borrador'"/>
-                    <button name="action_cerrar"    string="Cerrar campaña"
+                    <button name="action_cerrar" string="Cerrar campaña"
                             type="object" class="btn-warning"
                             invisible="estado != 'activa'"/>
-                    <button name="action_cancelar"  string="Cancelar"
+                    <button name="action_cancelar" string="Cancelar"
                             type="object"
                             invisible="estado in ('cerrada','cancelada')"/>
-                    <button name="action_borrador"  string="Volver a borrador"
+                    <button name="action_borrador" string="Volver a borrador"
                             type="object"
                             invisible="estado != 'cancelada'"/>
                     <field name="estado" widget="statusbar"
@@ -104,32 +48,19 @@
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <button name="action_ver_tareas"
-                                type="object"
-                                class="oe_stat_button"
-                                icon="fa-tasks">
-                            <div class="o_field_widget o_stat_info">
-                                <span class="o_stat_value">
-                                    <field name="tarea_completada_count"/>/<field name="tarea_count"/>
-                                </span>
-                                <span class="o_stat_text">Tareas</span>
-                            </div>
+                        <button name="action_ver_tareas" type="object"
+                                class="oe_stat_button" icon="fa-tasks">
+                            <field name="tarea_count" widget="statinfo" string="Tareas"/>
                         </button>
-                        <button type="object"
-                                name="action_ver_tareas"
-                                class="oe_stat_button"
-                                icon="fa-users">
-                            <field name="asignacion_count"
-                                   widget="statinfo"
-                                   string="Asignaciones"/>
+                        <button name="action_ver_tareas" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="asignacion_count" widget="statinfo" string="Asignaciones"/>
                         </button>
                     </div>
-
                     <div class="oe_title">
                         <label for="nom_campana" string="Nombre de campaña"/>
                         <h1><field name="nom_campana" placeholder="Nombre de la campaña"/></h1>
                     </div>
-
                     <group>
                         <group string="Instrumento">
                             <field name="cod_campana" readonly="1"/>
@@ -143,41 +74,23 @@
                             <field name="fecha_fin"/>
                             <field name="meta_participantes"/>
                             <field name="responsable_id"/>
+                            <field name="pct_avance" readonly="1" string="Avance %"/>
                         </group>
                     </group>
-
-                    <!-- Barra de progreso -->
-                    <div style="margin:12px 0 4px;font-size:12px;font-weight:500;color:#6c757d;text-transform:uppercase;letter-spacing:.5px">
-                        Avance de la campaña
-                    </div>
-                    <div style="background:#e9ecef;border-radius:4px;height:10px;margin-bottom:4px">
-                        <div t-att-style="'width:' + str(pct_avance) + '%;background:#198754;height:10px;border-radius:4px'"
-                             style="width:0%;background:#198754;height:10px;border-radius:4px"/>
-                    </div>
-                    <field name="pct_avance" readonly="1" nolabel="1"
-                           style="font-size:13px;font-weight:600;color:#198754"/>
-                    <span style="font-size:13px;color:#6c757d">% completado</span>
-
                     <notebook>
                         <page string="Asignaciones" name="asignaciones">
-                            <field name="institucion_ids"
-                                   widget="many2many_tags"
+                            <field name="institucion_ids" widget="many2many_tags"
                                    string="Instituciones participantes"/>
-                            <!-- Lista de asignaciones inline -->
-                            <field name="asignacion_ids"
-                                   nolabel="1"
+                            <field name="asignacion_ids" nolabel="1"
                                    context="{'default_campana_id': id}">
                                 <list editable="bottom">
-                                    <field name="participante_id"
-                                           string="Participante"/>
-                                    <field name="executor_id"
-                                           string="Aplicador"/>
+                                    <field name="participante_id" string="Participante"/>
+                                    <field name="executor_id" string="Aplicador"/>
                                     <field name="estado" widget="badge"
                                            decoration-success="estado == 'completado'"
-                                           decoration-warning="estado == 'pendiente'"/>
-                                    <field name="institucion_id"
-                                           string="Institución" readonly="1"/>
-                                    <field name="notas" string="Notas" optional="show"/>
+                                           decoration-warning="estado == 'pendiente'"
+                                           decoration-info="estado == 'asignado'"/>
+                                    <field name="institucion_id" string="Institución" readonly="1"/>
                                 </list>
                             </field>
                         </page>
@@ -194,8 +107,7 @@
     <record id="action_luker_campaign" model="ir.actions.act_window">
         <field name="name">Campañas</field>
         <field name="res_model">luker.operation.campaign</field>
-        <field name="view_mode">kanban,list,form</field>
-        <field name="context">{'search_default_estado_activa': 1}</field>
+        <field name="view_mode">list,form</field>
     </record>
 
 </odoo>

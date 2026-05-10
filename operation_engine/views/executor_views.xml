@@ -8,10 +8,7 @@
             <list string="Ejecutores SISPAR">
                 <field name="cod_ejecutor" string="Código"/>
                 <field name="nom_ejecutor" string="Nombre"/>
-                <field name="rol" widget="badge"
-                       decoration-info="rol == 'aplicador'"
-                       decoration-warning="rol == 'supervisor'"
-                       decoration-success="rol == 'coordinador'"/>
+                <field name="rol_id" string="Rol SISPAR"/>
                 <field name="job_title" string="Cargo"/>
                 <field name="work_email" string="Correo"/>
                 <field name="tarea_count" string="Tareas"/>
@@ -64,7 +61,7 @@
                             <field name="user_id" readonly="1"/>
                         </group>
                         <group string="Rol SISPAR">
-                            <field name="rol"/>
+                            <field name="rol_id"/>
                             <field name="activo"/>
                         </group>
                     </group>

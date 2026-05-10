@@ -15,7 +15,9 @@
     'data': [
         'security/ir.model.access.csv',
         'data/operation_task_sequence.xml',
+        'data/rol_data.xml',
 
+        'views/rol_views.xml',
         'views/executor_views.xml',
         'views/hr_employee_inherit.xml',
         'views/campaign_views.xml',

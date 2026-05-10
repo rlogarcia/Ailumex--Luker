@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_luker_rol_list" model="ir.ui.view">
+        <field name="name">luker.operation.rol.list</field>
+        <field name="model">luker.operation.rol</field>
+        <field name="arch" type="xml">
+            <list string="Roles SISPAR" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="cod_rol" string="Código"/>
+                <field name="nom_rol" string="Nombre"/>
+                <field name="puede_aplicar" string="Aplica"/>
+                <field name="puede_supervisar" string="Supervisa"/>
+                <field name="puede_coordinar" string="Coordina"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_luker_rol_form" model="ir.ui.view">
+        <field name="name">luker.operation.rol.form</field>
+        <field name="model">luker.operation.rol</field>
+        <field name="arch" type="xml">
+            <form string="Rol Operativo SISPAR">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="nom_rol" string="Nombre del rol"/>
+                        <h1><field name="nom_rol" placeholder="Ej: Aplicador de campo"/></h1>
+                    </div>
+                    <group>
+                        <group string="Identificación">
+                            <field name="cod_rol" string="Código"/>
+                            <field name="sequence" string="Secuencia"/>
+                            <field name="activo"/>
+                        </group>
+                        <group string="Permisos operativos">
+                            <field name="puede_aplicar"/>
+                            <field name="puede_supervisar"/>
+                            <field name="puede_coordinar"/>
+                        </group>
+                    </group>
+                    <group string="Descripción">
+                        <field name="descripcion" nolabel="1"
+                               placeholder="Descripción del rol y sus responsabilidades..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_luker_rol" model="ir.actions.act_window">
+        <field name="name">Roles SISPAR</field>
+        <field name="res_model">luker.operation.rol</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

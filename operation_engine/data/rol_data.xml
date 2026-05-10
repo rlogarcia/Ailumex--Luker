@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="rol_aplicador" model="luker.operation.rol">
+            <field name="nom_rol">Aplicador</field>
+            <field name="cod_rol">APL</field>
+            <field name="descripcion">Aplica instrumentos directamente a los participantes en campo.</field>
+            <field name="sequence">1</field>
+            <field name="puede_aplicar" eval="True"/>
+        </record>
+
+        <record id="rol_supervisor" model="luker.operation.rol">
+            <field name="nom_rol">Supervisor</field>
+            <field name="cod_rol">SUP</field>
+            <field name="descripcion">Supervisa el trabajo de los aplicadores y valida la calidad.</field>
+            <field name="sequence">2</field>
+            <field name="puede_aplicar" eval="True"/>
+            <field name="puede_supervisar" eval="True"/>
+        </record>
+
+        <record id="rol_coordinador" model="luker.operation.rol">
+            <field name="nom_rol">Coordinador</field>
+            <field name="cod_rol">COO</field>
+            <field name="descripcion">Coordina campañas, asigna equipos y hace seguimiento del avance.</field>
+            <field name="sequence">3</field>
+            <field name="puede_supervisar" eval="True"/>
+            <field name="puede_coordinar" eval="True"/>
+        </record>
+
+        <record id="rol_logistico" model="luker.operation.rol">
+            <field name="nom_rol">Logístico</field>
+            <field name="cod_rol">LOG</field>
+            <field name="descripcion">Gestiona la agenda, rutas y recursos logísticos de campo.</field>
+            <field name="sequence">4</field>
+        </record>
+
+    </data>
+</odoo>

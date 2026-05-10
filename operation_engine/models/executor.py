@@ -74,12 +74,18 @@ class LukerOperationExecutor(models.Model):
     )
 
     # ── Rol SISPAR ────────────────────────────────────────────────────────────
-    rol = fields.Selection([
-        ('aplicador',   'Aplicador'),
-        ('supervisor',  'Supervisor'),
-        ('coordinador', 'Coordinador'),
-        ('logistico',   'Logístico'),
-    ], string='Rol SISPAR', required=True, default='aplicador')
+    rol_id = fields.Many2one(
+        'luker.operation.rol',
+        string='Rol SISPAR',
+        required=True,
+        domain="[('activo', '=', True)]",
+    )
+    # Mantenemos nom_rol como char relacionado para referencias en otras vistas
+    nom_rol = fields.Char(
+        string='Nombre del rol',
+        related='rol_id.nom_rol',
+        store=True, readonly=True,
+    )
 
     cod_ejecutor = fields.Char(
         string='Código ejecutor',

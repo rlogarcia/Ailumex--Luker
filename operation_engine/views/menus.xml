@@ -20,4 +20,11 @@
               parent="gestor_operativo.menu_luker_config"
               sequence="10"
               action="action_luker_executor"/>
+
+    <!-- Roles — dentro de Configuración -->
+    <menuitem id="menu_operation_roles"
+              name="Roles SISPAR"
+              parent="gestor_operativo.menu_luker_config"
+              sequence="11"
+              action="action_luker_rol"/>
 </odoo>

@@ -11,3 +11,6 @@ access_luker_assignment_user,luker.operation.assignment user,model_luker_operati
 access_luker_task_admin,luker.operation.task admin,model_luker_operation_task,gestor_operativo.group_luker_admin,1,1,1,1
 access_luker_task_manager,luker.operation.task manager,model_luker_operation_task,gestor_operativo.group_luker_manager,1,1,1,0
 access_luker_task_user,luker.operation.task user,model_luker_operation_task,gestor_operativo.group_luker_user,1,1,0,0
+access_luker_rol_admin,luker.operation.rol admin,model_luker_operation_rol,gestor_operativo.group_luker_admin,1,1,1,1
+access_luker_rol_manager,luker.operation.rol manager,model_luker_operation_rol,gestor_operativo.group_luker_manager,1,1,0,0
+access_luker_rol_user,luker.operation.rol user,model_luker_operation_rol,gestor_operativo.group_luker_user,1,0,0,0

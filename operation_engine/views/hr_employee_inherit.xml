@@ -42,10 +42,7 @@
                         <field name="executor_sispar_id" nolabel="1" readonly="1">
                             <list string="Rol SISPAR">
                                 <field name="cod_ejecutor" string="Código"/>
-                                <field name="rol" widget="badge"
-                                       decoration-info="rol == 'aplicador'"
-                                       decoration-warning="rol == 'supervisor'"
-                                       decoration-success="rol == 'coordinador'"/>
+                                <field name="rol_id" string="Rol SISPAR"/>
                                 <field name="tarea_count" string="Tareas"/>
                                 <field name="tarea_completada_count" string="Completadas"/>
                                 <field name="activo"/>

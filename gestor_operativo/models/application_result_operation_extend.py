@@ -14,22 +14,20 @@ class LukerApplicationResultOperationExtend(models.Model):
     _inherit = 'luker.application.result'
 
     # ── Vínculo con capa operativa ────────────────────────────────────────────
+    # Estos campos son opcionales — funcionan solo si operation_engine está instalado
     campana_id = fields.Many2one(
         'luker.operation.campaign',
         string='Campaña',
         index=True,
-        help='Campaña operativa a la que pertenece esta sesión.',
     )
     task_id = fields.Many2one(
         'luker.operation.task',
         string='Tarea operativa',
         index=True,
-        help='Tarea que originó esta sesión de aplicación.',
     )
     executor_id = fields.Many2one(
         'luker.operation.executor',
         string='Aplicador',
-        help='Ejecutor que realizó la aplicación.',
     )
 
     # ── Identificación offline ────────────────────────────────────────────────

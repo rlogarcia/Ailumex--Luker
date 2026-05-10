@@ -27,7 +27,6 @@
         'l10n_latam_base',
         'dms',
         'ox_res_partner_ext_co',
-        'operation_engine',
     ],
     'data': [
         # Security

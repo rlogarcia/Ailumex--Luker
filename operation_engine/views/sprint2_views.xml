@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════
+         EQUIPOS LOGÍSTICOS
+    ══════════════════════════════════════════════════════ -->
+
+    <record id="view_luker_team_list" model="ir.ui.view">
+        <field name="name">luker.operation.logistic.team.list</field>
+        <field name="model">luker.operation.logistic.team</field>
+        <field name="arch" type="xml">
+            <list string="Equipos logísticos"
+                  decoration-warning="not activo">
+                <field name="nom_equipo" string="Equipo"/>
+                <field name="campana_id" string="Campaña"/>
+                <field name="responsable_id" string="Responsable"/>
+                <field name="capacidad" string="Capacidad/día"/>
+                <field name="member_count" string="Miembros"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_luker_team_form" model="ir.ui.view">
+        <field name="name">luker.operation.logistic.team.form</field>
+        <field name="model">luker.operation.logistic.team</field>
+        <field name="arch" type="xml">
+            <form string="Equipo Logístico">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="nom_equipo" string="Nombre del equipo"/>
+                        <h1><field name="nom_equipo" placeholder="Ej: Equipo Norte — Sede La Candelaria"/></h1>
+                    </div>
+                    <group>
+                        <group string="Campaña">
+                            <field name="campana_id"/>
+                            <field name="responsable_id"/>
+                            <field name="capacidad"/>
+                            <field name="activo"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Miembros" name="miembros">
+                            <field name="member_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="executor_id" string="Ejecutor"/>
+                                    <field name="fecha_inicio" string="Desde"/>
+                                    <field name="fecha_fin" string="Hasta"/>
+                                    <field name="activo"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notas" name="notas">
+                            <field name="notas" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_luker_team" model="ir.actions.act_window">
+        <field name="name">Equipos Logísticos</field>
+        <field name="res_model">luker.operation.logistic.team</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════
+         AGENDA
+    ══════════════════════════════════════════════════════ -->
+
+    <record id="view_luker_agenda_list" model="ir.ui.view">
+        <field name="name">luker.operation.agenda.list</field>
+        <field name="model">luker.operation.agenda</field>
+        <field name="arch" type="xml">
+            <list string="Agenda operativa"
+                  decoration-success="estado == 'completada'"
+                  decoration-warning="estado == 'planeada'">
+                <field name="fecha" string="Fecha"/>
+                <field name="campana_id" string="Campaña"/>
+                <field name="team_id" string="Equipo"/>
+                <field name="sede_id" string="Sede"/>
+                <field name="estado" widget="badge"
+                       decoration-success="estado == 'completada'"
+                       decoration-warning="estado == 'planeada'"
+                       decoration-info="estado == 'en_curso'"/>
+                <field name="total_items" string="Ítems"/>
+                <field name="items_completados" string="Completados"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_luker_agenda_form" model="ir.ui.view">
+        <field name="name">luker.operation.agenda.form</field>
+        <field name="model">luker.operation.agenda</field>
+        <field name="arch" type="xml">
+            <form string="Agenda Operativa">
+                <header>
+                    <field name="estado" widget="statusbar"
+                           statusbar_visible="planeada,en_curso,completada"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Identificación">
+                            <field name="campana_id"/>
+                            <field name="team_id"/>
+                            <field name="sede_id"/>
+                            <field name="fecha"/>
+                        </group>
+                        <group string="Avance">
+                            <field name="total_items" readonly="1"/>
+                            <field name="items_completados" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Ítems del día" name="items">
+                            <field name="item_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="hora_inicio" string="Inicio"/>
+                                    <field name="hora_fin" string="Fin"/>
+                                    <field name="task_id" string="Tarea"/>
+                                    <field name="participante_id" string="Participante" readonly="1"/>
+                                    <field name="executor_id" string="Aplicador" readonly="1"/>
+                                    <field name="estado" widget="badge"
+                                           decoration-success="estado == 'completado'"
+                                           decoration-warning="estado == 'pendiente'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notas" name="notas">
+                            <field name="notas" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_luker_agenda" model="ir.actions.act_window">
+        <field name="name">Agenda</field>
+        <field name="res_model">luker.operation.agenda</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════
+         TIPOS DE INCIDENTE
+    ══════════════════════════════════════════════════════ -->
+
+    <record id="view_luker_incident_type_list" model="ir.ui.view">
+        <field name="name">luker.operation.incident.type.list</field>
+        <field name="model">luker.operation.incident.type</field>
+        <field name="arch" type="xml">
+            <list string="Tipos de novedad" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="cod_tipo" string="Código"/>
+                <field name="nom_tipo" string="Nombre"/>
+                <field name="impacto" widget="badge"
+                       decoration-danger="impacto == 'critico'"
+                       decoration-warning="impacto == 'alto'"
+                       decoration-info="impacto == 'medio'"/>
+                <field name="requiere_reprogramacion" string="Reprograma"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_luker_incident_type" model="ir.actions.act_window">
+        <field name="name">Tipos de Novedad</field>
+        <field name="res_model">luker.operation.incident.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════
+         INCIDENTES
+    ══════════════════════════════════════════════════════ -->
+
+    <record id="view_luker_incident_list" model="ir.ui.view">
+        <field name="name">luker.operation.incident.list</field>
+        <field name="model">luker.operation.incident</field>
+        <field name="arch" type="xml">
+            <list string="Novedades de campo"
+                  decoration-danger="impacto == 'critico'"
+                  decoration-warning="impacto == 'alto'">
+                <field name="cod_incidente" string="Código"/>
+                <field name="campana_id" string="Campaña"/>
+                <field name="tipo_id" string="Tipo"/>
+                <field name="impacto" widget="badge"
+                       decoration-danger="impacto == 'critico'"
+                       decoration-warning="impacto in ('alto','medio')"/>
+                <field name="executor_id" string="Reportó"/>
+                <field name="task_id" string="Tarea afectada"/>
+                <field name="fecha_incidente" string="Fecha"/>
+                <field name="estado" widget="badge"
+                       decoration-success="estado == 'cerrado'"
+                       decoration-warning="estado == 'abierto'"
+                       decoration-info="estado == 'en_gestion'"/>
+                <field name="enviado_offline" string="Offline"/>
+                <button name="action_resolver" string="Resolver"
+                        type="object" icon="fa-check"
+                        invisible="estado in ('resuelto','cerrado')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_luker_incident_form" model="ir.ui.view">
+        <field name="name">luker.operation.incident.form</field>
+        <field name="model">luker.operation.incident</field>
+        <field name="arch" type="xml">
+            <form string="Novedad de Campo">
+                <header>
+                    <button name="action_resolver" string="Marcar resuelta"
+                            type="object" class="btn-success"
+                            invisible="estado in ('resuelto','cerrado')"/>
+                    <button name="action_cerrar" string="Cerrar"
+                            type="object"
+                            invisible="estado == 'cerrado'"/>
+                    <field name="estado" widget="statusbar"
+                           statusbar_visible="abierto,en_gestion,resuelto,cerrado"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="cod_incidente"/>
+                        <h1><field name="cod_incidente" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Novedad">
+                            <field name="tipo_id"/>
+                            <field name="impacto" readonly="1"/>
+                            <field name="fecha_incidente"/>
+                            <field name="enviado_offline"/>
+                        </group>
+                        <group string="Contexto operativo">
+                            <field name="campana_id"/>
+                            <field name="task_id"/>
+                            <field name="executor_id"/>
+                        </group>
+                    </group>
+                    <group string="Descripción">
+                        <field name="descripcion" nolabel="1"
+                               placeholder="Describe qué ocurrió, dónde y cómo afecta la operación..."/>
+                    </group>
+                    <group string="Resolución" invisible="estado not in ('resuelto','cerrado')">
+                        <field name="resolucion" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_luker_incident" model="ir.actions.act_window">
+        <field name="name">Novedades de Campo</field>
+        <field name="res_model">luker.operation.incident</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════
+         PROGRESO
+    ══════════════════════════════════════════════════════ -->
+
+    <record id="view_luker_progress_list" model="ir.ui.view">
+        <field name="name">luker.operation.progress.list</field>
+        <field name="model">luker.operation.progress</field>
+        <field name="arch" type="xml">
+            <list string="Progreso de campañas">
+                <field name="campana_id" string="Campaña"/>
+                <field name="fecha_snapshot" string="Snapshot"/>
+                <field name="total_asignaciones" string="Total"/>
+                <field name="completadas" string="Completadas"/>
+                <field name="pendientes" string="Pendientes"/>
+                <field name="fallidas" string="Fallidas"/>
+                <field name="incidentes_abiertos" string="Incidentes"/>
+                <field name="pct_avance" string="Avance %"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_luker_progress" model="ir.actions.act_window">
+        <field name="name">Progreso de Campañas</field>
+        <field name="res_model">luker.operation.progress</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

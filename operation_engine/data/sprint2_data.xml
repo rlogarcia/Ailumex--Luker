@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Secuencia incidentes -->
+        <record id="seq_operation_incident" model="ir.sequence">
+            <field name="name">Incidentes SISPAR</field>
+            <field name="code">luker.operation.incident</field>
+            <field name="prefix">INC-</field>
+            <field name="padding">5</field>
+        </record>
+
+        <!-- Tipos de incidente predefinidos -->
+        <record id="incident_type_ausencia" model="luker.operation.incident.type">
+            <field name="nom_tipo">Ausencia del participante</field>
+            <field name="cod_tipo">AUS</field>
+            <field name="sequence">1</field>
+            <field name="impacto">medio</field>
+            <field name="requiere_reprogramacion" eval="True"/>
+        </record>
+
+        <record id="incident_type_rechazo" model="luker.operation.incident.type">
+            <field name="nom_tipo">Rechazo de participación</field>
+            <field name="cod_tipo">REC</field>
+            <field name="sequence">2</field>
+            <field name="impacto">alto</field>
+            <field name="requiere_reprogramacion" eval="False"/>
+        </record>
+
+        <record id="incident_type_tecnico" model="luker.operation.incident.type">
+            <field name="nom_tipo">Error técnico del dispositivo</field>
+            <field name="cod_tipo">TEC</field>
+            <field name="sequence">3</field>
+            <field name="impacto">medio</field>
+            <field name="requiere_reprogramacion" eval="True"/>
+        </record>
+
+        <record id="incident_type_logistico" model="luker.operation.incident.type">
+            <field name="nom_tipo">Problema logístico</field>
+            <field name="cod_tipo">LOG</field>
+            <field name="sequence">4</field>
+            <field name="impacto">bajo</field>
+            <field name="requiere_reprogramacion" eval="False"/>
+        </record>
+
+        <record id="incident_type_clima" model="luker.operation.incident.type">
+            <field name="nom_tipo">Condición climática adversa</field>
+            <field name="cod_tipo">CLI</field>
+            <field name="sequence">5</field>
+            <field name="impacto">medio</field>
+            <field name="requiere_reprogramacion" eval="True"/>
+        </record>
+
+        <record id="incident_type_seguridad" model="luker.operation.incident.type">
+            <field name="nom_tipo">Problema de seguridad</field>
+            <field name="cod_tipo">SEG</field>
+            <field name="sequence">6</field>
+            <field name="impacto">critico</field>
+            <field name="requiere_reprogramacion" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

@@ -4,4 +4,5 @@ from . import executor          # OPE_Ejecutor — aplicadores y supervisores
 from . import campaign          # OPE_Campaña
 from . import assignment        # OPE_Asignacion
 from . import task              # OPE_Tarea
+from . import sprint2           # Sprint 2 — agenda, equipos, incidentes, progreso
 from . import survey_extend     # Campos readonly en survey.user_input

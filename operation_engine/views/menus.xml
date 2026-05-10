@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Campañas — submenú del Gestor Operativo -->
+    <!-- Campañas -->
     <menuitem id="menu_operation_campanas"
               name="Campañas"
               parent="gestor_operativo.menu_gestor_operativo_root"
@@ -14,17 +14,49 @@
               sequence="6"
               action="action_luker_task"/>
 
-    <!-- Ejecutores — dentro de Configuración -->
+    <!-- Agenda -->
+    <menuitem id="menu_operation_agenda"
+              name="Agenda"
+              parent="gestor_operativo.menu_gestor_operativo_root"
+              sequence="7"
+              action="action_luker_agenda"/>
+
+    <!-- Novedades -->
+    <menuitem id="menu_operation_incidentes"
+              name="Novedades de campo"
+              parent="gestor_operativo.menu_gestor_operativo_root"
+              sequence="8"
+              action="action_luker_incident"/>
+
+    <!-- Progreso -->
+    <menuitem id="menu_operation_progress"
+              name="Progreso"
+              parent="gestor_operativo.menu_gestor_operativo_root"
+              sequence="9"
+              action="action_luker_progress"/>
+
+    <!-- Configuración -->
     <menuitem id="menu_operation_ejecutores"
               name="Ejecutores (Aplicadores)"
               parent="gestor_operativo.menu_luker_config"
               sequence="10"
               action="action_luker_executor"/>
 
-    <!-- Roles — dentro de Configuración -->
     <menuitem id="menu_operation_roles"
               name="Roles SISPAR"
               parent="gestor_operativo.menu_luker_config"
               sequence="11"
               action="action_luker_rol"/>
+
+    <menuitem id="menu_operation_equipos"
+              name="Equipos Logísticos"
+              parent="gestor_operativo.menu_luker_config"
+              sequence="12"
+              action="action_luker_team"/>
+
+    <menuitem id="menu_operation_incident_types"
+              name="Tipos de Novedad"
+              parent="gestor_operativo.menu_luker_config"
+              sequence="13"
+              action="action_luker_incident_type"/>
 </odoo>

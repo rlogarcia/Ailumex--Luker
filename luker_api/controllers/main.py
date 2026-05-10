@@ -184,6 +184,225 @@ def _serializar_encuesta(survey):
 
 class LukerApiController(http.Controller):
 
+    # ── Bootstrap PWA ─────────────────────────────────────────────────────────
+
+    @http.route('/luker/api/v1/bootstrap',
+                auth='none', methods=['POST'], csrf=False, type='http')
+    def bootstrap(self, **kwargs):
+        """
+        Descarga todo lo que la PWA necesita en UN solo llamado:
+        - Perfil del participante/ejecutor
+        - Tareas del día asignadas
+        - Instrumentos completos de las tareas
+        - Catálogos (tipos de pregunta, tipos de incidente)
+        Diseñado para conexión lenta — payload mínimo.
+        """
+        token_rec, err = _require_auth()
+        if err:
+            return err
+
+        executor = request.env['luker.operation.executor'].sudo().search([
+            ('user_id', '=', token_rec.participante_id.user_id.id
+                            if token_rec.participante_id else 0)
+        ], limit=1)
+
+        # Tareas activas del ejecutor
+        tareas = []
+        if executor:
+            tasks = request.env['luker.operation.task'].sudo().search([
+                ('executor_id', '=', executor.id),
+                ('estado', 'in', ('pendiente', 'programado', 'en_progreso', 'reprogramado')),
+            ])
+            for t in tasks:
+                tarea_data = {
+                    'id':              t.id,
+                    'cod_tarea':       t.cod_tarea,
+                    'uuid_local':      t.uuid_local,
+                    'estado':          t.estado,
+                    'estado_sync':     t.estado_sync,
+                    'fecha_programada': str(t.fecha_programada) if t.fecha_programada else None,
+                    'campana': {
+                        'id':     t.campana_id.id,
+                        'nombre': t.campana_id.nom_campana,
+                        'codigo': t.campana_id.cod_campana,
+                    } if t.campana_id else None,
+                    'participante': _serializar_participante(t.participante_id)
+                                    if t.participante_id else None,
+                    'instrumento_id': t.survey_id.id if t.survey_id else None,
+                }
+                tareas.append(tarea_data)
+
+        # Instrumentos únicos de las tareas
+        survey_ids = list(set(
+            t['instrumento_id'] for t in tareas if t.get('instrumento_id')
+        ))
+        instrumentos = {}
+        for sid in survey_ids:
+            survey = request.env['survey.survey'].sudo().browse(sid)
+            if survey.exists():
+                instrumentos[sid] = _serializar_encuesta(survey)
+
+        # Catálogos
+        tipos_incidente = [
+            {'id': t.id, 'cod': t.cod_tipo, 'nombre': t.nom_tipo,
+             'impacto': t.impacto, 'requiere_reprogramacion': t.requiere_reprogramacion}
+            for t in request.env['luker.operation.incident.type'].sudo().search(
+                [('activo', '=', True)]
+            )
+        ]
+
+        return _json_ok({
+            'ejecutor': {
+                'id':       executor.id if executor else None,
+                'nombre':   executor.nom_ejecutor if executor else None,
+                'cod':      executor.cod_ejecutor if executor else None,
+                'rol':      executor.rol_id.nom_rol if executor and executor.rol_id else None,
+            },
+            'participante': _serializar_participante(token_rec.participante_id)
+                            if token_rec.participante_id else None,
+            'tareas':       tareas,
+            'instrumentos': instrumentos,
+            'catalogos': {
+                'tipos_incidente': tipos_incidente,
+            },
+            'total_tareas': len(tareas),
+        })
+
+    # ── Tareas del ejecutor ───────────────────────────────────────────────────
+
+    @http.route('/luker/api/v1/tasks',
+                auth='none', methods=['GET'], csrf=False, type='http')
+    def tasks(self, **kwargs):
+        """Lista de tareas asignadas al ejecutor autenticado."""
+        token_rec, err = _require_auth()
+        if err:
+            return err
+
+        executor = request.env['luker.operation.executor'].sudo().search([
+            ('user_id', '=', token_rec.participante_id.user_id.id
+                            if token_rec.participante_id else 0)
+        ], limit=1)
+
+        if not executor:
+            return _json_ok({'tareas': [], 'total': 0})
+
+        tasks = request.env['luker.operation.task'].sudo().search([
+            ('executor_id', '=', executor.id),
+        ], order='fecha_programada asc')
+
+        tareas = [{
+            'id':              t.id,
+            'cod_tarea':       t.cod_tarea,
+            'uuid_local':      t.uuid_local,
+            'estado':          t.estado,
+            'estado_sync':     t.estado_sync,
+            'fecha_programada': str(t.fecha_programada) if t.fecha_programada else None,
+            'campana_id':      t.campana_id.id if t.campana_id else None,
+            'survey_id':       t.survey_id.id if t.survey_id else None,
+            'participante':    _serializar_participante(t.participante_id)
+                               if t.participante_id else None,
+        } for t in tasks]
+
+        return _json_ok({'tareas': tareas, 'total': len(tareas)})
+
+    # ── Actualizar estado de tarea ────────────────────────────────────────────
+
+    @http.route('/luker/api/v1/tasks/<int:task_id>/status',
+                auth='none', methods=['POST'], csrf=False, type='http')
+    def task_update_status(self, task_id, **kwargs):
+        """Actualiza el estado de una tarea desde la PWA."""
+        token_rec, err = _require_auth()
+        if err:
+            return err
+
+        try:
+            body = __import__('json').loads(
+                request.httprequest.data or b'{}'
+            )
+        except Exception:
+            return _json_error('Body JSON inválido.', 400)
+
+        nuevo_estado = body.get('estado')
+        estados_validos = ('pendiente','programado','en_progreso',
+                          'completado','fallido','reprogramado','cancelado')
+        if nuevo_estado not in estados_validos:
+            return _json_error(
+                f'Estado inválido. Válidos: {estados_validos}', 400
+            )
+
+        task = request.env['luker.operation.task'].sudo().browse(task_id)
+        if not task.exists():
+            return _json_error('Tarea no encontrada.', 404)
+
+        task.write({'estado': nuevo_estado, 'estado_sync': 'synced'})
+        return _json_ok({'id': task_id, 'estado': nuevo_estado})
+
+    # ── Registrar incidente ───────────────────────────────────────────────────
+
+    @http.route('/luker/api/v1/incidents',
+                auth='none', methods=['POST'], csrf=False, type='http')
+    def create_incident(self, **kwargs):
+        """
+        Registra un incidente de campo capturado offline.
+        Body: {uuid_local, tipo_cod, descripcion, task_id, timestamp}
+        """
+        token_rec, err = _require_auth()
+        if err:
+            return err
+
+        try:
+            body = __import__('json').loads(
+                request.httprequest.data or b'{}'
+            )
+        except Exception:
+            return _json_error('Body JSON inválido.', 400)
+
+        uuid_op = body.get('uuid_local')
+        if not uuid_op:
+            return _json_error('uuid_local requerido.', 400)
+
+        # Idempotencia
+        existente = request.env['luker.operation.incident'].sudo().search([
+            ('uuid_local', '=', uuid_op)
+        ], limit=1)
+        if existente:
+            return _json_ok({'id': existente.id, 'estado': existente.estado,
+                             'duplicado': True})
+
+        tipo = request.env['luker.operation.incident.type'].sudo().search([
+            ('cod_tipo', '=', body.get('tipo_cod'))
+        ], limit=1)
+        if not tipo:
+            return _json_error('Tipo de incidente no encontrado.', 404)
+
+        task = None
+        if body.get('task_id'):
+            task = request.env['luker.operation.task'].sudo().browse(
+                body['task_id']
+            )
+
+        executor = request.env['luker.operation.executor'].sudo().search([
+            ('user_id', '=', token_rec.participante_id.user_id.id
+                            if token_rec.participante_id else 0)
+        ], limit=1)
+
+        incident = request.env['luker.operation.incident'].sudo().create({
+            'uuid_local':       uuid_op,
+            'tipo_id':          tipo.id,
+            'descripcion':      body.get('descripcion', ''),
+            'task_id':          task.id if task and task.exists() else False,
+            'campana_id':       task.campana_id.id if task and task.exists() else False,
+            'executor_id':      executor.id if executor else False,
+            'enviado_offline':  True,
+            'fecha_incidente':  body.get('timestamp') or __import__('odoo').fields.Datetime.now(),
+        })
+
+        return _json_ok({
+            'id':     incident.id,
+            'estado': incident.estado,
+            'codigo': incident.cod_incidente,
+        })
+
     # ── CORS preflight ────────────────────────────────────────────────────────
 
     @http.route('/luker/api/v1/<path:subpath>',

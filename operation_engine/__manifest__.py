@@ -16,6 +16,7 @@
         'security/ir.model.access.csv',
         'data/operation_task_sequence.xml',
         'data/rol_data.xml',
+        'data/sprint2_data.xml',
 
         'views/rol_views.xml',
         'views/executor_views.xml',
@@ -23,6 +24,7 @@
         'views/campaign_views.xml',
         'views/assignment_views.xml',
         'views/task_views.xml',
+        'views/sprint2_views.xml',
         'views/survey_executor_inherit.xml',
         'views/menus.xml',
     ],

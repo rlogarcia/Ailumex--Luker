@@ -24,7 +24,6 @@ class LukerOperationAssignment(models.Model):
     executor_id = fields.Many2one(
         'luker.operation.executor',
         string='Aplicador asignado',
-        domain="[('rol', 'in', ('aplicador', 'supervisor'))]",
         tracking=True,
     )
 

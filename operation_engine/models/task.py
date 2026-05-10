@@ -60,7 +60,7 @@ class LukerOperationTask(models.Model):
         'luker.operation.executor',
         string='Aplicador',
         required=True, ondelete='restrict',
-        domain="[('rol', 'in', ('aplicador', 'supervisor')), ('activo', '=', True)]",
+        domain="[('activo', '=', True)]",
         tracking=True,
     )
     survey_id = fields.Many2one(

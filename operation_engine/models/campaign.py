@@ -75,7 +75,6 @@ class LukerOperationCampaign(models.Model):
     responsable_id = fields.Many2one(
         'luker.operation.executor',
         string='Coordinador responsable',
-        domain="[('rol', 'in', ('coordinador', 'supervisor'))]",
         tracking=True,
     )
     notas = fields.Text(string='Notas operativas')

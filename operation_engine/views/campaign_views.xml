@@ -79,8 +79,17 @@
                     </group>
                     <notebook>
                         <page string="Asignaciones" name="asignaciones">
-                            <field name="institucion_ids" widget="many2many_tags"
-                                   string="Instituciones participantes"/>
+                            <div class="d-flex gap-2 mb-3">
+                                <field name="institucion_ids" widget="many2many_tags"
+                                       string="Instituciones / Sedes"
+                                       placeholder="Selecciona instituciones para asignación masiva..."/>
+                                <button name="action_asignar_por_institucion"
+                                        string="Asignar todos los participantes"
+                                        type="object"
+                                        class="btn btn-secondary btn-sm"
+                                        icon="fa-users"
+                                        invisible="not institucion_ids"/>
+                            </div>
                             <field name="asignacion_ids" nolabel="1"
                                    context="{'default_campana_id': id}">
                                 <list editable="bottom">

@@ -30,7 +30,6 @@ class LukerOperationCampaign(models.Model):
         'survey.survey',
         string='Instrumento',
         required=True,
-        domain="[('instrument_state', '=', 'published')]",
         tracking=True,
     )
     version_instrumento_id = fields.Many2one(
@@ -152,6 +151,42 @@ class LukerOperationCampaign(models.Model):
             if not c.fecha_inicio or not c.fecha_fin:
                 raise ValidationError('La campaña debe tener fechas definidas.')
             c.write({'estado': 'activa'})
+
+    def action_asignar_por_institucion(self):
+        """Asigna masivamente todos los participantes de las instituciones seleccionadas."""
+        self.ensure_one()
+        if not self.institucion_ids:
+            raise ValidationError(
+                'Selecciona al menos una institución en la pestaña de Asignaciones.'
+            )
+        Participante = self.env['luker.participant']
+        Assignment = self.env['luker.operation.assignment']
+        creados = 0
+        for institucion in self.institucion_ids:
+            participantes = Participante.search([
+                ('institucion_actual_id', '=', institucion.id),
+                ('estado', '=', 'activo'),
+            ])
+            for p in participantes:
+                existe = Assignment.search([
+                    ('campana_id', '=', self.id),
+                    ('participante_id', '=', p.id),
+                ], limit=1)
+                if not existe:
+                    Assignment.create({
+                        'campana_id':      self.id,
+                        'participante_id': p.id,
+                    })
+                    creados += 1
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Asignación masiva completada',
+                'message': f'Se crearon {creados} asignaciones nuevas.',
+                'type': 'success',
+            }
+        }
 
     def action_cerrar(self):
         self.write({'estado': 'cerrada'})

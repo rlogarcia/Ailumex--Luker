@@ -130,7 +130,7 @@ class SurveySurveyExtension(models.Model):
         # -----------------------------------------------------
         # CASO 1: Odoo intenta cerrar / archivar (activo = False)
         # -----------------------------------------------------
-        if 'activo' in vals and vals['activo'] is False:
+        if 'active' in vals and vals['active'] is False:
             for record in self:
                 # Regla 1:
                 # Desde Borrador NO se puede cerrar.
@@ -157,7 +157,7 @@ class SurveySurveyExtension(models.Model):
         # -----------------------------------------------------
         # CASO 2: Odoo intenta reabrir (activo = True)
         # -----------------------------------------------------
-        elif 'activo' in vals and vals['activo'] is True:
+        elif 'active' in vals and vals['active'] is True:
             # Solo sincronizamos si nuestro método no está
             # enviando ya un instrument_state específico.
             if 'instrument_state' not in vals:
@@ -178,7 +178,7 @@ class SurveySurveyExtension(models.Model):
     def action_set_to_review(self):
         self.write({
             'instrument_state': 'in_review',
-            'activo': True,
+            'active': True,
         })
         return True
 
@@ -195,7 +195,7 @@ class SurveySurveyExtension(models.Model):
 
         self.write({
             'instrument_state': 'published',
-            'activo': True,
+            'active': True,
         })
         return True
 
@@ -212,6 +212,6 @@ class SurveySurveyExtension(models.Model):
 
         self.write({
             'instrument_state': 'in_review',
-            'activo': True,
+            'active': True,
         })
         return True

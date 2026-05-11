@@ -23,8 +23,19 @@ class LukerOrganization(models.Model):
         related='partner_id.name', string='Nombre', store=True, readonly=True,
         help='Nom_Unidad')
     cod_territorio = fields.Char(
-        related='partner_id.city', string='Municipio', store=True, readonly=True,
-        help='Cod_Territorio — Ciudad/Municipio')
+        related='partner_id.city', string='Ciudad', store=True, readonly=True,
+        help='Cod_Territorio — Ciudad')
+    municipio_id = fields.Many2one(
+        'res.city',
+        string='Municipio',
+        help='Municipio (DANE Colombia).',
+    )
+    state_id = fields.Many2one(
+        'res.country.state',
+        string='Departamento',
+        related='municipio_id.state_id',
+        store=True, readonly=True,
+    )
     telefono = fields.Char(related='partner_id.phone', readonly=True)
     email    = fields.Char(related='partner_id.email',  readonly=True)
     image_128 = fields.Image(related='partner_id.image_128', readonly=True)

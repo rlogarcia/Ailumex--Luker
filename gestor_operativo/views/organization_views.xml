@@ -10,7 +10,7 @@
                 <field name="nom_unidad" string="Nombre (Nom_Unidad)"/>
                 <field name="cod_unidad" string="Código (Cod_Unidad)" optional="show"/>
                 <field name="tipo_dominio" widget="badge" decoration-info="True"/>
-                <field name="cod_territorio" string="Municipio (Cod_Territorio)" optional="show"/>
+                <field name="state_id" string="Departamento" optional="show"/><field name="municipio_id" string="Municipio" optional="show"/>
                 <field name="sede_count" string="Sedes"/>
                 <field name="participante_count" string="Participantes activos"/>
                 <field name="activo" widget="boolean_toggle"/>
@@ -58,7 +58,8 @@
                     <group>
                         <group string="Empresa">
                             <field name="partner_id" domain="[('is_company','=',True)]"/>
-                            <field name="cod_territorio" readonly="1" string="Municipio"/>
+                            <field name="municipio_id" string="Municipio"/>
+                            <field name="state_id" string="Departamento" readonly="1"/>
                         </group>
                         <group string="Configuración CTX">
                             <field name="cod_unidad" string="Código (Cod_Unidad)"/>

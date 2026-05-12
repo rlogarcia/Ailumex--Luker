@@ -36,6 +36,7 @@
         # Data inicial
         'data/participant_type_data.xml',
         'data/attribute_definition_data.xml',
+        'data/organization_sequence.xml',
         'data/dms_luker_data.xml',
 
         # Views

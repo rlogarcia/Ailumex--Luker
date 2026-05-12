@@ -58,11 +58,14 @@
                     <group>
                         <group string="Empresa">
                             <field name="partner_id" domain="[('is_company','=',True)]"/>
-                            <field name="municipio_id" string="Municipio"/>
-                            <field name="state_id" string="Departamento" readonly="1"/>
+                            <field name="pais_id" string="País"/>
+                            <field name="state_id" string="Departamento"
+                                   domain="[('country_id','=',pais_id)]"/>
+                            <field name="municipio_id" string="Municipio"
+                                   domain="[('state_id','=',state_id)]"/>
                         </group>
                         <group string="Configuración CTX">
-                            <field name="cod_unidad" string="Código (Cod_Unidad)"/>
+                            <field name="cod_unidad" string="Código (Cod_Unidad)" readonly="1"/>
                             <field name="tipo_dominio"/>
                             <field name="estado"/>
                             <field name="activo" widget="boolean_toggle"/>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Secuencia automática para instituciones -->
+        <record id="seq_luker_organization" model="ir.sequence">
+            <field name="name">Instituciones SISPAR</field>
+            <field name="code">luker.organization</field>
+            <field name="prefix">INS-</field>
+            <field name="padding">4</field>
+            <field name="number_increment">1</field>
+            <field name="number_next_actual">1</field>
+        </record>
+
+    </data>
+</odoo>

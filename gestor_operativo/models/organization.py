@@ -25,16 +25,22 @@ class LukerOrganization(models.Model):
     cod_territorio = fields.Char(
         related='partner_id.city', string='Ciudad', store=True, readonly=True,
         help='Cod_Territorio — Ciudad')
-    municipio_id = fields.Many2one(
-        'res.city',
-        string='Municipio',
-        help='Municipio (DANE Colombia).',
+    pais_id = fields.Many2one(
+        'res.country',
+        string='País',
+        default=lambda self: self.env.ref('base.co', raise_if_not_found=False),
     )
     state_id = fields.Many2one(
         'res.country.state',
         string='Departamento',
-        related='municipio_id.state_id',
-        store=True, readonly=True,
+        domain="[('country_id', '=', pais_id)]",
+        help='Departamento de Colombia.',
+    )
+    municipio_id = fields.Many2one(
+        'res.city',
+        string='Municipio',
+        domain="[('state_id', '=', state_id)]",
+        help='Municipio (DANE Colombia).',
     )
     telefono = fields.Char(related='partner_id.phone', readonly=True)
     email    = fields.Char(related='partner_id.email',  readonly=True)
@@ -42,7 +48,11 @@ class LukerOrganization(models.Model):
 
     # ── Campos propios CTX ────────────────────────────────────
     cod_unidad = fields.Char(
-        string='Código interno', size=30, tracking=True, help='Cod_Unidad')
+        string='Código (Cod_Unidad)',
+        readonly=True, copy=False, index=True,
+        default='Nuevo',
+        help='Código consecutivo generado automáticamente al guardar.',
+    )
     tipo_dominio = fields.Selection([
         ('educacion_formal', 'Educación Formal'),
         ('educacion_rural',  'Educación Rural'),
@@ -65,6 +75,16 @@ class LukerOrganization(models.Model):
     _sql_constraints = [
         ('partner_unique', 'UNIQUE(partner_id)', 'Esta empresa ya está registrada como institución.'),
     ]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('cod_unidad') or vals['cod_unidad'] == 'Nuevo':
+                vals['cod_unidad'] = self.env['ir.sequence'].next_by_code(
+                    'luker.organization'
+                ) or 'INS-0001'
+        return super().create(vals_list)
+
 
     @api.depends('sede_ids')
     def _compute_counts(self):

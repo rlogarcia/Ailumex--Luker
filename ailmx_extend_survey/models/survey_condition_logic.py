@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from odoo import models
+from odoo import models, fields
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -322,3 +322,11 @@ class SurveySurvey(models.Model):
         # Si ninguna regla aplica, limpiar mensaje y seguir normal
         user_input.conditional_block_message = False
         return next_page
+
+class SurveyUserInputCondition(models.Model):
+    _inherit = 'survey.user_input'
+
+    conditional_block_message = fields.Char(
+        string='Mensaje de bloque condicional',
+        default=False,
+    )

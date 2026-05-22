@@ -32,7 +32,8 @@ class SurveyUserInputCustomSave(models.Model):
         # Odoo nativo lanza TypeError si question_type no es string.
         # Si no tiene tipo nativo, guardamos directamente como text_box.
         if not question.question_type or not isinstance(question.question_type, str):
-            _logger.info(
+            import logging as _log
+            _log.getLogger(__name__).info(
                 'Pregunta %s sin question_type nativo. Guardando como text_box.',
                 question.id
             )

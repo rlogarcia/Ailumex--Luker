@@ -40,8 +40,7 @@ class LukerOperationCampaign(models.Model):
     )
     cod_instrumento = fields.Char(
         string='Código instrumento',
-        compute='_compute_cod_instrumento', store=True,
-        readonly=True, store=True,
+        compute='_compute_cod_instrumento', store=True, readonly=True,
     )
 
     # ── Fechas ────────────────────────────────────────────────────────────────

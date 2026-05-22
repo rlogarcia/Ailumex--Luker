@@ -262,12 +262,8 @@ class SurveyQuestionExtension(models.Model):
 
     @api.constrains('id_luker_data_element')
     def _check_luker_data_element(self):
-        for record in self:
-            if record.id_question_type and not record.id_luker_data_element:
-                raise ValidationError(
-                    'La pregunta "%s" debe tener un Elemento de dato DAMA asignado.'
-                    % record.title
-                )
+        # Validación desactivada — el elemento DAMA es opcional
+        pass
 
     @api.constrains('question_type', 'suggested_answer_ids', 'suggested_answer_ids.flg_is_correct')
     def _check_correct_answers_for_choice_questions(self):

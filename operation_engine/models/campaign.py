@@ -40,7 +40,7 @@ class LukerOperationCampaign(models.Model):
     )
     cod_instrumento = fields.Char(
         string='Código instrumento',
-        related='survey_id.cod_instrument',
+        compute='_compute_cod_instrumento', store=True,
         readonly=True, store=True,
     )
 
@@ -103,6 +103,12 @@ class LukerOperationCampaign(models.Model):
     )
 
     # ── Cómputos ─────────────────────────────────────────────────────────────
+    @api.depends('survey_id')
+    def _compute_cod_instrumento(self):
+        for rec in self:
+            rec.cod_instrumento = rec.survey_id.name[:30] if rec.survey_id else ''
+
+
     @api.depends('fecha_inicio')
     def _compute_anio(self):
         for c in self:

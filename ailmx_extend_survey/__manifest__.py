@@ -69,8 +69,8 @@
             'ailmx_extend_survey/static/src/js/finish_condition_editor.js',
 
             # Menú Estructura (Instrumentos)
-            'ailmx_extend_survey/static/src/css/survey_structure_visual_builder.css',
-            'ailmx_extend_survey/static/src/js/survey_structure_visual_builder.js',
+            # DESHABILITADO: 'ailmx_extend_survey/static/src/css/survey_structure_visual_builder.css',
+            # DESHABILITADO — bugs DOM: 'ailmx_extend_survey/static/src/js/survey_structure_visual_builder.js',
         ],
 
         # Bundle para la parte pública (Frontend)

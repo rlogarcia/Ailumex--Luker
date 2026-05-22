@@ -28,6 +28,23 @@ class SurveyUserInputCustomSave(models.Model):
             self._save_auto_audio_if_needed(question, auto_audio_payload, answer)
             return result
 
+        if not question.question_type or not isinstance(question.question_type, str):
+            import logging
+            logging.getLogger(__name__).info('Pregunta %s sin question_type nativo. Guardando como text_box.', question.id)
+            answer_val = answer if isinstance(answer, str) else str(answer) if answer else ''
+            self.env["survey.user_input.line"].search([
+                ("user_input_id", "=", self.id),
+                ("question_id", "=", question.id),
+            ]).unlink()
+            line = self.env["survey.user_input.line"].create({
+                "user_input_id": self.id,
+                "question_id": question.id,
+                "answer_type": "text_box",
+                "value_text_box": answer_val,
+                "skipped": not bool(answer_val),
+            })
+            self._save_auto_audio_if_needed(question, auto_audio_payload, answer)
+            return line
         result = super()._save_lines(
             question,
             answer,

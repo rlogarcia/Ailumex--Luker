@@ -230,6 +230,13 @@ class SurveyQuestionExtension(models.Model):
 
             rec.condiciones_fin_opciones = options
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('question_type'):
+                vals['question_type'] = 'text_box'
+        return super().create(vals_list)
+
     @api.model
     def create_question_with_type(self, survey_id, question_type_code, vals):
         if not survey_id:

@@ -414,7 +414,10 @@ function syncSectionQuestions(sectionTitle, surveyId) {
             }
 
             const section = findSectionBlock(sectionTitle);
-            if (!section) return;
+            if (!section) {
+                window.location.reload();
+                return;
+            }
 
             const list = section.querySelector(".ailmx_questions_list");
             if (!list) return;
@@ -602,12 +605,14 @@ function deleteSectionFromSurvey(sectionTitle, surveyId, sectionBlock) {
         .then((data) => {
             if (data.error || !data.result) {
                 console.error("[STRUCTURE_BUILDER] Error eliminando sección:", data.error || data);
+                window.location.reload();
                 return;
             }
 
             rememberDeletedSection(sectionTitle);
             forgetNewSection(sectionTitle);
             sectionBlock.remove();
+            window.location.reload();
         })
         .catch((error) => console.error("[STRUCTURE_BUILDER]", error));
 }

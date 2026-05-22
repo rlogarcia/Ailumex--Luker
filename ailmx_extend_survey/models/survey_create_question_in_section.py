@@ -49,6 +49,7 @@ class SurveyCreateQuestionInSection(models.Model):
                     'default_sequence': new_sequence,
                     'default_is_page': False,
                 },
+                'flags': {'mode': 'edit'},
             }
 
         # =========================================================

@@ -21,3 +21,4 @@ from . import survey_master_sync
 from . import survey_application
 from . import survey_create_question_in_section
 from . import menu_setup
+from . import survey_copy_questions_wizard

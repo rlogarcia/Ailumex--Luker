@@ -37,6 +37,7 @@
         'views/survey_finish_conditions_templates.xml',
         'views/survey_block_message_templates.xml',
         'views/survey_structure_visual_builder.xml',
+        'views/survey_copy_questions_wizard_views.xml',
         'views/menu_cleanup.xml',
 
         # DATOS INICIALES

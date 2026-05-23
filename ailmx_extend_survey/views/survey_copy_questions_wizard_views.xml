@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- VISTA DEL WIZARD                                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_survey_copy_questions_wizard_form" model="ir.ui.view">
+        <field name="name">survey.copy.questions.wizard.form</field>
+        <field name="model">survey.copy.questions.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Trasladar preguntas entre instrumentos">
+                <sheet>
+
+                    <!-- Info origen -->
+                    <div class="alert alert-info mb-3 d-flex align-items-center gap-2">
+                        <i class="fa fa-exchange fa-lg"/>
+                        <span>
+                            Instrumento origen:
+                            <strong><field name="survey_origen_id" readonly="1" nolabel="1"/></strong>
+                            —
+                            <field name="total_origen" readonly="1" nolabel="1"/> preguntas disponibles,
+                            <field name="total_sel"    readonly="1" nolabel="1"/> seleccionadas
+                        </span>
+                    </div>
+
+                    <group>
+                        <!-- Columna izquierda: destino y modo -->
+                        <group string="¿Adónde van las preguntas?">
+                            <field name="survey_destino_id"
+                                   placeholder="Selecciona el instrumento destino..."
+                                   options="{'no_create': True}"/>
+                            <field name="modo" widget="radio"/>
+                        </group>
+                        <!-- Columna derecha: qué incluir -->
+                        <group string="¿Qué se incluye en cada pregunta?">
+                            <field name="incluir_secciones"/>
+                            <field name="incluir_opciones"/>
+                            <field name="incluir_config_especial"/>
+                        </group>
+                    </group>
+
+                    <!-- Selección rápida -->
+                    <div class="d-flex gap-2 mb-2">
+                        <button name="action_sel_todas"
+                                string="Seleccionar todas"
+                                type="object"
+                                class="btn btn-sm btn-secondary"
+                                icon="fa-check-square-o"/>
+                        <button name="action_sel_ninguna"
+                                string="Limpiar selección"
+                                type="object"
+                                class="btn btn-sm btn-secondary"
+                                icon="fa-square-o"/>
+                    </div>
+
+                    <!-- Lista de preguntas con checkboxes -->
+                    <field name="pregunta_ids"
+                           nolabel="1"
+                           domain="[('survey_id', '=', survey_origen_id), ('is_page', '=', False)]">
+                        <list>
+                            <field name="page_id"      string="Sección"   optional="show"/>
+                            <field name="title"        string="Pregunta"/>
+                            <field name="question_type" string="Tipo"/>
+                            <field name="id_question_type" string="Tipo SISPAR" optional="show"/>
+                            <field name="constr_mandatory" string="Obligatoria" optional="show"/>
+                        </list>
+                    </field>
+
+                </sheet>
+
+                <footer>
+                    <button name="action_trasladar"
+                            string="Trasladar preguntas"
+                            type="object"
+                            class="btn-primary"
+                            invisible="not pregunta_ids or not survey_destino_id"/>
+                    <button string="Cancelar"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- ACCIÓN DEL WIZARD                                                   -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <record id="action_survey_copy_questions_wizard" model="ir.actions.act_window">
+        <field name="name">Trasladar preguntas</field>
+        <field name="res_model">survey.copy.questions.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_survey_origen_id': active_id}</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- BOTÓN EN EL HEADER DEL FORMULARIO DEL INSTRUMENTO                  -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_survey_form_trasladar_inherit" model="ir.ui.view">
+        <field name="name">survey.survey.form.trasladar.button</field>
+        <field name="model">survey.survey</field>
+        <field name="inherit_id" ref="survey.survey_survey_view_form"/>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="%(action_survey_copy_questions_wizard)d"
+                        string="Trasladar preguntas"
+                        type="action"
+                        class="btn-secondary"
+                        icon="fa-arrows"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

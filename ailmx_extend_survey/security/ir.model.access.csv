@@ -16,3 +16,4 @@ access_survey_response_audio_portal,survey.response.audio portal,model_survey_re
 access_survey_response_audio_public,survey.response.audio public,model_survey_response_audio,base.group_public,1,0,0,0
 access_luker_instrument_version_admin,luker.instrument.version admin,model_luker_instrument_version,base.group_system,1,1,1,1
 access_luker_instrument_version_user,luker.instrument.version user,model_luker_instrument_version,base.group_user,1,1,1,0
+access_survey_copy_wiz,survey.copy.questions.wizard,model_survey_copy_questions_wizard,base.group_user,1,1,1,1

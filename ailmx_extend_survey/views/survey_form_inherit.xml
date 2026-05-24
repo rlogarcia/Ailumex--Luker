@@ -56,6 +56,12 @@
                 <attribute name="invisible">instrument_state != 'prueba'</attribute>
             </xpath>
 
+
+            <!-- Ocultar botón "Crear sesión en vivo" -->
+            <xpath expr="//button[@name='action_start_session'][@class='d-none d-sm-block btn-secondary']" position="attributes">
+                <attribute name="invisible">True</attribute>
+            </xpath>
+
             <!-- ========================================================= -->
             <!-- CAMBIO 2: CINTA VERDE CUANDO ESTÁ PUBLICADO -->
             <!-- ========================================================= -->

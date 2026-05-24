@@ -168,7 +168,8 @@
                     <field name="institucion_ids"
                            widget="many2many_tags"
                            string="Instituciones"
-                           options="{'no_create': True}"/>
+                           options="{'no_create': True}"
+                           readonly="instrument_state != 'edicion'"/>
                 </div>
 
                 <!-- SECCIÓN MEDIA: DESCRIPCIÓN -->
@@ -189,6 +190,7 @@
                         <field name="time_limit"
                                string=""
                                nolabel="1"
+                               readonly="instrument_state != 'edicion'"
                                class="ailmx_footer_value"/>
                         <div class="ailmx_footer_unit">minutos</div>
                     </div>
@@ -199,7 +201,8 @@
                         <div class="ailmx_footer_value ailmx_footer_select_box">
                             <field name="requiere_evaluador"
                                    string=""
-                                   nolabel="1"/>
+                                   nolabel="1"
+                                   readonly="instrument_state != 'edicion'"/>
                         </div>
                     </div>
 
@@ -209,7 +212,8 @@
                         <div class="ailmx_footer_value ailmx_footer_select_box">
                             <field name="questions_layout"
                                    string=""
-                                   nolabel="1"/>
+                                   nolabel="1"
+                                   readonly="instrument_state != 'edicion'"/>
                         </div>
                     </div>
 
@@ -219,6 +223,7 @@
                         <field name="is_time_limited"
                                string=""
                                nolabel="1"
+                               readonly="instrument_state != 'edicion'"
                                class="ailmx_footer_value"/>
                     </div>
                 </div>

@@ -51,7 +51,7 @@
                         <page string="Sedes" name="sedes">
                             <field name="sede_ids">
                                 <list editable="bottom">
-                                    <field name="name" string="Sede"/>
+                                    <field name="nom_sede" string="Sede"/>
                                 </list>
                             </field>
                         </page>

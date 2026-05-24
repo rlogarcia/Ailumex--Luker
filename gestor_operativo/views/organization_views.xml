@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         CTX_Unidad_Organizacional — Instituciones y Organizaciones
+    ═══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_luker_organization_list" model="ir.ui.view">
+        <field name="name">luker.organization.list</field>
+        <field name="model">luker.organization</field>
+        <field name="arch" type="xml">
+            <list string="Instituciones">
+                <field name="cod_unidad"   string="Código"/>
+                <field name="nom_unidad"   string="Nombre"/>
+                <field name="tipo_dominio" string="Tipo"/>
+                <field name="municipio_id" string="Municipio"/>
+                <field name="estado"       string="Estado"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_luker_organization_form" model="ir.ui.view">
+        <field name="name">luker.organization.form</field>
+        <field name="model">luker.organization</field>
+        <field name="arch" type="xml">
+            <form string="Institución / Organización">
+                <sheet>
+                    <group>
+                        <group string="Identificación">
+                            <field name="cod_unidad"/>
+                            <field name="nom_unidad"/>
+                            <field name="tipo_dominio"/>
+                            <field name="estado"/>
+                            <field name="activo"/>
+                        </group>
+                        <group string="Ubicación">
+                            <field name="pais_id"/>
+                            <field name="state_id"/>
+                            <field name="municipio_id"/>
+                            <field name="cod_territorio"/>
+                        </group>
+                    </group>
+                    <group string="Contacto">
+                        <field name="partner_id"/>
+                        <field name="telefono" readonly="1"/>
+                        <field name="email"    readonly="1"/>
+                    </group>
+                    <field name="notas" placeholder="Observaciones..."/>
+                    <notebook>
+                        <page string="Sedes" name="sedes">
+                            <field name="sede_ids">
+                                <list editable="bottom">
+                                    <field name="name" string="Sede"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_luker_organization" model="ir.actions.act_window">
+        <field name="name">Instituciones y Organizaciones</field>
+        <field name="res_model">luker.organization</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_luker_organization_unit" model="ir.actions.act_window">
+        <field name="name">Unidades (Grados / Grupos / Áreas)</field>
+        <field name="res_model">luker.organization</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('tipo_dominio', 'in', ['grado', 'grupo', 'area'])]</field>
+    </record>
+
+</odoo>

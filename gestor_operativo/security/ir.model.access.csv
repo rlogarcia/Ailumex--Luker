@@ -1,5 +1,6 @@
 
+
 access_luker_programa_admin,luker.programa admin,model_luker_programa,gestor_operativo.group_luker_admin,1,1,1,1
-access_luker_programa_user,luker.programa user,model_luker_programa,gestor_operativo.group_luker_user,1,0,0,0
+access_luker_programa_user,luker.programa user,model_luker_programa,base.group_user,1,1,0,0
 access_luker_linea_admin,luker.linea.intervencion admin,model_luker_linea_intervencion,gestor_operativo.group_luker_admin,1,1,1,1
-access_luker_linea_user,luker.linea.intervencion user,model_luker_linea_intervencion,gestor_operativo.group_luker_user,1,0,0,0
+access_luker_linea_user,luker.linea.intervencion user,model_luker_linea_intervencion,base.group_user,1,1,0,0

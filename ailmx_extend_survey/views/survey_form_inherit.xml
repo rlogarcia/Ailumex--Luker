@@ -153,10 +153,12 @@
                         <group>
                             <field name="programa_id"
                                    string="Programa"
-                                   options="{'no_create': True}"/>
+                                   options="{'no_create': True}"
+                                   readonly="instrument_state != 'edicion'"/>
                             <field name="linea_intervencion_id"
                                    string="Línea de intervención"
-                                   options="{'no_create': True}"/>
+                                   options="{'no_create': True}"
+                                   readonly="instrument_state != 'edicion'"/>
                         </group>
                         <group>
                             <field name="num_instituciones" readonly="1"

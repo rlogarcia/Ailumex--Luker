@@ -14,7 +14,7 @@
                 <!-- BOTÓN: Pasar a revisión -->
                 <!-- Solo visible en Borrador -->
                 <button name="action_set_to_review"
-                        string="PasarAPrueba"
+                        string="Pasar A Prueba"
                         type="object"
                         class="btn-primary"
                         invisible="instrument_state != 'edicion'"/>
@@ -22,7 +22,7 @@
                 <!-- BOTÓN: Publicar -->
                 <!-- Solo visible en En revisión -->
                 <button name="action_publish_instrument"
-                        string="IniciarRecolección"
+                        string="Iniciar Recolección"
                         type="object"
                         class="btn-success"
                         invisible="instrument_state != 'prueba'"/>
@@ -30,7 +30,7 @@
                 <!-- BOTÓN: Despublicar -->
                 <!-- Solo visible en Publicado -->
                 <button name="action_unpublish_instrument"
-                        string="CerrarInstrumento"
+                        string="Cerrar Instrumento"
                         type="object"
                         class="btn-warning"
                         invisible="instrument_state != 'recoleccion'"/>

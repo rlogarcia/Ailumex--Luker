@@ -268,8 +268,15 @@ class LukerInstrumentVersion(models.Model):
                 'usuario_publicacion_id': self.env.user.id,
                 'survey_nueva_id': nuevo_survey.id,
             })
-            _logger.info('Versión %s → nuevo instrumento %s (id=%s)',
-                         rec.cod_version, nuevo_titulo, nuevo_survey.id)
+            # Instrumento anterior pasa a CIERRE — solo una versión activa
+            survey_original.write({'instrument_state': 'cierre'})
+            # Deprecar versiones publicadas anteriores del mismo instrumento
+            self.search([
+                ('survey_id', '=', survey_original.id),
+                ('estado', '=', 'publicada'),
+                ('id', '!=', rec.id),
+            ]).write({'estado': 'deprecada', 'fecha_deprecacion': fields.Datetime.now()})
+            _logger.info('Versión %s publicada. Instrumento anterior cerrado.', rec.cod_version)
 
         if len(self) == 1 and self.survey_nueva_id:
             return {

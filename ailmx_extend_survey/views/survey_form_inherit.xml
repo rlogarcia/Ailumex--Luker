@@ -14,31 +14,31 @@
                 <!-- BOTÓN: Pasar a revisión -->
                 <!-- Solo visible en Borrador -->
                 <button name="action_set_to_review"
-                        string="Pasar a revisión"
+                        string="Pasar a prueba"
                         type="object"
                         class="btn-primary"
-                        invisible="instrument_state != 'draft'"/>
+                        invisible="instrument_state != 'edicion'"/>
 
                 <!-- BOTÓN: Publicar -->
                 <!-- Solo visible en En revisión -->
                 <button name="action_publish_instrument"
-                        string="Publicar"
+                        string="Iniciar recolección"
                         type="object"
                         class="btn-success"
-                        invisible="instrument_state != 'in_review'"/>
+                        invisible="instrument_state != 'prueba'"/>
 
                 <!-- BOTÓN: Despublicar -->
                 <!-- Solo visible en Publicado -->
                 <button name="action_unpublish_instrument"
-                        string="Despublicar"
+                        string="Cerrar instrumento"
                         type="object"
                         class="btn-warning"
-                        invisible="instrument_state != 'published'"/>
+                        invisible="instrument_state != 'recoleccion'"/>
 
                 <!-- BARRA DE ESTADO -->
                 <field name="instrument_state"
                        widget="statusbar"
-                       statusbar_visible="draft,in_review,published,archived"/>
+                       statusbar_visible="edicion,prueba,recoleccion,cierre"/>
 
             </xpath>
 
@@ -53,8 +53,11 @@
                 - Solo debe mostrarse cuando el instrumento está en En revisión
             -->
             <xpath expr="//form/header/button[@name='action_archive']" position="attributes">
-                <attribute name="invisible">instrument_state != 'in_review'</attribute>
+                <attribute name="invisible">instrument_state != 'prueba'</attribute>
             </xpath>
+
+            <!-- Ocultar botón nativo "Crear sesión en vivo" -->
+            <xpath expr="//form/header/button[@name='action_start_session']" position="replace"/>
 
             <!-- ========================================================= -->
             <!-- CAMBIO 2: CINTA VERDE CUANDO ESTÁ PUBLICADO -->
@@ -67,7 +70,7 @@
                 <widget name="web_ribbon"
                         title="PUBLICADO"
                         bg_color="text-bg-success"
-                        invisible="instrument_state != 'published'"/>
+                        invisible="instrument_state != 'recoleccion'"/>
             </xpath>
 
             <!-- RENOMBRAR PESTAÑAS -->

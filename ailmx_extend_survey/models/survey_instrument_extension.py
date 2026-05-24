@@ -37,13 +37,13 @@ class SurveySurveyExtension(models.Model):
     # =========================================================
     instrument_state = fields.Selection(
         selection=[
-            ('draft', 'Borrador'),
-            ('in_review', 'En revisión'),
-            ('published', 'Publicado'),
-            ('archived', 'Archivado'),
+            ('edicion',     'Edición'),
+            ('prueba',      'Prueba'),
+            ('recoleccion', 'Recolección'),
+            ('cierre',      'Cierre'),
         ],
         string='Estado del instrumento',
-        default='draft',
+        default='edicion',
         readonly=True,
         copy=False
     )
@@ -116,7 +116,7 @@ class SurveySurveyExtension(models.Model):
 
             # Asegurar estado inicial
             if not vals.get('instrument_state'):
-                vals['instrument_state'] = 'draft'
+                vals['instrument_state'] = 'edicion'
 
         return super().create(vals_list)
 
@@ -134,7 +134,7 @@ class SurveySurveyExtension(models.Model):
             for record in self:
                 # Regla 1:
                 # Desde Borrador NO se puede cerrar.
-                if record.instrument_state == 'draft':
+                if record.instrument_state == 'edicion':
                     raise ValidationError(
                         'Un instrumento en estado Borrador no se puede cerrar. '
                         'Primero debe pasar a En revisión.'
@@ -143,7 +143,7 @@ class SurveySurveyExtension(models.Model):
                 # Regla 2:
                 # Desde Publicado NO se puede cerrar directamente.
                 # Primero debe despublicarse.
-                if record.instrument_state == 'published':
+                if record.instrument_state == 'recoleccion':
                     raise ValidationError(
                         'Un instrumento en estado Publicado no se puede cerrar directamente. '
                         'Primero debe despublicarse.'
@@ -152,7 +152,7 @@ class SurveySurveyExtension(models.Model):
             # Si Odoo está archivando y nosotros no mandamos
             # explícitamente un estado, lo sincronizamos a archived.
             if 'instrument_state' not in vals:
-                vals['instrument_state'] = 'archived'
+                vals['instrument_state'] = 'cierre'
 
         # -----------------------------------------------------
         # CASO 2: Odoo intenta reabrir (activo = True)
@@ -162,8 +162,8 @@ class SurveySurveyExtension(models.Model):
             # enviando ya un instrument_state específico.
             if 'instrument_state' not in vals:
                 for record in self:
-                    if record.instrument_state == 'archived':
-                        vals['instrument_state'] = 'in_review'
+                    if record.instrument_state == 'cierre':
+                        vals['instrument_state'] = 'prueba'
                         break
 
         return super().write(vals)
@@ -177,7 +177,7 @@ class SurveySurveyExtension(models.Model):
     # ─────────────────────────────────────────
     def action_set_to_review(self):
         self.write({
-            'instrument_state': 'in_review',
+            'instrument_state': 'prueba',
             'active': True,
         })
         return True
@@ -188,13 +188,13 @@ class SurveySurveyExtension(models.Model):
     # ─────────────────────────────────────────
     def action_publish_instrument(self):
         for record in self:
-            if record.instrument_state != 'in_review':
+            if record.instrument_state != 'prueba':
                 raise ValidationError(
                     'Solo se puede publicar un instrumento que esté en estado En revisión.'
                 )
 
         self.write({
-            'instrument_state': 'published',
+            'instrument_state': 'recoleccion',
             'active': True,
         })
         return True
@@ -205,13 +205,13 @@ class SurveySurveyExtension(models.Model):
     # ─────────────────────────────────────────
     def action_unpublish_instrument(self):
         for record in self:
-            if record.instrument_state != 'published':
+            if record.instrument_state != 'recoleccion':
                 raise ValidationError(
                     'Solo se puede despublicar un instrumento que esté en estado Publicado.'
                 )
 
         self.write({
-            'instrument_state': 'in_review',
+            'instrument_state': 'prueba',
             'active': True,
         })
         return True

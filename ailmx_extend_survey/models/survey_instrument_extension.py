@@ -37,10 +37,10 @@ class SurveySurveyExtension(models.Model):
     # =========================================================
     instrument_state = fields.Selection(
         selection=[
-            ('edicion',     'Edición'),
-            ('prueba',      'Prueba'),
-            ('recoleccion', 'Recolección'),
-            ('cierre',      'Cierre'),
+            ('edicion',     'EDICIÓN'),
+            ('prueba',      'PRUEBA'),
+            ('recoleccion', 'RECOLECCIÓN'),
+            ('cierre',      'CIERRE'),
         ],
         string='Estado del instrumento',
         default='edicion',

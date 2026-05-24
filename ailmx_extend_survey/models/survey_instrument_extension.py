@@ -201,7 +201,42 @@ class SurveySurveyExtension(models.Model):
                         vals['instrument_state'] = 'prueba'
                         break
 
+        # -----------------------------------------------------
+        # CASO 3: Intento de editar contenido en instrumento congelado
+        # Un instrumento en Recolección o Cierre no puede ser editado
+        # directamente — debe crear una nueva versión.
+        # -----------------------------------------------------
+        CAMPOS_CONTENIDO = {
+            'title', 'description', 'question_and_page_ids',
+            'time_limit', 'questions_layout', 'requiere_evaluador',
+            'is_time_limited', 'programa_id', 'linea_intervencion_id',
+            'institucion_ids',
+        }
+        ESTADOS_CONGELADOS = {'recoleccion', 'cierre'}
+
+        if not ('active' in vals or 'instrument_state' in vals):
+            campos_editados = set(vals.keys()) & CAMPOS_CONTENIDO
+            if campos_editados:
+                for record in self:
+                    if record.instrument_state in ESTADOS_CONGELADOS:
+                        raise ValidationError(
+                            f'El instrumento "{record.title}" está en estado '
+                            f'"{dict(record._fields["instrument_state"].selection).get(record.instrument_state)}" '
+                            f'y no puede ser editado directamente.\n\n'
+                            f'Para modificarlo, usa el botón "Nueva Versión" — '
+                            f'esto creará una copia editable y cerrará el instrumento actual.'
+                        )
+
         return super().write(vals)
+
+    def action_editar_como_nueva_version(self):
+        """Botón disponible en instrumentos congelados para crear nueva versión editable."""
+        self.ensure_one()
+        if self.instrument_state not in ('recoleccion', 'cierre'):
+            raise ValidationError(
+                'Este instrumento ya está en edición. No es necesario crear una nueva versión.'
+            )
+        return self.action_crear_version()
 
     # =========================================================
     # MÉTODOS DE BOTONES DEL FLUJO

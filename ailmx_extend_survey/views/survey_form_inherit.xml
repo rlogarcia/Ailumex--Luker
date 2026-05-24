@@ -35,6 +35,16 @@
                         class="btn-warning"
                         invisible="instrument_state != 'recoleccion'"/>
 
+                <!-- BOTÓN: Editar como nueva versión -->
+                <!-- Visible en Recolección y Cierre — regla de negocio:
+                     instrumento congelado no se edita directamente -->
+                <button name="action_editar_como_nueva_version"
+                        string="✎ Nueva versión editable"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="instrument_state not in ('recoleccion', 'cierre')"
+                        confirm="Se creará una nueva versión editable de este instrumento y el actual quedará en estado Cierre. ¿Continuar?"/>
+
                 <!-- BARRA DE ESTADO -->
                 <field name="instrument_state"
                        widget="statusbar"

@@ -14,7 +14,7 @@
                 <!-- BOTÓN: Pasar a revisión -->
                 <!-- Solo visible en Borrador -->
                 <button name="action_set_to_review"
-                        string="Pasar A Prueba"
+                        string="Pasar a prueba"
                         type="object"
                         class="btn-primary"
                         invisible="instrument_state != 'edicion'"/>
@@ -22,7 +22,7 @@
                 <!-- BOTÓN: Publicar -->
                 <!-- Solo visible en En revisión -->
                 <button name="action_publish_instrument"
-                        string="Iniciar Recolección"
+                        string="Iniciar recolección"
                         type="object"
                         class="btn-success"
                         invisible="instrument_state != 'prueba'"/>
@@ -30,7 +30,7 @@
                 <!-- BOTÓN: Despublicar -->
                 <!-- Solo visible en Publicado -->
                 <button name="action_unpublish_instrument"
-                        string="Cerrar Instrumento"
+                        string="Cerrar instrumento"
                         type="object"
                         class="btn-warning"
                         invisible="instrument_state != 'recoleccion'"/>
@@ -55,9 +55,6 @@
             <xpath expr="//form/header/button[@name='action_archive']" position="attributes">
                 <attribute name="invisible">instrument_state != 'prueba'</attribute>
             </xpath>
-
-            <!-- Ocultar botón nativo "Crear sesión en vivo" -->
-            <xpath expr="//form/header/button[@name='action_start_session']" position="replace"/>
 
             <!-- ========================================================= -->
             <!-- CAMBIO 2: CINTA VERDE CUANDO ESTÁ PUBLICADO -->
@@ -147,6 +144,29 @@
                             Sin contenido
                         </div>
                     </div>
+                </div>
+
+                <!-- SECCIÓN CLASIFICACIÓN: PROGRAMA / LÍNEA / INSTITUCIONES -->
+                <div class="ailmx_description_section">
+                    <div class="ailmx_section_title">Clasificación</div>
+                    <group>
+                        <group>
+                            <field name="programa_id"
+                                   string="Programa"
+                                   options="{'no_create': True}"/>
+                            <field name="linea_intervencion_id"
+                                   string="Línea de intervención"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="num_instituciones" readonly="1"
+                                   string="Instituciones vinculadas"/>
+                        </group>
+                    </group>
+                    <field name="institucion_ids"
+                           widget="many2many_tags"
+                           string="Instituciones"
+                           options="{'no_create': True}"/>
                 </div>
 
                 <!-- SECCIÓN MEDIA: DESCRIPCIÓN -->

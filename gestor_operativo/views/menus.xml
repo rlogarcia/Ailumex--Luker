@@ -116,6 +116,22 @@
         action="action_luker_attribute_definition"
         groups="gestor_operativo.group_luker_data_lead"/>
 
+    <menuitem
+        id="menu_luker_programa"
+        name="Programas"
+        parent="menu_luker_config"
+        sequence="40"
+        action="action_luker_programa"
+        groups="gestor_operativo.group_luker_admin"/>
+
+    <menuitem
+        id="menu_luker_linea_intervencion"
+        name="Líneas de Intervención"
+        parent="menu_luker_config"
+        sequence="50"
+        action="action_luker_linea_intervencion"
+        groups="gestor_operativo.group_luker_admin"/>
+
 
 
     <!-- ══════════════════════════════════════════════════

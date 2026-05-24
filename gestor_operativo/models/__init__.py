@@ -15,3 +15,4 @@ from . import participant_dms_extend     # Integración luker.participant ↔ DM
 from . import participant_co_extend      # Integración luker.participant ↔ ox_res_partner_ext_co
 from . import participant_snapshot               # Snapshot contexto por sesión
 from . import application_result_operation_extend  # Vincula sesión con capa operativa
+from . import luker_programa          # Programa y Línea de Intervención

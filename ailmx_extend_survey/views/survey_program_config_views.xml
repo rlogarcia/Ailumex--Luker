@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════ PROGRAMA ═══════════════════════════════════ -->
+    <record id="view_luker_programa_list" model="ir.ui.view">
+        <field name="name">luker.programa.list</field>
+        <field name="model">luker.programa</field>
+        <field name="arch" type="xml">
+            <list string="Programas" editable="bottom">
+                <field name="cod_programa" string="Código"/>
+                <field name="nom_programa" string="Programa"/>
+                <field name="num_lineas"   string="Líneas"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_luker_programa_form" model="ir.ui.view">
+        <field name="name">luker.programa.form</field>
+        <field name="model">luker.programa</field>
+        <field name="arch" type="xml">
+            <form string="Programa">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="cod_programa"/>
+                            <field name="nom_programa"/>
+                            <field name="activo"/>
+                        </group>
+                        <group>
+                            <field name="num_lineas" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="descripcion" placeholder="Descripción del programa..."/>
+                    <notebook>
+                        <page string="Líneas de intervención" name="lineas">
+                            <field name="linea_ids">
+                                <list editable="bottom">
+                                    <field name="cod_linea"   string="Código"/>
+                                    <field name="nom_linea"   string="Línea"/>
+                                    <field name="activo"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_luker_programa" model="ir.actions.act_window">
+        <field name="name">Programas</field>
+        <field name="res_model">luker.programa</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ═══════════════════════ LÍNEA ══════════════════════════════════════ -->
+    <record id="view_luker_linea_list" model="ir.ui.view">
+        <field name="name">luker.linea.intervencion.list</field>
+        <field name="model">luker.linea.intervencion</field>
+        <field name="arch" type="xml">
+            <list string="Líneas de intervención" editable="bottom">
+                <field name="programa_id"  string="Programa"/>
+                <field name="cod_linea"    string="Código"/>
+                <field name="nom_linea"    string="Línea"/>
+                <field name="activo"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_luker_linea_intervencion" model="ir.actions.act_window">
+        <field name="name">Líneas de intervención</field>
+        <field name="res_model">luker.linea.intervencion</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ═══════════════════════ MENÚ CONFIGURACIÓN ═════════════════════════ -->
+    <menuitem id="menu_survey_config_sispar"
+              name="SISPAR"
+              parent="survey.menu_survey_config"
+              sequence="100"/>
+
+    <menuitem id="menu_luker_programa"
+              name="Programas"
+              parent="menu_survey_config_sispar"
+              action="action_luker_programa"
+              sequence="10"/>
+
+    <menuitem id="menu_luker_linea"
+              name="Líneas de intervención"
+              parent="menu_survey_config_sispar"
+              action="action_luker_linea_intervencion"
+              sequence="20"/>
+
+</odoo>

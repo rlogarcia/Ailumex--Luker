@@ -59,6 +59,9 @@
         # Wizard
         'views/participant_import_wizard_views.xml',
 
+        # Programa y Línea de Intervención
+        'views/luker_programa_views.xml',
+
         # Menus (siempre al final)
         'views/menus.xml',
     ],

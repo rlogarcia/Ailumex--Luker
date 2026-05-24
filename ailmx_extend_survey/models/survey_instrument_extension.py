@@ -37,10 +37,10 @@ class SurveySurveyExtension(models.Model):
     # =========================================================
     instrument_state = fields.Selection(
         selection=[
-            ('edicion',     'EDICIÓN'),
-            ('prueba',      'PRUEBA'),
-            ('recoleccion', 'RECOLECCIÓN'),
-            ('cierre',      'CIERRE'),
+            ('edicion',     'Edición'),
+            ('prueba',      'Prueba'),
+            ('recoleccion', 'Recolección'),
+            ('cierre',      'Cierre'),
         ],
         string='Estado del instrumento',
         default='edicion',
@@ -50,6 +50,41 @@ class SurveySurveyExtension(models.Model):
 
 
     # ── Vínculo entre versiones de instrumentos ──────────────────────────────
+    # ── Clasificación del instrumento ───────────────────────────────────────
+    programa_id = fields.Many2one(
+        'luker.programa',
+        string='Programa',
+        required=True,
+        ondelete='restrict',
+        help='Programa al que pertenece este instrumento.',
+    )
+    linea_intervencion_id = fields.Many2one(
+        'luker.linea.intervencion',
+        string='Línea de intervención',
+        required=True,
+        ondelete='restrict',
+        domain="[('programa_id', '=', programa_id)]",
+        help='Línea de intervención dentro del programa.',
+    )
+    institucion_ids = fields.Many2many(
+        'luker.organization',
+        'survey_instrument_institucion_rel',
+        'survey_id',
+        'institucion_id',
+        string='Instituciones',
+        help='Instituciones a las que aplica este instrumento.',
+    )
+    num_instituciones = fields.Integer(
+        string='Instituciones',
+        compute='_compute_num_instituciones',
+        store=False,
+    )
+
+    @api.depends('institucion_ids')
+    def _compute_num_instituciones(self):
+        for s in self:
+            s.num_instituciones = len(s.institucion_ids)
+
     survey_version_origen_id = fields.Many2one(
         'survey.survey',
         string='Instrumento origen (versión anterior)',

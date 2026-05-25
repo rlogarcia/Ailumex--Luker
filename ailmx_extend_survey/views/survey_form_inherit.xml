@@ -66,6 +66,8 @@
                 <attribute name="invisible">instrument_state != 'prueba'</attribute>
             </xpath>
 
+
+
             <!-- ========================================================= -->
             <!-- CAMBIO 2: CINTA VERDE CUANDO ESTÁ PUBLICADO -->
             <!-- ========================================================= -->

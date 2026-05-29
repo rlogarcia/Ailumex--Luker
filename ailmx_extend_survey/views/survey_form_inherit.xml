@@ -78,6 +78,18 @@
                        readonly="instrument_state not in ('edicion', 'prueba')"/>
             </xpath>
 
+
+            <!-- Hacer readonly opciones clave según estado del instrumento -->
+            <xpath expr="//page[@name='options']//field[@name='users_can_go_back']" position="attributes">
+                <attribute name="readonly">instrument_state not in ('edicion', 'prueba')</attribute>
+            </xpath>
+            <xpath expr="//page[@name='options']//field[@name='is_time_limited']" position="attributes">
+                <attribute name="readonly">instrument_state not in ('edicion', 'prueba')</attribute>
+            </xpath>
+            <xpath expr="//page[@name='options']//field[@name='time_limit']" position="attributes">
+                <attribute name="readonly">instrument_state not in ('edicion', 'prueba')</attribute>
+            </xpath>
+
             <!-- ========================================================= -->
             <!-- CAMBIO 2: CINTA VERDE CUANDO ESTÁ PUBLICADO -->
             <!-- ========================================================= -->

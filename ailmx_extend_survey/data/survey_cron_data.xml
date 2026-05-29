@@ -10,7 +10,6 @@
             <field name="code">model._cron_cerrar_instrumentos_vencidos()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
-            <field name="numbercall">-1</field>
             <field name="active">True</field>
             <field name="priority">10</field>
         </record>

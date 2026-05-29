@@ -6,6 +6,7 @@ from odoo.exceptions import ValidationError
 class SurveySurveyExtension(models.Model):
     # Se extiende el modelo nativo survey.survey que es la tabla de instrumentos/encuestas
     # mail.thread agrega chatter con tracking de cambios (usuario + fecha + valor anterior/nuevo)
+    _name    = 'survey.survey'
     _inherit = ['survey.survey', 'mail.thread', 'mail.activity.mixin']
 
     # ─────────────────────────────────────────

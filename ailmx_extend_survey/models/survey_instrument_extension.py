@@ -5,7 +5,8 @@ from odoo.exceptions import ValidationError
 
 class SurveySurveyExtension(models.Model):
     # Se extiende el modelo nativo survey.survey que es la tabla de instrumentos/encuestas
-    _inherit = 'survey.survey'
+    # mail.thread agrega chatter con tracking de cambios (usuario + fecha + valor anterior/nuevo)
+    _inherit = ['survey.survey', 'mail.thread', 'mail.activity.mixin']
 
     # ─────────────────────────────────────────
     # CAMPO: cod_instrument
@@ -56,6 +57,7 @@ class SurveySurveyExtension(models.Model):
         string='Programa',
         required=True,
         ondelete='restrict',
+        tracking=True,
         help='Programa al que pertenece este instrumento.',
     )
     linea_intervencion_id = fields.Many2one(
@@ -63,6 +65,7 @@ class SurveySurveyExtension(models.Model):
         string='Línea de intervención',
         required=True,
         ondelete='restrict',
+        tracking=True,
         domain="[('programa_id', '=', programa_id)]",
         help='Línea de intervención dentro del programa.',
     )
@@ -88,10 +91,12 @@ class SurveySurveyExtension(models.Model):
     # ── Vigencia del instrumento ────────────────────────────────────────────
     fecha_inicio = fields.Date(
         string='Fecha de inicio',
+        tracking=True,
         help='Fecha desde la cual el instrumento está disponible para aplicación.',
     )
     fecha_cierre = fields.Date(
         string='Fecha de cierre',
+        tracking=True,
         help='Fecha límite hasta la cual se puede aplicar el instrumento.',
     )
 

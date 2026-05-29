@@ -87,6 +87,31 @@
             <xpath expr="//page[@name='options']" position="attributes">
                 <attribute name="string">Opciones</attribute>
             </xpath>
+
+            <!-- Agregar sección de configuración SISPAR en la pestaña Opciones -->
+            <xpath expr="//page[@name='options']" position="inside">
+                <group string="Configuración de navegación y tiempo" col="2">
+                    <group>
+                        <!-- Regresar a preguntas anteriores -->
+                        <field name="users_can_go_back"
+                               string="Permitir regresar a preguntas anteriores"
+                               widget="boolean_toggle"
+                               readonly="instrument_state not in ('edicion', 'prueba')"/>
+                    </group>
+                    <group>
+                        <!-- Tiempo máximo configurable -->
+                        <field name="is_time_limited"
+                               string="Activar tiempo máximo"
+                               widget="boolean_toggle"
+                               readonly="instrument_state not in ('edicion', 'prueba')"/>
+                        <field name="time_limit"
+                               string="Tiempo máximo (minutos)"
+                               widget="float_time"
+                               invisible="not is_time_limited"
+                               readonly="instrument_state not in ('edicion', 'prueba')"/>
+                    </group>
+                </group>
+            </xpath>
             <xpath expr="//page[@name='description']" position="attributes">
                 <attribute name="string">Información General</attribute>
             </xpath>

@@ -85,6 +85,16 @@ class SurveySurveyExtension(models.Model):
         for s in self:
             s.num_instituciones = len(s.institucion_ids)
 
+    # ── Vigencia del instrumento ────────────────────────────────────────────
+    fecha_inicio = fields.Date(
+        string='Fecha de inicio',
+        help='Fecha desde la cual el instrumento está disponible para aplicación.',
+    )
+    fecha_cierre = fields.Date(
+        string='Fecha de cierre',
+        help='Fecha límite hasta la cual se puede aplicar el instrumento.',
+    )
+
     survey_version_origen_id = fields.Many2one(
         'survey.survey',
         string='Instrumento origen (versión anterior)',
@@ -245,6 +255,35 @@ class SurveySurveyExtension(models.Model):
     # ─────────────────────────────────────────
     # BOTÓN: Pasar a revisión
     # ─────────────────────────────────────────
+    # =========================================================
+    # CRON: Cierre automático por fecha de cierre
+    # =========================================================
+    @api.model
+    def _cron_cerrar_instrumentos_vencidos(self):
+        """
+        Ejecutado diariamente por el cron.
+        Si fecha_cierre < hoy y el instrumento está en recoleccion,
+        lo pasa automáticamente a cierre.
+        """
+        import logging
+        _log = logging.getLogger(__name__)
+        hoy = fields.Date.today()
+
+        instrumentos_vencidos = self.search([
+            ('instrument_state', '=', 'recoleccion'),
+            ('fecha_cierre', '!=', False),
+            ('fecha_cierre', '<', hoy),
+        ])
+
+        for ins in instrumentos_vencidos:
+            _log.info(
+                'Cerrando instrumento "%s" (id=%s) por fecha de cierre vencida (%s)',
+                ins.title, ins.id, ins.fecha_cierre
+            )
+            ins.write({'instrument_state': 'cierre'})
+
+        return True
+
     def action_set_to_review(self):
         self.write({
             'instrument_state': 'prueba',

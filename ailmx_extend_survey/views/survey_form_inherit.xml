@@ -66,18 +66,6 @@
                 <attribute name="invisible">instrument_state != 'prueba'</attribute>
             </xpath>
 
-
-
-            <!-- Fechas de vigencia junto a Responsable/Restringido -->
-            <xpath expr="//field[@name='restrict_user_ids']" position="after">
-                <field name="fecha_inicio"
-                       string="Fecha de inicio"
-                       readonly="instrument_state not in ('edicion', 'prueba')"/>
-                <field name="fecha_cierre"
-                       string="Fecha de cierre"
-                       readonly="instrument_state not in ('edicion', 'prueba')"/>
-            </xpath>
-
             <!-- ========================================================= -->
             <!-- CAMBIO 2: CINTA VERDE CUANDO ESTÁ PUBLICADO -->
             <!-- ========================================================= -->
@@ -249,6 +237,25 @@
                                class="ailmx_footer_value"/>
                     </div>
 
+                    <!-- FECHA DE INICIO -->
+                    <div class="ailmx_footer_card">
+                        <div class="ailmx_footer_label">Fecha de inicio</div>
+                        <field name="fecha_inicio"
+                               string=""
+                               nolabel="1"
+                               readonly="instrument_state not in ('edicion', 'prueba')"
+                               class="ailmx_footer_value"/>
+                    </div>
+
+                    <!-- FECHA DE CIERRE -->
+                    <div class="ailmx_footer_card">
+                        <div class="ailmx_footer_label">Fecha de cierre</div>
+                        <field name="fecha_cierre"
+                               string=""
+                               nolabel="1"
+                               readonly="instrument_state not in ('edicion', 'prueba')"
+                               class="ailmx_footer_value"/>
+                    </div>
                 </div>
 
             </xpath>

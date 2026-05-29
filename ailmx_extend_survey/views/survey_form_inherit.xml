@@ -286,25 +286,6 @@
                                class="ailmx_footer_value"/>
                     </div>
 
-                    <!-- FECHA DE INICIO -->
-                    <div class="ailmx_footer_card">
-                        <div class="ailmx_footer_label">Fecha de inicio</div>
-                        <field name="fecha_inicio"
-                               string=""
-                               nolabel="1"
-                               readonly="instrument_state not in ('edicion', 'prueba')"
-                               class="ailmx_footer_value"/>
-                    </div>
-
-                    <!-- FECHA DE CIERRE -->
-                    <div class="ailmx_footer_card">
-                        <div class="ailmx_footer_label">Fecha de cierre</div>
-                        <field name="fecha_cierre"
-                               string=""
-                               nolabel="1"
-                               readonly="instrument_state not in ('edicion', 'prueba')"
-                               class="ailmx_footer_value"/>
-                    </div>
                 </div>
 
             </xpath>

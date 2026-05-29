@@ -5,7 +5,8 @@ from odoo.exceptions import ValidationError
 
 class SurveySurveyExtension(models.Model):
     # Se extiende el modelo nativo survey.survey que es la tabla de instrumentos/encuestas
-    _inherit = 'survey.survey'
+    # mail.thread agrega chatter con tracking de cambios (usuario + fecha + valor anterior/nuevo)
+    _inherit = ['survey.survey', 'mail.thread', 'mail.activity.mixin']
 
     # ─────────────────────────────────────────
     # CAMPO: cod_instrument
@@ -56,6 +57,7 @@ class SurveySurveyExtension(models.Model):
         string='Programa',
         required=True,
         ondelete='restrict',
+        tracking=True,
         help='Programa al que pertenece este instrumento.',
     )
     linea_intervencion_id = fields.Many2one(
@@ -63,6 +65,7 @@ class SurveySurveyExtension(models.Model):
         string='Línea de intervención',
         required=True,
         ondelete='restrict',
+        tracking=True,
         domain="[('programa_id', '=', programa_id)]",
         help='Línea de intervención dentro del programa.',
     )
@@ -84,6 +87,18 @@ class SurveySurveyExtension(models.Model):
     def _compute_num_instituciones(self):
         for s in self:
             s.num_instituciones = len(s.institucion_ids)
+
+    # ── Vigencia del instrumento ────────────────────────────────────────────
+    fecha_inicio = fields.Date(
+        string='Fecha de inicio',
+        tracking=True,
+        help='Fecha desde la cual el instrumento está disponible para aplicación.',
+    )
+    fecha_cierre = fields.Date(
+        string='Fecha de cierre',
+        tracking=True,
+        help='Fecha límite hasta la cual se puede aplicar el instrumento.',
+    )
 
     survey_version_origen_id = fields.Many2one(
         'survey.survey',
@@ -245,6 +260,35 @@ class SurveySurveyExtension(models.Model):
     # ─────────────────────────────────────────
     # BOTÓN: Pasar a revisión
     # ─────────────────────────────────────────
+    # =========================================================
+    # CRON: Cierre automático por fecha de cierre
+    # =========================================================
+    @api.model
+    def _cron_cerrar_instrumentos_vencidos(self):
+        """
+        Ejecutado diariamente por el cron.
+        Si fecha_cierre < hoy y el instrumento está en recoleccion,
+        lo pasa automáticamente a cierre.
+        """
+        import logging
+        _log = logging.getLogger(__name__)
+        hoy = fields.Date.today()
+
+        instrumentos_vencidos = self.search([
+            ('instrument_state', '=', 'recoleccion'),
+            ('fecha_cierre', '!=', False),
+            ('fecha_cierre', '<', hoy),
+        ])
+
+        for ins in instrumentos_vencidos:
+            _log.info(
+                'Cerrando instrumento "%s" (id=%s) por fecha de cierre vencida (%s)',
+                ins.title, ins.id, ins.fecha_cierre
+            )
+            ins.write({'instrument_state': 'cierre'})
+
+        return True
+
     def action_set_to_review(self):
         self.write({
             'instrument_state': 'prueba',

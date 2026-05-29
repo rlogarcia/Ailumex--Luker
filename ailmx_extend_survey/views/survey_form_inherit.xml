@@ -66,6 +66,7 @@
                 <attribute name="invisible">instrument_state != 'prueba'</attribute>
             </xpath>
 
+<<<<<<< HEAD
 
 
             <!-- Fechas de vigencia junto a Responsable/Restringido -->
@@ -90,6 +91,8 @@
                 <attribute name="readonly">instrument_state not in ('edicion', 'prueba')</attribute>
             </xpath>
 
+=======
+>>>>>>> 88ba54075dda5cb39d6630da0febb165f76a83c8
             <!-- ========================================================= -->
             <!-- CAMBIO 2: CINTA VERDE CUANDO ESTÁ PUBLICADO -->
             <!-- ========================================================= -->
@@ -110,6 +113,31 @@
             </xpath>
             <xpath expr="//page[@name='options']" position="attributes">
                 <attribute name="string">Opciones</attribute>
+            </xpath>
+
+            <!-- Agregar sección de configuración SISPAR en la pestaña Opciones -->
+            <xpath expr="//page[@name='options']" position="inside">
+                <group string="Configuración de navegación y tiempo" col="2">
+                    <group>
+                        <!-- Regresar a preguntas anteriores -->
+                        <field name="users_can_go_back"
+                               string="Permitir regresar a preguntas anteriores"
+                               widget="boolean_toggle"
+                               readonly="instrument_state not in ('edicion', 'prueba')"/>
+                    </group>
+                    <group>
+                        <!-- Tiempo máximo configurable -->
+                        <field name="is_time_limited"
+                               string="Activar tiempo máximo"
+                               widget="boolean_toggle"
+                               readonly="instrument_state not in ('edicion', 'prueba')"/>
+                        <field name="time_limit"
+                               string="Tiempo máximo (minutos)"
+                               widget="float_time"
+                               invisible="not is_time_limited"
+                               readonly="instrument_state not in ('edicion', 'prueba')"/>
+                    </group>
+                </group>
             </xpath>
             <xpath expr="//page[@name='description']" position="attributes">
                 <attribute name="string">Información General</attribute>
@@ -261,6 +289,25 @@
                                class="ailmx_footer_value"/>
                     </div>
 
+                    <!-- FECHA DE INICIO -->
+                    <div class="ailmx_footer_card">
+                        <div class="ailmx_footer_label">Fecha de inicio</div>
+                        <field name="fecha_inicio"
+                               string=""
+                               nolabel="1"
+                               readonly="instrument_state not in ('edicion', 'prueba')"
+                               class="ailmx_footer_value"/>
+                    </div>
+
+                    <!-- FECHA DE CIERRE -->
+                    <div class="ailmx_footer_card">
+                        <div class="ailmx_footer_label">Fecha de cierre</div>
+                        <field name="fecha_cierre"
+                               string=""
+                               nolabel="1"
+                               readonly="instrument_state not in ('edicion', 'prueba')"
+                               class="ailmx_footer_value"/>
+                    </div>
                 </div>
 
             </xpath>

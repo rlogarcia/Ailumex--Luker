@@ -41,6 +41,7 @@
         'views/menu_cleanup.xml',
 
         # DATOS INICIALES
+        'data/survey_cron_data.xml',
         'data/survey_question_type_data.xml',
         'data/survey_sequence_data.xml',
     ],

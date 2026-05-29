@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Cron: Cierre automático de instrumentos vencidos -->
+        <record id="cron_cerrar_instrumentos_vencidos" model="ir.cron">
+            <field name="name">SISPAR — Cerrar instrumentos con fecha vencida</field>
+            <field name="model_id" ref="ailmx_extend_survey.model_survey_survey"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_cerrar_instrumentos_vencidos()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active">True</field>
+            <field name="priority">10</field>
+        </record>
+
+    </data>
+</odoo>

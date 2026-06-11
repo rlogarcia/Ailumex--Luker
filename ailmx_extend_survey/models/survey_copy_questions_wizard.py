@@ -199,20 +199,4 @@ class SurveyCopyQuestionsWizard(models.TransientModel):
             self.pregunta_ids.unlink()
 
         n = len(preguntas_ordenadas)
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title':   f'{"Copiadas" if self.modo == "copiar" else "Movidas"}: {n} preguntas',
-                'message': f'Al instrumento "{destino.title}" — {self.modo}.',
-                'type':    'success',
-                'sticky':  False,
-                'next': {
-                    'type':      'ir.actions.act_window',
-                    'res_model': 'survey.survey',
-                    'res_id':    destino.id,
-                    'view_mode': 'form',
-                    'target':    'current',
-                },
-            },
-        }
+        return {'type': 'ir.actions.act_window_close'}

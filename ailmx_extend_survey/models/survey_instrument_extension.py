@@ -56,7 +56,7 @@ class SurveySurveyExtension(models.Model):
     programa_id = fields.Many2one(
         'luker.programa',
         string='Programa',
-        required=True,
+        required=False,
         ondelete='restrict',
         tracking=True,
         help='Programa al que pertenece este instrumento.',
@@ -64,7 +64,7 @@ class SurveySurveyExtension(models.Model):
     linea_intervencion_id = fields.Many2one(
         'luker.linea.intervencion',
         string='Línea de intervención',
-        required=True,
+        required=False,
         ondelete='restrict',
         tracking=True,
         domain="[('programa_id', '=', programa_id)]",

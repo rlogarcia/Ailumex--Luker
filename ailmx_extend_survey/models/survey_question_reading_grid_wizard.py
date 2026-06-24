@@ -99,9 +99,10 @@ class SurveyQuestionReadingGridWizard(models.TransientModel):
         commands = [(5, 0, 0)]
         for cell in cells_data:
             commands.append((0, 0, {
-                'row_index': cell.get('row_index', 0),
-                'col_index': cell.get('col_index', 0),
-                'cell_value': cell.get('cell_value', ''),
+                'fila':          cell.get('row_index', 0),
+                'columna':       cell.get('col_index', 0),
+                'valor':         cell.get('cell_value', ''),
+                'es_encabezado': cell.get('es_encabezado', False),
             }))
 
         self.question_id.write({'reading_grid_cell_ids': commands})

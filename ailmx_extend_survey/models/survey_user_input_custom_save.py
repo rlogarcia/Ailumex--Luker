@@ -274,7 +274,7 @@ class SurveyUserInputCustomSave(models.Model):
 
         native_line = self.env['survey.user_input.line'].create({
             'user_input_id': self.id,
-            'id_question': question.id,
+            'question_id': question.id,
             'answer_type': 'text_box',
             'value_text_box': normalized_answer,
             'skipped': False,
@@ -368,7 +368,7 @@ class SurveyUserInputCustomSave(models.Model):
 
         native_line = self.env['survey.user_input.line'].create({
             'user_input_id': self.id,
-            'id_question': question.id,
+            'question_id': question.id,
             'answer_type': 'text_box',
             'value_text_box': normalized_answer,
             'skipped': False,

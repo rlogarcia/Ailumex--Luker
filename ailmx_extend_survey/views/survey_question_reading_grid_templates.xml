@@ -41,13 +41,13 @@
                                 <tr>
                                     <t t-foreach="range(question.reading_grid_cols)" t-as="col_index">
                                         <t t-set="cell_record"
-                                           t-value="question.reading_grid_cell_ids.filtered(lambda c: c.row_index == row_index and c.col_index == col_index)[:1]"/>
+                                           t-value="question.reading_grid_cell_ids.filtered(lambda c: c.fila == row_index and c.columna == col_index)[:1]"/>
 
                                         <td class="ailmx_reading_grid_cell"
                                             data-state="empty"
                                             t-att-data-row="row_index"
                                             t-att-data-col="col_index">
-                                            <span t-esc="cell_record.cell_value if cell_record else ''"/>
+                                            <span t-esc="cell_record.valor if cell_record else ''"/>
                                         </td>
                                     </t>
                                 </tr>

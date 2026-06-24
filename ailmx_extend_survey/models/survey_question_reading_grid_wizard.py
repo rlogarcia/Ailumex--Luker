@@ -65,7 +65,7 @@ class SurveyQuestionReadingGridWizard(models.TransientModel):
         cell_map = {}
         if dimensions_match and saved_cells:
             for cell in saved_cells:
-                cell_map[(cell.row_index, cell.col_index)] = cell.cell_value or ''
+                cell_map[(cell.fila, cell.columna)] = cell.valor or ''
 
         # Construir matriz
         cells = []

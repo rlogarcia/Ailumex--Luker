@@ -257,7 +257,7 @@ class SurveyUserInputCustomSave(models.Model):
             parsed_answer = normalized_answer
 
         existing_native = self.user_input_line_ids.filtered(
-            lambda line: line.id_question == question
+            lambda line: line.question_id == question
         )
         if existing_native:
             existing_native.unlink()
@@ -344,7 +344,7 @@ class SurveyUserInputCustomSave(models.Model):
             parsed_cells = normalized_answer
 
         existing_native = self.user_input_line_ids.filtered(
-            lambda line: line.id_question == question
+            lambda line: line.question_id == question
         )
         if existing_native:
             existing_native.unlink()

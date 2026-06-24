@@ -313,3 +313,26 @@
 .ailmx_question_image_grid_3 .ailmx_question_image_item {
     width: 100%;
 }
+/* Ocultar tabs nativos de Odoo no usados en SISPAR */
+.o_form_view .o_statusbar_status button[data-value="page"],
+.o_survey_form_status button[aria-label="Encuesta"],
+.o_survey_form_status button[aria-label="Sesión en vivo"],
+.o_survey_form_status button[aria-label="Valoración"],
+.o_survey_form_status button[aria-label="Personalizado"] {
+    display: none !important;
+}
+
+/* ── Secciones visualmente distinguibles en la lista de preguntas ── */
+.o_field_one2many .o_list_table tr.o_decoration_bf {
+    background-color: #e8f0fe !important;
+    border-left: 4px solid #1a56db !important;
+}
+.o_field_one2many .o_list_table tr.o_decoration_bf td {
+    font-weight: 700 !important;
+    color: #1e3a8a !important;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+}
+.o_field_one2many .o_list_table tr.o_decoration_bf td:first-child::before {
+    content: "📁 ";
+}

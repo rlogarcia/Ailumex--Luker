@@ -233,7 +233,7 @@ class SurveyQuestionExtension(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if not vals.get('question_type'):
+            if not vals.get('question_type') and not vals.get('is_page', False):
                 vals['question_type'] = 'text_box'
         return super().create(vals_list)
 

@@ -323,16 +323,12 @@
 }
 
 /* ── Secciones visualmente distinguibles en la lista de preguntas ── */
-.o_field_one2many .o_list_table tr.o_decoration_bf {
+tr.o_is_section {
     background-color: #e8f0fe !important;
     border-left: 4px solid #1a56db !important;
 }
-.o_field_one2many .o_list_table tr.o_decoration_bf td {
-    font-weight: 700 !important;
+tr.o_is_section td {
     color: #1e3a8a !important;
     font-size: 13px;
     letter-spacing: 0.3px;
-}
-.o_field_one2many .o_list_table tr.o_decoration_bf td:first-child::before {
-    content: "📁 ";
 }
